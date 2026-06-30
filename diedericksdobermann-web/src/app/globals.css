@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #111008;
+  --color-surface: #1c1a0e;
+  --color-elevated: #252218;
+  --color-gold: #c4a35a;
+  --color-gold-light: #d4b472;
+  --color-gold-dim: #8a7240;
+  --color-text: #f5f0e8;
+  --color-muted: #9e9880;
+  --color-subtle: #5c5746;
+  --color-border: #2e2b1e;
+
+  --font-cinzel: var(--font-cinzel), serif;
+  --font-lato: var(--font-lato), sans-serif;
+
+  --radius-sm: 2px;
+}
+
+html {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-lato);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-cinzel);
+}
+
+::selection {
+  background-color: rgba(196, 163, 90, 0.3);
+  color: #f5f0e8;
+}
+
+/* Thin gold scrollbar for the dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #111008;
+}
+::-webkit-scrollbar-thumb {
+  background: #2e2b1e;
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8a7240;
+}
+
+@keyframes bounce-chevron {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+.animate-bounce-chevron {
+  animation: bounce-chevron 1.8s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out both;
+}

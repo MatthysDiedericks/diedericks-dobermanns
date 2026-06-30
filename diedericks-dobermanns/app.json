@@ -1,0 +1,104 @@
+{
+  "expo": {
+    "name": "Diedericks Dobermanns",
+    "slug": "diedericks-dobermanns",
+    "version": "1.0.0",
+    "privacyPolicyUrl": "https://www.diedericksdobermanns.com/privacy-policy",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "diedericksdobermanns",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0A",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.diedericksdobermanns.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Diedericks Dobermanns needs access to your photo library to upload dog photos and documents.",
+        "NSCameraUsageDescription": "Diedericks Dobermanns needs camera access to capture photos for your dog profile and documents.",
+        "NSPhotoLibraryAddUsageDescription": "Diedericks Dobermanns saves photos to your library.",
+        "NSMicrophoneUsageDescription": "Diedericks Dobermanns uses the microphone during video recording only.",
+        "NSUserNotificationsUsageDescription": "Receive training reminders, puppy availability alerts, and booking confirmations.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.diedericksdobermanns.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-image",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Diedericks Dobermanns needs access to your photo library to upload dog photos and documents.",
+          "cameraPermission": "Diedericks Dobermanns needs camera access to capture photos for your dog profile and documents."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#C4A35A",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-web-browser",
+      "expo-sharing",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "privacyManifestAggregationEnabled": true
+          },
+          "android": {
+            "targetSdkVersion": 34
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2d79a02f-67ce-4df7-97a0-ab7c2908acd3"
+      }
+    }
+  }
+}

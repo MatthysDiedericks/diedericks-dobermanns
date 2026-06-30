@@ -1,0 +1,16 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Diedericks Dobermanns",
+        "subtitle": "Kennel & Client Portal",
+        "description": "Private client portal for Diedericks Dobermanns — puppy applications, training bookings, video library, documents, and kennel updates.",
+        "keywords": ["dobermann", "kennel", "puppy", "training", "dog"],
+        "marketingUrl": "https://www.diedericksdobermanns.com",
+        "supportUrl": "https://www.diedericksdobermanns.com/contact",
+        "privacyPolicyUrl": "https://www.diedericksdobermanns.com/privacy-policy"
+      }
+    }
+  }
+}
