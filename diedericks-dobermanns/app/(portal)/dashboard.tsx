@@ -116,7 +116,7 @@ export default function PortalDashboard() {
 
       <View className="mt-8 px-6">
         <SectionHeader eyebrow="Training" title="Sessions" />
-        <Link href="/(portal)/training/bookings" asChild>
+        <Link href="/(portal)/training/index" asChild>
           <Pressable>
             <Card className="flex-row items-center">
               <Ionicons name="calendar" size={20} color={Colors.gold} />
@@ -126,6 +126,28 @@ export default function PortalDashboard() {
                   Consultations, obedience, protection & video reviews
                 </Typography>
               </View>
+              <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
+            </Card>
+          </Pressable>
+        </Link>
+        <Link href="/(portal)/training/bookings" asChild>
+          <Pressable>
+            <Card className="mt-3 flex-row items-center">
+              <Ionicons name="videocam" size={20} color={Colors.gold} />
+              <Typography variant="subtitle" className="ml-3 flex-1">
+                My Sessions
+              </Typography>
+              <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
+            </Card>
+          </Pressable>
+        </Link>
+        <Link href={'/(portal)/groups/index' as never} asChild>
+          <Pressable>
+            <Card className="mt-3 flex-row items-center">
+              <Ionicons name="people" size={20} color={Colors.gold} />
+              <Typography variant="subtitle" className="ml-3 flex-1">
+                My Groups
+              </Typography>
               <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
             </Card>
           </Pressable>

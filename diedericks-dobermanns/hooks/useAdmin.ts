@@ -45,7 +45,7 @@ const INVOICE_SELECT =
   'id, invoice_number, quote_id, client_id, status, currency, subtotal, discount, total, amount_paid, issued_at, due_date, paid_at, notes, created_at, updated_at, client:users(id, full_name, phone), items:invoice_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order)';
 
 const WAITING_LIST_SELECT =
-  'id, client_id, litter_id, preference_notes, position, status, pipeline_stage, follow_up_date, feedback, expected_delivery_date, created_at, client:users(id, full_name, phone, email)';
+  'id, client_id, litter_id, preference_notes, position, status, pipeline_stage, follow_up_date, feedback, expected_delivery_date, created_at, client:users(id, full_name, phone)';
 
 const BROADCAST_SELECT =
   'id, group_id, title, body, image_url, channels, status, scheduled_for, sent_at, sent_by, recipient_count, created_at, group:client_groups(id, name, type, colour, member_count, litter_id, created_at)';
@@ -184,7 +184,7 @@ export function useClientGroup(groupId: string | undefined) {
       supabase.from('client_group_members').select(CLIENT_GROUP_MEMBER_SELECT).eq('group_id', groupId),
     ]);
     setGroup((g as ClientGroup) ?? null);
-    setMembers((m as ClientGroupMember[]) ?? []);
+    setMembers((m ?? []) as unknown as ClientGroupMember[]);
     setLoading(false);
   }, [groupId]);
 

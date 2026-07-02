@@ -162,6 +162,9 @@ export function useContact(id: string) {
   return { contact, loading, error, refresh };
 }
 
+const CONTACT_INTERACTION_SELECT =
+  'id, contact_id, logged_by, interaction_type, direction, subject, body, interaction_date, created_at';
+
 export function useContactInteractions(contactId: string) {
   const [interactions, setInteractions] = useState<ContactInteraction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,7 +178,7 @@ export function useContactInteractions(contactId: string) {
       const supabase = requireSupabase();
       const { data, error: err } = await supabase
         .from('contact_interactions')
-        .select('*')
+        .select(CONTACT_INTERACTION_SELECT)
         .eq('contact_id', contactId)
         .order('interaction_date', { ascending: false });
       if (err) throw new Error(err.message);

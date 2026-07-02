@@ -17,6 +17,33 @@ export function checkProgrammeHealth(
 ): ProgrammeHealthReport {
   const alerts: string[] = [];
 
+  const dharkha = dogs.find((d) => d.name.toLowerCase().includes('dharkha'));
+  if (dharkha?.urgency_flag) {
+    alerts.push(
+      '⚡ DHARKHA — Sperm quality declining. One litter remaining. Breed Cleopatra NOW before Hunter. Semen eval mandatory first.',
+    );
+  }
+
+  const odessa = dogs.find((d) => d.name.toLowerCase().includes('odessa'));
+  if (odessa?.urgency_flag) {
+    alerts.push('⚡ ODESSA — Last litter remaining. Breed to Hunter on next heat.');
+  }
+
+  const hailey = dogs.find((d) => d.name.toLowerCase().includes('hailey'));
+  if (hailey?.urgency_flag) {
+    alerts.push('⚡ HAILEY — Age 5. Breed to Santini on next heat. Prime window closing.');
+  }
+
+  const dcSon = dogs.find(
+    (d) =>
+      d.name.toLowerCase().includes('dc son') || d.name.toLowerCase().includes('d/c son'),
+  );
+  if (!dcSon || dcSon.status === 'prospect') {
+    alerts.push(
+      '🔷 D/C Son (Bridge Sire) not yet born — Gen 2 Line B pairings are pending his arrival and health clearance.',
+    );
+  }
+
   for (const line of ['A', 'B'] as const) {
     const sires = countActive(dogs, line, 'Sire');
     const dams = countActive(dogs, line, 'Dam');

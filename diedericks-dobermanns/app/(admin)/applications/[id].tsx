@@ -14,7 +14,8 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useApplicationDetail } from '@/hooks/useAdmin';
-import { reviewApplication, useSubmitting } from '@/hooks/useMutations';
+import { createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
+import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { titleCase } from '@/lib/format';
 import type { Application, ApplicationStatus } from '@/types/app.types';
 
@@ -59,9 +60,21 @@ export default function ApplicationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { application: app, loading, error } = useApplicationDetail(id);
+  const { types } = useWaitlistTypes();
   const { submitting, run } = useSubmitting();
   const [notes, setNotes] = useState('');
   const [done, setDone] = useState<ApplicationStatus | null>(null);
+  const [addingWl, setAddingWl] = useState(false);
+
+  async function addToWaitlist() {
+    if (!app || !id) return;
+    const listType = types.find((t) => t.slug !== 'do-not-sell') ?? types[0];
+    if (!listType) return;
+    setAddingWl(true);
+    const { error: err, id: wlId } = await run(() => createWaitlistFromApplication(app, listType.id));
+    setAddingWl(false);
+    if (!err && wlId) router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: wlId } });
+  }
 
   async function act(status: ApplicationStatus) {
     if (!id) return;
@@ -193,6 +206,15 @@ export default function ApplicationDetailScreen() {
         </View>
 
         <View className="mt-2 gap-3 pb-8">
+          {(app.status === 'approved' || done === 'approved') ? (
+            <Button
+              label="Add to Waiting List"
+              variant="outline"
+              onPress={() => void addToWaitlist()}
+              loading={addingWl}
+              fullWidth
+            />
+          ) : null}
           {ACTIONS.map((a) => (
             <Button
               key={a.status}

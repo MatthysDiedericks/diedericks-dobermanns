@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo-google-fonts/cinzel": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/lato": "^0.4.1",
     "@expo/ngrok": "^4.1.0",
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.14",
@@ -74,7 +75,7 @@
     "submit:ios": "eas submit --profile production --platform ios",
     "submit:android": "eas submit --profile production --platform android",
     "update": "eas update --auto",
-    "deploy:functions": "supabase functions deploy notify && supabase functions deploy send-email && supabase functions deploy send-push && supabase functions deploy send-whatsapp && supabase functions deploy send-welcome-email && supabase functions deploy create-payfast-payment && supabase functions deploy payfast-itn",
+    "deploy:functions": "supabase functions deploy notify && supabase functions deploy send-email && supabase functions deploy send-push && supabase functions deploy send-whatsapp && supabase functions deploy send-welcome-email && supabase functions deploy create-payfast-payment && supabase functions deploy payfast-itn && supabase functions deploy create-video-room && supabase functions deploy send-broadcast",
     "lint": "expo lint"
   },
   "private": true

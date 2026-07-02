@@ -2,11 +2,49 @@ import type { BreedingDog, PairingRecord, PairingValidity, AgeGateResult } from 
 import { CROSS_SIBLING_PAIRING_KEYS } from '@/lib/breeding/constants';
 
 const PROHIBITED_PAIRS = [
-  { sire: 'Hunter', dam: 'Hailey', reason: 'Father/daughter' },
-  { sire: 'Hunter', dam: 'Cendra', reason: 'Father/daughter' },
-  { sire: 'Santini', dam: 'Hannah', reason: 'Half-siblings (both by Napoleon Betelges)' },
-  { sire: 'Hunter', dam: 'Hannah', reason: "Uncle/niece (Hunter's sister Havana is Hannah's dam)" },
+  {
+    sire: 'Hunter',
+    dam: 'Hailey',
+    reason: "Father/daughter — Hunter is Hailey's sire (pedigree confirmed)",
+  },
+  {
+    sire: 'Hunter',
+    dam: 'Cendra',
+    reason: "Father/daughter — Hunter is Cendra's sire (pedigree confirmed)",
+  },
+  {
+    sire: 'Santini',
+    dam: 'Hannah',
+    reason: 'Half-siblings — both sired by Napoleon Betelges',
+  },
+  {
+    sire: 'Hunter',
+    dam: 'Hannah',
+    reason: "Uncle/niece — Havana Betelges is Hunter's full sister and Hannah's dam",
+  },
+  {
+    sire: 'Hunter',
+    dam: 'Cyrus',
+    reason: "Father/daughter — Hunter is Cyrus Pup's sire (owner confirmed)",
+  },
+  {
+    sire: 'DC Son',
+    dam: 'Claire',
+    reason: "Half-siblings via Dharkha Betelges — D/C Son's sire is Dharkha; Claire's sire is Dharkha",
+  },
+  {
+    sire: 'DC Son',
+    dam: 'Kim',
+    reason: "Half-siblings via Dharkha Betelges — D/C Son's sire is Dharkha; Kim's sire is Dharkha",
+  },
+  { sire: 'Claire', dam: 'DC Son', reason: 'Half-siblings via Dharkha Betelges' },
+  { sire: 'Kim', dam: 'DC Son', reason: 'Half-siblings via Dharkha Betelges' },
 ] as const;
+
+function isDCSon(name: string): boolean {
+  const n = name.toLowerCase();
+  return n.includes('dc son') || n.includes('d/c son');
+}
 
 function nameIncludes(name: string, fragment: string): boolean {
   return name.toLowerCase().includes(fragment.toLowerCase());
@@ -96,10 +134,34 @@ export function checkPairingValidity(
   }
 
   const hardBlock = PROHIBITED_PAIRS.find(
-    (p) => nameIncludes(sire.name, p.sire) && nameIncludes(dam.name, p.dam),
+    (p) =>
+      (nameIncludes(sire.name, p.sire) && nameIncludes(dam.name, p.dam)) ||
+      (nameIncludes(sire.name, p.dam) && nameIncludes(dam.name, p.sire)),
   );
   if (hardBlock) {
     return { allowed: false, reason: hardBlock.reason, coi_flag: false };
+  }
+
+  const sireIsDCSon = isDCSon(sire.name);
+  if (sireIsDCSon && dam.mother_id && sire.mother_id && dam.mother_id === sire.mother_id) {
+    return {
+      allowed: false,
+      reason:
+        "Half-siblings via Cleopatra — D/C Son's dam is Cleopatra; this dog's dam is also Cleopatra",
+      coi_flag: false,
+    };
+  }
+
+  if (
+    (nameIncludes(sire.name, 'Odessa') && nameIncludes(dam.name, 'Kim')) ||
+    (nameIncludes(dam.name, 'Odessa') && nameIncludes(sire.name, 'Kim'))
+  ) {
+    return {
+      allowed: false,
+      reason:
+        "Half-siblings via Odessa — Kim's dam is Raconti Odessa. Odessa offspring and Kim offspring cannot breed.",
+      coi_flag: false,
+    };
   }
 
   if (sharesCrossLitterOrigin(sire, dam, options?.pairings)) {
@@ -175,4 +237,17 @@ export function coiSeverity(coi: number): 'ok' | 'warning' | 'danger' {
   if (coi > 12.5) return 'danger';
   if (coi > 6.25) return 'warning';
   return 'ok';
+}
+
+/** Santini and other DCM-flagged sires — all pups sale-only. */
+export function isSaleOnlySire(sire: BreedingDog): boolean {
+  return sire.flag_dcm_carrier === true || nameIncludes(sire.name, 'Santini');
+}
+
+/** Banner when D/C Son is selected as sire in Pairing Builder. */
+export function getBridgeSireBanner(sire: BreedingDog): string | null {
+  if (isDCSon(sire.name)) {
+    return '✓ Bridge Sire selected — D/C Son can breed all Hunter daughters (sire is Dharkha, not Hunter). COI = 0% with Hunter offspring.';
+  }
+  return null;
 }

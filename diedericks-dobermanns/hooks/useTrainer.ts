@@ -213,7 +213,7 @@ export function useTrainerDogs() {
 
       const map = new Map<string, TrainerDogSummary>();
       for (const row of data ?? []) {
-        const r = row as {
+        const r = row as unknown as {
           dog_id: string;
           scheduled_at: string;
           status: string;

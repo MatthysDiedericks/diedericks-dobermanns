@@ -8,6 +8,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { Lato_400Regular, Lato_700Bold } from '@expo-google-fonts/lato';
 
 /**
  * Font map consumed by `useFonts` in the root layout.
@@ -20,4 +21,6 @@ export const AppFonts = {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+  Lato_400Regular,
+  Lato_700Bold,
 };

@@ -12,23 +12,98 @@ import { Typography } from '@/components/ui/Typography';
 import { useBreedingProgramme } from '@/hooks/useBreedingProgramme';
 import { GEN2_SUGGESTED_PAIRINGS } from '@/lib/breeding/constants';
 import { programmeStatusEmoji } from '@/lib/breeding/programme-health';
+import type { BreedingDog, PairingRecord } from '@/types/breeding';
 
 const GENERATIONS = [1, 2, 3];
+
+function dcSonStatusLabel(dcSon: BreedingDog | undefined): string {
+  if (!dcSon) return 'Prospect — Dharkha × Cleo litter not yet born';
+  if (dcSon.status === 'prospect') return 'Prospect — not yet born';
+  if (dcSon.status === 'keep' || dcSon.status === 'active') return 'Born — health tests in progress';
+  return 'Ready';
+}
+
+function PairingSection({
+  title,
+  titleColor,
+  pairings,
+  onAction,
+}: {
+  title: string;
+  titleColor: string;
+  pairings: PairingRecord[];
+  onAction: (p: PairingRecord) => void;
+}) {
+  if (pairings.length === 0) return null;
+  return (
+    <>
+      <Typography variant="label" className="mb-2 mt-2" style={{ color: titleColor }}>
+        {title}
+      </Typography>
+      {pairings.map((p) => (
+        <PairingCard
+          key={p.id}
+          pairing={p}
+          actionLabel={
+            p.status === 'Completed' ? 'View' : p.status === 'Active' ? 'Record Litter' : 'Plan Mating'
+          }
+          onAction={() => onAction(p)}
+        />
+      ))}
+    </>
+  );
+}
 
 export default function BreedingProgrammeScreen() {
   const router = useRouter();
   const [generation, setGeneration] = useState(1);
-  const { pairings, urgentDams, programmeHealth, loading, error, refresh } =
+  const { pairings, breedingDogs, urgentDams, programmeHealth, loading, error, refresh } =
     useBreedingProgramme(generation);
 
   const activePairings = useMemo(
     () => pairings.filter((p) => p.status !== 'Prohibited' && p.status !== 'Trial'),
     [pairings],
   );
+  const bridgePairings = useMemo(
+    () => activePairings.filter((p) => p.line === 'Bridge'),
+    [activePairings],
+  );
+  const programmePairings = useMemo(
+    () => activePairings.filter((p) => p.line === 'A' || p.line === 'B'),
+    [activePairings],
+  );
+  const salePairings = useMemo(
+    () => activePairings.filter((p) => p.line === 'Sale'),
+    [activePairings],
+  );
+  const otherPairings = useMemo(
+    () =>
+      activePairings.filter(
+        (p) => p.line !== 'Bridge' && p.line !== 'A' && p.line !== 'B' && p.line !== 'Sale',
+      ),
+    [activePairings],
+  );
   const prohibitedPairings = useMemo(
     () => pairings.filter((p) => p.status === 'Prohibited'),
     [pairings],
   );
+
+  const dcSon = breedingDogs.find(
+    (d) => d.name.toLowerCase().includes('dc son') || d.name.toLowerCase().includes('d/c son'),
+  );
+
+  function handlePairingAction(p: PairingRecord) {
+    if (p.status === 'Completed') {
+      router.push(`/(admin)/dogs/${p.sire_id}` as never);
+    } else if (p.status === 'Active') {
+      router.push({
+        pathname: '/(admin)/breeding/litter-recorder',
+        params: { pairingId: p.id },
+      } as never);
+    } else {
+      router.push('/(admin)/breeding/pairing-builder' as never);
+    }
+  }
 
   return (
     <ScreenContainer scroll={false}>
@@ -59,6 +134,31 @@ export default function BreedingProgrammeScreen() {
             </Typography>
           </View>
         ))}
+
+        <View
+          className="mx-6 mb-4 rounded-xl border-2 p-4"
+          style={{ borderColor: '#006666', backgroundColor: '#001a1a' }}
+        >
+          <View className="mb-2 flex-row items-center gap-2">
+            <View className="h-2 w-2 rounded-full" style={{ backgroundColor: '#00cccc' }} />
+            <Typography variant="label" style={{ color: '#00cccc' }}>
+              BRIDGE SIRE — D/C Son (Dharkha × Cleopatra)
+            </Typography>
+          </View>
+          <Typography variant="caption" className="mb-2" style={{ color: '#66dddd' }}>
+            Status: {dcSonStatusLabel(dcSon)}
+          </Typography>
+          <Typography variant="caption" style={{ color: '#aaffff' }}>
+            ✓ CAN breed: Hailey daughters · Cendra daughters · Hunter/Odessa daughters · Hunter/Kim
+            daughters · Cyrus pup
+          </Typography>
+          <Typography variant="caption" className="mt-1" style={{ color: '#ff9999' }}>
+            ✗ CANNOT breed: Claire · Kim · Hunter/Cleo daughters
+          </Typography>
+          <Typography variant="caption" className="mt-2" style={{ color: '#888888' }}>
+            Why: D/C Son&apos;s sire is Dharkha (not Hunter) → 0% COI with all Hunter daughters
+          </Typography>
+        </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 max-h-12 px-4">
           <View className="flex-row gap-2">
@@ -137,31 +237,32 @@ export default function BreedingProgrammeScreen() {
                 No pairings for Gen {generation} yet.
               </Typography>
             ) : (
-              activePairings.map((p) => (
-                <PairingCard
-                  key={p.id}
-                  pairing={p}
-                  actionLabel={
-                    p.status === 'Completed'
-                      ? 'View'
-                      : p.status === 'Active'
-                        ? 'Record Litter'
-                        : 'Plan Mating'
-                  }
-                  onAction={() => {
-                    if (p.status === 'Completed') {
-                      router.push(`/(admin)/dogs/${p.sire_id}` as never);
-                    } else if (p.status === 'Active') {
-                      router.push({
-                        pathname: '/(admin)/breeding/litter-recorder',
-                        params: { pairingId: p.id },
-                      } as never);
-                    } else {
-                      router.push('/(admin)/breeding/pairing-builder' as never);
-                    }
-                  }}
+              <>
+                <PairingSection
+                  title="── BRIDGE PAIRING ──"
+                  titleColor="#00cccc"
+                  pairings={bridgePairings}
+                  onAction={handlePairingAction}
                 />
-              ))
+                <PairingSection
+                  title="── PROGRAMME PAIRINGS — HUNTER ──"
+                  titleColor="#C4A35A"
+                  pairings={programmePairings}
+                  onAction={handlePairingAction}
+                />
+                <PairingSection
+                  title="── SALE PAIRINGS — SANTINI ──"
+                  titleColor="#9B7FD4"
+                  pairings={salePairings}
+                  onAction={handlePairingAction}
+                />
+                <PairingSection
+                  title="── OTHER ──"
+                  titleColor="#9E9880"
+                  pairings={otherPairings}
+                  onAction={handlePairingAction}
+                />
+              </>
             )}
 
             {generation >= 2 ? (
@@ -172,8 +273,11 @@ export default function BreedingProgrammeScreen() {
                 {GEN2_SUGGESTED_PAIRINGS.map((s) => (
                   <View key={s.key} className="mb-3 rounded-xl border border-gold/20 p-3">
                     <Typography variant="body">{s.label}</Typography>
+                    <Typography variant="caption" className="text-gold">
+                      Line {s.line} · COI {s.coi}
+                    </Typography>
                     <Typography variant="caption" className="text-subtle">
-                      Line {s.line} · {s.notes}
+                      {s.notes}
                     </Typography>
                   </View>
                 ))}

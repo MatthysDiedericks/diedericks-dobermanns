@@ -3,11 +3,14 @@ import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Config } from '@/constants/config';
+import { callNotify } from '@/lib/functions';
 import { broadcastNotification } from '@/lib/notifications';
+import { useAuthStore } from '@/stores/authStore';
 
 type Channel = 'push' | 'email' | 'whatsapp';
 const CHANNELS: { value: Channel; label: string }[] = [
@@ -17,12 +20,42 @@ const CHANNELS: { value: Channel; label: string }[] = [
 ];
 
 export default function AdminNotificationsScreen() {
+  const currentUserId = useAuthStore((s) => s.profile?.id);
   const [channel, setChannel] = useState<Channel>('push');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testSent, setTestSent] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  async function sendTest() {
+    if (!currentUserId) {
+      setTestError('No signed-in user found.');
+      return;
+    }
+    setTesting(true);
+    setTestError(null);
+    try {
+      const ok = await callNotify({
+        userId: currentUserId,
+        title: 'Test Notification',
+        body: 'Edge Functions are working correctly.',
+      });
+      if (!ok) {
+        setTestError('Failed — check Edge Function deployment');
+        return;
+      }
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 3000);
+    } catch {
+      setTestError('Failed — check Edge Function deployment');
+    } finally {
+      setTesting(false);
+    }
+  }
 
   async function onSend() {
     setSending(true);
@@ -49,6 +82,36 @@ export default function AdminNotificationsScreen() {
     >
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow="Broadcast" title="Send Notification" back={false} />
+
+        <View className="mb-6 px-6">
+          <Card className="border-gold/20">
+            <Typography variant="label" className="mb-2 text-gold">
+              Edge Function test
+            </Typography>
+            <Typography variant="caption" className="mb-3 text-silver">
+              Sends a push notification to your own account to verify deployment.
+            </Typography>
+            {testSent ? (
+              <Typography variant="body" className="mb-3 text-success">
+                Test notification sent.
+              </Typography>
+            ) : null}
+            {testError ? (
+              <Typography variant="body" className="mb-3 text-danger">
+                {testError}
+              </Typography>
+            ) : null}
+            <Button
+              label="Send Test Notification"
+              variant="outline"
+              onPress={sendTest}
+              loading={testing}
+              disabled={!currentUserId}
+              fullWidth
+            />
+          </Card>
+        </View>
+
         <View className="px-6">
           <Typography variant="caption" className="mb-2 text-silver">
             Channel

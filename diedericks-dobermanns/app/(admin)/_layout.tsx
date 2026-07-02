@@ -92,6 +92,8 @@ export default function AdminLayout() {
         <Tabs.Screen name="client-groups/index" options={{ href: null }} />
         <Tabs.Screen name="client-groups/[id]" options={{ href: null }} />
         <Tabs.Screen name="broadcast/new" options={{ href: null }} />
+        <Tabs.Screen name="messaging/index" options={{ href: null }} />
+        <Tabs.Screen name="settings/index" options={{ href: null }} />
         <Tabs.Screen name="settings/social" options={{ href: null }} />
         <Tabs.Screen name="training/index" options={{ href: null }} />
         <Tabs.Screen name="enquiries" options={{ href: null }} />
@@ -100,6 +102,11 @@ export default function AdminLayout() {
         <Tabs.Screen name="faq" options={{ href: null }} />
         <Tabs.Screen name="analytics" options={{ href: null }} />
         <Tabs.Screen name="notifications" options={{ href: null }} />
+        <Tabs.Screen name="waitlist/index" options={{ href: null }} />
+        <Tabs.Screen name="waitlist/new" options={{ href: null }} />
+        <Tabs.Screen name="waitlist/[id]" options={{ href: null }} />
+        <Tabs.Screen name="waitlist/match" options={{ href: null }} />
+        <Tabs.Screen name="waitlist/follow-ups" options={{ href: null }} />
       </Tabs>
     </AuthGuard>
   );

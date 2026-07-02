@@ -550,12 +550,62 @@ export interface Reservation {
 }
 
 export type WaitingListStatus = 'active' | 'offered' | 'converted' | 'removed';
+export type WaitlistPriority = 'high' | 'normal' | 'low';
+export type WaitlistPaymentStatus = 'not_paid' | 'deposit_paid' | 'paid_in_full';
+export type WaitlistSource = 'app' | 'website' | 'instagram' | 'referral' | 'phone' | 'manual';
+
+export interface WaitingListType {
+  id: string;
+  name: string;
+  slug: string;
+  colour: string | null;
+  sort_order: number;
+  is_system: boolean;
+  created_at: string;
+}
+
+export interface WaitingListHistoryRow {
+  id: string;
+  waiting_list_id: string;
+  from_stage: string | null;
+  to_stage: string;
+  changed_by: string | null;
+  notes: string | null;
+  created_at: string;
+  changed_by_user?: Pick<AppUser, 'id' | 'full_name'> | null;
+}
 
 export interface WaitingListEntry {
   id: string;
-  client_id: string;
+  client_id: string | null;
+  list_type_id: string | null;
+  application_id: string | null;
   litter_id: string | null;
+  enquirer_name: string | null;
+  enquirer_email: string | null;
+  enquirer_phone: string | null;
+  enquirer_country: string | null;
+  source: WaitlistSource | string | null;
+  preferred_category: string | null;
+  preferred_sex: string | null;
+  preferred_colour: string | null;
+  ear_preference: string | null;
+  tail_preference: string | null;
+  registration_preference: string | null;
+  priority: WaitlistPriority;
+  payment_status: WaitlistPaymentStatus;
+  deposit_amount: number | null;
+  quoted_price: number | null;
+  quote_expires_at: string | null;
+  deposit_invoice_id: string | null;
+  assigned_dog_id: string | null;
+  assigned_litter_id: string | null;
+  last_contact_date: string | null;
   preference_notes: string | null;
+  admin_notes: string | null;
+  client_visible_note: string | null;
+  internal_flags: string[];
+  do_not_sell_reason: string | null;
   position: number | null;
   status: WaitingListStatus;
   pipeline_stage: string | null;
@@ -563,7 +613,11 @@ export interface WaitingListEntry {
   feedback: string | null;
   expected_delivery_date: string | null;
   created_at: string;
+  updated_at?: string;
   client?: Pick<AppUser, 'id' | 'full_name' | 'phone'> & { email?: string | null };
+  list_type?: WaitingListType | null;
+  assigned_dog?: Pick<Dog, 'id' | 'name' | 'colour' | 'sex' | 'category'> | null;
+  assigned_litter?: Pick<Litter, 'id' | 'name'> | null;
 }
 
 // Quotes & invoices ----------------------------------------------------------

@@ -162,7 +162,8 @@ export function useFemaleHeatSummaries() {
 
       setSummaries(
         (dogs ?? []).map((dog) => {
-          const media = (dog.dog_media as { url: string; is_primary: boolean }[] | null) ?? [];
+          const media =
+            (dog.dog_media as unknown as { url: string; is_primary: boolean }[] | null) ?? [];
           const photo =
             media.find((m) => m.is_primary)?.url ?? media[0]?.url ?? null;
           const cycles = byDog.get(dog.id) ?? [];

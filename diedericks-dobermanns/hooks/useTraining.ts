@@ -17,11 +17,17 @@ import type {
 } from '@/types/app.types';
 
 // Embedded select with disambiguated user foreign keys.
+const SESSION_TYPE_SELECT =
+  'id, name, description, duration_minutes, price, currency, session_format, is_active, sort_order, created_at, updated_at';
+const AVAILABILITY_SELECT =
+  'id, available_date, start_time, end_time, session_type_id, trainer_id, max_bookings, is_blocked, notes, created_at';
 const BOOKING_SELECT =
-  '*, session_type:training_session_types(*), dog:dogs(*), ' +
-  'client:users!training_bookings_client_id_fkey(*), ' +
-  'trainer:users!training_bookings_trainer_id_fkey(*), ' +
-  'media:training_booking_media(*)';
+  'id, client_id, dog_id, trainer_id, session_type_id, availability_id, scheduled_at, session_format, status, client_notes, trainer_notes, video_room_name, video_room_url, video_host_url, video_room_expires_at, confirmed_at, completed_at, cancelled_at, cancelled_by, created_at, ' +
+  'session_type:training_session_types(id, name, description, duration_minutes, price, currency, session_format, is_active, sort_order), ' +
+  'dog:dogs(id, name, colour, sex, status, date_of_birth), ' +
+  'client:users!training_bookings_client_id_fkey(id, full_name, phone), ' +
+  'trainer:users!training_bookings_trainer_id_fkey(id, full_name, phone), ' +
+  'media:training_booking_media(id, booking_id, url, media_type, caption, uploaded_at)';
 
 /** Single booking by ID — used for booking detail screen. */
 export function useBookingById(id: string | undefined) {
@@ -64,7 +70,7 @@ export function useBookingById(id: string | undefined) {
 export function useSessionTypes(activeOnly = true): ListResult<TrainingSessionType> {
   const mock = activeOnly ? MOCK_SESSION_TYPES.filter((t) => t.is_active) : MOCK_SESSION_TYPES;
   return useRemoteList<TrainingSessionType>(mock, (c) => {
-    const base = c.from('training_session_types').select('*').order('sort_order');
+    const base = c.from('training_session_types').select(SESSION_TYPE_SELECT).order('sort_order');
     return activeOnly ? base.eq('is_active', true) : base;
   });
 }
@@ -75,7 +81,7 @@ export function useAvailability(): ListResult<TrainingAvailability> {
   return useRemoteList<TrainingAvailability>(MOCK_AVAILABILITY, (c) =>
     c
       .from('training_availability')
-      .select('*')
+      .select(AVAILABILITY_SELECT)
       .gte('available_date', today)
       .order('available_date')
       .order('start_time'),
@@ -85,7 +91,7 @@ export function useAvailability(): ListResult<TrainingAvailability> {
 /** All availability rows (admin), including blocked. */
 export function useAdminAvailability(): ListResult<TrainingAvailability> {
   return useRemoteList<TrainingAvailability>(MOCK_AVAILABILITY, (c) =>
-    c.from('training_availability').select('*').order('available_date').order('start_time'),
+    c.from('training_availability').select(AVAILABILITY_SELECT).order('available_date').order('start_time'),
   );
 }
 
@@ -113,7 +119,7 @@ export function useMyDogs(): ListResult<Dog> {
   return useRemoteList<Dog>(MOCK_DOGS.slice(0, 3), (c) =>
     c
       .from('dogs')
-      .select('*, media:dog_media(*)')
+      .select('id, name, colour, sex, status, date_of_birth, dog_media(url, is_primary)')
       .in('status', ['reserved', 'sold', 'in_training'])
       .order('name'),
   );

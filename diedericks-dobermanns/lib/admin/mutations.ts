@@ -1,3 +1,5 @@
+import { callCreateVideoRoom, callNotify } from '@/lib/functions';
+import { formatDateTime } from '@/lib/format';
 import { SOCIAL_SETTING_KEYS } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -49,7 +51,21 @@ export async function createBooking(input: BookingInput, clientId: string): Prom
     })
     .select('id')
     .single();
-  return { error: error?.message ?? null, id: data?.id ?? null };
+  if (error) return { error: error.message, id: null };
+
+  const { data: admins } = await supabase
+    .from('users')
+    .select('id')
+    .in('role', ['admin', 'super_admin', 'management']);
+  for (const admin of admins ?? []) {
+    void callNotify({
+      userId: admin.id,
+      title: 'New Training Request',
+      body: `A client requested a session on ${formatDateTime(input.scheduled_at)}.`,
+    });
+  }
+
+  return { error: null, id: data?.id ?? null };
 }
 
 export async function cancelBooking(
@@ -75,13 +91,50 @@ export async function confirmBooking(
   videoRoomUrl?: string | null,
 ): Promise<MutationResult> {
   if (!supabase) return simulate();
-  const patch: TablesUpdate<'training_bookings'> = {
-    status: 'confirmed',
-    confirmed_at: new Date().toISOString(),
-  };
-  if (videoRoomUrl) patch.video_room_url = videoRoomUrl;
-  const { error } = await supabase.from('training_bookings').update(patch).eq('id', id);
-  return { error: error?.message ?? null };
+
+  const { data: booking, error: fetchErr } = await supabase
+    .from('training_bookings')
+    .select('client_id, session_format, scheduled_at')
+    .eq('id', id)
+    .single();
+  if (fetchErr) return { error: fetchErr.message };
+
+  const manualUrl = videoRoomUrl?.trim() || null;
+  const isVideo = booking.session_format === 'video_call';
+
+  if (isVideo && !manualUrl) {
+    try {
+      await callCreateVideoRoom(id);
+    } catch (e) {
+      console.warn(
+        '[confirmBooking] Video room creation failed — Daily.co may not be configured yet:',
+        e,
+      );
+      const { error } = await supabase
+        .from('training_bookings')
+        .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) return { error: error.message };
+    }
+  } else {
+    const patch: TablesUpdate<'training_bookings'> = {
+      status: 'confirmed',
+      confirmed_at: new Date().toISOString(),
+    };
+    if (manualUrl) patch.video_room_url = manualUrl;
+    const { error } = await supabase.from('training_bookings').update(patch).eq('id', id);
+    if (error) return { error: error?.message ?? null };
+  }
+
+  if (booking.client_id) {
+    void callNotify({
+      userId: booking.client_id,
+      title: 'Session Confirmed',
+      body: `Your training session on ${formatDateTime(booking.scheduled_at)} has been confirmed.`,
+    });
+  }
+
+  return { error: null };
 }
 
 export async function completeBooking(id: string): Promise<MutationResult> {
@@ -166,6 +219,14 @@ export async function reviewApplication(
   adminNotes: string | null,
 ): Promise<MutationResult> {
   if (!supabase) return simulate();
+
+  const { data: app, error: fetchErr } = await supabase
+    .from('applications')
+    .select('user_id')
+    .eq('id', id)
+    .single();
+  if (fetchErr) return { error: fetchErr.message };
+
   const { error } = await supabase
     .from('applications')
     .update({
@@ -174,7 +235,23 @@ export async function reviewApplication(
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', id);
-  return { error: error?.message ?? null };
+  if (error) return { error: error.message };
+
+  if (app.user_id && status === 'approved') {
+    void callNotify({
+      userId: app.user_id,
+      title: 'Application Update',
+      body: 'Your Diedericks Dobermanns application has been approved! Log in to view details.',
+    });
+  } else if (app.user_id && status === 'rejected') {
+    void callNotify({
+      userId: app.user_id,
+      title: 'Application Update',
+      body: 'We have reviewed your application. Please log in for details.',
+    });
+  }
+
+  return { error: null };
 }
 
 export async function updateEnquiryStatus(

@@ -4,6 +4,8 @@ import {
   fetchAllInvoices,
   fetchInvoiceById,
 } from '@/lib/finance/queries';
+import { callNotify } from '@/lib/functions';
+import { formatPrice } from '@/lib/format';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { DraftLineItem, InvoiceListRow, InvoiceWithDetails } from '@/types/finance';
@@ -95,7 +97,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       status: input.send ? 'sent' : 'draft',
       invoice_number: '',
     })
-    .select('id')
+    .select('id, client_id, invoice_number, total_amount')
     .single();
 
   if (error) throw new Error(error.message);
@@ -111,6 +113,15 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
   const { error: itemsError } = await supabase.from('invoice_items').insert(itemRows);
   if (itemsError) throw new Error(itemsError.message);
+
+  if (input.send && invoice.client_id) {
+    const number = invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase();
+    void callNotify({
+      userId: invoice.client_id,
+      title: 'New Invoice',
+      body: `Invoice #${number} for ${formatPrice(invoice.total_amount)} is ready to view.`,
+    });
+  }
 
   return invoice.id;
 }
@@ -139,6 +150,28 @@ export async function recordInvoicePayment(
 
 export async function updateInvoiceStatus(invoiceId: string, status: string) {
   const supabase = requireSupabase();
+
+  if (status === 'sent') {
+    const { data: invoice } = await supabase
+      .from('invoices')
+      .select('client_id, invoice_number, total_amount')
+      .eq('id', invoiceId)
+      .single();
+
+    const { error } = await supabase.from('invoices').update({ status }).eq('id', invoiceId);
+    if (error) throw new Error(error.message);
+
+    if (invoice?.client_id) {
+      const number = invoice.invoice_number || invoiceId.slice(0, 8).toUpperCase();
+      void callNotify({
+        userId: invoice.client_id,
+        title: 'New Invoice',
+        body: `Invoice #${number} for ${formatPrice(invoice.total_amount)} is ready to view.`,
+      });
+    }
+    return;
+  }
+
   const { error } = await supabase.from('invoices').update({ status }).eq('id', invoiceId);
   if (error) throw new Error(error.message);
 }

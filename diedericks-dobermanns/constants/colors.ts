@@ -5,18 +5,31 @@
  * (e.g. navigation theming, status bar, native props that don't accept classes).
  */
 export const Colors = {
-  black: '#0A0A0A', // Deep Black — primary background
-  blackRich: '#111008', // Warm Dark — card backgrounds
-  nav: '#1C1A0E', // Deep Olive / Dark Gold — navigation bars
-  surface: '#1A1A1A', // Dark Grey — secondary backgrounds, inputs
-  gold: '#C4A35A', // Gold Primary — warm, muted; CTAs, highlights, active states
-  goldLight: '#D8BC82', // Gold Light — hover / secondary gold
-  goldMuted: '#8A7A4E', // Muted Gold — inactive nav text/icons
-  silver: '#9E9E9E', // Subtext, borders, inactive icons
-  white: '#F5F5F5', // Primary text
-  offWhite: '#CCCCCC', // Secondary text
-  danger: '#C0392B', // Errors, warnings
-  success: '#27AE60', // Confirmations
+  background: '#111008',
+  surface: '#1C1A0E',
+  surfaceElevated: '#252218',
+  gold: '#C4A35A',
+  goldLight: '#D4B472',
+  goldDim: '#8A7240',
+  text: '#F5F0E8',
+  textMuted: '#9E9880',
+  textSubtle: '#5C5746',
+  border: '#2E2B1E',
+  borderGold: '#C4A35A33',
+  error: '#C0392B',
+  success: '#27AE60',
+  // Legacy aliases (existing components)
+  black: '#0A0A0A',
+  blackRich: '#111008',
+  nav: '#1C1A0E',
+  goldMuted: '#8A7240',
+  silver: '#9E9880',
+  white: '#F5F0E8',
+  offWhite: '#9E9880',
+  danger: '#C0392B',
 } as const;
 
 export type ColorName = keyof typeof Colors;
+
+/** Lowercase alias for heritage theme token imports. */
+export const colors = Colors;

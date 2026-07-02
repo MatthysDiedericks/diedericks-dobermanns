@@ -81,6 +81,12 @@ export default function PortalLayout() {
         <Tabs.Screen name="vaccination-records" options={{ href: null }} />
         <Tabs.Screen name="invoices/index" options={{ href: null }} />
         <Tabs.Screen name="invoices/[id]" options={{ href: null }} />
+        <Tabs.Screen name="waitlist" options={{ href: null }} />
+        <Tabs.Screen name="groups/index" options={{ href: null }} />
+        <Tabs.Screen name="contracts/[id]" options={{ href: null }} />
+        <Tabs.Screen name="dogs/[id]/milestones" options={{ href: null }} />
+        <Tabs.Screen name="dogs/[id]/health" options={{ href: null }} />
+        <Tabs.Screen name="litters/[id]/waitlist" options={{ href: null }} />
       </Tabs>
       <WhatsAppFab />
       </View>

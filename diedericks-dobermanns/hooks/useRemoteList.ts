@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
-import type { Database } from '@/types/database.types';
+import type { AppDatabase } from '@/types/appDatabase';
 
 export interface ListResult<T> {
   data: T[];
@@ -24,7 +24,7 @@ export type ListResponse = PromiseLike<{
  */
 export function useRemoteList<T>(
   mock: T[],
-  fetcher: (client: SupabaseClient<Database>) => ListResponse,
+  fetcher: (client: SupabaseClient<AppDatabase>) => ListResponse,
 ): ListResult<T> {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);

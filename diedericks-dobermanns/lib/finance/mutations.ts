@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase';
+import { callNotify } from '@/lib/functions';
+import { formatPrice } from '@/lib/format';
 import type { InvoiceStatus, LineItemType, Quote, QuoteStatus } from '@/types/app.types';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 
@@ -126,9 +128,10 @@ export async function createInvoiceFromQuote(quote: Quote): Promise<SaveResult> 
     due_date: quote.valid_until ?? null,
     invoice_number: '',
   };
-  const { data, error } = await supabase.from('invoices').insert(row).select('id').single();
+  const { data, error } = await supabase.from('invoices').insert(row).select('id, client_id, invoice_number, total_amount').single();
   if (error) return { error: error.message, id: null };
   const invoiceId = (data as { id: string }).id;
+  const invoiceRow = data as { id: string; client_id: string | null; invoice_number: string | null; total_amount: number };
   const items = quote.items ?? [];
   if (items.length) {
     const itemRows = items.map((it, i) => ({
@@ -143,6 +146,16 @@ export async function createInvoiceFromQuote(quote: Quote): Promise<SaveResult> 
     if (itemErr) return { error: itemErr.message, id: invoiceId };
   }
   await supabase.from('quotes').update({ status: 'accepted' }).eq('id', quote.id);
+
+  if (invoiceRow.client_id) {
+    const number = invoiceRow.invoice_number || invoiceId.slice(0, 8).toUpperCase();
+    void callNotify({
+      userId: invoiceRow.client_id,
+      title: 'New Invoice',
+      body: `Invoice #${number} for ${formatPrice(invoiceRow.total_amount)} is ready to view.`,
+    });
+  }
+
   return { error: null, id: invoiceId };
 }
 

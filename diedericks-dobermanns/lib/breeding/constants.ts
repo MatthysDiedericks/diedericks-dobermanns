@@ -22,6 +22,8 @@ export const PAIRING_SELECT = `
 export const LINE_COLORS = {
   A: '#8B0000',
   B: '#1B2A6B',
+  Bridge: '#006666',
+  Sale: '#3D1A6B',
   Cross: '#2D6A4F',
   Unknown: '#6B7280',
 } as const;
@@ -50,27 +52,69 @@ export const CROSS_SIBLING_PAIRING_KEYS = [
 
 export const GEN2_SUGGESTED_PAIRINGS = [
   {
+    key: 'dc_son_odessa_daughter',
+    line: 'Bridge' as const,
+    label: 'D/C Son × Hunter/Odessa Daughter',
+    notes: 'Core Line B Gen 2. D/C Son sire = Dharkha — 0% COI with all Hunter daughters.',
+    coi: '0%',
+  },
+  {
+    key: 'dc_son_kim_daughter',
+    line: 'Bridge' as const,
+    label: 'D/C Son × Hunter/Kim Daughter',
+    notes: 'Second Line B dam branch. 0% COI.',
+    coi: '0%',
+  },
+  {
     key: 'a_within',
     line: 'A' as const,
-    label: 'Line A Sire 2 × Line A Dams',
-    notes: 'Within-line. Check COI before confirming.',
+    label: 'Line A Sire 2 × Line A Dams (separate litter daughters only)',
+    notes: 'Within-line. Verify COI. Same-litter sisters of Line A Sire 2 are PROHIBITED.',
+    coi: 'Calculate before confirming',
   },
   {
-    key: 'b_within',
-    line: 'B' as const,
-    label: 'Line B Sire 2 × Line B Dams + Kim daughters',
-    notes: 'Within-line. Initially low COI.',
-  },
-  {
-    key: 'a_cross',
+    key: 'hannah_line_a',
     line: 'Cross' as const,
-    label: 'Line A Sire 2 × Santini/Claire daughter',
-    notes: 'Verify COI carefully — dam carries Santini genetics.',
+    label: 'Line A Sire 2 × Hannah',
+    notes: "COI ≈ 1.95% — Hannah's primary programme pairing. Retain best female → Line A pool.",
+    coi: '~1.95%',
   },
   {
-    key: 'hannah_special',
+    key: 'dc_son_cyrus_pup',
+    line: 'Bridge' as const,
+    label: 'D/C Son × Cyrus Pup',
+    notes: 'Premium pups. 0% COI. Cyrus pup must pass full DCM1–5 + Holter before breeding.',
+    coi: '0%',
+  },
+  {
+    key: 'hannah_dc_alternative',
     line: 'Cross' as const,
-    label: 'Line B Sire 2 × Hannah',
-    notes: 'Only viable pairing for Hannah. Retain female → Line A pool.',
+    label: 'D/C Son × Hannah (alternative)',
+    notes: 'COI ≈ 3.125% via Chico/Chiquita Betelges. Use if Line A Sire 2 unavailable.',
+    coi: '~3.125%',
+  },
+  {
+    key: 'dc_son_hailey_daughters',
+    line: 'Bridge' as const,
+    label: 'D/C Son × Hailey Daughters',
+    notes: "After Santini × Hailey litter. D/C Son can breed Hailey's daughters — 0% COI.",
+    coi: '0%',
+  },
+  {
+    key: 'dc_son_cendra_daughters',
+    line: 'Bridge' as const,
+    label: 'D/C Son × Cendra Daughters',
+    notes: "After Santini × Cendra litter. D/C Son can breed Cendra's daughters — 0% COI.",
+    coi: '0%',
   },
 ];
+
+export const BRIDGE_SIRE_NAME_FRAGMENT = 'D/C Son';
+export const DHARKHA_NAME_FRAGMENT = 'Dharkha';
+export const HUNTER_NAME_FRAGMENT = 'Hunter';
+export const CLEOPATRA_NAME_FRAGMENT = 'Cleopatra';
+export const DC_SON_DAM_FRAGMENT = 'Cleopatra';
+
+export const DC_SON_CAN_BREED_FRAGMENTS = ['Hailey', 'Cendra'] as const;
+
+export const DC_SON_CANNOT_BREED_FRAGMENTS = ['Claire', 'Kim'] as const;

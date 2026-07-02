@@ -21,7 +21,7 @@ const GROUPS: {
   {
     title: "Business",
     items: [
-      { href: "/admin/litters", label: "Waiting List" },
+      { href: "/admin/waitlist", label: "Waiting List" },
       { href: "/admin/applications", label: "Applications" },
       { href: "/admin/enquiries", label: "Enquiries" },
       { href: "/admin/contracts", label: "Contracts" },

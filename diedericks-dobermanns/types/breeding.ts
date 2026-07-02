@@ -1,6 +1,6 @@
 import type { CoiResult } from '@/lib/breeding/coi';
 
-export type BreedingLine = 'A' | 'B' | 'Cross' | 'Unknown';
+export type BreedingLine = 'A' | 'B' | 'Bridge' | 'Sale' | 'Cross' | 'Unknown';
 export type BreedingRole = 'Sire' | 'Dam' | 'Both' | 'Retired' | 'Prospect';
 export type HealthDcmStatus = 'Clear' | 'Carrier' | 'Affected' | 'Pending';
 export type HealthHdStatus = 'A' | 'B' | 'C' | 'D' | 'E' | 'Pending';
@@ -50,6 +50,7 @@ export interface BreedingDog {
   notes: string | null;
   origin_pairing_id: string | null;
   status: string;
+  flag_dcm_carrier?: boolean;
 }
 
 export interface PairingRecord {

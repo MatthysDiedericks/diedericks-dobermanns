@@ -2,9 +2,16 @@ import { MOCK_APPLICATIONS, MOCK_CONTRACTS } from '@/lib/mockData';
 import { useRemoteList, type ListResult } from '@/hooks/useRemoteList';
 import { useCallback, useEffect, useState } from 'react';
 
+import { WAITLIST_SELECT } from '@/lib/waitlist/queries';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import type { Application, Contract, Dog, PortalReservation } from '@/types/app.types';
+import type {
+  Application,
+  Contract,
+  Dog,
+  PortalReservation,
+  WaitingListEntry,
+} from '@/types/app.types';
 
 /** Contracts belonging to the signed-in client (scoped by RLS server-side). */
 export function useContracts(): ListResult<Contract> {
@@ -128,4 +135,137 @@ export function usePortalReservation() {
   }, [refresh]);
 
   return { reservation, loading, error, refresh };
+}
+
+export interface PortalGroupRow {
+  id: string;
+  name: string;
+  type: string;
+  member_count: number | null;
+  litter_id: string | null;
+}
+
+export function usePortalGroups() {
+  const userId = useAuthStore((s) => s.profile?.id);
+  const [groups, setGroups] = useState<PortalGroupRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!userId) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = requireSupabase();
+      const { data, error: err } = await supabase
+        .from('client_group_members')
+        .select('group:client_groups(id, name, type, member_count, litter_id)')
+        .eq('client_id', userId);
+      if (err) throw new Error(err.message);
+      const rows = (data ?? [])
+        .map((r) => (r as unknown as { group: PortalGroupRow | null }).group)
+        .filter(Boolean) as PortalGroupRow[];
+      setGroups(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load groups');
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { groups, loading, error, refresh };
+}
+
+export function usePortalWaitlistEntry() {
+  const userId = useAuthStore((s) => s.profile?.id);
+  const [entry, setEntry] = useState<WaitingListEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!userId) {
+      setEntry(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = requireSupabase();
+      const { data, error: err } = await supabase
+        .from('waiting_list')
+        .select(WAITLIST_SELECT)
+        .eq('client_id', userId)
+        .neq('pipeline_stage', 'withdrawn')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (err) throw new Error(err.message);
+      setEntry((data as unknown as WaitingListEntry) ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load waitlist');
+      setEntry(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { entry, loading, error, refresh };
+}
+
+export function useLitterWaitlistStatus(litterId: string) {
+  const userId = useAuthStore((s) => s.profile?.id);
+  const [litterName, setLitterName] = useState('');
+  const [alreadyJoined, setAlreadyJoined] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!litterId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = requireSupabase();
+      const [{ data: litter }, { data: existing }] = await Promise.all([
+        supabase.from('litters').select('name').eq('id', litterId).maybeSingle(),
+        userId
+          ? supabase
+              .from('waiting_list')
+              .select('id')
+              .eq('client_id', userId)
+              .eq('litter_id', litterId)
+              .neq('status', 'cancelled')
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      setLitterName((litter?.name as string) ?? 'This litter');
+      setAlreadyJoined(!!existing);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load litter');
+    } finally {
+      setLoading(false);
+    }
+  }, [litterId, userId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { litterName, alreadyJoined, loading, error, refresh };
 }

@@ -1,37 +1,27 @@
 import { supabase } from '@/lib/supabase';
+import { callSendBroadcast } from '@/lib/functions';
 import type {
   BroadcastChannel,
   ClientGroupType,
   TimelineCategory,
   TimelineSource,
-  WaitingListStatus,
 } from '@/types/app.types';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 
 import { simulate, type MutationResult, type SaveResult } from '@/lib/shared/mutationTypes';
 
-export interface WaitlistUpdate {
-  feedback?: string | null;
-  expected_delivery_date?: string | null;
-  status?: WaitingListStatus;
-  position?: number | null;
-  pipeline_stage?: string | null;
-  follow_up_date?: string | null;
-  preference_notes?: string | null;
-  litter_id?: string | null;
-}
-
-export async function updateWaitlistEntry(
-  id: string,
-  values: WaitlistUpdate,
-): Promise<MutationResult> {
-  if (!supabase) return simulate();
-  const { error } = await supabase
-    .from('waiting_list')
-    .update(values as TablesUpdate<'waiting_list'>)
-    .eq('id', id);
-  return { error: error?.message ?? null };
-}
+export {
+  assignWaitlistMatch,
+  createWaitlistEntry,
+  createWaitlistFromApplication,
+  createWaitlistType,
+  deleteWaitlistEntry,
+  joinLitterWaitlist,
+  markWaitlistContacted,
+  moveWaitlistStage,
+  reorderWaitlistPosition,
+  updateWaitlistEntry,
+} from '@/lib/waitlist/mutations';
 
 export async function setMarketingOptIn(
   userId: string,
@@ -161,7 +151,13 @@ export async function sendBroadcast(input: BroadcastInput): Promise<SaveResult> 
     })
     .select('id')
     .single();
-  return { error: error?.message ?? null, id: data?.id ?? null };
+  if (error) return { error: error.message, id: null };
+
+  if (!scheduled && data?.id) {
+    void callSendBroadcast(data.id);
+  }
+
+  return { error: null, id: data?.id ?? null };
 }
 
 export async function markBroadcastRead(

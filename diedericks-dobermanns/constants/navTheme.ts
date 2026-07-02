@@ -12,7 +12,7 @@ export const tabBarTheme = {
   tabBarActiveTintColor: Colors.gold,
   tabBarInactiveTintColor: Colors.goldMuted,
   tabBarStyle: {
-    backgroundColor: Colors.nav,
+    backgroundColor: Colors.background,
     borderTopColor: Colors.gold,
     borderTopWidth: 1,
   } as ViewStyle,

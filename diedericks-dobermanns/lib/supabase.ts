@@ -2,7 +2,7 @@ import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { Config } from '@/constants/config';
-import type { Database } from '@/types/database.types';
+import type { AppDatabase } from '@/types/appDatabase';
 import { SecureStorageAdapter } from '@/lib/secureStorage';
 
 /**
@@ -12,7 +12,7 @@ import { SecureStorageAdapter } from '@/lib/secureStorage';
  * app can gracefully fall back to mock data. Always guard usage with
  * `requireSupabase()` or a null check.
  */
-function createSupabaseClient(): SupabaseClient<Database> | null {
+function createSupabaseClient(): SupabaseClient<AppDatabase> | null {
   if (Config.isDemoMode) {
     if (__DEV__) {
       console.warn(
@@ -23,7 +23,7 @@ function createSupabaseClient(): SupabaseClient<Database> | null {
     return null;
   }
 
-  return createClient<Database>(Config.supabase.url, Config.supabase.anonKey, {
+  return createClient<AppDatabase>(Config.supabase.url, Config.supabase.anonKey, {
     auth: {
       storage: SecureStorageAdapter,
       autoRefreshToken: true,
@@ -36,7 +36,7 @@ function createSupabaseClient(): SupabaseClient<Database> | null {
 export const supabase = createSupabaseClient();
 
 /** Returns the client or throws — use when an operation truly requires a backend. */
-export function requireSupabase(): SupabaseClient<Database> {
+export function requireSupabase(): SupabaseClient<AppDatabase> {
   if (!supabase) {
     throw new Error(
       'Supabase is not configured. Add credentials to .env to enable this feature.',

@@ -25,6 +25,15 @@ export function formatAge(dateOfBirth: string | null | undefined): string {
   return `${Math.floor(months / 12)} yrs`;
 }
 
+/** Short date + time for notifications (e.g. "23 Jun · 14:30"). */
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]} · ${hh}:${mm}`;
+}
+
 /** Turns snake_case / kebab values into Title Case for display. */
 export function titleCase(value: string | null | undefined): string {
   if (!value) return '—';
