@@ -1380,40 +1380,163 @@ export type Database = {
       }
       waiting_list: {
         Row: {
-          client_id: string
+          admin_notes: string | null
+          application_id: string | null
+          assigned_dog_id: string | null
+          assigned_litter_id: string | null
+          client_id: string | null
+          client_visible_note: string | null
           created_at: string
+          deposit_amount: number | null
+          deposit_invoice_id: string | null
+          do_not_sell_reason: string | null
+          ear_preference: string | null
+          enquirer_country: string | null
+          enquirer_email: string | null
+          enquirer_name: string | null
+          enquirer_phone: string | null
           follow_up_date: string | null
           id: string
+          internal_flags: string[]
+          last_contact_date: string | null
+          list_type_id: string | null
           litter_id: string | null
+          payment_status: string
           pipeline_stage: string | null
           position: number | null
           preference_notes: string | null
+          preferred_category: string | null
+          preferred_colour: string | null
+          preferred_sex: string | null
+          priority: string
+          quote_expires_at: string | null
+          quoted_price: number | null
+          registration_preference: string | null
+          source: string | null
+          stage_change_note: string | null
           status: string
+          tail_preference: string | null
+          updated_at: string
         }
         Insert: {
-          client_id: string
+          admin_notes?: string | null
+          application_id?: string | null
+          assigned_dog_id?: string | null
+          assigned_litter_id?: string | null
+          client_id?: string | null
+          client_visible_note?: string | null
           created_at?: string
+          deposit_amount?: number | null
+          deposit_invoice_id?: string | null
+          do_not_sell_reason?: string | null
+          ear_preference?: string | null
+          enquirer_country?: string | null
+          enquirer_email?: string | null
+          enquirer_name?: string | null
+          enquirer_phone?: string | null
+          follow_up_date?: string | null
           id?: string
+          internal_flags?: string[]
+          last_contact_date?: string | null
+          list_type_id?: string | null
           litter_id?: string | null
+          payment_status?: string
+          pipeline_stage?: string | null
           position?: number | null
           preference_notes?: string | null
+          preferred_category?: string | null
+          preferred_colour?: string | null
+          preferred_sex?: string | null
+          priority?: string
+          quote_expires_at?: string | null
+          quoted_price?: number | null
+          registration_preference?: string | null
+          source?: string | null
+          stage_change_note?: string | null
           status?: string
+          tail_preference?: string | null
+          updated_at?: string
         }
         Update: {
-          client_id?: string
+          admin_notes?: string | null
+          application_id?: string | null
+          assigned_dog_id?: string | null
+          assigned_litter_id?: string | null
+          client_id?: string | null
+          client_visible_note?: string | null
           created_at?: string
+          deposit_amount?: number | null
+          deposit_invoice_id?: string | null
+          do_not_sell_reason?: string | null
+          ear_preference?: string | null
+          enquirer_country?: string | null
+          enquirer_email?: string | null
+          enquirer_name?: string | null
+          enquirer_phone?: string | null
+          follow_up_date?: string | null
           id?: string
+          internal_flags?: string[]
+          last_contact_date?: string | null
+          list_type_id?: string | null
           litter_id?: string | null
+          payment_status?: string
+          pipeline_stage?: string | null
           position?: number | null
           preference_notes?: string | null
+          preferred_category?: string | null
+          preferred_colour?: string | null
+          preferred_sex?: string | null
+          priority?: string
+          quote_expires_at?: string | null
+          quoted_price?: number | null
+          registration_preference?: string | null
+          source?: string | null
+          stage_change_note?: string | null
           status?: string
+          tail_preference?: string | null
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "waiting_list_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_assigned_dog_id_fkey"
+            columns: ["assigned_dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_assigned_litter_id_fkey"
+            columns: ["assigned_litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "waiting_list_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_deposit_invoice_id_fkey"
+            columns: ["deposit_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_list_type_id_fkey"
+            columns: ["list_type_id"]
+            isOneToOne: false
+            referencedRelation: "waiting_list_types"
             referencedColumns: ["id"]
           },
           {
@@ -1424,6 +1547,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      waiting_list_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          from_stage: string | null
+          id: string
+          notes: string | null
+          to_stage: string
+          waiting_list_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          notes?: string | null
+          to_stage: string
+          waiting_list_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          notes?: string | null
+          to_stage?: string
+          waiting_list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiting_list_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_history_waiting_list_id_fkey"
+            columns: ["waiting_list_id"]
+            isOneToOne: false
+            referencedRelation: "waiting_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      waiting_list_types: {
+        Row: {
+          colour: string | null
+          created_at: string
+          id: string
+          is_system: boolean
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          colour?: string | null
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          colour?: string | null
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       expense_categories: {
         Row: {
