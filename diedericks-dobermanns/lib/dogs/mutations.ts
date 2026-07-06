@@ -1,5 +1,6 @@
+import { callNotify } from '@/lib/functions';
 import { supabase } from '@/lib/supabase';
-import type { DogPedigree } from '@/types/app.types';
+import type { DogPedigree, ReservationStatus } from '@/types/app.types';
 import type { Json, TablesInsert, TablesUpdate } from '@/types/database.types';
 
 import { simulate, type MutationResult, type SaveResult } from '@/lib/shared/mutationTypes';
@@ -120,4 +121,42 @@ export async function deleteLitter(id: string): Promise<MutationResult> {
   if (!supabase) return simulate();
   const { error } = await supabase.from('litters').delete().eq('id', id);
   return { error: error?.message ?? null };
+}
+
+/**
+ * Updates a puppy reservation's status. When confirming, notifies the client.
+ * Non-blocking notification — a failure never prevents the reservation update.
+ */
+export async function updateReservationStatus(
+  id: string,
+  status: ReservationStatus,
+): Promise<MutationResult> {
+  if (!supabase) return simulate();
+
+  const { data: reservation, error: fetchErr } = await supabase
+    .from('reservations')
+    .select('client_id, dog:dogs(name)')
+    .eq('id', id)
+    .maybeSingle();
+  if (fetchErr) return { error: fetchErr.message };
+
+  const { error } = await supabase
+    .from('reservations')
+    .update({ status })
+    .eq('id', id);
+  if (error) return { error: error.message };
+
+  if (status === 'confirmed' && reservation?.client_id) {
+    const dogName = (reservation.dog as { name?: string } | null)?.name;
+    void callNotify({
+      userId: reservation.client_id,
+      title: 'Puppy Reserved!',
+      body: dogName
+        ? `Your reservation for ${dogName} has been confirmed. Welcome to the Diedericks family.`
+        : 'Your puppy reservation has been confirmed. Welcome to the Diedericks family.',
+      data: { screen: 'reservation' },
+    });
+  }
+
+  return { error: null };
 }

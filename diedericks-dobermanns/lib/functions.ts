@@ -21,6 +21,8 @@ export interface NotifyPayload {
   title: string;
   body: string;
   type?: 'push' | 'email' | 'whatsapp';
+  /** Optional deep-link metadata forwarded to the Edge Function as-is. */
+  data?: Record<string, string>;
 }
 
 /** Enqueues a notification via the `notify` Edge Function. Returns false on failure (never throws). */
@@ -32,6 +34,7 @@ export async function callNotify(payload: NotifyPayload): Promise<boolean> {
       type: payload.type ?? 'push',
       subject: payload.title,
       body: payload.body,
+      data: payload.data,
     },
   });
   if (error) {
