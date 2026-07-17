@@ -21,6 +21,9 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+# Supabase CLI local cache (project-ref, versions, etc. — not real project code)
+supabase/.temp/
+
 # debug
 npm-debug.*
 yarn-debug.*
