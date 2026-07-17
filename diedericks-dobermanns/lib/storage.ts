@@ -21,6 +21,8 @@ export interface UploadOptions {
   uri: string;
   contentType: string;
   sizeBytes?: number;
+  /** Overrides the default 5MB cap when provided (e.g. for video uploads). */
+  maxBytes?: number;
 }
 
 export interface UploadResult {
@@ -38,14 +40,25 @@ export function buildObjectPath(folder: string, extension: string): string {
 
 /** Validates size/type then uploads a local file to a Storage bucket. */
 export async function uploadFile(opts: UploadOptions): Promise<UploadResult> {
-  if (opts.sizeBytes != null && opts.sizeBytes > MAX_FILE_BYTES) {
-    return { path: null, error: 'File exceeds the 5MB limit.' };
+  const maxBytes = opts.maxBytes ?? MAX_FILE_BYTES;
+
+  if (opts.sizeBytes != null && opts.sizeBytes > maxBytes) {
+    return {
+      path: null,
+      error: `File exceeds the ${Math.round(maxBytes / (1024 * 1024))}MB limit.`,
+    };
   }
 
   try {
     const supabase = requireSupabase();
     const response = await fetch(opts.uri);
     const blob = await response.arrayBuffer();
+    if (blob.byteLength > maxBytes) {
+      return {
+        path: null,
+        error: `File exceeds the ${Math.round(maxBytes / (1024 * 1024))}MB limit.`,
+      };
+    }
     const { error } = await supabase.storage
       .from(opts.bucket)
       .upload(opts.path, blob, { contentType: opts.contentType, upsert: false });

@@ -116,7 +116,7 @@ export default function PortalDashboard() {
 
       <View className="mt-8 px-6">
         <SectionHeader eyebrow="Training" title="Sessions" />
-        <Link href="/(portal)/training/index" asChild>
+        <Link href="/(portal)/training" asChild>
           <Pressable>
             <Card className="flex-row items-center">
               <Ionicons name="calendar" size={20} color={Colors.gold} />

@@ -129,7 +129,7 @@ You may not copy, reproduce, distribute, modify, create derivative works from, o
 
 ## 9. Privacy
 
-Your use of the App is governed by our Privacy Policy, which is incorporated into these Terms by reference. By accepting these Terms, you also accept our Privacy Policy. Please read it carefully at [Privacy Policy link to be added].
+Your use of the App is governed by our Privacy Policy, which is incorporated into these Terms by reference. By accepting these Terms, you also accept our Privacy Policy. Please read it carefully at: https://www.diedericksdobermanns.com/privacy-policy
 
 ---
 

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Video, ResizeMode, type AVPlaybackStatus } from 'expo-av';
-import { useEffect, useRef, useState } from 'react';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
@@ -13,31 +13,42 @@ interface Props {
 }
 
 export function TrainingVideoPlayer({ video }: Props) {
-  const videoRef = useRef<Video>(null);
   const lastSavedRef = useRef(0);
 
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (!status.isLoaded) return;
-    const seconds = Math.round(status.positionMillis / 1000);
-    if (seconds - lastSavedRef.current >= 10 || status.didJustFinish) {
-      lastSavedRef.current = seconds;
-      void saveWatchProgress(video.id, seconds, status.didJustFinish ?? false);
-    }
-  };
+  // The player must be created unconditionally (rules of hooks) even when
+  // there's no video_url yet — pass null so expo-video treats it as
+  // "no source loaded" rather than attempting to fetch anything. The
+  // <VideoView> below is only ever rendered once a real URL exists.
+  const player = useVideoPlayer(video.video_url ?? null, (p) => {
+    p.loop = false;
+  });
 
   useEffect(() => {
+    if (!video.video_url) return;
+
+    const timeUpdateSub = player.addListener('timeUpdate', ({ currentTime }) => {
+      const seconds = Math.round(currentTime);
+      if (seconds - lastSavedRef.current >= 10) {
+        lastSavedRef.current = seconds;
+        void saveWatchProgress(video.id, seconds, false);
+      }
+    });
+
+    const endSub = player.addListener('playToEnd', () => {
+      const seconds = Math.round(player.currentTime);
+      lastSavedRef.current = seconds;
+      void saveWatchProgress(video.id, seconds, true);
+    });
+
     return () => {
-      void videoRef.current?.getStatusAsync().then((s) => {
-        if (s.isLoaded) {
-          void saveWatchProgress(
-            video.id,
-            Math.round(s.positionMillis / 1000),
-            s.didJustFinish ?? false,
-          );
-        }
-      });
+      timeUpdateSub.remove();
+      endSub.remove();
+      // Save final position on unmount (e.g. navigating away mid-video).
+      const seconds = Math.round(player.currentTime);
+      const finished = player.duration > 0 && player.currentTime >= player.duration - 0.5;
+      void saveWatchProgress(video.id, seconds, finished);
     };
-  }, [video.id]);
+  }, [player, video.id, video.video_url]);
 
   if (!video.video_url) {
     return (
@@ -54,12 +65,10 @@ export function TrainingVideoPlayer({ video }: Props) {
   }
 
   return (
-    <Video
-      ref={videoRef}
-      source={{ uri: video.video_url }}
-      useNativeControls
-      resizeMode={ResizeMode.CONTAIN}
-      onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+    <VideoView
+      player={player}
+      nativeControls
+      contentFit="contain"
       style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: Colors.surface }}
     />
   );

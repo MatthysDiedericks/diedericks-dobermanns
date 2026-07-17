@@ -44,8 +44,10 @@ const BUCKET       = 'dog-media';
 const SUPPORTED    = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp']);
 
 // ─── PHOTO BASE FOLDERS ───────────────────────────────────────────────────────
-const PHOTO_BASE      = `C:\\Users\\mathy\\OneDrive\\Desktop\\Dobermann Photo's`;
-const PHOTO_BASE_SOLD = `C:\\Users\\mathy\\OneDrive\\Desktop\\Dobermann Photo's\\Sold`;
+// PHOTO_BASE_OVERRIDE lets this run from a non-Windows shell (e.g. a sandbox)
+// without touching the default path used on Matt's own machine.
+const PHOTO_BASE      = process.env.PHOTO_BASE_OVERRIDE || `C:\\Users\\mathy\\OneDrive\\Desktop\\Dobermann Photo's`;
+const PHOTO_BASE_SOLD = process.env.PHOTO_BASE_OVERRIDE ? `${process.env.PHOTO_BASE_OVERRIDE}/Sold` : `C:\\Users\\mathy\\OneDrive\\Desktop\\Dobermann Photo's\\Sold`;
 
 // ─── DOG MANIFEST ─────────────────────────────────────────────────────────────
 // folder:     subfolder name inside PHOTO_BASE (or PHOTO_BASE_SOLD for sold dogs)
@@ -61,10 +63,11 @@ const DOGS = [
   { folder: 'Cleopatra',id: 'f0932f8d-c907-4f62-aa68-9334955927a7', status: 'keep' },
   { folder: 'Hannah',   id: 'a37f2cfc-56df-4ab3-99a8-a41c4eda96c3', status: 'keep' },
   { folder: 'Odessa',   id: '9537e604-9aa2-456a-9d87-71dc3f093dc1', status: 'keep' },
+  { folder: 'Kim',      id: '2be75604-740f-4076-954d-53d434f3455d', status: 'keep' },
   { folder: 'Shanti',   id: '3e9c384e-42c6-46d2-9f61-ae04960e3407', status: 'sold', baseFolder: PHOTO_BASE_SOLD },
 
   // ── Active studs ─────────────────────────────────────────────────────────────
-  { folder: 'HunterKing', id: '64920b60-3d20-4fc1-92d5-6095658b7f2d', status: 'stud' },
+  { folder: 'HunterKing', id: '930e1c41-807d-4e3a-9e4a-50a18c008acd', status: 'stud' },
   { folder: 'Hugo',       id: 'e1e419da-933a-45ec-9660-57dd2c6655c3', status: 'stud' },
   { folder: 'Santini',    id: 'c54ae0cf-dcba-4d83-a0eb-b6823132b0d1', status: 'stud' },
   { folder: 'Dharka',     id: '506c9e4d-8a02-4750-af7a-f4340e65e7b0', status: 'stud' },
@@ -126,6 +129,16 @@ async function uploadBuffer(storagePath, buffer) {
   return supabase.storage.from(BUCKET).getPublicUrl(storagePath).data.publicUrl;
 }
 
+async function getExistingOutNames(dogId) {
+  const { data } = await supabase
+    .from('dog_media')
+    .select('url')
+    .eq('dog_id', dogId)
+    .eq('type', 'photo');
+  // url looks like .../dogs/{dogId}/{outName} — pull the last path segment.
+  return new Set((data ?? []).map(row => row.url.split('/').pop()));
+}
+
 async function processdog(dog) {
   const folderPath = path.join(dog.baseFolder ?? PHOTO_BASE, dog.folder);
   if (!fs.existsSync(folderPath)) {
@@ -143,8 +156,9 @@ async function processdog(dog) {
   }
 
   let sortOrder = await getNextSortOrder(dog.id);
-  let uploaded = 0, failed = 0;
+  let uploaded = 0, failed = 0, skipped = 0;
   const slug = slugify(dog.folder);
+  const existingOutNames = await getExistingOutNames(dog.id);
 
   for (const file of files) {
     const filePath = path.join(folderPath, file);
@@ -156,6 +170,15 @@ async function processdog(dog) {
     const thumbPath = `dogs/${dog.id}/thumbs/${outName}`;
 
     process.stdout.write(`    ${file.substring(0, 50).padEnd(52)} `);
+
+    // Skip files already linked in dog_media for this dog — prevents duplicate
+    // rows when this script is re-run over a folder that has new + old photos mixed.
+    if (existingOutNames.has(outName)) {
+      console.log('↷  already uploaded');
+      skipped++;
+      continue;
+    }
+
     try {
       const image = sharp(filePath).rotate();
       const [mainBuf, thumbBuf] = await Promise.all([
@@ -186,7 +209,7 @@ async function processdog(dog) {
       failed++;
     }
   }
-  return { uploaded, failed };
+  return { uploaded, failed, skipped };
 }
 
 // ─── main ────────────────────────────────────────────────────────────────────
@@ -203,17 +226,18 @@ async function run() {
   }
 
   console.log(`\n🐾  Uploading photos for ${targets.length} dog(s)\n`);
-  let totalUploaded = 0, totalFailed = 0;
+  let totalUploaded = 0, totalFailed = 0, totalSkipped = 0;
 
   for (const dog of targets) {
     console.log(`\n── ${dog.folder} (${dog.status}) ──`);
-    const { uploaded, failed } = await processdog(dog);
+    const { uploaded, failed, skipped } = await processdog(dog);
     totalUploaded += uploaded;
     totalFailed   += failed;
-    console.log(`   ${uploaded} uploaded, ${failed} failed`);
+    totalSkipped  += skipped;
+    console.log(`   ${uploaded} uploaded, ${skipped} already uploaded (skipped), ${failed} failed`);
   }
 
-  console.log(`\n✅  Complete — ${totalUploaded} total uploaded, ${totalFailed} failed\n`);
+  console.log(`\n✅  Complete — ${totalUploaded} total uploaded, ${totalSkipped} skipped (already existed), ${totalFailed} failed\n`);
 }
 
 run().catch(e => { console.error('\nFatal:', e.message); process.exit(1); });

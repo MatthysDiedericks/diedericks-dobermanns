@@ -1,3 +1,4 @@
+
 # CURSOR PROMPT — Training: Fix Booking Bug, Calendar Integration & Video Library
 
 ## Context

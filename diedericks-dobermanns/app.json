@@ -34,7 +34,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0A",
@@ -90,15 +91,21 @@
             "targetSdkVersion": 34
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "2d79a02f-67ce-4df7-97a0-ab7c2908acd3"
+        "projectId": "5e0873bd-3dc6-4d32-b13a-df3c176a9134"
       }
+    },
+    "owner": "mattdiedericks",
+    "updates": {
+      "url": "https://u.expo.dev/5e0873bd-3dc6-4d32-b13a-df3c176a9134"
     }
   }
 }

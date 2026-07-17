@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { DogGalleryVideoItem } from '@/components/dogs/DogGalleryVideoItem';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -40,6 +41,8 @@ export default function DogProfileScreen() {
   }
 
   const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url;
+  const photos = (dog.media ?? []).filter((m) => m.type === 'photo');
+  const videos = (dog.media ?? []).filter((m) => m.type === 'video');
 
   return (
     <ScreenContainer>
@@ -95,10 +98,26 @@ export default function DogProfileScreen() {
         ) : null}
 
         {tab === 'Gallery' ? (
-          <View className="mt-4 flex-row flex-wrap gap-2">
-            {(dog.media ?? []).map((m) => (
-              <Image key={m.id} source={{ uri: m.url }} style={{ width: 100, height: 100, borderRadius: 8 }} />
-            ))}
+          <View className="mt-4">
+            <View className="flex-row flex-wrap gap-2">
+              {photos.map((m) => (
+                <Image key={m.id} source={{ uri: m.url }} style={{ width: 100, height: 100, borderRadius: 8 }} />
+              ))}
+              {photos.length === 0 && videos.length === 0 ? (
+                <Typography variant="caption" className="text-subtle">No media yet.</Typography>
+              ) : null}
+            </View>
+
+            {videos.length > 0 ? (
+              <View className="mt-6">
+                <Typography variant="label" className="mb-3 text-gold">Videos</Typography>
+                <View className="gap-4">
+                  {videos.map((m) => (
+                    <DogGalleryVideoItem key={m.id} media={m} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
