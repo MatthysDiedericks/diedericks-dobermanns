@@ -51,6 +51,7 @@ export function Step4Preferences({ control }: StepProps) {
         options={[
           { value: 'black_tan', label: 'Black & Tan' },
           { value: 'brown_tan', label: 'Brown & Tan' },
+          { value: 'no_preference', label: 'No preference' },
         ]}
       />
       <OptionGroup

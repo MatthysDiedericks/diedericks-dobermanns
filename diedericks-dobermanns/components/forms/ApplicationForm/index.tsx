@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
-import { View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 
 import { buildApplicationDraft } from '@/components/forms/ApplicationForm/buildDraft';
 import { Step1Personal } from '@/components/forms/ApplicationForm/Step1Personal';
@@ -48,10 +48,13 @@ const CONTROLLED_STEPS = [
   Step5Legal,
 ] as const;
 
+const CHILDREN_STEP_INDEX = 1; // Step2Lifestyle — index into CONTROLLED_STEPS
+
 export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
   const [step, setStep] = useState(0);
   const { submit, submitting } = useSubmitApplication();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showChildSafetyNotice, setShowChildSafetyNotice] = useState(false);
 
   const { control, handleSubmit, trigger, getValues } = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationSchema),
@@ -81,10 +84,24 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
     if (errorStep < step) setStep(errorStep);
   }
 
+  function advance() {
+    setStep((s) => Math.min(s + 1, lastStep));
+  }
+
   async function next() {
     setSubmitError(null);
     const valid = await trigger(STEP_FIELDS[step], { shouldFocus: true });
-    if (valid) setStep((s) => Math.min(s + 1, lastStep));
+    if (!valid) return;
+    if (step === CHILDREN_STEP_INDEX && getValues('children_ages')) {
+      setShowChildSafetyNotice(true);
+      return;
+    }
+    advance();
+  }
+
+  function confirmChildSafetyNotice() {
+    setShowChildSafetyNotice(false);
+    advance();
   }
 
   function back() {
@@ -126,6 +143,30 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
           />
         )}
       </View>
+
+      <Modal visible={showChildSafetyNotice} animationType="fade" transparent>
+        <View className="flex-1 items-center justify-center bg-black/75 px-6">
+          <View className="w-full rounded-2xl border border-gold/25 bg-black-rich p-6">
+            <Typography variant="subtitle" className="mb-3 text-gold">
+              A Reminder Before You Continue
+            </Typography>
+            <Typography variant="body" className="mb-6 leading-6">
+              You've indicated there are children in the household. It remains your
+              responsibility as the owner to safeguard your children around the dog, and to
+              safeguard the dog around your children, at all times — including during
+              introductions, unsupervised moments, and as the dog matures.
+            </Typography>
+            <Pressable
+              onPress={confirmChildSafetyNotice}
+              className="rounded-xl bg-gold px-4 py-3.5"
+            >
+              <Typography variant="body" className="text-center font-semibold text-black">
+                I Understand — Continue
+              </Typography>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

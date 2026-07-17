@@ -5,7 +5,6 @@ import { Dimensions, FlatList, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DogCard } from '@/components/dogs/DogCard';
-import { BrandMark } from '@/components/layout/BrandMark';
 import { SocialBar } from '@/components/social/SocialBar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -20,8 +19,6 @@ import { useTestimonials } from '@/hooks/useContent';
 import { openUrl } from '@/lib/social';
 
 const { height } = Dimensions.get('window');
-const HERO_IMG =
-  'https://images.unsplash.com/photo-1605568427561-40dd23c2acea?auto=format&fit=crop&w=1200&q=80';
 
 const TIERS = [
   {
@@ -48,23 +45,19 @@ export default function HomeScreen() {
   return (
     <ScreenContainer contentContainerStyle={{ paddingTop: 0 }}>
       {/* Hero */}
-      <View style={{ height: height * 0.72 }} className="w-full">
-        <Image
-          source={{ uri: HERO_IMG }}
-          style={{ width: '100%', height: '100%' }}
-          contentFit="cover"
-        />
-        <View className="absolute inset-0 bg-black/55" />
+      <View
+        style={{ height: height * 0.72, backgroundColor: Colors.background }}
+        className="w-full"
+      >
         <View
           className="absolute inset-0 items-center justify-center px-6"
           style={{ paddingTop: insets.top + 16, paddingBottom: 24 }}
         >
-          <View className="mb-6">
-            <BrandMark size="lg" showWordmark={false} />
-          </View>
-          <Typography variant="label" className="mb-3 text-center">
-            Diedericks Dobermanns
-          </Typography>
+          <Image
+            source={require('@/assets/logo-full.png')}
+            style={{ width: 200, height: 200, marginBottom: 8 }}
+            contentFit="contain"
+          />
           <Typography variant="hero" className="leading-tight">
             Born With Purpose.{'\n'}Built With Discipline.
           </Typography>

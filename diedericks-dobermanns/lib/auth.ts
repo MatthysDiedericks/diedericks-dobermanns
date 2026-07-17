@@ -35,7 +35,13 @@ export async function signUpWithEmail(
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        // Without this, Supabase falls back to the project's default Site URL
+        // (still set to http://localhost:3000), which is why confirmation
+        // links were opening a dead localhost page instead of the app.
+        emailRedirectTo: 'diedericksdobermanns://verify-email',
+      },
     });
 
     if (error) {

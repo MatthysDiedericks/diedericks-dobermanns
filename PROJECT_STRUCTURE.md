@@ -55,3 +55,42 @@ find "C:\Users\mathy\OneDrive\Documents\Claude\Projects\diedericksdobermann App"
 
 Should always return exactly: `.github`, `content`, `diedericks-dobermanns`, `diedericksdobermann-web`,
 `LEGAL`, `scripts` (plus `.git`). If anything else appears, investigate before using it.
+
+---
+
+## Git structure — read this before running any git command
+
+There are **two separate git repositories** in this project, and they are easy to confuse:
+
+1. **The outer/top-level repo** — `.git` lives directly inside `diedericksdobermann App\` (the
+   very top folder you open in Cursor). Its remote is `github.com/MatthysDiedericks/diedericks-dobermanns`.
+   This repo's working tree is the **entire project folder** — the app, `scripts\`, `LEGAL\`,
+   `content\`, every `CURSOR_PROMPT_*.md` file, and (until 2026-07-17) an accidental duplicate copy
+   of the whole website. Running `git status`/`git add`/`git commit` from inside `diedericks-dobermanns\`
+   still operates on **this** outer repo — `diedericks-dobermanns\` is not its own repo, just a
+   subfolder of one.
+2. **The website's own repo** — `.git` lives inside `diedericksdobermann-web\`. Its remote is
+   `github.com/MatthysDiedericks/diedericksdobermanns-web`. This is what Vercel actually deploys
+   from. As of 2026-07-17, the outer repo's `.gitignore` excludes `diedericksdobermann-web/`
+   entirely, so the outer repo no longer tracks a second copy of it — this repo is the single
+   source of truth for the website's history.
+
+**Standing rule: git write operations (`add`, `commit`, `push`, `rm`, `reset --hard`, etc.) must
+always be run by Matt, directly in his own local Cursor/PowerShell terminal — never by Claude
+through its sandbox against the OneDrive-synced copy of this folder.**
+
+**Why:** On 2026-07-17, Claude ran `git rm -r --cached` against the outer repo from its sandbox
+and corrupted `.git/index` (`bad signature 0x00000000` / `fatal: index file corrupt`) — twice,
+reproducibly. The most likely cause is OneDrive's sync client locking/reading `.git/index` at the
+same moment Claude's git process was writing to it, since OneDrive syncs the entire project folder
+in real time, `.git` included. No commit history or file content was lost either time (`git log`
+and `git fsck` confirmed HEAD and all objects were intact, matching what was already on GitHub) —
+`git reset` safely rebuilt the index from the last commit both times — but repeatedly attempting
+git surgery from the sandbox against a live-syncing folder is a real risk not worth taking.
+Claude may still run **read-only** git commands from the sandbox (`status`, `log`, `diff`,
+`remote -v`, `fsck`) to investigate — only writes are off-limits.
+
+**How to apply:** Whenever a git write operation is needed, Claude should give Matt the exact
+commands to paste into his own terminal (as already established for `npm`/`eas`/`expo` commands
+for the same underlying reason — this project's git and package-manager work has always been
+Matt-executed, this just extends that same rule explicitly to git).

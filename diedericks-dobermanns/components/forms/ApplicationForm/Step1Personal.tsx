@@ -1,14 +1,19 @@
 import type { Control } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { ControlledInput } from '@/components/forms/fields';
+import { SelectField } from '@/components/forms/SelectField';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
+import { COUNTRIES, SA_PROVINCES } from '@/constants/regions';
 
 interface StepProps {
   control: Control<ApplicationFormValues>;
 }
 
 export function Step1Personal({ control }: StepProps) {
+  const country = useWatch({ control, name: 'country' });
+
   return (
     <View>
       <ControlledInput control={control} name="full_name" label="Full legal name *" placeholder="Your full name" autoCapitalize="words" />
@@ -18,8 +23,18 @@ export function Step1Personal({ control }: StepProps) {
       <ControlledInput control={control} name="phone" label="Phone number *" placeholder="+27 ..." keyboardType="phone-pad" />
       <ControlledInput control={control} name="occupation" label="Occupation *" placeholder="Your occupation" autoCapitalize="words" />
       <ControlledInput control={control} name="employer" label="Employer (optional)" placeholder="Company or employer" autoCapitalize="words" />
-      <ControlledInput control={control} name="country" label="Country *" />
-      <ControlledInput control={control} name="province" label="Province / State (optional)" />
+      <SelectField control={control} name="country" label="Country *" options={COUNTRIES} />
+      {country === 'South Africa' ? (
+        <SelectField
+          control={control}
+          name="province"
+          label="Province"
+          placeholder="Select province"
+          options={SA_PROVINCES}
+        />
+      ) : (
+        <ControlledInput control={control} name="province" label="Province / State (optional)" />
+      )}
       <ControlledInput control={control} name="city" label="City (optional)" />
       <ControlledInput
         control={control}

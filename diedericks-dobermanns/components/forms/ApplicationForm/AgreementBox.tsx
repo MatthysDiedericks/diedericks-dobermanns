@@ -30,9 +30,11 @@ export function AgreementBox({ title, description, checked, onPress }: Agreement
             <Typography variant="subtitle" className="font-semibold">
               {title}
             </Typography>
-            <Typography variant="bodyMuted" className="mt-1 text-sm leading-5">
-              {description}
-            </Typography>
+            {description ? (
+              <Typography variant="bodyMuted" className="mt-1 text-sm leading-5">
+                {description}
+              </Typography>
+            ) : null}
           </View>
         </View>
       </View>

@@ -1,6 +1,7 @@
 import type { Control } from 'react-hook-form';
 import { View } from 'react-native';
 
+import { ChildrenField } from '@/components/forms/ApplicationForm/ChildrenField';
 import { ControlledInput, OptionGroup } from '@/components/forms/fields';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 
@@ -86,12 +87,7 @@ export function Step2Lifestyle({ control }: StepProps) {
         placeholder="e.g. 1 Labrador (male, 3 years), 2 cats"
         multiline
       />
-      <ControlledInput
-        control={control}
-        name="children_ages"
-        label="Children and ages (optional)"
-        placeholder="e.g. 2 children, ages 6 and 9"
-      />
+      <ChildrenField control={control} name="children_ages" />
     </View>
   );
 }

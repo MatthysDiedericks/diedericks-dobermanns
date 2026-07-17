@@ -2,7 +2,12 @@ import * as Linking from 'expo-linking';
 
 import { supabase } from '@/lib/supabase';
 
-const AUTH_DEEP_LINK_PATHS = ['reset-password', 'auth/reset-password'] as const;
+const AUTH_DEEP_LINK_PATHS = [
+  'reset-password',
+  'auth/reset-password',
+  'verify-email',
+  'auth/verify-email',
+] as const;
 
 /** Returns true when the URL is an expected Supabase auth callback for this app. */
 function isAllowedAuthDeepLink(url: string): boolean {

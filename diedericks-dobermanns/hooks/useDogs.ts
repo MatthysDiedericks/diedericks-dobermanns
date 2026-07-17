@@ -8,7 +8,12 @@ import type { Dog, LitterWithPuppies } from '@/types/app.types';
 export interface UseDogsOptions {
   category?: string;
   featuredOnly?: boolean;
+  /** Include dogs no longer active in the kennel (sold, deceased, retired, donated, gifted). Defaults to false — public listings should only show current dogs. */
+  includeInactive?: boolean;
 }
+
+/** Statuses that mean a dog is no longer part of the active, marketable kennel. */
+const INACTIVE_STATUSES = ['sold', 'deceased', 'retired', 'donated', 'gifted'];
 
 const DOG_LIST_SELECT =
   'id, name, breed, colour, sex, status, date_of_birth, microchip_number, category, price, is_public, is_featured, dog_media(url, is_primary, type, sort_order, id, dog_id, thumbnail_url, caption, uploaded_at)';
@@ -36,6 +41,7 @@ export function useDogs(options?: UseDogsOptions) {
   const mock = MOCK_DOGS.filter((d) => {
     if (options?.category && d.category !== options.category) return false;
     if (options?.featuredOnly && !d.is_featured) return false;
+    if (!options?.includeInactive && INACTIVE_STATUSES.includes(d.status ?? '')) return false;
     return d.is_public;
   });
 
@@ -43,6 +49,7 @@ export function useDogs(options?: UseDogsOptions) {
     let q = client.from('dogs').select(DOG_LIST_SELECT).eq('is_public', true);
     if (options?.category) q = q.eq('category', options.category);
     if (options?.featuredOnly) q = q.eq('is_featured', true);
+    if (!options?.includeInactive) q = q.not('status', 'in', `(${INACTIVE_STATUSES.join(',')})`);
     return q.order('name');
   });
 
