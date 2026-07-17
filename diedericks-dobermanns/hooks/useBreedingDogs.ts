@@ -22,12 +22,14 @@ export function useBreedingDogs() {
     setLoading(true);
     try {
       const client = requireSupabase();
+      // Breeding candidates are the dogs you keep for the programme — identified
+      // by status (keep/stud/breeding_stock), NOT by is_public. The old query
+      // filtered on is_public=false, but all breeding dogs are public, so it
+      // returned nothing and the dam/sire pickers were always empty.
       const { data, error } = await client
         .from('dogs')
         .select('id, name, sex, colour, registration_number')
-        .not('status', 'eq', 'puppy')
-        .not('status', 'eq', 'sold')
-        .eq('is_public', false)
+        .in('status', ['keep', 'stud', 'breeding_stock'])
         .order('name');
       if (error) throw error;
       setDogs((data ?? []) as BreedingDog[]);

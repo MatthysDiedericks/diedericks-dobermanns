@@ -1,0 +1,47 @@
+[
+  {
+    "id": "0a589229-ffe1-46ba-b2ca-85811cf52de2",
+    "name": "Standard Puppy",
+    "description": "Waiting list for standard purebred Dobermann puppies",
+    "colour": "#C4A35A",
+    "sort_order": 1,
+    "is_active": true,
+    "created_at": "2026-06-23T10:09:37.786266+00:00"
+  },
+  {
+    "id": "f7555840-e6db-48c5-bd4c-ba0799e9f246",
+    "name": "Elite Developed Puppy",
+    "description": "Waiting list for 6-month elite developed puppies",
+    "colour": "#D4B472",
+    "sort_order": 2,
+    "is_active": true,
+    "created_at": "2026-06-23T10:09:37.786266+00:00"
+  },
+  {
+    "id": "6bf3adab-a549-40c6-9383-97f1849c696c",
+    "name": "Elite Family Protection Dog",
+    "description": "Waiting list for fully trained protection adults",
+    "colour": "#8A7240",
+    "sort_order": 3,
+    "is_active": true,
+    "created_at": "2026-06-23T10:09:37.786266+00:00"
+  },
+  {
+    "id": "f535fb7f-f636-45e5-816d-95a6f5814fb9",
+    "name": "Training Clients",
+    "description": "Dogs booked in for training programmes",
+    "colour": "#3498DB",
+    "sort_order": 4,
+    "is_active": true,
+    "created_at": "2026-06-23T10:09:37.786266+00:00"
+  },
+  {
+    "id": "866b4168-c0cb-4596-8670-a84fbf53b9dc",
+    "name": "Do Not Sell",
+    "description": "Flagged contacts — do not place a dog with these people",
+    "colour": "#C0392B",
+    "sort_order": 99,
+    "is_active": true,
+    "created_at": "2026-06-23T10:09:37.786266+00:00"
+  }
+]

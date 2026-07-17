@@ -1,0 +1,67 @@
+[
+  {
+    "id": "1e2fe9c8-4767-4da8-bce1-5c03c9a267e4",
+    "name": "Initial Consultation",
+    "description": "First meeting to assess your dog and set training goals. Available in-person or via video call.",
+    "duration_minutes": 60,
+    "price": null,
+    "currency": "ZAR",
+    "session_format": "both",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2026-06-22T13:37:46.684017+00:00",
+    "updated_at": "2026-06-22T13:37:46.684017+00:00"
+  },
+  {
+    "id": "34ca259b-f72e-4928-aeaf-f13abd10df3a",
+    "name": "Obedience Session",
+    "description": "Structured obedience training — foundations, commands, and reliability under distraction.",
+    "duration_minutes": 60,
+    "price": null,
+    "currency": "ZAR",
+    "session_format": "in_person",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2026-06-22T13:37:46.684017+00:00",
+    "updated_at": "2026-06-22T13:37:46.684017+00:00"
+  },
+  {
+    "id": "d0099c82-ebd6-4326-8147-b4e1b7895535",
+    "name": "Protection Evaluation",
+    "description": "Assessment of drive, nerve, and suitability for protection work.",
+    "duration_minutes": 90,
+    "price": null,
+    "currency": "ZAR",
+    "session_format": "in_person",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2026-06-22T13:37:46.684017+00:00",
+    "updated_at": "2026-06-22T13:37:46.684017+00:00"
+  },
+  {
+    "id": "667d1e6b-c3d3-43ac-980f-421904743095",
+    "name": "Remote Progress Review",
+    "description": "Video call review of your dog's progress. Share video clips, get trainer feedback.",
+    "duration_minutes": 45,
+    "price": null,
+    "currency": "ZAR",
+    "session_format": "video_call",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2026-06-22T13:37:46.684017+00:00",
+    "updated_at": "2026-06-22T13:37:46.684017+00:00"
+  },
+  {
+    "id": "1d68923c-1fc5-4c16-97d0-1650d565cb4c",
+    "name": "Handler Workshop",
+    "description": "Hands-on session focused on handler technique and communication with your Dobermann.",
+    "duration_minutes": 90,
+    "price": null,
+    "currency": "ZAR",
+    "session_format": "in_person",
+    "is_active": true,
+    "sort_order": 5,
+    "created_at": "2026-06-22T13:37:46.684017+00:00",
+    "updated_at": "2026-06-22T13:37:46.684017+00:00"
+  }
+]

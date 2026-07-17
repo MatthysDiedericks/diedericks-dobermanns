@@ -237,6 +237,8 @@ export const MOCK_LITTERS: Litter[] = [
     actual_time: null,
     go_home_date: '2026-10-01',
     puppy_count: null,
+    male_count: null,
+    female_count: null,
     available_count: 6,
     description:
       'A repeat of our most successful pairing. Expecting black/rust and red/rust puppies of exceptional working and family potential.',

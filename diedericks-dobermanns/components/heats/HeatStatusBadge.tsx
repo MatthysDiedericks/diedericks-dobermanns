@@ -12,6 +12,7 @@ const STATUS_TONE: Record<string, 'gold' | 'neutral' | 'muted' | 'danger'> = {
   mated: 'gold',
   confirmed_pregnant: 'gold',
   whelped: 'neutral',
+  no_outcome: 'muted',
 };
 
 interface HeatStatusBadgeProps {

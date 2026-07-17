@@ -13,8 +13,8 @@ import {
   AlumniDogCard,
   DeceasedDogCard,
   DogDirectoryCard,
-  ExpectingDogCard,
 } from '@/components/dogs/DogDirectoryCard';
+import { ExpectingBreedingRow } from '@/components/dogs/ExpectingBreedingRow';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -154,13 +154,17 @@ export function DogsDirectoryScreen({
       ) : filter === 'expecting' ? (
         <FlatList
           data={expecting}
-          keyExtractor={(item) => item.dog.id}
+          keyExtractor={(item) => item.heatCycleId}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: canAdd ? 96 : 48 }}
           refreshControl={
             <RefreshControl refreshing={loading} onRefresh={() => void refresh()} tintColor={Colors.gold} />
           }
           renderItem={({ item }) => (
-            <ExpectingDogCard entry={item} detailRoute={detailRoute(item.dog.id)} />
+            <ExpectingBreedingRow
+              entry={item}
+              detailRoute={detailRoute(item.dog.id)}
+              onUpdated={() => void refresh()}
+            />
           )}
         />
       ) : filter === 'deceased' ? (

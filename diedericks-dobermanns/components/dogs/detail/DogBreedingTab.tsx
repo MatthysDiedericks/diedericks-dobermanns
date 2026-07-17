@@ -118,9 +118,14 @@ export function DogBreedingTab({ dog }: { dog: Dog }) {
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <View className="mb-2 border-b border-gold/10 py-2">
-                  <Typography variant="body">
-                    {formatKennelDate(item.heat_start_date)} · {titleCase(item.status ?? '')}
-                  </Typography>
+                  <View className="flex-row items-center gap-2">
+                    <Typography variant="body">
+                      {formatKennelDate(item.heat_start_date)} · {titleCase(item.status ?? '')}
+                    </Typography>
+                    {item.status === 'no_outcome' ? (
+                      <Badge label="No outcome" tone="muted" />
+                    ) : null}
+                  </View>
                   {item.expected_whelp_date ? (
                     <Typography variant="caption">
                       Expected whelp {formatKennelDate(item.expected_whelp_date)}

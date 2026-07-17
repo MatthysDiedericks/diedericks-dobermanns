@@ -1,0 +1,104 @@
+[
+  {
+    "key": "hero_image_url",
+    "value": "",
+    "description": "Main hero image shown on the home screen",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "hero_image_secondary_url",
+    "value": "",
+    "description": "Secondary/fallback hero image",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "hero_headline",
+    "value": "Born With Purpose. Built With Discipline.",
+    "description": "Main headline on home screen",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "hero_subheading",
+    "value": "Elite Dobermann breeding and professional protection dog training.",
+    "description": "Subheading on home screen",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "about_image_url",
+    "value": "",
+    "description": "Image shown on the About Us section",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "facebook_url",
+    "value": "",
+    "description": "Facebook profile URL",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "youtube_url",
+    "value": "",
+    "description": "YouTube channel URL",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "app_maintenance_mode",
+    "value": "false",
+    "description": "Set to true to show maintenance screen",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "featured_dogs_limit",
+    "value": "6",
+    "description": "Number of featured dogs shown on home screen",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "telegram_channel_url",
+    "value": "",
+    "description": "Telegram channel or group URL",
+    "updated_at": "2026-06-22T13:30:19.91221+00:00"
+  },
+  {
+    "key": "facebook_page_url",
+    "value": "",
+    "description": "Facebook page URL",
+    "updated_at": "2026-06-22T13:30:19.91221+00:00"
+  },
+  {
+    "key": "contact_phone",
+    "value": "+27782150832",
+    "description": "Contact phone number displayed publicly",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "contact_whatsapp",
+    "value": "+27782150832",
+    "description": "WhatsApp number for enquiries",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "whatsapp_business_number",
+    "value": "+27782150832",
+    "description": "WhatsApp Business number (international format, e.g. +27821234567)",
+    "updated_at": "2026-06-22T13:30:19.91221+00:00"
+  },
+  {
+    "key": "contact_email",
+    "value": "diedericksdobermannssa@gmail.com",
+    "description": "Contact email displayed publicly",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  },
+  {
+    "key": "whatsapp_community_url",
+    "value": "https://wa.me/27782150832",
+    "description": "WhatsApp Community invite link",
+    "updated_at": "2026-06-22T13:30:19.91221+00:00"
+  },
+  {
+    "key": "instagram_url",
+    "value": "https://instagram.com/diedericksdobermanns",
+    "description": "Instagram profile URL",
+    "updated_at": "2026-06-20T06:29:40.882212+00:00"
+  }
+]

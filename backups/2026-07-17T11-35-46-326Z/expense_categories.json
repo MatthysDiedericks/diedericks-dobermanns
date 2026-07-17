@@ -1,0 +1,110 @@
+[
+  {
+    "id": "a5b15583-ff04-4bdb-b243-492949a0e39e",
+    "name": "Veterinary",
+    "description": "Vet consultations, treatments, health testing, vaccinations",
+    "colour": "#E74C3C",
+    "sort_order": 1,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "19e35536-09ae-40d1-a7e8-612941cf91b3",
+    "name": "Feed & Nutrition",
+    "description": "Dog food, supplements, raw meat, treats",
+    "colour": "#E67E22",
+    "sort_order": 2,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "8ce1c090-2119-475b-982c-9341b90795e7",
+    "name": "Equipment",
+    "description": "Kennels, crates, leads, training equipment, muzzles",
+    "colour": "#F39C12",
+    "sort_order": 3,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "193b058a-6fbe-4b66-bf56-9c5bb733d8be",
+    "name": "Breeding",
+    "description": "Stud fees, AI costs, whelping supplies, progesterone tests",
+    "colour": "#9B59B6",
+    "sort_order": 4,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "8479114d-54ce-4c33-b105-329c5b9b6735",
+    "name": "Training",
+    "description": "Training courses, seminars, PSA trial entries, travel",
+    "colour": "#3498DB",
+    "sort_order": 5,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "6d3ea5fb-8e89-43a5-a2c2-4a505c1c2e1c",
+    "name": "Transport",
+    "description": "Fuel, vehicle costs, puppy delivery, airport transfers",
+    "colour": "#1ABC9C",
+    "sort_order": 6,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "e77b016c-4e98-4f66-8382-3943a3471976",
+    "name": "Marketing",
+    "description": "Website, photography, advertising, social media",
+    "colour": "#2ECC71",
+    "sort_order": 7,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "aab26787-9103-40ec-8b8c-ca2dea9b39de",
+    "name": "Insurance",
+    "description": "Dog insurance, kennel liability, vehicle insurance",
+    "colour": "#16A085",
+    "sort_order": 8,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "1c1b5a4a-6307-40f0-aafd-0a9ae383df96",
+    "name": "Professional Fees",
+    "description": "Accountant, legal, registration, kennel club fees",
+    "colour": "#8E44AD",
+    "sort_order": 9,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "4ea8b936-e48c-4ccf-928f-0a94ab37ff5b",
+    "name": "Utilities",
+    "description": "Electricity, water, internet for kennel operations",
+    "colour": "#2980B9",
+    "sort_order": 10,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "29d29518-ad0b-4e75-8c24-3436dabf3084",
+    "name": "Staff",
+    "description": "Staff wages, contractor payments",
+    "colour": "#C0392B",
+    "sort_order": 11,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  },
+  {
+    "id": "3dff9e9d-61dd-40ba-a10c-7ece8b3a58d7",
+    "name": "Other",
+    "description": "Miscellaneous expenses not fitting other categories",
+    "colour": "#7F8C8D",
+    "sort_order": 12,
+    "is_active": true,
+    "created_at": "2026-06-23T10:01:44.682231+00:00"
+  }
+]

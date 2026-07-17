@@ -15,6 +15,8 @@ export const litterSchema = z.object({
   go_home_date: z.string(),
   available_count: z.string(),
   puppy_count: z.string(),
+  male_count: z.string(),
+  female_count: z.string(),
   description: z.string(),
   is_public: z.boolean(),
 });
@@ -40,6 +42,8 @@ export function litterFormDefaults(litter?: Litter): LitterFormValues {
     go_home_date: litter?.go_home_date ?? '',
     available_count: litter?.available_count != null ? String(litter.available_count) : '',
     puppy_count: litter?.puppy_count != null ? String(litter.puppy_count) : '',
+    male_count: litter?.male_count != null ? String(litter.male_count) : '',
+    female_count: litter?.female_count != null ? String(litter.female_count) : '',
     description: litter?.description ?? '',
     is_public: litter?.is_public ?? true,
   };
@@ -64,6 +68,8 @@ export function litterFormPayload(values: LitterFormValues) {
     go_home_date: values.go_home_date.trim() || null,
     available_count: toInt(values.available_count),
     puppy_count: toInt(values.puppy_count),
+    male_count: toInt(values.male_count),
+    female_count: toInt(values.female_count),
     description: values.description.trim() || null,
     is_public: values.is_public,
   };

@@ -104,16 +104,57 @@ export async function setPrimaryImage(
 export async function saveLitter(
   values: TablesInsert<'litters'>,
   id?: string,
-): Promise<MutationResult> {
-  if (!supabase) return simulate();
+): Promise<SaveResult> {
+  if (!supabase) {
+    await new Promise((r) => setTimeout(r, 500));
+    return { error: null, id: id ?? `demo-litter-${Date.now()}` };
+  }
   if (id) {
     const { error } = await supabase
       .from('litters')
       .update(values as TablesUpdate<'litters'>)
       .eq('id', id);
-    return { error: error?.message ?? null };
+    return { error: error?.message ?? null, id };
   }
-  const { error } = await supabase.from('litters').insert(values);
+  const { data, error } = await supabase
+    .from('litters')
+    .insert(values)
+    .select('id')
+    .single();
+  return {
+    error: error?.message ?? null,
+    id: data ? (data as { id: string }).id : null,
+  };
+}
+
+/** Links a heat cycle to a newly created litter after whelping. */
+export async function linkBreedingToLitter(
+  heatCycleId: string,
+  litterId: string,
+  actualWhelpDate: string | null,
+): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { error } = await supabase
+    .from('heat_cycles')
+    .update({
+      resulting_litter_id: litterId,
+      actual_whelp_date: actualWhelpDate,
+      status: 'completed',
+    })
+    .eq('id', heatCycleId);
+  return { error: error?.message ?? null };
+}
+
+/** Marks a breeding as producing no litter — keeps the record as history. */
+export async function markBreedingNoOutcome(
+  heatCycleId: string,
+  reason = 'No litter produced',
+): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { error } = await supabase
+    .from('heat_cycles')
+    .update({ status: 'no_outcome', cancelled_reason: reason })
+    .eq('id', heatCycleId);
   return { error: error?.message ?? null };
 }
 

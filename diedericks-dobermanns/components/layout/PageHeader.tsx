@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
@@ -10,12 +11,15 @@ interface PageHeaderProps {
   eyebrow?: string;
   /** Show a back chevron (defaults to true). */
   back?: boolean;
+  /** Optional control rendered at the top-right of the header (e.g. a sign-out button). */
+  rightSlot?: ReactNode;
 }
 
-export function PageHeader({ title, eyebrow, back = true }: PageHeaderProps) {
+export function PageHeader({ title, eyebrow, back = true, rightSlot }: PageHeaderProps) {
   const router = useRouter();
   return (
     <View className="px-6 pb-4">
+      {rightSlot ? <View className="absolute right-6 top-0 z-10">{rightSlot}</View> : null}
       {back ? (
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}

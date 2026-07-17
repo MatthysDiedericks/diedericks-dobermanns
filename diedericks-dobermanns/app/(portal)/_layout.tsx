@@ -79,6 +79,8 @@ export default function PortalLayout() {
         <Tabs.Screen name="training/videos/[categoryId]" options={{ href: null }} />
         <Tabs.Screen name="training/videos/play/[videoId]" options={{ href: null }} />
         <Tabs.Screen name="vaccination-records" options={{ href: null }} />
+        <Tabs.Screen name="health-schedule" options={{ href: null }} />
+        <Tabs.Screen name="expected-litters" options={{ href: null }} />
         <Tabs.Screen name="invoices/index" options={{ href: null }} />
         <Tabs.Screen name="invoices/[id]" options={{ href: null }} />
         <Tabs.Screen name="waitlist" options={{ href: null }} />

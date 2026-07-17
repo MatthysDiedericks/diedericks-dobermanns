@@ -16,6 +16,7 @@ export interface KennelDog extends Dog {
 }
 
 export interface ExpectingDogEntry {
+  heatCycleId: string;
   dog: KennelDog;
   matingDate: string;
   sireName: string | null;
@@ -129,8 +130,11 @@ export function useKennelDogs(filter: DogFilterTab = 'breeding', search = '') {
           )
           .not('mating_date', 'is', null)
           .is('actual_whelp_date', null)
+          .is('resulting_litter_id', null)
           .not('status', 'eq', 'completed')
           .not('status', 'eq', 'skipped')
+          .not('status', 'eq', 'no_outcome')
+          .not('status', 'eq', 'cancelled')
           .order('mating_date', { ascending: false });
         if (err) throw new Error(err.message);
 
@@ -150,6 +154,7 @@ export function useKennelDogs(filter: DogFilterTab = 'breeding', search = '') {
           const sire = r.sire as { name: string } | null;
 
           byDog.set(dogId, {
+            heatCycleId: r.id as string,
             dog: mapDogRow(dogRow),
             matingDate,
             sireName: sire?.name ?? null,

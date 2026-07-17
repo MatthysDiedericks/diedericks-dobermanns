@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -110,8 +111,30 @@ export default function PortalDashboard() {
                 </Card>
               </Pressable>
             </Link>
+            <Link href={'/(portal)/health-schedule' as never} asChild>
+              <Pressable>
+                <Card className="mt-3 flex-row items-center">
+                  <Ionicons name="calendar" size={20} color={Colors.gold} />
+                  <Typography variant="subtitle" className="ml-3 flex-1">
+                    Health Schedule
+                  </Typography>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
+                </Card>
+              </Pressable>
+            </Link>
           </>
         ) : null}
+      </View>
+
+      <View className="mt-8 px-6">
+        <ExpectedLittersSection compact />
+        <Link href={'/(portal)/expected-litters' as never} asChild>
+          <Pressable className="mt-2">
+            <Typography variant="caption" className="text-gold">
+              View all expected litters →
+            </Typography>
+          </Pressable>
+        </Link>
       </View>
 
       <View className="mt-8 px-6">

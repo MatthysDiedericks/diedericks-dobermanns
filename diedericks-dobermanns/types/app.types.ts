@@ -378,6 +378,8 @@ export interface Litter {
   actual_time: string | null;
   go_home_date: string | null;
   puppy_count: number | null;
+  male_count: number | null;
+  female_count: number | null;
   available_count: number | null;
   description: string | null;
   status: LitterStatus | null;

@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native';
 
 import { HeatStatusBadge } from '@/components/heats/HeatStatusBadge';
+import { Badge } from '@/components/ui/Badge';
 import { Typography } from '@/components/ui/Typography';
 import type { HeatCycleRecord } from '@/lib/heats/constants';
 import { formatKennelDate } from '@/lib/kennel/formatters';
@@ -16,7 +17,11 @@ export function CycleHistoryRow({ cycle, expanded, onPress }: CycleHistoryRowPro
     <Pressable onPress={onPress} className="mb-2 rounded-xl border border-gold/15 bg-surface p-3">
       <View className="flex-row items-center justify-between">
         <Typography variant="subtitle">{formatKennelDate(cycle.heat_start_date)}</Typography>
-        <HeatStatusBadge status={cycle.status} />
+        {cycle.status === 'no_outcome' ? (
+          <Badge label="No outcome" tone="muted" />
+        ) : (
+          <HeatStatusBadge status={cycle.status} />
+        )}
       </View>
       <Typography variant="caption" className="mt-1 text-muted">
         Cycle length: {cycle.actual_cycle_length_days != null ? `${cycle.actual_cycle_length_days} days` : '—'}
