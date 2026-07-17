@@ -50,3 +50,10 @@ yarn-error.log*
 # Supabase local
 supabase/.branches
 supabase/.temp
+**/supabase/.temp/
+**/supabase/.branches/
+
+# diedericksdobermann-web has its own separate git repo + GitHub remote
+# (diedericksdobermanns-web.git) — do not track its files again in this
+# outer repo, that creates a duplicate copy that can drift out of sync.
+diedericksdobermann-web/
