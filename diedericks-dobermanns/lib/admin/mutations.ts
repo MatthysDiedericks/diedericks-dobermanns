@@ -7,7 +7,7 @@ import type {
   ApplicationStatus,
   SessionFormat,
 } from '@/types/app.types';
-import type { TablesInsert, TablesUpdate } from '@/types/database.types';
+import type { TablesUpdate } from '@/types/database.types';
 
 import { ok, simulate, type MutationResult, type SaveResult } from '@/lib/shared/mutationTypes';
 
@@ -266,14 +266,7 @@ export async function updateEnquiryStatus(
   return { error: error?.message ?? null };
 }
 
-export async function signContract(id: string): Promise<MutationResult> {
-  if (!supabase) return simulate();
-  const { error } = await supabase
-    .from('contracts')
-    .update({ signed_by_client: true, signed_at: new Date().toISOString() })
-    .eq('id', id);
-  return { error: error?.message ?? null };
-}
+export { signContract, type ContractSignaturePayload } from '@/lib/contracts/signContractMutation';
 
 export async function setTestimonialApproved(
   id: string,

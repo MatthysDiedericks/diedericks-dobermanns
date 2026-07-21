@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Linking, Pressable, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -9,18 +9,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useContracts } from '@/hooks/usePortal';
-import { signContract } from '@/hooks/useMutations';
 
 export default function ContractsScreen() {
-  const { data: contracts, loading, refetch } = useContracts();
-  const [busy, setBusy] = useState<string | null>(null);
-
-  async function sign(id: string) {
-    setBusy(id);
-    await signContract(id);
-    await refetch();
-    setBusy(null);
-  }
+  const { data: contracts, loading } = useContracts();
+  const router = useRouter();
 
   return (
     <ScreenContainer>
@@ -32,43 +24,41 @@ export default function ContractsScreen() {
             message="Documents will appear here once your reservation is confirmed."
           />
         ) : (
-          contracts.map((c) => (
-            <Card key={c.id}>
-              <View className="flex-row items-start justify-between">
-                <Typography variant="subtitle" className="flex-1 pr-3">
-                  {c.notes ?? 'Contract document'}
-                </Typography>
-                <Badge
-                  label={c.signed_by_client ? 'Signed' : 'Action needed'}
-                  tone={c.signed_by_client ? 'success' : 'gold'}
-                />
-              </View>
-              {c.signed_at ? (
-                <Typography variant="caption" className="mt-2">
-                  Signed {new Date(c.signed_at).toLocaleDateString()}
-                </Typography>
-              ) : null}
+          contracts.map((c) => {
+            const signed = c.signed_by_client || c.status === 'signed_client' || c.status === 'signed_both';
+            return (
+              <Card key={c.id}>
+                <View className="flex-row items-start justify-between">
+                  <Typography variant="subtitle" className="flex-1 pr-3">
+                    {c.contract_title ?? c.notes ?? 'Contract document'}
+                  </Typography>
+                  <Badge label={signed ? 'Signed' : 'Action needed'} tone={signed ? 'success' : 'gold'} />
+                </View>
+                {c.client_signed_at ?? c.signed_at ? (
+                  <Typography variant="caption" className="mt-2">
+                    Signed {new Date((c.client_signed_at ?? c.signed_at)!).toLocaleDateString()}
+                  </Typography>
+                ) : null}
 
-              <Pressable
-                onPress={() => Linking.openURL(c.document_url)}
-                className="mt-3 self-start"
-              >
-                <Typography variant="caption" className="text-gold underline">
-                  View document
-                </Typography>
-              </Pressable>
+                {c.document_url ? (
+                  <Pressable onPress={() => Linking.openURL(c.document_url)} className="mt-3 self-start">
+                    <Typography variant="caption" className="text-gold underline">
+                      View document
+                    </Typography>
+                  </Pressable>
+                ) : null}
 
-              {!c.signed_by_client ? (
-                <Button
-                  label="Sign Contract"
-                  onPress={() => sign(c.id)}
-                  loading={busy === c.id}
-                  fullWidth
-                  className="mt-4"
-                />
-              ) : null}
-            </Card>
-          ))
+                {!signed ? (
+                  <Button
+                    label="Review & Sign"
+                    onPress={() => router.push(`/(portal)/contracts/${c.id}` as never)}
+                    fullWidth
+                    className="mt-4"
+                  />
+                ) : null}
+              </Card>
+            );
+          })
         )}
       </View>
     </ScreenContainer>

@@ -10,9 +10,7 @@ import {
   MOCK_FAQ,
   MOCK_GALLERY,
   MOCK_GROUP_MEMBERS,
-  MOCK_INVOICES,
   MOCK_LITTERS,
-  MOCK_QUOTES,
   MOCK_TESTIMONIALS,
   MOCK_WAITING_LIST,
 } from '@/lib/mockData';
@@ -28,21 +26,13 @@ import type {
   Enquiry,
   FaqItem,
   GalleryItem,
-  Invoice,
   Litter,
-  Quote,
   Testimonial,
   WaitingListEntry,
 } from '@/types/app.types';
 
 const ADMIN_DOG_SELECT =
   'id, name, breed, colour, sex, status, date_of_birth, category, price, is_public, is_featured, created_at, media:dog_media(id, dog_id, url, thumbnail_url, is_primary, type, sort_order, caption)';
-
-const QUOTE_SELECT =
-  'id, quote_number, client_id, application_id, status, currency, subtotal, discount, total, notes, valid_until, created_at, updated_at, client:users(id, full_name, phone), items:quote_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order)';
-
-const INVOICE_SELECT =
-  'id, invoice_number, quote_id, client_id, status, currency, subtotal, discount, total, amount_paid, issued_at, due_date, paid_at, notes, created_at, updated_at, client:users(id, full_name, phone), items:invoice_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order)';
 
 const WAITING_LIST_SELECT =
   'id, client_id, litter_id, preference_notes, position, status, pipeline_stage, follow_up_date, feedback, expected_delivery_date, created_at, client:users(id, full_name, phone)';
@@ -80,18 +70,6 @@ export function useAdminLitters(): ListResult<Litter> {
         'id, name, litter_letter, status, mother_id, father_id, whelping_type, expected_date, actual_date, actual_time, go_home_date, puppy_count, available_count, description, is_public, created_at, updated_at',
       )
       .order('expected_date'),
-  );
-}
-
-export function useAdminQuotes(): ListResult<Quote> {
-  return useRemoteList<Quote>(MOCK_QUOTES, (client) =>
-    client.from('quotes').select(QUOTE_SELECT).order('created_at', { ascending: false }),
-  );
-}
-
-export function useAdminInvoices(): ListResult<Invoice> {
-  return useRemoteList<Invoice>(MOCK_INVOICES, (client) =>
-    client.from('invoices').select(INVOICE_SELECT).order('created_at', { ascending: false }),
   );
 }
 

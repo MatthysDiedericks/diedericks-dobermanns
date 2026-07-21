@@ -73,10 +73,13 @@ export function useFinanceReport(from: string, to: string) {
     invoices,
     expenses,
     incomeByType,
+    // VAT-inclusive, to match totalExpenses (lib/finance/queries.ts) and DogBreederPro's
+    // headline expense figures — expenses.amount is stored ex-VAT.
     expenseByCategory: expenses.reduce<FinanceLine[]>((acc, e) => {
+      const vatInclusive = Number(e.amount) + Number(e.vat_amount ?? 0);
       const existing = acc.find((l) => l.label === e.categoryName);
-      if (existing) existing.amount += Number(e.amount);
-      else acc.push({ label: e.categoryName, amount: Number(e.amount) });
+      if (existing) existing.amount += vatInclusive;
+      else acc.push({ label: e.categoryName, amount: vatInclusive });
       return acc;
     }, []),
     monthlySummary,

@@ -62,7 +62,9 @@ export function useInvoiceDetail(id: string) {
 }
 
 interface CreateInvoiceInput {
-  client_id: string;
+  /** Exactly one of client_id / historical_client_name should be set — mirrors quotes. */
+  client_id: string | null;
+  historical_client_name?: string | null;
   reservation_id?: string | null;
   dog_id?: string | null;
   litter_id?: string | null;
@@ -84,6 +86,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
     .from('invoices')
     .insert({
       client_id: input.client_id,
+      historical_client_name: input.historical_client_name ?? null,
       reservation_id: input.reservation_id ?? null,
       dog_id: input.dog_id ?? null,
       litter_id: input.litter_id ?? null,

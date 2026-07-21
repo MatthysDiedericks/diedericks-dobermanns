@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
 import { DogDetailTabs } from '@/components/dogs/detail/DogDetailTabs';
+import { DogRegisteredNameBlock } from '@/components/dogs/DogRegisteredNameBlock';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -45,6 +46,12 @@ export default function DogDetailScreen() {
         eyebrow="Dog profile"
         title={dog.call_name ? `${dog.name} (${dog.call_name})` : dog.name}
       />
+      <View className="px-6">
+        <DogRegisteredNameBlock
+          registeredName={dog.registered_name}
+          wrightsCoi={dog.wrights_coi}
+        />
+      </View>
       <DogDetailTabs dogId={dogId} dog={dog} onRefresh={refresh} />
     </ScreenContainer>
   );

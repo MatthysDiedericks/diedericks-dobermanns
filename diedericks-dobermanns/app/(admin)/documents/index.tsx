@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
@@ -17,12 +17,14 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAllDocuments } from '@/hooks/useDocuments';
+import { callCheckDocumentExpiry } from '@/lib/functions';
 import {
   KENNEL_DOCUMENT_ENTITY_ID,
   type DocumentEntityType,
 } from '@/lib/documents/constants';
 import type { DocumentRecord } from '@/lib/documents/types';
 import { titleCase } from '@/lib/format';
+import { useAuthStore } from '@/stores/authStore';
 
 const ENTITY_FILTERS: (DocumentEntityType | 'all')[] = [
   'all',
@@ -38,6 +40,7 @@ type SortMode = 'uploaded_desc' | 'uploaded_asc' | 'name_asc' | 'expiry_asc';
 export default function KennelDocumentsScreen() {
   const router = useRouter();
   const uploadRef = useRef<UploadDocumentSheetHandle>(null);
+  const isAdmin = useAuthStore((s) => s.hasRole('admin', 'super_admin'));
 
   const [entityFilter, setEntityFilter] = useState<DocumentEntityType | 'all'>('all');
   const [category, setCategory] = useState('all');
@@ -45,6 +48,7 @@ export default function KennelDocumentsScreen() {
   const [sort, setSort] = useState<SortMode>('uploaded_desc');
   const [viewerDoc, setViewerDoc] = useState<DocumentRecord | null>(null);
   const [expiringCount, setExpiringCount] = useState(0);
+  const [checkingExpiry, setCheckingExpiry] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -62,6 +66,22 @@ export default function KennelDocumentsScreen() {
     const set = new Set(documents.map((d) => d.category));
     return ['all', ...Array.from(set).sort()];
   }, [documents]);
+
+  async function checkExpiryNow() {
+    setCheckingExpiry(true);
+    try {
+      const result = await callCheckDocumentExpiry();
+      Alert.alert(
+        'Check complete',
+        `${result.remindersSent} reminder${result.remindersSent === 1 ? '' : 's'} sent (checked ${result.checked} document${result.checked === 1 ? '' : 's'}).`,
+      );
+      await refresh();
+    } catch (e) {
+      Alert.alert('Check failed', e instanceof Error ? e.message : 'Could not run the check.');
+    } finally {
+      setCheckingExpiry(false);
+    }
+  }
 
   return (
     <ScreenContainer>
@@ -123,7 +143,18 @@ export default function KennelDocumentsScreen() {
       ) : null}
 
       <View className="px-6 mb-4 flex-row items-center justify-between">
-        <Button label="+ Upload" size="sm" onPress={() => uploadRef.current?.open()} />
+        <View className="flex-row items-center gap-2">
+          <Button label="+ Upload" size="sm" onPress={() => uploadRef.current?.open()} />
+          {isAdmin ? (
+            <Button
+              label="Check Now"
+              size="sm"
+              variant="outline"
+              loading={checkingExpiry}
+              onPress={() => void checkExpiryNow()}
+            />
+          ) : null}
+        </View>
         <Typography variant="caption" className="text-ink-muted">
           {documents.length} document{documents.length === 1 ? '' : 's'}
           {expiringCount > 0 ? ` · ${expiringCount} need attention` : ''}

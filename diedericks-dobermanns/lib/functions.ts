@@ -54,6 +54,21 @@ export async function callSendEmail(payload: {
   if (error) console.error('[callSendEmail]', error.message);
 }
 
+export interface CheckDocumentExpiryResult {
+  ok: boolean;
+  checked: number;
+  remindersSent: number;
+  failedDocumentIds: string[];
+}
+
+/** Manually triggers the document-expiry check (admin "Check Now" button) — same job the daily cron runs. */
+export async function callCheckDocumentExpiry(): Promise<CheckDocumentExpiryResult> {
+  if (!supabase) throw new Error('Backend not configured');
+  const { data, error } = await supabase.functions.invoke('check-document-expiry');
+  if (error) throw new Error(error.message);
+  return data as CheckDocumentExpiryResult;
+}
+
 export async function callSendBroadcast(broadcastId: string): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.functions.invoke('send-broadcast', {

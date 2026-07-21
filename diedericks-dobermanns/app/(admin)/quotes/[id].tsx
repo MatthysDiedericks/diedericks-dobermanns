@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Linking, View } from 'react-native';
 
 import { LineItems } from '@/components/sales/LineItems';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -8,21 +9,24 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { useAdminQuotes } from '@/hooks/useAdmin';
+import { useQuoteDetail } from '@/hooks/useQuotes';
 import {
-  createInvoiceFromQuote,
+  buildQuoteMessage,
+  convertQuoteToInvoice,
+  logQuoteEmailNotification,
+  quoteEmail,
+  quotePhone,
   updateQuoteStatus,
-  useSubmitting,
-} from '@/hooks/useMutations';
+} from '@/lib/finance/quoteQueries';
 import { formatPrice, titleCase } from '@/lib/format';
-import { QUOTE_TONE } from '@/app/(admin)/quotes/index';
+import { QUOTE_TONE, quoteClientLabel } from '@/app/(admin)/quotes/index';
+import type { QuoteStatus } from '@/types/app.types';
 
 export default function QuoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: quotes, loading, refetch } = useAdminQuotes();
-  const { submitting, run } = useSubmitting();
-  const quote = quotes.find((q) => q.id === id);
+  const { quote, loading, refresh } = useQuoteDetail(id ?? '');
+  const [busy, setBusy] = useState(false);
 
   if (!loading && !quote) {
     return (
@@ -33,18 +37,76 @@ export default function QuoteDetailScreen() {
     );
   }
 
-  async function setStatus(status: Parameters<typeof updateQuoteStatus>[1]) {
+  async function setStatus(status: QuoteStatus) {
     if (!id) return;
-    await run(() => updateQuoteStatus(id, status));
-    await refetch();
+    setBusy(true);
+    try {
+      await updateQuoteStatus(id, status);
+      await refresh();
+    } catch (e) {
+      Alert.alert('Could not update status', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function generateInvoice() {
     if (!quote) return;
-    const { error, id: invoiceId } = await run(() => createInvoiceFromQuote(quote));
-    if (!error) {
-      if (invoiceId) router.replace({ pathname: '/(admin)/invoices/[id]', params: { id: invoiceId } });
-      else router.replace('/(admin)/invoices/index');
+    setBusy(true);
+    try {
+      const invoiceId = await convertQuoteToInvoice(quote.id);
+      await refresh();
+      router.replace({ pathname: '/(admin)/finance/invoices/[id]', params: { id: invoiceId } });
+    } catch (e) {
+      Alert.alert('Could not convert to invoice', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canConvert = !quote?.converted_invoice_id && (quote?.status === 'sent' || quote?.status === 'accepted');
+  const canSend = quote?.status === 'draft' || quote?.status === 'sent';
+  const phone = quote ? quotePhone(quote) : null;
+  const email = quote ? quoteEmail(quote) : null;
+
+  async function markSentIfDraft() {
+    if (quote?.status === 'draft') await updateQuoteStatus(quote.id, 'sent');
+    await refresh();
+  }
+
+  async function sendWhatsApp() {
+    if (!quote || !phone) return;
+    setBusy(true);
+    try {
+      const digits = phone.replace(/\D/g, '');
+      const text = encodeURIComponent(buildQuoteMessage(quote));
+      await Linking.openURL(`https://wa.me/${digits}?text=${text}`);
+      await markSentIfDraft();
+    } catch (e) {
+      Alert.alert('Could not open WhatsApp', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendEmail() {
+    if (!quote) return;
+    setBusy(true);
+    try {
+      if (quote.client_id) {
+        await logQuoteEmailNotification(quote);
+      } else if (email) {
+        const subject = encodeURIComponent(`Your Quote${quote.quote_number ? ` ${quote.quote_number}` : ''}`);
+        const body = encodeURIComponent(buildQuoteMessage(quote));
+        await Linking.openURL(`mailto:${email}?subject=${subject}&body=${body}`);
+      } else {
+        return;
+      }
+      await markSentIfDraft();
+    } catch (e) {
+      Alert.alert('Could not send email', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -56,12 +118,26 @@ export default function QuoteDetailScreen() {
         <View className="gap-4 px-6">
           <Card>
             <View className="flex-row items-center justify-between">
-              <Typography variant="subtitle">{quote.client?.full_name ?? 'Unassigned'}</Typography>
+              <Typography variant="subtitle">{quoteClientLabel(quote)}</Typography>
               <Badge label={titleCase(quote.status)} tone={QUOTE_TONE[quote.status]} />
             </View>
+            {quote.historical_client_name ? (
+              <Typography variant="caption" className="mt-1 text-silver">Walk-in client (no app account)</Typography>
+            ) : null}
             {quote.valid_until ? (
               <Typography variant="caption" className="mt-1">
                 Valid until {new Date(quote.valid_until).toLocaleDateString()}
+              </Typography>
+            ) : null}
+            {quote.converted_invoice_id ? (
+              <Typography
+                variant="caption"
+                className="mt-2 text-success underline"
+                onPress={() =>
+                  router.push({ pathname: '/(admin)/finance/invoices/[id]', params: { id: quote.converted_invoice_id! } })
+                }
+              >
+                View converted invoice →
               </Typography>
             ) : null}
           </Card>
@@ -85,16 +161,53 @@ export default function QuoteDetailScreen() {
           <View className="gap-2">
             <Typography variant="label">Update status</Typography>
             <View className="flex-row flex-wrap gap-2">
-              <Button label="Mark Sent" variant="outline" onPress={() => setStatus('sent')} loading={submitting} />
-              <Button label="Accepted" variant="outline" onPress={() => setStatus('accepted')} loading={submitting} />
-              <Button label="Declined" variant="danger" onPress={() => setStatus('declined')} loading={submitting} />
+              <Button label="Mark Sent" variant="outline" onPress={() => setStatus('sent')} loading={busy} />
+              <Button label="Accepted" variant="outline" onPress={() => setStatus('accepted')} loading={busy} />
+              <Button label="Declined" variant="danger" onPress={() => setStatus('declined')} loading={busy} />
             </View>
           </View>
 
+          {canSend ? (
+            <View className="gap-2">
+              <Typography variant="label">Send to client</Typography>
+              <View className="flex-row flex-wrap gap-2">
+                <Button
+                  label="Send via WhatsApp"
+                  variant="outline"
+                  onPress={sendWhatsApp}
+                  loading={busy}
+                  disabled={!phone}
+                />
+                <Button
+                  label="Send via Email"
+                  variant="outline"
+                  onPress={sendEmail}
+                  loading={busy}
+                  disabled={!quote.client_id && !email}
+                />
+              </View>
+              {!phone ? (
+                <Typography variant="caption" className="text-silver">
+                  No phone number on file — WhatsApp send disabled.
+                </Typography>
+              ) : null}
+              {!quote.client_id && !email ? (
+                <Typography variant="caption" className="text-silver">
+                  No email on file for this walk-in client — email send disabled.
+                </Typography>
+              ) : null}
+            </View>
+          ) : null}
+
           <Button
-            label={`Generate Invoice · ${formatPrice(quote.total)}`}
+            label={
+              quote.converted_invoice_id
+                ? 'Already converted to invoice'
+                : `Convert to Invoice · ${formatPrice(quote.total)}`
+            }
             onPress={generateInvoice}
-            loading={submitting}
+            loading={busy}
+            disabled={!canConvert}
             fullWidth
             className="mt-2"
           />

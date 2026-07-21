@@ -51,11 +51,24 @@ export const INTERNAL_FLAGS = [
   'First-time Owner',
 ] as const;
 
+// Mirrors the `waiting_list_source_check` CHECK constraint — keep in sync.
+export const MANUAL_SOURCES = [
+  'website',
+  'instagram',
+  'facebook',
+  'whatsapp',
+  'referral',
+  'show',
+  'other',
+] as const;
+
 export const SOURCE_LABELS: Record<string, string> = {
   app: 'App',
   website: 'Website',
   instagram: 'Instagram',
+  facebook: 'Facebook',
+  whatsapp: 'WhatsApp',
   referral: 'Referral',
-  phone: 'Phone',
-  manual: 'Manual',
+  show: 'Show',
+  other: 'Other',
 };

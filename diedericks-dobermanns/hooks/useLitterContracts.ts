@@ -10,13 +10,15 @@ export type LitterContractRow = {
   contract_title: string | null;
   signed_by_client: boolean;
   signed_at: string | null;
+  client_signed_at?: string | null;
+  client_signature_url?: string | null;
   created_at: string;
   client?: { full_name: string | null; phone?: string | null } | null;
   dog?: { name: string; colour: string | null } | null;
 };
 
 const CONTRACT_SELECT =
-  'id, status, contract_title, signed_by_client, signed_at, created_at, dog_id, ' +
+  'id, status, contract_title, signed_by_client, signed_at, client_signed_at, client_signature_url, created_at, dog_id, ' +
   'client:users!contracts_client_id_fkey(full_name, phone), ' +
   'dog:dogs!contracts_dog_id_fkey(name, colour)';
 

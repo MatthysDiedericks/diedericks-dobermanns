@@ -22,8 +22,19 @@ export default function BudgetScreen() {
   const [viewIdx, setViewIdx] = useState(0);
   const month = viewIdx === 0 ? null : viewIdx;
 
-  const { categories, budgets, loading, error, refresh, saveMany, budgetForCategoryMonth, actualForCategory } =
-    useBudgets(year);
+  const {
+    categories,
+    budgets,
+    loading,
+    error,
+    refresh,
+    saveMany,
+    saveLineItem,
+    deleteLineItem,
+    lineItemsForCategory,
+    budgetForCategoryMonth,
+    actualForCategory,
+  } = useBudgets(year);
   const { summary } = useBudgetSummary(year);
 
   const incomeTarget = sumBudgetAmount(budgets, 'income');
@@ -39,8 +50,9 @@ export default function BudgetScreen() {
         category,
         budgeted: budgetForCategoryMonth(category.id, month),
         actual: actualForCategory(category.id, month),
+        items: lineItemsForCategory(category.id),
       })),
-    [categories, month, budgetForCategoryMonth, actualForCategory],
+    [categories, month, budgetForCategoryMonth, actualForCategory, lineItemsForCategory],
   );
 
   return (
@@ -122,13 +134,15 @@ export default function BudgetScreen() {
           <Typography variant="label" className="mb-3 text-gold">
             EXPENSES BY CATEGORY
           </Typography>
-          {rows.map(({ category, budgeted, actual }) => (
+          {rows.map(({ category, budgeted, actual, items }) => (
             <BudgetCategoryRow
               key={category.id}
               name={category.name}
               colour={category.colour}
               budgeted={budgeted}
               actual={actual}
+              items={items}
+              month={month}
             />
           ))}
 
@@ -157,7 +171,10 @@ export default function BudgetScreen() {
         year={year}
         categories={categories}
         incomeTarget={incomeTarget}
+        lineItemsForCategory={lineItemsForCategory}
         onSave={saveMany}
+        onSaveLineItem={saveLineItem}
+        onDeleteLineItem={deleteLineItem}
       />
     </ScreenContainer>
   );

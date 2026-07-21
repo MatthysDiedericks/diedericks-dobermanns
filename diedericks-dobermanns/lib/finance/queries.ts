@@ -51,6 +51,26 @@ export async function fetchExpenseCategories(): Promise<ExpenseCategory[]> {
   return (data ?? []) as ExpenseCategory[];
 }
 
+/** Quick-add a new expense category — used by the budget screen and, later, anywhere else. */
+export async function createExpenseCategory(name: string, colour: string): Promise<ExpenseCategory> {
+  const supabase = requireSupabase();
+  const { data: existing } = await supabase
+    .from('expense_categories')
+    .select('sort_order')
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const sort_order = ((existing?.sort_order as number | undefined) ?? 0) + 10;
+
+  const { data, error } = await supabase
+    .from('expense_categories')
+    .insert({ name, colour, sort_order })
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as ExpenseCategory;
+}
+
 export async function fetchInvoicesInRange(from: string, to: string) {
   const supabase = requireSupabase();
   const { data, error } = await supabase
@@ -220,12 +240,18 @@ export async function computeKpis(from: string, to: string): Promise<FinanceKpis
   const priorExpenses = await fetchExpensesInRange(priorFrom, priorTo);
 
   const totalIncome = invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount ?? 0), 0);
+  // VAT-inclusive, to match DogBreederPro's headline "Expenses" total (expenses.amount is
+  // stored ex-VAT; vat_amount is the input tax on top — confirmed against DBP's live figures
+  // 2026-07-20: ex-VAT sum was short of DBP's displayed total by exactly the VAT sum).
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0), 0);
   const netProfit = totalIncome - totalExpenses;
   const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
 
   const priorIncome = priorInvoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
-  const priorExpenseTotal = priorExpenses.reduce((s, e) => s + Number(e.amount ?? 0), 0);
+  const priorExpenseTotal = priorExpenses.reduce(
+    (s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0),
+    0,
+  );
   const priorProfit = priorIncome - priorExpenseTotal;
 
   return {
@@ -248,7 +274,7 @@ export async function buildMonthlySummary(year: number): Promise<MonthlySummary[
     months.push({
       month: format(new Date(year, m, 1), 'MMM'),
       income: invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0),
-      expenses: expenses.reduce((s, e) => s + Number(e.amount ?? 0), 0),
+      expenses: expenses.reduce((s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0), 0),
     });
   }
   return months;
@@ -262,7 +288,8 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
   const expenseByCategory = new Map<string, number>();
   expenses.forEach((e) => {
     const name = e.categoryName ?? 'Other';
-    expenseByCategory.set(name, (expenseByCategory.get(name) ?? 0) + Number(e.amount));
+    const vatInclusive = Number(e.amount) + Number(e.vat_amount ?? 0);
+    expenseByCategory.set(name, (expenseByCategory.get(name) ?? 0) + vatInclusive);
   });
 
   const expenseLines: FinanceLine[] = [...expenseByCategory.entries()]
@@ -270,7 +297,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
     .sort((a, b) => b.amount - a.amount);
 
   const totalIncome = invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount ?? 0), 0);
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0), 0);
   const netProfit = totalIncome - totalExpenses;
 
   const year = parseISO(from).getFullYear();

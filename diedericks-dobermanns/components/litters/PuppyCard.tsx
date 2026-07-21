@@ -14,9 +14,18 @@ interface PuppyCardProps {
   colour: string | null;
   collar_colour: string | null;
   date_of_birth: string | null;
+  highlighted?: boolean;
 }
 
-export function PuppyCard({ id, name, sex, colour, collar_colour, date_of_birth }: PuppyCardProps) {
+export function PuppyCard({
+  id,
+  name,
+  sex,
+  colour,
+  collar_colour,
+  date_of_birth,
+  highlighted = false,
+}: PuppyCardProps) {
   const router = useRouter();
   const isFemale = sex === 'female';
   const borderClass = isFemale ? 'border-l-4 border-pink-400' : 'border-l-4 border-blue-400';
@@ -24,7 +33,7 @@ export function PuppyCard({ id, name, sex, colour, collar_colour, date_of_birth 
 
   return (
     <Pressable onPress={() => router.push(`/(admin)/dogs/${id}` as never)} className="flex-1 min-w-[140px]">
-      <Card className={borderClass}>
+      <Card className={`${borderClass} ${highlighted ? 'border-2 border-gold bg-gold/10' : ''}`}>
         <Typography variant="subtitle" numberOfLines={1}>
           {isFemale ? '♀' : '♂'} {displayName}
         </Typography>

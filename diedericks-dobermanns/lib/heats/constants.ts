@@ -5,8 +5,17 @@ export const HEAT_CYCLE_SELECT =
   'status, is_predicted, actual_cycle_length_days, cycle_confirmed_at, ' +
   'progesterone_tests, cancelled_reason, notes, created_at, updated_at';
 
+// Aliased to the app's internal field names (left of `:`) — the live
+// `breed_heat_defaults` table uses longer, more explicit column names
+// (right of `:`). This select previously used the app's own field names as
+// the actual column names, which don't exist on the table, so every call
+// failed with "column breed_heat_defaults.avg_cycle_days does not exist"
+// and silently fell back to the hardcoded DOBERMANN_DEFAULTS below. The
+// table has no anestrus-length column, so anestrus_days is intentionally
+// left out; every consumer already treats a missing value as 0 (see
+// PhaseTimeline.tsx's `defaults[p.dayKey] ?? 0`).
 export const BREED_DEFAULTS_SELECT =
-  'id, breed, avg_cycle_days, ovulation_offset_days, proestrus_days, estrus_days, diestrus_days, anestrus_days, gestation_days';
+  'id, breed, avg_cycle_days:avg_cycle_length_days, ovulation_offset_days:ovulation_offset_from_heat_start_days, proestrus_days:avg_proestrus_days, estrus_days:avg_estrus_days, diestrus_days:avg_diestrus_days, gestation_days:avg_gestation_days';
 
 export interface ProgesteroneTest {
   date: string;

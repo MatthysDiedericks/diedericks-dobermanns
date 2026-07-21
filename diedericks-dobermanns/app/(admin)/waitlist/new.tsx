@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -11,17 +11,18 @@ import { Typography } from '@/components/ui/Typography';
 import { useAdminApplications } from '@/hooks/useAdmin';
 import { createWaitlistEntry, createWaitlistFromApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
-import { categoryFromDogInterest } from '@/lib/waitlist/helpers';
+import { categoryFromDogInterest, MANUAL_SOURCES, SOURCE_LABELS } from '@/lib/waitlist/helpers';
 import type { Application } from '@/types/app.types';
 
 export default function NewWaitlistEntryScreen() {
   const router = useRouter();
+  const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
   const { types } = useWaitlistTypes();
   const { data: applications } = useAdminApplications();
   const { submitting, run } = useSubmitting();
   const approved = useMemo(() => applications.filter((a) => a.status === 'approved'), [applications]);
 
-  const [mode, setMode] = useState<'application' | 'manual'>('application');
+  const [mode, setMode] = useState<'application' | 'manual'>(modeParam === 'manual' ? 'manual' : 'application');
   const [appQuery, setAppQuery] = useState('');
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [listTypeId, setListTypeId] = useState('');
@@ -31,6 +32,9 @@ export default function NewWaitlistEntryScreen() {
   const [country, setCountry] = useState('');
   const [notes, setNotes] = useState('');
   const [followUp, setFollowUp] = useState('');
+  const [source, setSource] = useState<string>('other');
+  const [preferredSex, setPreferredSex] = useState('any');
+  const [preferredColour, setPreferredColour] = useState('');
 
   const appResults = approved.filter((a) => {
     const q = appQuery.trim().toLowerCase();
@@ -48,13 +52,16 @@ export default function NewWaitlistEntryScreen() {
     const { error, id } = await run(() =>
       createWaitlistEntry({
         list_type_id: listTypeId,
+        pipeline_stage: 'enquiry',
         enquirer_name: name.trim(),
         enquirer_email: email.trim(),
         enquirer_phone: phone.trim(),
         enquirer_country: country.trim(),
+        preferred_sex: preferredSex,
+        preferred_colour: preferredColour.trim() || null,
         preference_notes: notes.trim() || null,
         follow_up_date: followUp.trim() || null,
-        source: 'manual',
+        source,
       }),
     );
     if (!error && id) router.replace({ pathname: '/(admin)/waitlist/[id]', params: { id } });
@@ -101,6 +108,34 @@ export default function NewWaitlistEntryScreen() {
             <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
             <Input label="Phone" value={phone} onChangeText={setPhone} />
             <Input label="Country" value={country} onChangeText={setCountry} />
+
+            <Typography variant="label" className="mb-2 mt-1 text-gold">How did they find us?</Typography>
+            <View className="mb-4 flex-row flex-wrap gap-2">
+              {MANUAL_SOURCES.map((s) => (
+                <Button
+                  key={s}
+                  label={SOURCE_LABELS[s] ?? s}
+                  size="sm"
+                  variant={source === s ? 'primary' : 'outline'}
+                  onPress={() => setSource(s)}
+                />
+              ))}
+            </View>
+
+            <Typography variant="label" className="mb-2 text-gold">Preferred sex</Typography>
+            <View className="mb-4 flex-row gap-2">
+              {['any', 'male', 'female'].map((s) => (
+                <Button
+                  key={s}
+                  label={s}
+                  size="sm"
+                  variant={preferredSex === s ? 'primary' : 'outline'}
+                  onPress={() => setPreferredSex(s)}
+                />
+              ))}
+            </View>
+
+            <Input label="Preferred colour (optional)" value={preferredColour} onChangeText={setPreferredColour} />
             <Input label="Notes" value={notes} onChangeText={setNotes} multiline className="h-20" />
             <Input label="Follow-up (YYYY-MM-DD)" value={followUp} onChangeText={setFollowUp} autoCapitalize="none" />
           </>

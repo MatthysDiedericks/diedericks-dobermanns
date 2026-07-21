@@ -54,6 +54,8 @@ export default function FinanceDashboardScreen() {
     profitMargin,
     priorPeriodComparison,
     isLoading,
+    error,
+    refresh,
   } = useFinanceReport(from, to);
 
   const { summary: budgetSummary } = useBudgetSummary(selectedYear);
@@ -144,6 +146,20 @@ export default function FinanceDashboardScreen() {
       />
 
       {isLoading ? <CardListSkeleton count={2} /> : null}
+
+      {!isLoading && error ? (
+        <Pressable onPress={() => void refresh()} className="mx-6 mb-4">
+          <Card className="border-danger/40 bg-danger/10">
+            <Typography variant="label" className="text-danger">
+              Income and expenses failed to load
+            </Typography>
+            <Typography variant="caption" className="mt-1 text-subtle">
+              {error} · Tap to retry. VAT and allocation figures below are unaffected — they load
+              separately.
+            </Typography>
+          </Card>
+        </Pressable>
+      ) : null}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 px-6">
         <FinanceKpiCard

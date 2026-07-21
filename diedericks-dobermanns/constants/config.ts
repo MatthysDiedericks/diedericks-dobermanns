@@ -6,6 +6,8 @@ export const Config = {
   app: {
     name: 'Diedericks Dobermanns',
     slogan: 'Born With Purpose. Built With Discipline.',
+    /** Web build base URL — used to build portal links sent by email (e.g. contract e-sign links). */
+    webBaseUrl: 'https://www.diedericksdobermanns.com',
   },
   supabase: {
     url: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',

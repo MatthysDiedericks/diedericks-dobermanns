@@ -22,6 +22,7 @@ export interface LitterIndexRow {
     collar_colour: string | null;
     date_of_birth: string | null;
     status: string | null;
+    microchip_number: string | null;
   }[];
 }
 
@@ -31,7 +32,7 @@ const LITTER_INDEX_SELECT = `
   mother:dogs!litters_mother_id_fkey(id, name),
   father:dogs!litters_father_id_fkey(id, name),
   puppies:dogs!dogs_litter_id_fkey(
-    id, name, sex, colour, collar_colour, date_of_birth, status
+    id, name, sex, colour, collar_colour, date_of_birth, status, microchip_number
   )
 `;
 

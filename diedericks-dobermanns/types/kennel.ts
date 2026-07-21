@@ -144,6 +144,9 @@ export interface CurrentLitterRow {
   litter_letter: string | null;
   mother_id: string | null;
   father_id: string | null;
+  // Only populated by fetchLittersByYear — fetchCurrentLitters omits it since it
+  // already filters to born/available litters.
+  status?: string | null;
   mother?: { id: string; name: string } | null;
   father?: { id: string; name: string } | null;
 }

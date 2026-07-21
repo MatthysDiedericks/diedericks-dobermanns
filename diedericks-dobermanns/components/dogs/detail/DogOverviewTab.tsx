@@ -47,6 +47,7 @@ export function DogOverviewTab({
 
       <SectionCard title="General">
         <DetailRow label="Name" value={dog.name} />
+        <DetailRow label="Registered name" value={dog.registered_name} />
         <DetailRow label="Call name" value={dog.call_name} />
         <DetailRow label="Breed" value={dog.breed} />
         <DetailRow label="Sex" value={dog.sex ? titleCase(dog.sex) : null} />

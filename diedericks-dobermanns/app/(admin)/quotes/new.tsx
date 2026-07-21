@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 
+import { ClientOrWalkinPicker } from '@/components/finance/ClientOrWalkinPicker';
 import { LineItemList } from '@/components/finance/LineItemList';
 import { type DraftLineItem } from '@/components/finance/LineItemRow';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -11,16 +12,30 @@ import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
-import { useAdminDogs, useAdminQuotes, useClients } from '@/hooks/useAdmin';
-import { saveQuote, useSubmitting, type LineItemInput } from '@/hooks/useMutations';
+import { useAdminDogs, useAdminLitters, useClients } from '@/hooks/useAdmin';
+import { useQuoteDetail } from '@/hooks/useQuotes';
+import { useQuotePrefillMatch } from '@/hooks/useQuotePrefillMatch';
 import { formatPrice } from '@/lib/format';
+import type { LineItemInput } from '@/lib/finance/mutations';
+import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
+import { updateWaitlistEntry } from '@/lib/waitlist/mutations';
 import type { Quote } from '@/types/app.types';
+
+interface QuotePrefill {
+  waitlistId?: string;
+  clientId?: string;
+  walkinName?: string;
+  walkinContact?: string;
+  dogId?: string;
+  litterId?: string;
+}
 
 let keyCounter = 0;
 const nextKey = () => `item-${keyCounter++}`;
 
-function seedItems(quote?: Quote): DraftLineItem[] {
+function seedItems(quote?: Quote | null, skipDefaultBlank?: boolean): DraftLineItem[] {
   if (!quote?.items?.length) {
+    if (skipDefaultBlank) return [];
     return [{ key: nextKey(), item_type: 'dog', dog_id: null, description: '', quantity: 1, unit_price: 0 }];
   }
   return quote.items.map((it) => ({
@@ -33,17 +48,31 @@ function seedItems(quote?: Quote): DraftLineItem[] {
   }));
 }
 
-function QuoteBuilder({ initial }: { initial?: Quote }) {
+function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: QuotePrefill }) {
   const router = useRouter();
-  const { submitting, run } = useSubmitting();
+  const [submitting, setSubmitting] = useState(false);
   const { data: clients } = useClients();
   const { data: dogs } = useAdminDogs();
+  const { data: litters } = useAdminLitters();
 
-  const [clientId, setClientId] = useState<string | null>(initial?.client_id ?? null);
-  const [items, setItems] = useState<DraftLineItem[]>(() => seedItems(initial));
+  // Only one of client_id / historical_client_name is ever set on a quote —
+  // `mode` tracks which one this builder is currently editing.
+  const [mode, setMode] = useState<'client' | 'walkin'>(
+    prefill?.clientId ? 'client' : prefill?.walkinName || initial?.historical_client_name ? 'walkin' : 'client',
+  );
+  const [clientId, setClientId] = useState<string | null>(prefill?.clientId ?? initial?.client_id ?? null);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [walkinName, setWalkinName] = useState(prefill?.walkinName ?? initial?.historical_client_name ?? '');
+  const [walkinContact, setWalkinContact] = useState(prefill?.walkinContact ?? '');
+
+  const [items, setItems] = useState<DraftLineItem[]>(() =>
+    seedItems(initial, Boolean(prefill?.dogId || prefill?.litterId)),
+  );
   const [discount, setDiscount] = useState(initial ? String(initial.discount) : '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [validUntil, setValidUntil] = useState(initial?.valid_until ?? '');
+
+  useQuotePrefillMatch(prefill, Boolean(initial), dogs, litters, addDog, setItems, nextKey);
 
   const subtotal = useMemo(
     () => items.reduce((s, it) => s + it.quantity * it.unit_price, 0),
@@ -67,15 +96,21 @@ function QuoteBuilder({ initial }: { initial?: Quote }) {
   function addDog(dogId: string, name: string, price: number | null) {
     setItems((prev) => [
       ...prev,
-      {
-        key: nextKey(),
-        item_type: 'dog',
-        dog_id: dogId,
-        description: name,
-        quantity: 1,
-        unit_price: price ?? 0,
-      },
+      { key: nextKey(), item_type: 'dog', dog_id: dogId, description: name, quantity: 1, unit_price: price ?? 0 },
     ]);
+  }
+
+  function confirmWalkin(name: string, contact: string) {
+    setWalkinName(name);
+    setWalkinContact(contact);
+    setMode('walkin');
+    setClientId(null);
+    setShowQuickAdd(false);
+  }
+
+  function selectClient(id: string) {
+    setClientId(clientId === id ? null : id);
+    setMode('client');
   }
 
   async function onSave(status: 'draft' | 'sent') {
@@ -89,20 +124,55 @@ function QuoteBuilder({ initial }: { initial?: Quote }) {
         unit_price: it.unit_price,
       }));
     if (cleanItems.length === 0) return;
-    const { error } = await run(() =>
-      saveQuote(
-        {
-          client_id: clientId,
-          status,
-          notes: notes.trim() || null,
-          valid_until: validUntil.trim() || null,
-          discount: discountNum,
-        },
-        cleanItems,
-        initial?.id,
-      ),
-    );
-    if (!error) router.replace('/(admin)/quotes/index');
+    const combinedNotes = [notes.trim(), walkinContact.trim() ? `Contact: ${walkinContact.trim()}` : '']
+      .filter(Boolean)
+      .join('\n');
+    const header = {
+      client_id: mode === 'client' ? clientId : null,
+      historical_client_name: mode === 'walkin' ? walkinName.trim() || null : null,
+      status,
+      notes: combinedNotes || null,
+      valid_until: validUntil.trim() || null,
+      discount: discountNum,
+    };
+    setSubmitting(true);
+    try {
+      let quoteId: string;
+      if (initial) {
+        await updateQuote(initial.id, header, cleanItems);
+        quoteId = initial.id;
+      } else {
+        quoteId = await createQuote(header, cleanItems);
+      }
+
+      // Link back to the waiting list entry this quote was built from. A failure
+      // here is logged and surfaced, but doesn't unwind the already-created quote —
+      // money-adjacent records fail safe, not away.
+      if (!initial && prefill?.waitlistId) {
+        const quotedTotal = Math.max(
+          cleanItems.reduce((s, it) => s + it.quantity * it.unit_price, 0) - discountNum,
+          0,
+        );
+        const { error: waitlistError } = await updateWaitlistEntry(prefill.waitlistId, {
+          pipeline_stage: 'quote_sent',
+          status: 'active',
+          quote_id: quoteId,
+          quoted_price: quotedTotal,
+          quote_sent_date: new Date().toISOString().slice(0, 10),
+        });
+        if (waitlistError) {
+          console.error('[QuoteBuilder] waitlist link:', waitlistError);
+        }
+        router.replace({ pathname: '/(admin)/waitlist/[id]', params: { id: prefill.waitlistId } });
+        return;
+      }
+
+      router.replace('/(admin)/quotes/index');
+    } catch (e) {
+      Alert.alert('Could not save quote', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -110,36 +180,22 @@ function QuoteBuilder({ initial }: { initial?: Quote }) {
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow="Sales" title={initial ? 'Edit Quote' : 'New Quote'} />
         <View className="px-6">
-          <Typography variant="label" className="mb-2 text-silver">Client</Typography>
-          <View className="mb-5 flex-row flex-wrap gap-2">
-            {clients.length === 0 ? (
-              <Typography variant="caption">No clients yet.</Typography>
-            ) : (
-              clients.map((c) => {
-                const active = clientId === c.id;
-                return (
-                  <Pressable
-                    key={c.id}
-                    onPress={() => setClientId(active ? null : c.id)}
-                    className={`rounded-xl border px-4 py-2.5 ${
-                      active ? 'border-gold bg-gold/15' : 'border-gold/20 bg-surface'
-                    }`}
-                  >
-                    <Typography variant="caption" className={active ? 'text-gold' : 'text-ink-muted'}>
-                      {c.full_name ?? 'Unnamed'}
-                    </Typography>
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-
-          <LineItemList
-            items={items}
-            onUpdate={updateItem}
-            onRemove={removeItem}
-            onAdd={addBlank}
+          <ClientOrWalkinPicker
+            mode={mode}
+            clientId={clientId}
+            walkinName={walkinName}
+            walkinContact={walkinContact}
+            clients={clients}
+            showQuickAdd={showQuickAdd}
+            onSelectClient={selectClient}
+            onOpenQuickAdd={() => setShowQuickAdd(true)}
+            onToggleQuickAdd={() => setShowQuickAdd((v) => !v)}
+            onChangeWalkinName={setWalkinName}
+            onChangeWalkinContact={setWalkinContact}
+            onConfirmWalkin={confirmWalkin}
           />
+
+          <LineItemList items={items} onUpdate={updateItem} onRemove={removeItem} onAdd={addBlank} />
 
           {dogs.length ? (
             <View className="mt-5">
@@ -197,16 +253,33 @@ function QuoteBuilder({ initial }: { initial?: Quote }) {
 }
 
 export default function QuoteBuilderScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const { data: quotes, loading } = useAdminQuotes();
-  const initial = id ? quotes.find((q) => q.id === id) : undefined;
+  const params = useLocalSearchParams<{
+    id?: string;
+    waitlistId?: string;
+    clientId?: string;
+    walkinName?: string;
+    walkinContact?: string;
+    dogId?: string;
+    litterId?: string;
+  }>();
+  const { quote: initial, loading } = useQuoteDetail(params.id ?? '');
 
-  if (id && loading) {
+  if (params.id && loading) {
     return (
       <ScreenContainer scroll={false} className="items-center justify-center">
         <ActivityIndicator color={Colors.gold} />
       </ScreenContainer>
     );
   }
-  return <QuoteBuilder key={initial?.id ?? 'new'} initial={initial} />;
+  const prefill: QuotePrefill = {
+    waitlistId: params.waitlistId,
+    clientId: params.clientId,
+    walkinName: params.walkinName,
+    walkinContact: params.walkinContact,
+    dogId: params.dogId,
+    litterId: params.litterId,
+  };
+  return (
+    <QuoteBuilder key={initial?.id ?? 'new'} initial={params.id ? initial : undefined} prefill={prefill} />
+  );
 }

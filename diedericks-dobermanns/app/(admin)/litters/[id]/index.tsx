@@ -67,6 +67,7 @@ export default function LitterDetailScreen() {
     whelping_notes?: string | null;
     notes?: string | null;
     updated_at?: string;
+    puppy_count?: number | null;
   };
 
   if (loading) {
@@ -117,7 +118,11 @@ export default function LitterDetailScreen() {
           <LitterCalendarTab litterId={litterId} puppyIds={puppyIds} />
         ) : null}
         {tab === 'weights' ? (
-          <LitterWeightsTab litterId={litterId} whelpDate={detail.actual_date} />
+          <LitterWeightsTab
+            litterId={litterId}
+            whelpDate={detail.actual_date}
+            puppyCount={detail.puppy_count}
+          />
         ) : null}
         {tab === 'notes' ? (
           <LitterNotesTab

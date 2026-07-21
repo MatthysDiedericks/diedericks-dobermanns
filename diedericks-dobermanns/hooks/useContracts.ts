@@ -9,8 +9,11 @@ export type ContractRow = {
   status: string | null;
   created_at: string;
   signed_by_client: boolean;
+  signed_at: string | null;
+  client_signed_at: string | null;
+  client_signature_url: string | null;
   client?: { full_name: string } | null;
-  dog?: { name: string } | null;
+  dog?: { name: string; released_at: string | null } | null;
 };
 
 export function useContracts() {
@@ -32,7 +35,9 @@ export function useContracts() {
         supabase
           .from('contracts')
           .select(
-            'id, created_at, signed_at, signed_by_client, notes, dog_id, client_id, document_url, contract_title, status',
+            'id, created_at, signed_at, client_signed_at, client_signature_url, signed_by_client, notes, dog_id, client_id, document_url, contract_title, status, ' +
+              'client:users!contracts_client_id_fkey(full_name), ' +
+              'dog:dogs!contracts_dog_id_fkey(name, released_at)',
           )
           .order('created_at', { ascending: false }),
       ]);

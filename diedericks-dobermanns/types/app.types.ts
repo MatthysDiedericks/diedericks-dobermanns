@@ -14,6 +14,8 @@ export type UserRole =
 export interface AppUser {
   id: string;
   full_name: string | null;
+  /** Not selected by every query (e.g. mock data / some admin lists) — optional. */
+  email?: string | null;
   phone: string | null;
   country: string | null;
   city: string | null;
@@ -264,6 +266,7 @@ export interface Dog {
   location?: string | null;
   is_spayed_neutered?: boolean;
   wrights_coi?: number | null;
+  registered_name?: string | null;
   genetics_b_locus?: string | null;
   genetics_d_locus?: string | null;
   genetics_vwd_status?: string | null;
@@ -279,6 +282,8 @@ export interface Dog {
   chest_depth_cm?: number | null;
   chest_girth_cm?: number | null;
   owner_id?: string | null;
+  /** When the "Release & Send Contract" action was taken for this puppy — independent of `status`. */
+  released_at?: string | null;
   is_featured: boolean;
   is_public: boolean;
   created_at: string;
@@ -597,9 +602,13 @@ export interface WaitingListEntry {
   priority: WaitlistPriority;
   payment_status: WaitlistPaymentStatus;
   deposit_amount: number | null;
-  quoted_price: number | null;
-  quote_expires_at: string | null;
+  deposit_paid_date: string | null;
   deposit_invoice_id: string | null;
+  quoted_price: number | null;
+  quote_id: string | null;
+  quote_sent_date: string | null;
+  quote_expires_date: string | null;
+  balance_invoice_id: string | null;
   assigned_dog_id: string | null;
   assigned_litter_id: string | null;
   last_contact_date: string | null;
@@ -616,9 +625,9 @@ export interface WaitingListEntry {
   expected_delivery_date: string | null;
   created_at: string;
   updated_at?: string;
-  client?: Pick<AppUser, 'id' | 'full_name' | 'phone'> & { email?: string | null };
+  client?: Pick<AppUser, 'id' | 'full_name' | 'phone' | 'email'> | null;
   list_type?: WaitingListType | null;
-  assigned_dog?: Pick<Dog, 'id' | 'name' | 'colour' | 'sex' | 'category'> | null;
+  assigned_dog?: Pick<Dog, 'id' | 'name' | 'colour' | 'sex' | 'category' | 'price'> | null;
   assigned_litter?: Pick<Litter, 'id' | 'name'> | null;
 }
 
@@ -648,13 +657,15 @@ export type QuoteStatus =
   | 'sent'
   | 'accepted'
   | 'declined'
-  | 'paid'
+  | 'expired'
   | 'cancelled';
 
 export interface Quote {
   id: string;
   quote_number: string | null;
   client_id: string | null;
+  /** Walk-in client with no app account — mirrors invoices.historical_client_name. */
+  historical_client_name: string | null;
   application_id: string | null;
   status: QuoteStatus;
   currency: string;
@@ -663,6 +674,8 @@ export interface Quote {
   total: number;
   notes: string | null;
   valid_until: string | null;
+  converted_invoice_id: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
   // Joined / derived
@@ -670,34 +683,10 @@ export interface Quote {
   items?: LineItem[];
 }
 
-export type InvoiceStatus =
-  | 'unpaid'
-  | 'partial'
-  | 'paid'
-  | 'overdue'
-  | 'cancelled';
-
-export interface Invoice {
-  id: string;
-  invoice_number: string | null;
-  quote_id: string | null;
-  client_id: string | null;
-  status: InvoiceStatus;
-  currency: string;
-  subtotal: number;
-  discount: number;
-  total: number;
-  amount_paid: number;
-  issued_at: string;
-  due_date: string | null;
-  paid_at: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  // Joined / derived
-  client?: AppUser;
-  items?: LineItem[];
-}
+// Real invoice types live in `types/finance.ts` (aligned with the live
+// `invoices` schema — see `lib/finance/queries.ts` / `hooks/useInvoices.ts`).
+// There used to be a second, stale `Invoice`/`InvoiceStatus` pair here with
+// column names that didn't match the database; removed as dead code.
 
 export interface Contract {
   id: string;
@@ -709,9 +698,20 @@ export interface Contract {
   signed_at: string | null;
   notes: string | null;
   created_at: string;
+  contract_title?: string | null;
+  status?: string | null;
+  client_signed_at?: string | null;
+  client_signature_url?: string | null;
+  client_signature_device?: string | null;
+  client_ip_on_sign?: string | null;
 }
 
-export type NotificationType = 'push' | 'email' | 'whatsapp' | 'application_confirmation';
+export type NotificationType =
+  | 'push'
+  | 'email'
+  | 'whatsapp'
+  | 'application_confirmation'
+  | 'document_expiry';
 export type NotificationStatus = 'sent' | 'delivered' | 'failed';
 
 export interface NotificationLog {

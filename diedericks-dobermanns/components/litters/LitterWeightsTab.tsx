@@ -5,14 +5,16 @@ import { PuppyGrowthChart } from '@/components/litters/PuppyGrowthChart';
 import { WeightGrid } from '@/components/litters/WeightGrid';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
+import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { useLitterWeights } from '@/hooks/useLitterWeights';
 
 interface LitterWeightsTabProps {
   litterId: string;
   whelpDate?: string | null;
+  puppyCount?: number | null;
 }
 
-export function LitterWeightsTab({ litterId, whelpDate }: LitterWeightsTabProps) {
+export function LitterWeightsTab({ litterId, whelpDate, puppyCount }: LitterWeightsTabProps) {
   const {
     puppies,
     weightsByPuppyId,
@@ -22,6 +24,11 @@ export function LitterWeightsTab({ litterId, whelpDate }: LitterWeightsTabProps)
     logWeightsBatch,
     weighingSummary,
   } = useLitterWeights(litterId, whelpDate);
+  const {
+    benchmarkCurve,
+    loading: benchmarkLoading,
+    error: benchmarkError,
+  } = useGrowthBenchmark(puppyCount ?? puppies.length);
 
   if (loading) {
     return (
@@ -62,6 +69,7 @@ export function LitterWeightsTab({ litterId, whelpDate }: LitterWeightsTabProps)
         weightsByPuppyId={weightsByPuppyId}
         uniqueDates={uniqueDates}
         whelpDate={whelpDate}
+        benchmarkCurve={!benchmarkLoading && !benchmarkError ? benchmarkCurve : undefined}
       />
     </View>
   );

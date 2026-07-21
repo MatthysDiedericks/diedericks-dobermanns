@@ -30,9 +30,13 @@ export interface WaitlistUpdate {
   priority?: WaitingListEntry['priority'];
   payment_status?: WaitingListEntry['payment_status'];
   deposit_amount?: number | null;
-  quoted_price?: number | null;
-  quote_expires_at?: string | null;
+  deposit_paid_date?: string | null;
   deposit_invoice_id?: string | null;
+  quoted_price?: number | null;
+  quote_id?: string | null;
+  quote_sent_date?: string | null;
+  quote_expires_date?: string | null;
+  balance_invoice_id?: string | null;
   assigned_dog_id?: string | null;
   assigned_litter_id?: string | null;
   last_contact_date?: string | null;
@@ -76,7 +80,7 @@ export async function createWaitlistEntry(input: CreateWaitlistInput): Promise<S
     enquirer_email: input.enquirer_email ?? null,
     enquirer_phone: input.enquirer_phone ?? null,
     enquirer_country: input.enquirer_country ?? null,
-    source: input.source ?? 'manual',
+    source: input.source ?? 'other',
     preferred_category: input.preferred_category ?? 'any',
     preferred_sex: input.preferred_sex ?? 'any',
     preferred_colour: input.preferred_colour ?? null,

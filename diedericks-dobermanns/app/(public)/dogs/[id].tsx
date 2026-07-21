@@ -6,7 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicPhotoGallery } from '@/components/dogs/PublicPhotoGallery';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { DogStory } from '@/components/dogs/DogStory';
+import { DogRegisteredNameBlock } from '@/components/dogs/DogRegisteredNameBlock';
+import { PedigreeTree } from '@/components/dogs/PedigreeTree';
 import { Pedigree, hasPedigree } from '@/components/dogs/Pedigree';
+import { hasPedigreeAncestors, useDogPedigree } from '@/hooks/useDogPedigree';
 import { Button } from '@/components/ui/Button';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -34,6 +37,8 @@ export default function DogProfileScreen() {
   const insets = useSafeAreaInsets();
   const { dog, loading, error } = useDog(id);
   const { data: story } = useDogTimeline(id ?? '');
+  const { ancestors, loading: pedigreeLoading } = useDogPedigree(id ?? '');
+  const showImportedPedigree = !pedigreeLoading && hasPedigreeAncestors(ancestors);
 
   if (loading) {
     return (
@@ -87,6 +92,10 @@ export default function DogProfileScreen() {
         <Typography variant="displayLg" className="mt-3">
           {dog.name}
         </Typography>
+        <DogRegisteredNameBlock
+          registeredName={dog.registered_name}
+          wrightsCoi={dog.wrights_coi}
+        />
         <Typography variant="label" className="mt-2">
           {formatPrice(dog.price)}
         </Typography>
@@ -132,7 +141,15 @@ export default function DogProfileScreen() {
             </Collapsible>
           ) : null}
 
-          {hasPedigree(dog.pedigree) ? (
+          {showImportedPedigree ? (
+            <Collapsible title="Pedigree" defaultOpen>
+              <PedigreeTree
+                dogId={dog.id}
+                displayName={dog.name}
+                profileRoutePrefix="/(public)/dogs/"
+              />
+            </Collapsible>
+          ) : hasPedigree(dog.pedigree) ? (
             <Collapsible title="Pedigree">
               <Pedigree pedigree={dog.pedigree!} />
             </Collapsible>

@@ -21,6 +21,17 @@ const PROHIBITED_PAIRS = [
     sire: 'Hunter',
     dam: 'Hannah',
     reason: "Uncle/niece — Havana Betelges is Hunter's full sister and Hannah's dam",
+    // One-time exception — approved by Matt 2026-07-21 as a deliberate line-breeding
+    // decision (Bliksem, the intended outcross sire, was unavailable due to illness).
+    // Both dogs are confirmed DCM-clear on all 3 commercial markers (PDK4, RBM20,
+    // TITIN — Inqaba Biotech, see documents table). Baseline uncle/niece COI is
+    // ~12.5%; the true pedigree COI hasn't been computed yet (ancestor import is
+    // still in progress), so treat this as informed, not fully verified. This
+    // exception applies ONLY to this specific pair — do not copy this pattern to
+    // approve other prohibited pairs without the same review.
+    exceptionApproved: true,
+    exceptionNote:
+      'Line-breeding exception approved 2026-07-21. Both dogs DCM-clear (PDK4/RBM20/TITIN). Pedigree COI not yet fully computed — monitor litter closely.',
   },
   {
     sire: 'Hunter',
@@ -138,8 +149,17 @@ export function checkPairingValidity(
       (nameIncludes(sire.name, p.sire) && nameIncludes(dam.name, p.dam)) ||
       (nameIncludes(sire.name, p.dam) && nameIncludes(dam.name, p.sire)),
   );
-  if (hardBlock) {
+  if (hardBlock && !('exceptionApproved' in hardBlock && hardBlock.exceptionApproved)) {
     return { allowed: false, reason: hardBlock.reason, coi_flag: false };
+  }
+  if (hardBlock && 'exceptionApproved' in hardBlock && hardBlock.exceptionApproved) {
+    return {
+      allowed: true,
+      reason: `Approved line-breeding exception — ${hardBlock.reason}. ${
+        'exceptionNote' in hardBlock ? hardBlock.exceptionNote : ''
+      }`,
+      coi_flag: true,
+    };
   }
 
   const sireIsDCSon = isDCSon(sire.name);
@@ -177,27 +197,25 @@ export function checkPairingValidity(
 }
 
 export function healthGatePassed(dog: BreedingDog): boolean {
-  const dcmClear =
-    dog.health_dcm1 === 'Clear' &&
-    dog.health_dcm2 === 'Clear' &&
-    dog.health_dcm3 === 'Clear' &&
-    dog.health_dcm4 === 'Clear' &&
-    dog.health_dcm5 === 'Clear';
+  // Only 3 DCM markers exist as commercial genetic tests for Dobermanns today
+  // (PDK4, RBM20, TITIN — see health_dcm1/2/3, mapped in that order). dcm4/dcm5
+  // are reserved for future markers that don't exist yet, so they must not be
+  // required to equal 'Clear' — every dog would fail the gate forever otherwise.
+  // They still block the gate if a future test comes back Carrier/Affected.
+  const dcm1to3Clear =
+    dog.health_dcm1 === 'Clear' && dog.health_dcm2 === 'Clear' && dog.health_dcm3 === 'Clear';
+  const dcm4Ok = dog.health_dcm4 == null || dog.health_dcm4 === 'Clear' || dog.health_dcm4 === 'Pending';
+  const dcm5Ok = dog.health_dcm5 == null || dog.health_dcm5 === 'Clear' || dog.health_dcm5 === 'Pending';
   const hdOk = dog.health_hd === 'A' || dog.health_hd === 'B';
   const edOk = dog.health_ed === '0' || dog.health_ed === '1';
-  return dcmClear && hdOk && edOk;
+  return dcm1to3Clear && dcm4Ok && dcm5Ok && hdOk && edOk;
 }
 
 export function healthGatePending(dog: BreedingDog): boolean {
-  const fields = [
-    dog.health_dcm1,
-    dog.health_dcm2,
-    dog.health_dcm3,
-    dog.health_dcm4,
-    dog.health_dcm5,
-    dog.health_hd,
-    dog.health_ed,
-  ];
+  // dcm4/dcm5 are reserved for DCM markers that don't exist as commercial tests
+  // yet — a dog being null on those isn't "pending," there's simply nothing to
+  // run. Only the 3 real markers (dcm1-3) plus HD/ED count toward "pending".
+  const fields = [dog.health_dcm1, dog.health_dcm2, dog.health_dcm3, dog.health_hd, dog.health_ed];
   return fields.some((f) => f === 'Pending' || f == null);
 }
 

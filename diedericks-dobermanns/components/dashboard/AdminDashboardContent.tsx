@@ -3,23 +3,20 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { SurfaceCard } from '@/components/admin/SurfaceCard';
+import { ExpiringDocumentsWidget } from '@/components/dashboard/ExpiringDocumentsWidget';
+import { LittersByYearWidget } from '@/components/dashboard/LittersByYearWidget';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDashboard } from '@/hooks/useDashboard';
 import { formatAmount } from '@/lib/finance/formatters';
-import { useExpiringDocuments } from '@/hooks/useDocuments';
-import { expiryLabel, expiryStatus } from '@/lib/documents/expiry';
-import { titleCase } from '@/lib/format';
 import {
   daysInHeat,
   daysSinceOvulation,
   formatDogAge,
   formatKennelDate,
-  formatPuppyAge,
   isDueToday,
   isOverdue,
   timeAgo,
@@ -32,7 +29,6 @@ function RowArrow() {
 export function AdminDashboardContent() {
   const router = useRouter();
   const { data, loading, error, refresh, completeTodo } = useDashboard();
-  const { documents: expiringDocs } = useExpiringDocuments(60, 5);
 
   if (loading && !data) {
     return (
@@ -59,70 +55,10 @@ export function AdminDashboardContent() {
       refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={Colors.gold} />}
     >
       {/* Widget — Expiring Documents */}
-      <SurfaceCard title="Expiring Documents" href="/(admin)/documents/index">
-        {expiringDocs.length === 0 ? (
-          <Typography variant="caption" className="text-subtle">
-            No documents expiring in the next 60 days.
-          </Typography>
-        ) : (
-          expiringDocs.map((doc) => {
-            const exp = expiryStatus(doc.expiry_date);
-            const label = expiryLabel(doc.expiry_date);
-            return (
-              <Pressable
-                key={doc.id}
-                onPress={() => router.push('/(admin)/documents/index' as never)}
-                className="flex-row items-center border-b border-gold/10 py-3"
-              >
-                <View className="flex-1">
-                  <Typography variant="body">{doc.document_name}</Typography>
-                  <Typography variant="caption" className="text-ink-muted">
-                    {titleCase(doc.entity_type)} · {formatKennelDate(doc.expiry_date)}
-                  </Typography>
-                </View>
-                {label ? (
-                  <Typography variant="caption" className={exp === 'expired' ? 'text-danger' : 'text-gold'}>
-                    {label}
-                  </Typography>
-                ) : null}
-              </Pressable>
-            );
-          })
-        )}
-      </SurfaceCard>
+      <ExpiringDocumentsWidget />
 
       {/* Widget 1 — Current Litters */}
-      <SurfaceCard title="Current Litters" href="/(admin)/litters/index">
-        {data.currentLitters.length === 0 ? (
-          <View>
-            <EmptyState title="No active litters" message="No active litters at the moment." />
-            <Button label="+ Add Litter" onPress={() => router.push('/(admin)/litters/new')} className="mt-3" />
-          </View>
-        ) : (
-          data.currentLitters.map((l) => (
-            <Pressable
-              key={l.id}
-              onPress={() => router.push(`/(admin)/litters/${l.id}` as never)}
-              className="flex-row items-center border-b border-gold/10 py-3"
-            >
-              <View className="flex-1">
-                <Typography variant="body">{formatKennelDate(l.actual_date)}</Typography>
-                <Typography variant="caption" className="text-gold">
-                  {l.go_home_weeks ?? 10} wks: {formatKennelDate(l.go_home_date)}
-                </Typography>
-                <Typography variant="caption">
-                  {l.mother?.name ?? '—'} × {l.father?.name ?? '—'}
-                </Typography>
-                <Typography variant="caption">{formatPuppyAge(l.actual_date)}</Typography>
-              </View>
-              <Typography variant="label" className="mr-2">
-                ♂{l.male_count ?? 0} ♀{l.female_count ?? 0}
-              </Typography>
-              <RowArrow />
-            </Pressable>
-          ))
-        )}
-      </SurfaceCard>
+      <LittersByYearWidget currentLitters={data.currentLitters} />
 
       {/* Widget — Breeding Programme */}
       <SurfaceCard title="Breeding Programme" href="/(admin)/breeding/index">

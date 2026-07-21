@@ -5,13 +5,15 @@ import { Pressable, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import { EmptyTabState } from '@/components/dogs/detail/EmptyTabState';
+import { buildAgeDaysToX, GrowthBenchmarkLine } from '@/components/litters/GrowthBenchmarkLine';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import type { LitterPuppy, PuppyWeightLog } from '@/hooks/useLitterWeights';
 import { collarHex } from '@/lib/litters/collarColours';
+import type { BenchmarkPoint } from '@/lib/litters/growthBenchmark';
 import { formatWeightGrams, getAgeDays } from '@/lib/litters/weighingSchedule';
 
-const CHART_HEIGHT = 220;
+const CHART_HEIGHT = 300;
 const PADDING = { top: 20, right: 12, bottom: 44, left: 40 };
 
 interface PuppyGrowthChartProps {
@@ -19,6 +21,7 @@ interface PuppyGrowthChartProps {
   weightsByPuppyId: Map<string, PuppyWeightLog[]>;
   uniqueDates: string[];
   whelpDate?: string | null;
+  benchmarkCurve?: BenchmarkPoint[];
 }
 
 function shortDate(iso: string): string {
@@ -34,6 +37,7 @@ export function PuppyGrowthChart({
   weightsByPuppyId,
   uniqueDates,
   whelpDate,
+  benchmarkCurve,
 }: PuppyGrowthChartProps) {
   const [isolatedId, setIsolatedId] = useState<string | null>(null);
   const hasAny = puppies.some((p) => (weightsByPuppyId.get(p.id)?.length ?? 0) > 0);
@@ -74,6 +78,12 @@ export function PuppyGrowthChart({
   };
   const yForGrams = (g: number) =>
     PADDING.top + innerH - ((g - minG + pad) / (range + pad * 2)) * innerH;
+  const ageDaysToX = whelpDate
+    ? buildAgeDaysToX(
+        uniqueDates.map((d) => ({ ageDays: getAgeDays(whelpDate, new Date(d)), x: xForDate(d) })),
+      )
+    : () => null;
+  const hasBenchmark = !!benchmarkCurve && benchmarkCurve.length > 0;
 
   async function exportPdf() {
     const rows = puppies
@@ -107,6 +117,13 @@ export function PuppyGrowthChart({
           stroke="rgba(196,163,90,0.3)"
           strokeWidth={1}
         />
+        {benchmarkCurve ? (
+          <GrowthBenchmarkLine
+            benchmarkCurve={benchmarkCurve}
+            ageDaysToX={ageDaysToX}
+            yForGrams={yForGrams}
+          />
+        ) : null}
         {day14X != null ? (
           <>
             <Line
@@ -176,6 +193,24 @@ export function PuppyGrowthChart({
         })}
       </Svg>
       <View className="mt-2 flex-row flex-wrap gap-3">
+        {hasBenchmark ? (
+          <View className="flex-row items-center gap-1 rounded-full border border-gold/10 px-2 py-1">
+            <Svg width={14} height={10}>
+              <Line
+                x1={0}
+                y1={5}
+                x2={14}
+                y2={5}
+                stroke="#C4A35A"
+                strokeWidth={2}
+                strokeDasharray="4 2"
+              />
+            </Svg>
+            <Typography variant="caption" className="text-subtle">
+              Benchmark
+            </Typography>
+          </View>
+        ) : null}
         {puppies.map((p) => {
           const logs = weightsByPuppyId.get(p.id) ?? [];
           if (logs.length === 0) return null;

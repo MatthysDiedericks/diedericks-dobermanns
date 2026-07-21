@@ -24,6 +24,14 @@ export type AppDatabase = {
         Args: { p_dog_id: string; p_depth?: number };
         Returns: { ancestor_id: string; depth: number; path: string }[];
       };
+      sign_contract_as_client: {
+        Args: { p_contract_id: string; p_signature_url: string; p_device: string; p_ip: string | null };
+        Returns: void;
+      };
+      convert_quote_to_invoice: {
+        Args: { p_quote_id: string };
+        Returns: string;
+      };
     };
     Enums: Database['public']['Enums'];
     CompositeTypes: Database['public']['CompositeTypes'];

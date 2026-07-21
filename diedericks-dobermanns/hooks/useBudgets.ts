@@ -3,18 +3,29 @@ import { parseISO } from 'date-fns';
 
 import {
   budgetForCategoryMonth,
+  deleteBudgetLineItem,
   deleteBudgetsForYear,
+  fetchAllBudgetLineItemsForYear,
   fetchBudgetsForYear,
   sumBudgetAmount,
+  upsertBudgetLineItem,
   upsertBudgetRow,
 } from '@/lib/finance/budgetQueries';
 import { fetchExpenseCategories, fetchExpensesInRange, yearMonthRange } from '@/lib/finance/queries';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
-import type { BudgetRow, ExpenseCategory, ExpenseWithCategory, UpsertBudgetInput } from '@/types/finance';
+import type {
+  BudgetLineItem,
+  BudgetRow,
+  ExpenseCategory,
+  ExpenseWithCategory,
+  UpsertBudgetInput,
+  UpsertBudgetLineItemInput,
+} from '@/types/finance';
 
 export function useBudgets(year: number) {
   const [budgets, setBudgets] = useState<BudgetRow[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [lineItems, setLineItems] = useState<BudgetLineItem[]>([]);
   const [actualByCategory, setActualByCategory] = useState<Map<string, number>>(new Map());
   const [expenses, setExpenses] = useState<ExpenseWithCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,14 +36,16 @@ export function useBudgets(year: number) {
     setError(null);
     try {
       const { from, to } = yearMonthRange(year);
-      const [rows, cats, expenses] = await Promise.all([
+      const [rows, cats, expenses, items] = await Promise.all([
         fetchBudgetsForYear(year),
         fetchExpenseCategories(),
         fetchExpensesInRange(from, to),
+        fetchAllBudgetLineItemsForYear(year),
       ]);
       setBudgets(rows);
       setCategories(cats);
       setExpenses(expenses);
+      setLineItems(items);
       const map = new Map<string, number>();
       expenses.forEach((e) => {
         map.set(e.category_id, (map.get(e.category_id) ?? 0) + Number(e.amount));
@@ -78,6 +91,22 @@ export function useBudgets(year: number) {
     [load],
   );
 
+  const saveLineItem = useCallback(
+    async (input: UpsertBudgetLineItemInput) => {
+      await upsertBudgetLineItem(input);
+      await load();
+    },
+    [load],
+  );
+
+  const deleteLineItem = useCallback(
+    async (id: string) => {
+      await deleteBudgetLineItem(id);
+      await load();
+    },
+    [load],
+  );
+
   const deleteAllForYear = useCallback(async () => {
     try {
       await deleteBudgetsForYear(year);
@@ -117,31 +146,46 @@ export function useBudgets(year: number) {
     [expenses],
   );
 
+  const lineItemsForCategory = useCallback(
+    (categoryId: string) => lineItems.filter((i) => i.category_id === categoryId),
+    [lineItems],
+  );
+
+  const isItemized = useCallback(
+    (categoryId: string) => lineItems.some((i) => i.category_id === categoryId),
+    [lineItems],
+  );
+
   const categoryRows = useMemo(
     () =>
       categories.map((cat) => ({
         category: cat,
-        budgeted: budgetForCategoryMonth(budgets, cat.id, null),
+        budgeted: budgetForCategoryMonth(budgets, lineItems, cat.id, null),
         actual: actualByCategory.get(cat.id) ?? 0,
       })),
-    [categories, budgets, actualByCategory],
+    [categories, budgets, lineItems, actualByCategory],
   );
 
   return {
     budgets,
     categories,
     categoryRows,
+    lineItems,
     actualByCategory,
     loading,
     error,
     refresh: load,
     upsertBudget,
     saveMany,
+    saveLineItem,
+    deleteLineItem,
+    lineItemsForCategory,
+    isItemized,
     deleteAllForYear,
     annualTotal,
     monthlyBreakdown,
     budgetForCategoryMonth: (categoryId: string, month: number | null) =>
-      budgetForCategoryMonth(budgets, categoryId, month),
+      budgetForCategoryMonth(budgets, lineItems, categoryId, month),
     actualForCategory,
   };
 }

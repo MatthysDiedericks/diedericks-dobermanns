@@ -26,7 +26,7 @@ const DOG_DETAIL_SELECT =
   'health_tested, hip_score, elbow_score, dcm_status, ' +
   'coat_type, height_cm, body_length_cm, chest_depth_cm, chest_girth_cm, ear_type, eye_colour, ' +
   'standard, bloodline_type, ' +
-  'is_spayed_neutered, wrights_coi, ' +
+  'is_spayed_neutered, wrights_coi, registered_name, ' +
   'genetics_b_locus, genetics_d_locus, genetics_vwd_status, genetics_dcm1_status, genetics_dcm2_status, genetics_notes, ' +
   'status, category, price, is_public, is_featured, ' +
   'father_id, mother_id, litter_id, owner_id, ' +
@@ -149,11 +149,12 @@ export function useLittersWithPuppies() {
 
 const LITTER_DETAIL_SELECT = `
   id, name, status, actual_date, expected_date, go_home_date, go_home_weeks,
-  litter_letter, mating_type, male_count, female_count, deceased_count, description, notes, whelping_notes, updated_at,
+  litter_letter, mating_type, puppy_count, male_count, female_count, deceased_count, description, notes, whelping_notes, updated_at,
   mother:dogs!litters_mother_id_fkey(id, name),
   father:dogs!litters_father_id_fkey(id, name),
   puppies:dogs!dogs_litter_id_fkey(
     id, name, sex, colour, collar_colour, birth_weight_grams, status, date_of_birth, price, reserved_for_name,
+    owner_id, released_at,
     dog_media(url, is_primary)
   )
 `;

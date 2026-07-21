@@ -140,7 +140,11 @@ export default function WaitlistHomeScreen() {
       </View>
 
       <View className="mb-3 flex-row gap-2 px-4">
-        <Button label="Add entry" size="sm" onPress={() => router.push('/(admin)/waitlist/new')} />
+        <Button
+          label="+ New Lead"
+          size="sm"
+          onPress={() => router.push({ pathname: '/(admin)/waitlist/new', params: { mode: 'manual' } })}
+        />
       </View>
 
       {!loading ? <SummaryStrip entries={filtered} /> : null}

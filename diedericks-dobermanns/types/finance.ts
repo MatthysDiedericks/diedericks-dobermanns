@@ -202,6 +202,32 @@ export interface UpsertBudgetInput {
   notes?: string | null;
 }
 
+export interface BudgetLineItem {
+  id: string;
+  category_id: string;
+  year: number;
+  /** null = recurring (applies every month of `year`); 1-12 = one-off month. */
+  month: number | null;
+  name: string;
+  amount: number;
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export interface UpsertBudgetLineItemInput {
+  id?: string;
+  category_id: string;
+  year: number;
+  month: number | null;
+  name: string;
+  amount: number;
+  sort_order?: number;
+  notes?: string | null;
+}
+
 export interface BudgetSummary {
   year: number;
   totalExpenseBudget: number;

@@ -1,5 +1,5 @@
 import { requireSupabase } from '@/lib/supabase';
-import type { BudgetRow, UpsertBudgetInput } from '@/types/finance';
+import type { BudgetLineItem, BudgetRow, UpsertBudgetInput, UpsertBudgetLineItemInput } from '@/types/finance';
 
 export async function fetchBudgetsForYear(year: number): Promise<BudgetRow[]> {
   const sb = requireSupabase();
@@ -68,11 +68,37 @@ export function sumBudgetAmount(
   return rows.filter((b) => b.month != null).reduce((s, b) => s + Number(b.budgeted_amount), 0);
 }
 
-export function budgetForCategoryMonth(
-  budgets: BudgetRow[],
+/**
+ * Category totals from line items, keyed by month. `month === null` (annual view) sums
+ * recurring items × 12 plus all one-off items (regardless of which month); a specific
+ * month sums recurring items plus one-off items in that month only.
+ */
+export function lineItemsTotalForMonth(
+  items: BudgetLineItem[],
   categoryId: string,
   month: number | null,
 ): number {
+  const catItems = items.filter((i) => i.category_id === categoryId);
+  const recurring = catItems.filter((i) => i.month == null);
+  const oneOff = catItems.filter((i) => i.month != null);
+  const recurringSum = recurring.reduce((s, i) => s + Number(i.amount), 0);
+  if (month == null) {
+    const oneOffSum = oneOff.reduce((s, i) => s + Number(i.amount), 0);
+    return recurringSum * 12 + oneOffSum;
+  }
+  const oneOffSum = oneOff.filter((i) => i.month === month).reduce((s, i) => s + Number(i.amount), 0);
+  return recurringSum + oneOffSum;
+}
+
+export function budgetForCategoryMonth(
+  budgets: BudgetRow[],
+  lineItems: BudgetLineItem[],
+  categoryId: string,
+  month: number | null,
+): number {
+  const hasLineItems = lineItems.some((i) => i.category_id === categoryId);
+  if (hasLineItems) return lineItemsTotalForMonth(lineItems, categoryId, month);
+
   if (month == null) {
     const annual = budgets.find(
       (b) => b.category_id === categoryId && b.budget_type === 'expense' && b.month == null,
@@ -90,6 +116,58 @@ export function budgetForCategoryMonth(
     (b) => b.category_id === categoryId && b.budget_type === 'expense' && b.month == null,
   );
   return annual ? Number(annual.budgeted_amount) / 12 : 0;
+}
+
+export async function fetchBudgetLineItems(categoryId: string, year: number): Promise<BudgetLineItem[]> {
+  const sb = requireSupabase();
+  const { data, error } = await sb
+    .from('budget_line_items')
+    .select('*')
+    .eq('category_id', categoryId)
+    .eq('year', year)
+    .order('sort_order');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as BudgetLineItem[];
+}
+
+export async function fetchAllBudgetLineItemsForYear(year: number): Promise<BudgetLineItem[]> {
+  const sb = requireSupabase();
+  const { data, error } = await sb
+    .from('budget_line_items')
+    .select('*')
+    .eq('year', year)
+    .order('sort_order');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as BudgetLineItem[];
+}
+
+export async function upsertBudgetLineItem(input: UpsertBudgetLineItemInput): Promise<void> {
+  const sb = requireSupabase();
+  const payload = {
+    category_id: input.category_id,
+    year: input.year,
+    month: input.month,
+    name: input.name,
+    amount: input.amount,
+    sort_order: input.sort_order ?? 0,
+    notes: input.notes ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.id) {
+    const { error } = await sb.from('budget_line_items').update(payload).eq('id', input.id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const { error } = await sb.from('budget_line_items').insert(payload);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteBudgetLineItem(id: string): Promise<void> {
+  const sb = requireSupabase();
+  const { error } = await sb.from('budget_line_items').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }
 
 export function progressBarColor(pct: number): { bar: string; text: string } {

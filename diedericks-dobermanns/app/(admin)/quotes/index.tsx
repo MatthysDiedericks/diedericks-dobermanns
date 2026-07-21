@@ -11,22 +11,26 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
-import { useAdminQuotes } from '@/hooks/useAdmin';
+import { useQuotes } from '@/hooks/useQuotes';
 import { formatPrice, titleCase } from '@/lib/format';
-import type { QuoteStatus } from '@/types/app.types';
+import type { Quote, QuoteStatus } from '@/types/app.types';
 
 export const QUOTE_TONE: Record<QuoteStatus, BadgeTone> = {
   draft: 'muted',
   sent: 'gold',
   accepted: 'success',
-  paid: 'success',
   declined: 'danger',
+  expired: 'danger',
   cancelled: 'danger',
 };
 
+export function quoteClientLabel(quote: Quote): string {
+  return quote.client?.full_name ?? quote.historical_client_name ?? 'Unassigned';
+}
+
 export default function AdminQuotesScreen() {
   const router = useRouter();
-  const { data: quotes, loading } = useAdminQuotes();
+  const { data: quotes, loading } = useQuotes();
 
   return (
     <ScreenContainer>
@@ -58,7 +62,7 @@ export default function AdminQuotesScreen() {
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
                     <Typography variant="subtitle" numberOfLines={1} className="flex-1">
-                      {quote.client?.full_name ?? 'Unassigned'}
+                      {quoteClientLabel(quote)}
                     </Typography>
                     <Badge label={titleCase(quote.status)} tone={QUOTE_TONE[quote.status]} />
                   </View>

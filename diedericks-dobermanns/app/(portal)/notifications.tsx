@@ -18,6 +18,7 @@ const ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   email: 'mail',
   whatsapp: 'logo-whatsapp',
   application_confirmation: 'document-text',
+  document_expiry: 'time-outline',
 };
 
 function timeAgo(iso: string): string {

@@ -125,6 +125,28 @@ export default function WaitlistEntryDetailScreen() {
             <Typography variant="label" className="mt-4 text-gold">Payment</Typography>
             <Typography variant="body">{entry.payment_status.replace(/_/g, ' ')}</Typography>
             {entry.deposit_amount ? <Typography variant="body">{formatPrice(entry.deposit_amount)}</Typography> : null}
+            {entry.deposit_invoice_id ? (
+              <Typography
+                variant="caption"
+                className="mt-1 text-success underline"
+                onPress={() =>
+                  router.push({ pathname: '/(admin)/finance/invoices/[id]', params: { id: entry.deposit_invoice_id! } })
+                }
+              >
+                View deposit invoice →
+              </Typography>
+            ) : null}
+            {entry.balance_invoice_id ? (
+              <Typography
+                variant="caption"
+                className="mt-1 text-success underline"
+                onPress={() =>
+                  router.push({ pathname: '/(admin)/finance/invoices/[id]', params: { id: entry.balance_invoice_id! } })
+                }
+              >
+                View balance invoice →
+              </Typography>
+            ) : null}
             <Typography variant="label" className="mt-4 text-gold">Assignment</Typography>
             <Typography variant="body">
               {entry.assigned_dog?.name ?? entry.assigned_litter?.name ?? 'Not yet matched'}
