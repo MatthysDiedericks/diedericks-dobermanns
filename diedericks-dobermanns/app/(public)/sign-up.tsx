@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { LoginLogo } from '@/components/auth/LoginLogo';
 import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
 import { Button } from '@/components/ui/Button';
@@ -85,7 +86,6 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
 
   async function onSubmit() {
     setError(null);
@@ -95,7 +95,7 @@ export default function SignUpScreen() {
     if (password !== confirm) return setError('Passwords do not match.');
     try {
       await signUp(email, password, fullName);
-      setDone(true);
+      router.replace({ pathname: '/(public)/verify-code', params: { email: email.trim() } });
     } catch (e) {
       let msg = 'Registration failed. Please try again.';
       if (e instanceof Error && e.message && e.message !== '{}') msg = e.message;
@@ -105,27 +105,6 @@ export default function SignUpScreen() {
     }
   }
 
-  if (done) {
-    return (
-      <ScreenContainer scroll={false} className="items-center justify-center px-8">
-        <View className="h-16 w-16 items-center justify-center rounded-full bg-success/15">
-          <Ionicons name="checkmark" size={32} color={Colors.success} />
-        </View>
-        <Typography variant="display" className="mt-6 text-center">
-          Account Created
-        </Typography>
-        <Typography variant="bodyMuted" className="mt-3 text-center">
-          Check your email to confirm your account, then sign in.
-        </Typography>
-        <Button
-          label="Go to Sign In"
-          onPress={() => router.replace('/(public)/login')}
-          className="mt-8"
-        />
-      </ScreenContainer>
-    );
-  }
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#111008' }}
@@ -133,6 +112,7 @@ export default function SignUpScreen() {
     >
       <ScreenContainer keyboardShouldPersistTaps="handled" className="bg-[#111008]">
         <View className="px-6 pt-16">
+          <AuthBackButton />
           <LoginLogo />
 
           <Typography variant="display" className="mt-10">

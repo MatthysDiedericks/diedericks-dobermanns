@@ -8,7 +8,6 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { openAccountDeletionRequest } from '@/lib/accountDeletion';
 import { LEGAL_URLS } from '@/lib/legalUrls';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -48,20 +47,6 @@ export default function SettingsScreen() {
             Legal
           </Typography>
           <SettingsLegalSection />
-        </Card>
-
-        <Card>
-          <Typography variant="label" className="mb-2 text-gold">
-            Account
-          </Typography>
-          <Pressable onPress={openAccountDeletionRequest}>
-            <Typography variant="body" className="text-danger">
-              Request account deletion
-            </Typography>
-          </Pressable>
-          <Typography variant="caption" className="mt-2 text-subtle">
-            Opens email to {LEGAL_URLS.contactEmail} with subject &quot;Account Deletion Request&quot;
-          </Typography>
         </Card>
 
         <Card>

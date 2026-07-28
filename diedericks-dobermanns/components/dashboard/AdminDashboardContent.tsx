@@ -75,7 +75,7 @@ export function AdminDashboardContent() {
       </SurfaceCard>
 
       {/* Widget 2 — Upcoming Heats */}
-      <SurfaceCard title="Upcoming Heats" href="/(admin)/heats/index">
+      <SurfaceCard title="Upcoming Heats" href="/(admin)/heats">
         {data.upcomingHeats.length === 0 ? (
           <Typography variant="caption" className="text-subtle">
             No upcoming heats recorded. Track your dams&apos; heat cycles to plan ahead.
@@ -84,7 +84,7 @@ export function AdminDashboardContent() {
           data.upcomingHeats.map((h) => (
             <Pressable
               key={h.id}
-              onPress={() => router.push('/(admin)/heats/index' as never)}
+              onPress={() => router.push('/(admin)/heats' as never)}
               className="flex-row items-center border-b border-gold/10 py-3"
             >
               <View className="flex-1">
@@ -146,7 +146,7 @@ export function AdminDashboardContent() {
                 label="Record mating"
                 size="sm"
                 variant="secondary"
-                onPress={() => router.push('/(admin)/heats/index' as never)}
+                onPress={() => router.push('/(admin)/heats' as never)}
               />
             </View>
           ))

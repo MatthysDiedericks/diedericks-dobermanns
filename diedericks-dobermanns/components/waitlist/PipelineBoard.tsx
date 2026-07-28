@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native';
+import { FlatList, ScrollView, View } from 'react-native';
 
 import { EntryCard } from '@/components/waitlist/EntryCard';
 import { Badge } from '@/components/ui/Badge';
@@ -31,16 +31,19 @@ export function PipelineBoard({ entries, onSelect, onLongPress }: Props) {
             <Typography variant="label">{stageLabel(stage)}</Typography>
             <Badge label={String(grouped[stage]?.length ?? 0)} tone="muted" />
           </View>
-          <ScrollView className="max-h-[520px]">
-            {(grouped[stage] ?? []).map((entry) => (
+          <FlatList
+            data={grouped[stage] ?? []}
+            keyExtractor={(entry) => entry.id}
+            style={{ maxHeight: 520 }}
+            initialNumToRender={10}
+            renderItem={({ item: entry }) => (
               <EntryCard
-                key={entry.id}
                 entry={entry}
                 onPress={() => onSelect(entry)}
                 onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
               />
-            ))}
-          </ScrollView>
+            )}
+          />
         </View>
       ))}
     </ScrollView>

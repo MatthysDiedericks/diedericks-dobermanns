@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import {
   EXPERIENCE_OPTIONS,
   ProfileChip,
@@ -8,6 +9,7 @@ import {
   PURPOSE_OPTIONS,
 } from '@/components/portal/ProfileFormOptions';
 import { ProfileSection } from '@/components/portal/ProfileSection';
+import { DeleteAccountModal } from '@/components/account/DeleteAccountModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -18,13 +20,19 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { useAuthStore } from '@/stores/authStore';
 
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+
 export default function ProfileScreen() {
   const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const logout = useAuthStore((s) => s.logout);
   const { profile, save, saving, isComplete, completionPercent } = useClientProfile();
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   const email = session?.user?.email ?? (Config.isDemoMode ? 'demo@diedericksdobermanns.com' : '—');
+  // Deletion is a client-only self-service flow — staff accounts never reach this row
+  // client-side (the Edge Function is the real 403 guard against staff self-deletion).
+  const canDeleteAccount = profile?.role === 'client';
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -72,6 +80,14 @@ export default function ProfileScreen() {
   async function onLogout() {
     await logout();
     router.replace('/(public)/login');
+  }
+
+  async function onAccountDeleted() {
+    await logout();
+    router.replace({
+      pathname: '/(public)/login',
+      params: { message: 'Your account has been deleted.' },
+    });
   }
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there';
@@ -231,8 +247,26 @@ export default function ProfileScreen() {
             <Typography variant="body">{formatKennelDate(profile?.created_at)}</Typography>
           </View>
           <Button label="Sign Out" variant="danger" onPress={() => void onLogout()} fullWidth className="mt-2" />
+
+          {canDeleteAccount ? (
+            <Pressable onPress={() => setDeleteModalVisible(true)} className="mt-4 items-center">
+              <Typography variant="caption" className="text-danger underline">
+                Delete Account
+              </Typography>
+            </Pressable>
+          ) : null}
         </View>
+
+        <Typography variant="caption" className="mb-6 text-center text-subtle">
+          v{APP_VERSION}
+        </Typography>
       </ScrollView>
+
+      <DeleteAccountModal
+        visible={deleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onDeleted={() => void onAccountDeleted()}
+      />
     </ScreenContainer>
   );
 }

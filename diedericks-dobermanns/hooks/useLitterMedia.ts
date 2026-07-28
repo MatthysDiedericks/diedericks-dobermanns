@@ -31,7 +31,7 @@ export function useLitterMedia(litterId: string) {
     try {
       const { data, error: err } = await requireSupabase()
         .from('litter_media')
-        .select('*')
+        .select('id, litter_id, dog_id, media_type, storage_path, public_url, caption, sort_order, created_at')
         .eq('litter_id', litterId)
         .order('sort_order');
       if (err) throw new Error(err.message);

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
@@ -84,7 +84,7 @@ export default function KennelDocumentsScreen() {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer scroll={false}>
       <PageHeader eyebrow="Kennel" title="Documents" back={false} />
 
       <ExpiringDogsPanel
@@ -161,26 +161,33 @@ export default function KennelDocumentsScreen() {
         </Typography>
       </View>
 
-      <ScrollView className="px-6 pb-12">
-        {loading ? (
-          <ActivityIndicator color={Colors.gold} className="py-8" />
-        ) : null}
-        {error ? <Typography variant="body" className="text-danger">{error}</Typography> : null}
+      {error ? (
+        <Typography variant="body" className="px-6 text-danger">{error}</Typography>
+      ) : null}
 
-        {!loading && documents.length === 0 ? (
+      {loading ? (
+        <ActivityIndicator color={Colors.gold} className="py-8" />
+      ) : documents.length === 0 ? (
+        <View className="px-6">
           <EmptyState title="No documents" message="Upload kennel files to get started." />
-        ) : null}
-
-        {documents.map((doc) => (
-          <DocumentCard
-            key={doc.id}
-            document={doc}
-            onView={setViewerDoc}
-            onEdit={(d) => uploadRef.current?.open(d)}
-            onDeleted={refresh}
-          />
-        ))}
-      </ScrollView>
+        </View>
+      ) : (
+        <FlatList
+          data={documents}
+          keyExtractor={(item) => item.id}
+          contentContainerClassName="px-6 pb-12"
+          initialNumToRender={10}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={Colors.gold} />}
+          renderItem={({ item: doc }) => (
+            <DocumentCard
+              document={doc}
+              onView={setViewerDoc}
+              onEdit={(d) => uploadRef.current?.open(d)}
+              onDeleted={refresh}
+            />
+          )}
+        />
+      )}
 
       <UploadDocumentSheet
         ref={uploadRef}

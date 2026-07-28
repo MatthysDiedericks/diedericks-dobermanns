@@ -41,7 +41,7 @@ export function useClientDogNotes(dogId: string) {
     try {
       const { data, error: err } = await requireSupabase()
         .from('client_dog_notes')
-        .select('*')
+        .select('id, client_id, dog_id, nickname, personal_notes, vet_practice, vet_name, vet_phone, updated_at')
         .eq('client_id', profile.id)
         .eq('dog_id', dogId)
         .maybeSingle();

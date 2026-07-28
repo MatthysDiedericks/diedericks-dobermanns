@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
+import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -42,6 +43,7 @@ export default function ForgotPasswordScreen() {
     >
       <ScreenContainer keyboardShouldPersistTaps="handled" className="bg-[#111008]">
         <View className="px-6 pt-16">
+          <AuthBackButton />
           <Typography variant="display">Reset Password</Typography>
           <Typography variant="bodyMuted" className="mb-8 mt-2">
             Enter your email and we&apos;ll send a secure reset link.

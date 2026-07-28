@@ -9,7 +9,7 @@ import {
 } from 'date-fns';
 
 import { deltaPct, periodLabel } from '@/lib/finance/formatters';
-import { EXPENSE_WITH_CATEGORY } from '@/lib/finance/expenseColumns';
+import { EXPENSE_CATEGORY_COLUMNS, EXPENSE_WITH_CATEGORY } from '@/lib/finance/expenseColumns';
 import { requireSupabase } from '@/lib/supabase';
 import type {
   ExpenseCategory,
@@ -45,7 +45,7 @@ export async function fetchExpenseCategories(): Promise<ExpenseCategory[]> {
   const supabase = requireSupabase();
   const { data, error } = await supabase
     .from('expense_categories')
-    .select('*')
+    .select(EXPENSE_CATEGORY_COLUMNS)
     .order('sort_order');
   if (error) throw new Error(error.message);
   return (data ?? []) as ExpenseCategory[];
@@ -65,7 +65,7 @@ export async function createExpenseCategory(name: string, colour: string): Promi
   const { data, error } = await supabase
     .from('expense_categories')
     .insert({ name, colour, sort_order })
-    .select('*')
+    .select(EXPENSE_CATEGORY_COLUMNS)
     .single();
   if (error) throw new Error(error.message);
   return data as ExpenseCategory;
@@ -114,13 +114,13 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithDetails> 
 
   const { data: items } = await supabase
     .from('invoice_items')
-    .select('*')
+    .select('id, invoice_id, description, item_type, quantity, unit_price, line_total, sort_order')
     .eq('invoice_id', id)
     .order('sort_order');
 
   const { data: payments } = await supabase
     .from('invoice_payments')
-    .select('*')
+    .select('id, invoice_id, amount, payment_date, payment_method, reference, notes, recorded_by, created_at')
     .eq('invoice_id', id)
     .order('payment_date', { ascending: false });
 

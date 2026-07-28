@@ -31,7 +31,9 @@ export function useLitterHealth(litterId: string) {
     try {
       const { data, error: err } = await requireSupabase()
         .from('puppy_health_records')
-        .select('*')
+        .select(
+          'id, litter_id, dog_id, record_type, record_date, type_label, description, notes, administered_by, next_due_date',
+        )
         .eq('litter_id', litterId)
         .order('record_date', { ascending: false });
       if (err) throw new Error(err.message);

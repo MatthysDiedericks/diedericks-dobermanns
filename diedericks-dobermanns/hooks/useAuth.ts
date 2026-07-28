@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 
 import {
+  resendSignupOtp,
   sendPasswordReset as authSendPasswordReset,
   signInWithEmail,
   signOut as authSignOut,
   signUpWithEmail,
   updatePassword as authUpdatePassword,
+  verifySignupOtp,
 } from '@/lib/auth';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -44,6 +46,30 @@ export function useAuth() {
     [],
   );
 
+  const verifyOtp = useCallback(
+    async (email: string, token: string) => {
+      setIsLoading(true);
+      try {
+        const { error } = await verifySignupOtp(email.trim(), token.trim());
+        if (error) throw new Error(error);
+        await refresh();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refresh],
+  );
+
+  const resendOtp = useCallback(async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await resendSignupOtp(email.trim());
+      if (error) throw new Error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -76,6 +102,8 @@ export function useAuth() {
   return {
     signIn,
     signUp,
+    verifyOtp,
+    resendOtp,
     signOut,
     sendPasswordReset,
     updatePassword,

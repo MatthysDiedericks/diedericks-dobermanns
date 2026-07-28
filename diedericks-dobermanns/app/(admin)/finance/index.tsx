@@ -267,7 +267,7 @@ export default function FinanceDashboardScreen() {
             </Card>
           </Pressable>
         ))}
-        <Pressable onPress={() => router.push('/(admin)/finance/invoices/index')}>
+        <Pressable onPress={() => router.push('/(admin)/finance/invoices')}>
           <Typography variant="label" className="text-gold">
             View all invoices →
           </Typography>

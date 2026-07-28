@@ -37,9 +37,11 @@ export async function signUpWithEmail(
       password,
       options: {
         data: { full_name: fullName },
-        // Without this, Supabase falls back to the project's default Site URL
-        // (still set to http://localhost:3000), which is why confirmation
-        // links were opening a dead localhost page instead of the app.
+        // No longer the primary confirmation path (see verifySignupOtp) — the
+        // client now types the 6-digit code from the email instead of tapping
+        // a link. Left in place as a fallback for anyone who clicks the link
+        // anyway (verify-email.tsx still handles it) and because Supabase
+        // requires some redirect URL to be configured regardless.
         emailRedirectTo: 'diedericksdobermanns://verify-email',
       },
     });
@@ -65,6 +67,20 @@ export async function signUpWithEmail(
     console.error('[signUpWithEmail] threw:', e);
     return { error: msg };
   }
+}
+
+/** Confirms a brand-new account's email using the 6-digit code from the signup email. */
+export async function verifySignupOtp(email: string, token: string): Promise<AuthResult> {
+  if (!supabase) return { error: DEMO_ERROR };
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
+  return { error: error?.message ?? null };
+}
+
+/** Sends a fresh signup confirmation code/link to the given email. */
+export async function resendSignupOtp(email: string): Promise<AuthResult> {
+  if (!supabase) return { error: DEMO_ERROR };
+  const { error } = await supabase.auth.resend({ type: 'signup', email });
+  return { error: error?.message ?? null };
 }
 
 export async function sendPasswordReset(email: string): Promise<AuthResult> {

@@ -1,9 +1,14 @@
 import { requireSupabase } from '@/lib/supabase';
 import type { BudgetLineItem, BudgetRow, UpsertBudgetInput, UpsertBudgetLineItemInput } from '@/types/finance';
 
+const BUDGET_COLUMNS =
+  'id, year, month, category_id, label, budget_type, budgeted_amount, notes, created_at, updated_at, created_by';
+const BUDGET_LINE_ITEM_COLUMNS =
+  'id, category_id, year, month, name, amount, sort_order, notes, created_at, updated_at, created_by';
+
 export async function fetchBudgetsForYear(year: number): Promise<BudgetRow[]> {
   const sb = requireSupabase();
-  const { data, error } = await sb.from('budgets').select('*').eq('year', year);
+  const { data, error } = await sb.from('budgets').select(BUDGET_COLUMNS).eq('year', year);
   if (error) throw new Error(error.message);
   return (data ?? []) as BudgetRow[];
 }
@@ -122,7 +127,7 @@ export async function fetchBudgetLineItems(categoryId: string, year: number): Pr
   const sb = requireSupabase();
   const { data, error } = await sb
     .from('budget_line_items')
-    .select('*')
+    .select(BUDGET_LINE_ITEM_COLUMNS)
     .eq('category_id', categoryId)
     .eq('year', year)
     .order('sort_order');
@@ -134,7 +139,7 @@ export async function fetchAllBudgetLineItemsForYear(year: number): Promise<Budg
   const sb = requireSupabase();
   const { data, error } = await sb
     .from('budget_line_items')
-    .select('*')
+    .select(BUDGET_LINE_ITEM_COLUMNS)
     .eq('year', year)
     .order('sort_order');
   if (error) throw new Error(error.message);

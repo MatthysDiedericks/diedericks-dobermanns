@@ -47,7 +47,7 @@ export function useLitterTodos(litterId: string, showCompleted = true) {
     setLoading(true);
     const { data, error } = await requireSupabase()
       .from('litter_todos')
-      .select('*')
+      .select('id, litter_id, dog_id, due_date, title, description, completed, completed_at')
       .eq('litter_id', litterId)
       .order('due_date');
     if (!error) setTodos((data ?? []) as LitterTodo[]);

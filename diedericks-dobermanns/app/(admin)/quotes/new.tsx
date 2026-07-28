@@ -167,7 +167,7 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
         return;
       }
 
-      router.replace('/(admin)/quotes/index');
+      router.replace('/(admin)/quotes');
     } catch (e) {
       Alert.alert('Could not save quote', e instanceof Error ? e.message : 'Please try again.');
     } finally {

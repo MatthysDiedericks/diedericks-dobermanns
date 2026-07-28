@@ -47,7 +47,7 @@ export function LittersByYearWidget({ currentLitters }: { currentLitters: Curren
   const rows = expanded ? yearLitters : currentLitters;
 
   return (
-    <SurfaceCard title="Current Litters" href="/(admin)/litters/index">
+    <SurfaceCard title="Current Litters" href="/(admin)/litters">
       <View className="mb-3 flex-row items-center justify-between">
         {expanded ? (
           <View className="rounded-full border border-gold/30 px-3 py-1.5">

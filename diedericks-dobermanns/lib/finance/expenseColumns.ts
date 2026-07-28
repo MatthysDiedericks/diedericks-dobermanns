@@ -4,3 +4,6 @@ export const EXPENSE_COLUMNS =
 
 export const EXPENSE_WITH_CATEGORY =
   `${EXPENSE_COLUMNS}, category:expense_categories(name, colour)`;
+
+/** Explicit expense-category columns — avoid SELECT * for the categories table itself. */
+export const EXPENSE_CATEGORY_COLUMNS = 'id, name, colour, sort_order, created_at';

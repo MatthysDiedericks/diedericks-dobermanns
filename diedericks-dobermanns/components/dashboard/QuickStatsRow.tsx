@@ -33,12 +33,12 @@ export function QuickStatsRow() {
       <StatCell
         label="Active dogs"
         value={String(stats.totalDogs)}
-        onPress={() => router.push('/(tabs)/dogs/index' as never)}
+        onPress={() => router.push('/(tabs)/dogs' as never)}
       />
       <StatCell
         label="Puppies avail."
         value={String(stats.puppiesAvailable)}
-        onPress={() => router.push('/(tabs)/dogs/litters/index' as never)}
+        onPress={() => router.push('/(tabs)/dogs/litters' as never)}
       />
       <StatCell
         label="Applications"

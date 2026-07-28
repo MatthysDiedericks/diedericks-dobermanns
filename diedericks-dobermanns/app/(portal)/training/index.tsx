@@ -127,7 +127,7 @@ export default function BookSessionScreen() {
           <Typography variant="caption">My Sessions</Typography>
         </Pressable>
         <Pressable
-          onPress={() => router.push('/(portal)/training/videos/index' as never)}
+          onPress={() => router.push('/(portal)/training/videos' as never)}
           className="rounded-full border border-gold bg-gold/15 px-4 py-2"
         >
           <Typography variant="caption" className="text-gold">

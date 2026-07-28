@@ -85,7 +85,7 @@ export default function DogProfileScreen() {
             <Typography variant="caption" className="text-subtle">
               Open the Health module for vaccinations and vet visits for this dog.
             </Typography>
-            <Pressable onPress={() => router.push('/(tabs)/health/vaccinations/index' as never)} className="mt-3">
+            <Pressable onPress={() => router.push('/(tabs)/health/vaccinations' as never)} className="mt-3">
               <Typography variant="label" className="text-gold">View vaccinations →</Typography>
             </Pressable>
           </Card>

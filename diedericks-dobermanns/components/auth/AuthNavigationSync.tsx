@@ -36,7 +36,10 @@ export function AuthNavigationSync() {
       segments[0] === '(public)' &&
       (segments[1] === 'login' ||
         segments[1] === 'forgot-password' ||
-        segments[1] === 'reset-password');
+        segments[1] === 'reset-password' ||
+        // Successful OTP verification sets a session while the user is still
+        // sitting on this screen — route them onward the same way login does.
+        segments[1] === 'verify-code');
 
     const inProtectedArea = PROTECTED_GROUPS.has(String(segments[0]));
 

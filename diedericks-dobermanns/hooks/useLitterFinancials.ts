@@ -46,14 +46,16 @@ export function useLitterFinancials(litterId: string) {
     const client = requireSupabase();
     const { data: txs } = await client
       .from('litter_transactions')
-      .select('*')
+      .select(
+        'id, litter_id, transaction_date, transaction_type, category, currency, amounts_tax_mode, invoice_number, notes, attachment_path, subtotal_cents, tax_cents, total_cents',
+      )
       .eq('litter_id', litterId)
       .order('transaction_date', { ascending: false });
     const withItems: LitterTransaction[] = [];
     for (const tx of txs ?? []) {
       const { data: items } = await client
         .from('litter_transaction_items')
-        .select('*')
+        .select('id, dog_id, description, amount_cents, tax_cents')
         .eq('transaction_id', tx.id)
         .order('sort_order');
       withItems.push({

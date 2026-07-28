@@ -43,7 +43,9 @@ export function useDogTemperament(dogId: string) {
     try {
       const { data, error: err } = await requireSupabase()
         .from('dog_temperament_scores')
-        .select('*')
+        .select(
+          'id, dog_id, assessed_by, assessed_at, evaluation_standard, nerve_stability, drive_and_energy, courage, hardness, environmental_confidence, working_willingness, social_behavior, obedience, total_score, notes, created_at',
+        )
         .eq('dog_id', dogId)
         .order('assessed_at', { ascending: false });
       if (err) throw new Error(err.message);

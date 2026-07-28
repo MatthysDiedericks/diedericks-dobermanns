@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
 import { DogCard } from '@/components/dogs/DogCard';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -23,7 +23,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 export default function DogsScreen() {
-  const { dogs, loading } = useDogs();
+  const { dogs, loading, refetch } = useDogs();
   const [filter, setFilter] = useState<Filter>('all');
 
   const visible = dogs.filter((d) => {
@@ -33,7 +33,7 @@ export default function DogsScreen() {
   });
 
   return (
-    <ScreenContainer>
+    <ScreenContainer scroll={false}>
       <PageHeader eyebrow="The Kennel" title="Our Dogs" back={false} />
 
       <View className="mb-4 px-6">
@@ -72,17 +72,22 @@ export default function DogsScreen() {
 
       {loading ? (
         <DogGridSkeleton count={4} />
-      ) : (
-        <View className="gap-4 px-6">
-          {visible.length === 0 ? (
-            <EmptyState
-              title="No dogs to show"
-              message="Check back soon — new dogs are added regularly."
-            />
-          ) : (
-            visible.map((dog) => <DogCard key={dog.id} dog={dog} />)
-          )}
+      ) : visible.length === 0 ? (
+        <View className="px-6">
+          <EmptyState
+            title="No dogs to show"
+            message="Check back soon — new dogs are added regularly."
+          />
         </View>
+      ) : (
+        <FlatList
+          data={visible}
+          keyExtractor={(item) => item.id}
+          contentContainerClassName="gap-4 px-6 pb-12"
+          initialNumToRender={8}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} tintColor={Colors.gold} />}
+          renderItem={({ item }) => <DogCard dog={item} />}
+        />
       )}
     </ScreenContainer>
   );
