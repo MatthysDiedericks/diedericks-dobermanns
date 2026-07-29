@@ -29,6 +29,10 @@ export default function DogsScreen() {
   const visible = dogs.filter((d) => {
     if (filter === 'all') return true;
     if (filter === 'available') return d.status === ('available' as DogStatus);
+    // Breeding dogs span two category values (dams: breeding_stock+keep,
+    // studs: adult+stud) — filter on status, not category, so studs aren't
+    // silently dropped from the "Breeding" tab.
+    if (filter === 'breeding_stock') return d.status === 'keep' || d.status === 'stud';
     return d.category === filter;
   });
 

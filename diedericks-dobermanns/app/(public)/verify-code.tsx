@@ -10,7 +10,9 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useAuth } from '@/hooks/useAuth';
 
-const RESEND_COOLDOWN_SECS = 30;
+// 60s matches the "up to a minute to arrive" messaging below — stops users
+// requesting a second code (invalidating the first) before the original lands.
+const RESEND_COOLDOWN_SECS = 60;
 const WRONG_CODE_MESSAGE = "That code isn't right — check your email and try again.";
 
 /** Surfaces Supabase's own error for an expired code, but replaces a generic
@@ -102,8 +104,11 @@ export default function VerifyCodeScreen() {
           <Typography variant="display" className="mt-10">
             Verify Your Email
           </Typography>
-          <Typography variant="bodyMuted" className="mb-8 mt-2">
+          <Typography variant="bodyMuted" className="mb-2 mt-2">
             We sent a verification code to {email}. Enter it below to confirm your account.
+          </Typography>
+          <Typography variant="caption" className="mb-8 text-subtle">
+            It can take a minute or two to arrive and stays valid for 10 minutes, so there&apos;s no rush. Check your spam folder before requesting a new one.
           </Typography>
 
           <Input

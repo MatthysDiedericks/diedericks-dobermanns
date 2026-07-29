@@ -5,7 +5,7 @@ import { Pressable, View } from 'react-native';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
-import { formatPrice, titleCase } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import type { Dog } from '@/types/app.types';
 
 interface DogCardProps {
@@ -44,7 +44,7 @@ export function DogCard({ dog, variant = 'default' }: DogCardProps) {
           <View className="ml-4 flex-1">
             <Typography variant="subtitle">{dog.name}</Typography>
             <Typography variant="caption" className="mt-0.5">
-              {titleCase(dog.category ?? '')} · {formatPrice(dog.price)}
+              {formatPrice(dog.price)}
             </Typography>
             <View className="mt-2">
               <DogStatusBadge status={dog.status} />

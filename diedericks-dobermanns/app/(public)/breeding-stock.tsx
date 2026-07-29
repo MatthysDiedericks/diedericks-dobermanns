@@ -10,7 +10,7 @@ import { Typography } from '@/components/ui/Typography';
 import { useDogs } from '@/hooks/useDogs';
 
 export default function BreedingStockScreen() {
-  const { dogs, loading } = useDogs({ category: 'breeding_stock' });
+  const { dogs, loading } = useDogs({ statuses: ['keep', 'stud'] });
   const sires = dogs.filter((d) => d.sex === 'male');
   const dams = dogs.filter((d) => d.sex === 'female');
   const unsexed = dogs.filter((d) => d.sex !== 'male' && d.sex !== 'female');

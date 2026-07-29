@@ -7,6 +7,14 @@ import type { Dog, LitterWithPuppies } from '@/types/app.types';
 
 export interface UseDogsOptions {
   category?: string;
+  /**
+   * Filter by exact status values instead of category. Use this for
+   * "Studs & Dams" style views — breeding dogs are tagged either
+   * category='breeding_stock'+status='keep' (dams) or
+   * category='adult'+status='stud' (studs), so there is no single
+   * category value that captures both. Pass statuses: ['keep', 'stud'].
+   */
+  statuses?: string[];
   featuredOnly?: boolean;
   /** Include dogs no longer active in the kennel (sold, deceased, retired, donated, gifted). Defaults to false — public listings should only show current dogs. */
   includeInactive?: boolean;
@@ -39,17 +47,22 @@ function mapDogMedia(row: Record<string, unknown>): Dog {
 
 export function useDogs(options?: UseDogsOptions) {
   const mock = MOCK_DOGS.filter((d) => {
-    if (options?.category && d.category !== options.category) return false;
+    if (options?.statuses && !options.statuses.includes(d.status ?? '')) return false;
+    if (options?.category && !options?.statuses && d.category !== options.category) return false;
     if (options?.featuredOnly && !d.is_featured) return false;
-    if (!options?.includeInactive && INACTIVE_STATUSES.includes(d.status ?? '')) return false;
+    if (!options?.statuses && !options?.includeInactive && INACTIVE_STATUSES.includes(d.status ?? '')) return false;
     return d.is_public;
   });
 
   const list = useRemoteList<Dog>(mock, (client) => {
     let q = client.from('dogs').select(DOG_LIST_SELECT).eq('is_public', true);
-    if (options?.category) q = q.eq('category', options.category);
+    if (options?.statuses) {
+      q = q.in('status', options.statuses);
+    } else {
+      if (options?.category) q = q.eq('category', options.category);
+      if (!options?.includeInactive) q = q.not('status', 'in', `(${INACTIVE_STATUSES.join(',')})`);
+    }
     if (options?.featuredOnly) q = q.eq('is_featured', true);
-    if (!options?.includeInactive) q = q.not('status', 'in', `(${INACTIVE_STATUSES.join(',')})`);
     return q.order('name');
   });
 

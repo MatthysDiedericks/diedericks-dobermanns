@@ -164,6 +164,12 @@ export default function SignUpScreen() {
             </View>
           ) : null}
 
+          <View className="mb-4 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3">
+            <Typography variant="caption" className="text-gold">
+              After you tap Create Account, we&apos;ll email you a verification code. It can take a minute or two to arrive and stays valid for 10 minutes — no rush, just check your spam folder if you don&apos;t see it.
+            </Typography>
+          </View>
+
           <Button
             label={isLoading ? 'Creating Account…' : 'Create Account'}
             onPress={onSubmit}
