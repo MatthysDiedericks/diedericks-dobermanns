@@ -80,8 +80,6 @@ const LABELS: Partial<Record<keyof ApplicationFormValues, Record<string, string>
   preferred_colour: {
     black_tan: 'Black & Tan',
     brown_tan: 'Brown & Tan',
-    blue_tan: 'Blue & Tan',
-    fawn_tan: 'Fawn & Tan (Isabella)',
     no_preference: 'No preference',
   },
   tail_preference: {

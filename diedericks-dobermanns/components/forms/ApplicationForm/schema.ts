@@ -80,7 +80,7 @@ export const applicationSchema = z.object({
   preferred_sex: z.enum(['male', 'female', 'no_preference'], {
     message: 'Select preferred sex',
   }),
-  preferred_colour: z.enum(['black_tan', 'brown_tan', 'blue_tan', 'fawn_tan', 'no_preference'], {
+  preferred_colour: z.enum(['black_tan', 'brown_tan', 'no_preference'], {
     message: 'Select preferred colour',
   }),
   tail_preference: z.enum(['docked', 'natural', 'no_preference'], {
