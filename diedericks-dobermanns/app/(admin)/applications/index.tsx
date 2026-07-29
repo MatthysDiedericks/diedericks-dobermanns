@@ -10,7 +10,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAdminApplications } from '@/hooks/useAdmin';
-import { titleCase } from '@/lib/format';
+import { formatDateTime, titleCase } from '@/lib/format';
 import type { ApplicationStatus } from '@/types/app.types';
 
 const STATUS_TONE: Record<ApplicationStatus, BadgeTone> = {
@@ -45,6 +45,9 @@ export default function AdminApplicationsScreen() {
                   </View>
                   <Typography variant="caption" className="mt-1">
                     {titleCase(app.dog_interest)} · {titleCase(app.purpose)}
+                  </Typography>
+                  <Typography variant="caption" className="mt-0.5 opacity-60">
+                    Received {formatDateTime(app.created_at)}
                   </Typography>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
