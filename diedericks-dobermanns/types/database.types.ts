@@ -679,6 +679,7 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          discipline: string | null
           id: string
           image_url: string | null
           is_featured: boolean
@@ -690,6 +691,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          discipline?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean
@@ -701,6 +703,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          discipline?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean
@@ -805,6 +808,56 @@ export type Database = {
           {
             foreignKeyName: "notifications_log_recipient_id_fkey"
             columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_tiers: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          display_label: string
+          id: string
+          is_public: boolean
+          price: number
+          sort_order: number
+          tier_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          display_label: string
+          id?: string
+          is_public?: boolean
+          price?: number
+          sort_order?: number
+          tier_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          display_label?: string
+          id?: string
+          is_public?: boolean
+          price?: number
+          sort_order?: number
+          tier_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_tiers_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -1168,8 +1221,11 @@ export type Database = {
           dog_id: string
           duration_minutes: number | null
           id: string
+          is_draft: boolean
+          is_public: boolean
           milestone: string | null
           notes: string | null
+          phase: string | null
           progress_level: string | null
           session_date: string
           trainer_id: string | null
@@ -1181,8 +1237,11 @@ export type Database = {
           dog_id: string
           duration_minutes?: number | null
           id?: string
+          is_draft?: boolean
+          is_public?: boolean
           milestone?: string | null
           notes?: string | null
+          phase?: string | null
           progress_level?: string | null
           session_date: string
           trainer_id?: string | null
@@ -1194,8 +1253,11 @@ export type Database = {
           dog_id?: string
           duration_minutes?: number | null
           id?: string
+          is_draft?: boolean
+          is_public?: boolean
           milestone?: string | null
           notes?: string | null
+          phase?: string | null
           progress_level?: string | null
           session_date?: string
           trainer_id?: string | null
@@ -1213,6 +1275,57 @@ export type Database = {
           {
             foreignKeyName: "training_logs_trainer_id_fkey"
             columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_log_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          media_type: string
+          public_url: string
+          sort_order: number
+          storage_path: string | null
+          training_log_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          media_type: string
+          public_url: string
+          sort_order?: number
+          storage_path?: string | null
+          training_log_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          public_url?: string
+          sort_order?: number
+          storage_path?: string | null
+          training_log_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_log_media_training_log_id_fkey"
+            columns: ["training_log_id"]
+            isOneToOne: false
+            referencedRelation: "training_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_log_media_uploaded_by_fkey"
+            columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
