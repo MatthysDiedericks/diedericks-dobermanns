@@ -44,12 +44,6 @@ export const PRIORITY_STYLES: Record<
 export const COI_WARNING = 6.25;
 export const COI_DANGER = 12.5;
 
-/** Pairings whose offspring must not be crossed with each other (half-sibling dams). */
-export const CROSS_SIBLING_PAIRING_KEYS = [
-  ['Santini', 'Claire'],
-  ['Santini', 'Cendra'],
-] as const;
-
 export const GEN2_SUGGESTED_PAIRINGS = [
   {
     key: 'dc_son_odessa_daughter',

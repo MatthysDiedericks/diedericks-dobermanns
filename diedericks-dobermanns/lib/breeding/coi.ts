@@ -18,6 +18,36 @@ export type CoiResult = {
   explanation: string;
 };
 
+function buildCoiResult(coiPercent: number, commonAncestors: string[]): CoiResult {
+  let severity: CoiSeverity;
+  let explanation: string;
+
+  if (coiPercent < 3) {
+    severity = 'excellent';
+    explanation = `COI of ${coiPercent}% — excellent. Low genetic overlap. Healthy genetic diversity expected.`;
+  } else if (coiPercent < 5) {
+    severity = 'acceptable';
+    explanation = `COI of ${coiPercent}% — acceptable linebreeding. Monitor retained pups for Holter at 24 months.`;
+  } else if (coiPercent < 6.25) {
+    severity = 'caution';
+    explanation = `COI of ${coiPercent}% — approaching our 5% threshold. Consider a cross pairing with the opposite line before proceeding.`;
+  } else if (coiPercent < 12.5) {
+    severity = 'risk';
+    explanation = `COI of ${coiPercent}% — RISK. Equivalent to half-sibling mating. Cross to the other line. Do not proceed without veterinary genetics review.`;
+  } else {
+    severity = 'high_risk';
+    explanation = `COI of ${coiPercent}% — HIGH RISK. This pairing should not proceed. Seek outcross immediately.`;
+  }
+
+  return { coi: coiPercent, severity, common_ancestors: commonAncestors, explanation };
+}
+
+/**
+ * Pure-math reference implementation of Wright's COI, kept for coi.test.ts.
+ * Live pairing screens no longer call this directly — they call the
+ * `evaluate_pairing` RPC (lib/breeding/evaluatePairing.ts), which computes
+ * the identical sum in Postgres via get_ancestors(). See PARITY PROMPT 4.
+ */
 export function calculateCoi(
   sireAncestors: AncestorEntry[],
   damAncestors: AncestorEntry[],
@@ -48,28 +78,16 @@ export function calculateCoi(
   }
 
   const coiPercent = Math.round(f * 10000) / 100;
+  return buildCoiResult(coiPercent, commonAncestors);
+}
 
-  let severity: CoiSeverity;
-  let explanation: string;
-
-  if (coiPercent < 3) {
-    severity = 'excellent';
-    explanation = `COI of ${coiPercent}% — excellent. Low genetic overlap. Healthy genetic diversity expected.`;
-  } else if (coiPercent < 5) {
-    severity = 'acceptable';
-    explanation = `COI of ${coiPercent}% — acceptable linebreeding. Monitor retained pups for Holter at 24 months.`;
-  } else if (coiPercent < 6.25) {
-    severity = 'caution';
-    explanation = `COI of ${coiPercent}% — approaching our 5% threshold. Consider a cross pairing with the opposite line before proceeding.`;
-  } else if (coiPercent < 12.5) {
-    severity = 'risk';
-    explanation = `COI of ${coiPercent}% — RISK. Equivalent to half-sibling mating. Cross to the other line. Do not proceed without veterinary genetics review.`;
-  } else {
-    severity = 'high_risk';
-    explanation = `COI of ${coiPercent}% — HIGH RISK. This pairing should not proceed. Seek outcross immediately.`;
-  }
-
-  return { coi: coiPercent, severity, common_ancestors: commonAncestors, explanation };
+/**
+ * Builds the same display shape (severity/explanation/colour) from a COI
+ * percentage that already came back from the `evaluate_pairing` RPC, so
+ * screens don't need to fetch ancestors client-side just to render a badge.
+ */
+export function coiResultFromEstimate(coiPercent: number): CoiResult {
+  return buildCoiResult(coiPercent, []);
 }
 
 export function coiColour(severity: CoiSeverity): string {

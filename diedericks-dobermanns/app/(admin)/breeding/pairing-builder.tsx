@@ -14,17 +14,11 @@ import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
-import {
-  useAllPairings,
-  useBreedingDogs,
-  useSavePairing,
-} from '@/hooks/useBreedingProgramme';
-import { COI_DANGER, COI_WARNING } from '@/lib/breeding/constants';
+import { useBreedingDogs, useSavePairing } from '@/hooks/useBreedingProgramme';
+import { evaluatePairing, type PairingEvaluation } from '@/lib/breeding/evaluatePairing';
 import {
   ageGatePassed,
-  checkPairingValidity,
   damAgeMonths,
-  estimateCoi,
   healthGatePassed,
   healthGatePending,
 } from '@/lib/breeding/rules';
@@ -59,7 +53,6 @@ function HealthPanel({ dog, role }: { dog: BreedingDog; role: string }) {
 export default function PairingBuilderScreen() {
   const router = useRouter();
   const { sires, dams, loading } = useBreedingDogs();
-  const { pairings } = useAllPairings();
   const savePairing = useSavePairing();
 
   const [sireId, setSireId] = useState('');
@@ -67,6 +60,8 @@ export default function PairingBuilderScreen() {
   const [line, setLine] = useState<'A' | 'B' | 'Cross'>('A');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [evaluation, setEvaluation] = useState<PairingEvaluation | null>(null);
+  const [evaluating, setEvaluating] = useState(false);
 
   const sire = useMemo(() => sires.find((d) => d.id === sireId), [sires, sireId]);
   const dam = useMemo(() => dams.find((d) => d.id === damId), [dams, damId]);
@@ -77,14 +72,24 @@ export default function PairingBuilderScreen() {
     }
   }, [sireId, damId, sire, dam]);
 
-  const validity = useMemo(() => {
-    if (!sire || !dam) return null;
-    return checkPairingValidity(sire, dam, { pairings });
-  }, [sire, dam, pairings]);
-
-  const coi = useMemo(() => {
-    if (!sire || !dam) return null;
-    return estimateCoi(sire, dam);
+  // Pairing legality + COI both come from the evaluate_pairing RPC — the
+  // single source of truth shared with the website (see PARITY PROMPT 4).
+  useEffect(() => {
+    if (!sire || !dam) {
+      setEvaluation(null);
+      return;
+    }
+    let cancelled = false;
+    setEvaluating(true);
+    void evaluatePairing(sire.id, dam.id).then((result) => {
+      if (!cancelled) {
+        setEvaluation(result);
+        setEvaluating(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [sire, dam]);
 
   const ageGate = useMemo(() => {
@@ -95,7 +100,7 @@ export default function PairingBuilderScreen() {
   const canSave =
     sire &&
     dam &&
-    validity?.allowed &&
+    evaluation?.allowed &&
     healthGatePassed(sire) &&
     healthGatePassed(dam) &&
     ageGate?.passed;
@@ -111,7 +116,7 @@ export default function PairingBuilderScreen() {
         generation: Math.max(sire.generation ?? 1, dam.generation ?? 1),
         status: 'Planned',
         priority: 'Active',
-        coi_estimate: coi,
+        coi_estimate: evaluation?.coiEstimate ?? null,
         notes: notes.trim() || null,
       });
       router.back();
@@ -156,13 +161,23 @@ export default function PairingBuilderScreen() {
               ))}
             </View>
 
-            {validity ? (
+            {sire && dam ? (
               <Card className="mb-4">
                 <Typography
                   variant="label"
-                  className={validity.allowed ? 'text-success' : 'text-danger'}
+                  className={
+                    evaluating
+                      ? 'text-subtle'
+                      : evaluation?.allowed
+                        ? 'text-success'
+                        : 'text-danger'
+                  }
                 >
-                  {validity.allowed ? '✓ Allowed' : `✗ ${validity.reason}`}
+                  {evaluating
+                    ? 'Checking pairing rules…'
+                    : evaluation?.allowed
+                      ? '✓ Allowed'
+                      : `✗ ${evaluation?.reasons.join(' ') || 'Pairing could not be verified'}`}
                 </Typography>
               </Card>
             ) : null}
@@ -177,23 +192,18 @@ export default function PairingBuilderScreen() {
                     {ageGate?.warning ? ` — ${ageGate.warning}` : ''}
                   </Typography>
                 ) : null}
-                {coi != null ? (
+                {evaluation?.coiEstimate != null ? (
                   <Typography
                     variant="caption"
                     className={
-                      coi > COI_DANGER
+                      evaluation.severity === 'prohibited'
                         ? 'text-danger'
-                        : coi > COI_WARNING
+                        : evaluation.severity === 'caution'
                           ? 'text-gold'
                           : 'text-subtle'
                     }
                   >
-                    Est. COI: {coi}%
-                    {coi > COI_DANGER
-                      ? ' — RED: above 12.5%'
-                      : coi > COI_WARNING
-                        ? ' — WARNING: above 6.25%'
-                        : ''}
+                    Est. COI: {evaluation.coiEstimate}%
                   </Typography>
                 ) : null}
               </Card>

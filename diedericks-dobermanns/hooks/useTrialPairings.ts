@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { fetchPedigreeMap, resolveAncestors } from '@/lib/breeding/ancestors';
-import { calculateCoi, type CoiResult } from '@/lib/breeding/coi';
+import { coiResultFromEstimate, type CoiResult } from '@/lib/breeding/coi';
 import { PAIRING_SELECT } from '@/lib/breeding/constants';
+import { evaluatePairing } from '@/lib/breeding/evaluatePairing';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { requireSupabase } from '@/lib/supabase';
 import type { BreedingDog, BreedingLine, PairingRecord } from '@/types/breeding';
@@ -183,17 +183,9 @@ export function useTrialPairings() {
   }, []);
 
   const calcCoi = useCallback(async (sireId: string, damId: string): Promise<CoiResult | null> => {
-    try {
-      const pedigree = await fetchPedigreeMap();
-      const [sireAnc, damAnc] = await Promise.all([
-        resolveAncestors(sireId, pedigree),
-        resolveAncestors(damId, pedigree),
-      ]);
-      return calculateCoi(sireAnc, damAnc);
-    } catch (e) {
-      console.error('[useTrialPairings.calcCoi]', e);
-      return null;
-    }
+    const evaluation = await evaluatePairing(sireId, damId);
+    if (evaluation?.coiEstimate == null) return null;
+    return coiResultFromEstimate(evaluation.coiEstimate);
   }, []);
 
   return {

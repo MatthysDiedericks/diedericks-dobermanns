@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { fetchPedigreeMap, resolveAncestors } from '@/lib/breeding/ancestors';
-import { calculateCoi, severityFromCoi, type CoiResult } from '@/lib/breeding/coi';
+import { coiResultFromEstimate, type CoiResult } from '@/lib/breeding/coi';
 import {
   PAIRING_SELECT,
   PLANNER_FEMALE_FILTER,
   PLANNER_MALE_FILTER,
 } from '@/lib/breeding/constants';
+import { evaluatePairing } from '@/lib/breeding/evaluatePairing';
 import { seedBreedingProgrammeIfEmpty } from '@/lib/breeding/seed';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { requireSupabase } from '@/lib/supabase';
@@ -94,25 +94,14 @@ function isLockedFemale(dog: PlannerDog): boolean {
   );
 }
 
-async function coiForPairing(
-  sireId: string,
-  damId: string,
-  stored: number | null,
-): Promise<CoiResult> {
-  if (stored != null && stored >= 0) {
-    return {
-      coi: stored,
-      severity: severityFromCoi(stored),
-      common_ancestors: [],
-      explanation: `Stored COI estimate ${stored}%`,
-    };
-  }
-  const pedigree = await fetchPedigreeMap();
-  const [sireAnc, damAnc] = await Promise.all([
-    resolveAncestors(sireId, pedigree),
-    resolveAncestors(damId, pedigree),
-  ]);
-  return calculateCoi(sireAnc, damAnc);
+/**
+ * Always asks the `evaluate_pairing` RPC for a fresh COI — no more trusting a
+ * possibly-stale stored value, since the RPC is now the single source of
+ * truth for the calculation (see PARITY PROMPT 4).
+ */
+async function coiForPairing(sireId: string, damId: string): Promise<CoiResult> {
+  const evaluation = await evaluatePairing(sireId, damId);
+  return coiResultFromEstimate(evaluation?.coiEstimate ?? 0);
 }
 
 export function useBreedingPlanner(generation = 1) {
@@ -171,7 +160,7 @@ export function useBreedingPlanner(generation = 1) {
       const withCoi: PairingWithCoi[] = [];
 
       for (const p of rawPairings) {
-        const coi = await coiForPairing(p.sire_id, p.dam_id, p.coi_estimate);
+        const coi = await coiForPairing(p.sire_id, p.dam_id);
         if (p.coi_estimate == null || Math.abs(p.coi_estimate - coi.coi) > 0.01) {
           await client.from('pairings').update({ coi_estimate: coi.coi }).eq('id', p.id);
         }
@@ -222,12 +211,12 @@ export function useBreedingPlanner(generation = 1) {
   );
 
   const previewCoi = useCallback(async (sireId: string, damId: string): Promise<CoiResult> => {
-    return coiForPairing(sireId, damId, null);
+    return coiForPairing(sireId, damId);
   }, []);
 
   const savePairing = useCallback(
     async (payload: TablesInsert<'pairings'>) => {
-      const coi = await coiForPairing(String(payload.sire_id), String(payload.dam_id), null);
+      const coi = await coiForPairing(String(payload.sire_id), String(payload.dam_id));
       const { error: err } = await requireSupabase()
         .from('pairings')
         .insert({ ...payload, coi_estimate: coi.coi });
@@ -248,7 +237,7 @@ export function useBreedingPlanner(generation = 1) {
       const damId = existing?.dam_id;
       let coiVal = existing?.coi.coi;
       if (sireId && damId && patch.sire_id) {
-        coiVal = (await coiForPairing(sireId, damId, null)).coi;
+        coiVal = (await coiForPairing(sireId, damId)).coi;
       }
       const { error: err } = await requireSupabase()
         .from('pairings')
@@ -280,6 +269,3 @@ export function useBreedingPlanner(generation = 1) {
   };
 }
 
-export async function previewCoiForDogs(sireId: string, damId: string): Promise<CoiResult> {
-  return coiForPairing(sireId, damId, null);
-}

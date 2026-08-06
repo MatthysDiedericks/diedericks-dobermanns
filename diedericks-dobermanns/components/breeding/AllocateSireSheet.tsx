@@ -4,9 +4,8 @@ import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
-import { previewCoiForDogs } from '@/hooks/useBreedingPlanner';
-import { coiColour, type CoiResult } from '@/lib/breeding/coi';
-import { checkPairingValidity } from '@/lib/breeding/rules';
+import { coiColour, coiResultFromEstimate, type CoiResult } from '@/lib/breeding/coi';
+import { evaluatePairing } from '@/lib/breeding/evaluatePairing';
 import type { PairingWithCoi, PlannerDog } from '@/types/breeding';
 
 export interface AllocateSireSheetHandle {
@@ -15,12 +14,11 @@ export interface AllocateSireSheetHandle {
 }
 
 interface AllocateSireSheetProps {
-  pairings: PairingWithCoi[];
   onSave: (femaleId: string, sireId: string, line: PlannerDog['line'], existingId?: string) => Promise<void>;
 }
 
 export const AllocateSireSheet = forwardRef<AllocateSireSheetHandle, AllocateSireSheetProps>(
-  function AllocateSireSheet({ pairings, onSave }, ref) {
+  function AllocateSireSheet({ onSave }, ref) {
     const sheetRef = useRef<BottomSheetModal>(null);
     const snapPoints = useMemo(() => ['70%'], []);
     const [female, setFemale] = useState<PlannerDog | null>(null);
@@ -31,15 +29,18 @@ export const AllocateSireSheet = forwardRef<AllocateSireSheetHandle, AllocateSir
     const [validityReason, setValidityReason] = useState('');
     const [saving, setSaving] = useState(false);
 
-    const loadPreview = useCallback(
-      async (dam: PlannerDog, sire: PlannerDog) => {
-        const validity = checkPairingValidity(sire, dam, { pairings });
-        setValidityReason(validity.allowed ? '' : validity.reason);
-        const coi = await previewCoiForDogs(sire.id, dam.id);
-        setCoiPreview(coi);
-      },
-      [pairings],
-    );
+    const loadPreview = useCallback(async (dam: PlannerDog, sire: PlannerDog) => {
+      const evaluation = await evaluatePairing(sire.id, dam.id);
+      if (!evaluation) {
+        setValidityReason('Could not check pairing rules — try again.');
+        setCoiPreview(null);
+        return;
+      }
+      setValidityReason(evaluation.allowed ? '' : evaluation.reasons.join(' '));
+      setCoiPreview(
+        evaluation.coiEstimate != null ? coiResultFromEstimate(evaluation.coiEstimate) : null,
+      );
+    }, []);
 
     useImperativeHandle(ref, () => ({
       open: (f, m, existing) => {

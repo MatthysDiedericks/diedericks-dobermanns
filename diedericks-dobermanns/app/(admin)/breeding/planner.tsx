@@ -188,7 +188,7 @@ export default function BreedingPlannerScreen() {
       )}
 
       <CoiInfoPanel ref={coiInfoRef} />
-      <AllocateSireSheet ref={allocateRef} pairings={pairings} onSave={onSaveAllocation} />
+      <AllocateSireSheet ref={allocateRef} onSave={onSaveAllocation} />
       <PairingDetailSheet
         ref={detailRef}
         onRecordMating={(id, date) => updatePairing(id, { status: 'Active', date_bred: date })}
