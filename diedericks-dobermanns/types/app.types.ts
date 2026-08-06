@@ -324,6 +324,10 @@ export interface DogMedia {
   is_primary: boolean;
   sort_order: number;
   uploaded_at: string;
+  /** Publish-control columns — optional since not every query selects them. */
+  is_public?: boolean;
+  uploaded_by?: string | null;
+  client_consent?: boolean;
 }
 
 export interface DogShow {

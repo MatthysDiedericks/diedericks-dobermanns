@@ -13,7 +13,7 @@ import type { DogMedia } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
 
 const MEDIA_SELECT =
-  'id, dog_id, url, thumbnail_url, type, is_primary, sort_order, caption, uploaded_at';
+  'id, dog_id, url, thumbnail_url, type, is_primary, sort_order, caption, uploaded_at, is_public, uploaded_by, client_consent';
 
 function newPhotoId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {

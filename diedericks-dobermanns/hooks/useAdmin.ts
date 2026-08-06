@@ -53,6 +53,20 @@ export function useAdminDogs(): ListResult<Dog> {
   );
 }
 
+export interface DogPickerOption {
+  id: string;
+  name: string;
+  status: string | null;
+  programme_tier: string | null;
+}
+
+/** Full roster for the media-destination dog picker — grouped via DOG_GROUPS. */
+export function useDogsForMediaPicker(): ListResult<DogPickerOption> {
+  return useRemoteList<DogPickerOption>([], (client) =>
+    client.from('dogs').select('id, name, status, programme_tier').order('name'),
+  );
+}
+
 export function useAdminApplications(): ListResult<Application> {
   return useRemoteList<Application>(MOCK_APPLICATIONS, (client) =>
     client

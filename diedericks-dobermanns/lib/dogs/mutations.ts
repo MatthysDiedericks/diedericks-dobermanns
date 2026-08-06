@@ -84,6 +84,39 @@ export async function replaceDogMedia(
   return { error: error?.message ?? null };
 }
 
+export interface AddDogMediaInput {
+  dogId: string;
+  type: 'photo' | 'video';
+  url: string;
+  /** Staff uploads default public; client uploads must pass `false` explicitly. */
+  isPublic?: boolean;
+  uploadedBy?: string | null;
+  /** Only meaningful for client uploads — whether the owner agreed to a future publish. */
+  clientConsent?: boolean;
+}
+
+/**
+ * Adds one dog_media row. Shared by the admin "attach to a dog" upload and
+ * the client "add photos of my dog" upload — the difference between them is
+ * entirely in what the caller passes for isPublic/clientConsent, never in
+ * this function. RLS still forces is_public=false for a client-owned insert
+ * regardless of what's passed here, so this is defence in depth, not the
+ * only guard.
+ */
+export async function addDogMedia(input: AddDogMediaInput): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const row: TablesInsert<'dog_media'> = {
+    dog_id: input.dogId,
+    type: input.type,
+    url: input.url,
+    is_public: input.isPublic ?? true,
+    uploaded_by: input.uploadedBy ?? null,
+    client_consent: input.clientConsent ?? false,
+  };
+  const { error } = await supabase.from('dog_media').insert(row);
+  return { error: error?.message ?? null };
+}
+
 /** Sets (or replaces) a dog's single primary photo via the dog_media table. */
 export async function setPrimaryImage(
   dogId: string,

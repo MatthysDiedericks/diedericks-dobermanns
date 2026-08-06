@@ -95,6 +95,19 @@ const DOGS = [
   { folder: 'Raptor', id: '3c8c4ff6-c6b5-46a6-a089-a9b225ecc1ce', status: 'sold', baseFolder: PHOTO_BASE_SOLD },
   { folder: 'Zara',   id: '9c6071f1-d465-4a2f-86fc-8f2089974828', status: 'sold', baseFolder: PHOTO_BASE_SOLD },
   { folder: 'Zues',   id: '94fb5036-b7ff-4ed0-95c9-3fa8719c2d73', status: 'sold', baseFolder: PHOTO_BASE_SOLD },
+
+  // ── Stray folders found in the 2026-07-31 photo audit ───────────────────────
+  // These point at the SAME dog as an entry above, but at a different folder on
+  // disk. Photos were dropped into the wrong place and were never being read:
+  //
+  //  * "Santini Videos" contains 3 stills as well as the video, and the video
+  //    script ignores images — so those 3 photos were stranded.
+  //
+  // (The stray root-level Ade/ folder was merged into Sold/Ade on 2026-08-05, so
+  // it no longer needs its own manifest entry.)
+  //
+  // Dedup is per-dog on the output filename, so listing a dog twice is safe.
+  { folder: 'Santini Videos', id: 'c54ae0cf-dcba-4d83-a0eb-b6823132b0d1', status: 'stud' },
 ];
 
 if (!SERVICE_KEY) {

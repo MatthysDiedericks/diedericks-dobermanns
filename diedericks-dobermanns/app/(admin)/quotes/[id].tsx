@@ -140,6 +140,17 @@ export default function QuoteDetailScreen() {
                 View converted invoice →
               </Typography>
             ) : null}
+            {quote.application_id ? (
+              <Typography
+                variant="caption"
+                className="mt-2 text-gold underline"
+                onPress={() =>
+                  router.push({ pathname: '/(admin)/applications/[id]', params: { id: quote.application_id! } })
+                }
+              >
+                From application →
+              </Typography>
+            ) : null}
           </Card>
 
           <LineItems

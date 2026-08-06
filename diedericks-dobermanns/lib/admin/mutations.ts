@@ -1,3 +1,4 @@
+import { createDraftQuoteFromApplication } from '@/lib/finance/autoQuoteFromApplication';
 import { callCreateVideoRoom, callNotify } from '@/lib/functions';
 import { formatDateTime } from '@/lib/format';
 import { SOCIAL_SETTING_KEYS } from '@/lib/social';
@@ -237,12 +238,20 @@ export async function reviewApplication(
     .eq('id', id);
   if (error) return { error: error.message };
 
-  if (app.user_id && status === 'approved') {
-    void callNotify({
-      userId: app.user_id,
-      title: 'Application Update',
-      body: 'Your Diedericks Dobermanns application has been approved! Log in to view details.',
+  if (status === 'approved') {
+    // Draft quote is best-effort: a failure here must never make the approval
+    // itself look like it failed — the application IS approved at this point.
+    void createDraftQuoteFromApplication(id).then(({ error: qErr }) => {
+      if (qErr) console.error('[reviewApplication] auto-quote:', qErr);
     });
+
+    if (app.user_id) {
+      void callNotify({
+        userId: app.user_id,
+        title: 'Application Update',
+        body: 'Your Diedericks Dobermanns application has been approved! Log in to view details.',
+      });
+    }
   } else if (app.user_id && status === 'rejected') {
     void callNotify({
       userId: app.user_id,

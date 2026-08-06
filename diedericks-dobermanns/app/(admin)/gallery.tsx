@@ -2,18 +2,20 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { AddDogMediaCard } from '@/components/admin/AddDogMediaCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { useAdminGallery } from '@/hooks/useAdmin';
+import { useAdminGallery, useDogsForMediaPicker } from '@/hooks/useAdmin';
 import { setGalleryFeatured } from '@/hooks/useMutations';
 import { titleCase } from '@/lib/format';
 
 export default function AdminGalleryScreen() {
   const { data: items, loading, refetch } = useAdminGallery();
+  const { data: dogs } = useDogsForMediaPicker();
   const [busy, setBusy] = useState<string | null>(null);
 
   async function toggle(id: string, next: boolean) {
@@ -26,6 +28,9 @@ export default function AdminGalleryScreen() {
   return (
     <ScreenContainer>
       <PageHeader eyebrow="Content" title="Gallery" />
+      <View className="px-6">
+        <AddDogMediaCard dogs={dogs} />
+      </View>
       <View className="gap-3 px-6">
         {!loading && items.length === 0 ? (
           <EmptyState title="No gallery items yet" />

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
+import { ApprovalQuoteStatus } from '@/components/applications/ApprovalQuoteStatus';
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { DocumentSection } from '@/components/documents/DocumentList';
@@ -14,6 +15,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useApplicationDetail } from '@/hooks/useAdmin';
+import { useLinkedQuote, type LinkedQuote } from '@/hooks/useLinkedQuote';
 import { createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { titleCase } from '@/lib/format';
@@ -65,6 +67,11 @@ export default function ApplicationDetailScreen() {
   const [notes, setNotes] = useState('');
   const [done, setDone] = useState<ApplicationStatus | null>(null);
   const [addingWl, setAddingWl] = useState(false);
+  const { linkedQuote, quotePending, quoteFailed, pollAfterApproval } = useLinkedQuote(id);
+
+  function openQuote(quote: LinkedQuote) {
+    router.push({ pathname: '/(admin)/quotes/[id]', params: { id: quote.id } });
+  }
 
   async function addToWaitlist() {
     if (!app || !id) return;
@@ -81,7 +88,13 @@ export default function ApplicationDetailScreen() {
     const { error: err } = await run(() => reviewApplication(id, status, notes || null));
     if (!err) {
       setDone(status);
-      setTimeout(() => router.back(), 900);
+      if (status === 'approved') {
+        // Quote creation runs in the background (see reviewApplication) — stay on
+        // this screen and poll for it rather than auto-navigating away.
+        void pollAfterApproval(id);
+      } else {
+        setTimeout(() => router.back(), 900);
+      }
     }
   }
 
@@ -114,6 +127,26 @@ export default function ApplicationDetailScreen() {
             <Badge label="Follow-up needed" tone="danger" />
           ) : null}
         </View>
+
+        {linkedQuote && done !== 'approved' ? (
+          <Typography
+            variant="caption"
+            className="mb-4 text-gold underline"
+            onPress={() => openQuote(linkedQuote)}
+          >
+            View quote {linkedQuote.quote_number ?? ''} →
+          </Typography>
+        ) : null}
+
+        {done === 'approved' ? (
+          <ApprovalQuoteStatus
+            quotePending={quotePending}
+            quoteFailed={quoteFailed}
+            linkedQuote={linkedQuote}
+            onViewQuote={openQuote}
+            onBack={() => router.back()}
+          />
+        ) : null}
 
         {needsFollowUp(app) ? (
           <Card className="mb-4 border border-amber-500/40 bg-amber-500/10">

@@ -111,6 +111,20 @@ export async function fetchAllQuotes(statusFilter?: string): Promise<Quote[]> {
   return (data ?? []) as unknown as Quote[];
 }
 
+/** Minimal quote lookup by application_id — links an application to its auto-generated draft. */
+export async function fetchQuoteByApplicationId(
+  applicationId: string,
+): Promise<{ id: string; quote_number: string | null } | null> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('id, quote_number')
+    .eq('application_id', applicationId)
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return (data?.[0] as { id: string; quote_number: string | null } | undefined) ?? null;
+}
+
 export async function fetchQuoteById(id: string): Promise<Quote> {
   const supabase = requireSupabase();
   const { data, error } = await supabase.from('quotes').select(QUOTE_SELECT).eq('id', id).single();

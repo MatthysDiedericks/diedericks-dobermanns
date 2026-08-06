@@ -1,60 +1,63 @@
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { PhotoPicker } from '@/components/forms/PhotoPicker';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { saveTimelineEntry, useSubmitting } from '@/hooks/useMutations';
+import { useDogMedia } from '@/hooks/useDogMedia';
+import { addDogMedia, useSubmitting } from '@/hooks/useMutations';
 import { resolvePhotoUrls } from '@/lib/storage';
 import { useAuthStore } from '@/stores/authStore';
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
-
+/**
+ * A client adding their own photos of a dog they own — inserts into
+ * dog_media (not dog_timeline). is_public is always forced false here; the
+ * consent tick only records whether the owner would allow a future publish,
+ * which staff act on from the admin review queue.
+ */
 export default function AddPhotosScreen() {
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const { submitting, run } = useSubmitting();
+  const { media, refresh } = useDogMedia(dogId ?? '');
 
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(today());
-  const [notes, setNotes] = useState('');
+  const [consent, setConsent] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = title.trim().length > 0 && date.trim().length > 0 && photos.length > 0;
+  const myUploads = media.filter((m) => m.uploaded_by === profile?.id);
+  const canSubmit = photos.length > 0;
 
   async function submit() {
     setError(null);
-    if (!dogId) return;
-    if (!canSubmit) {
-      setError('Please add a name, a date, and at least one photo.');
-      return;
+    if (!dogId || photos.length === 0) return;
+
+    const urls = await resolvePhotoUrls(photos, `dogs/${dogId}`);
+    for (const url of urls) {
+      const { error: err } = await run(() =>
+        addDogMedia({
+          dogId,
+          type: 'photo',
+          url,
+          isPublic: false,
+          uploadedBy: profile?.id ?? null,
+          clientConsent: consent,
+        }),
+      );
+      if (err) {
+        setError(err);
+        return;
+      }
     }
-    const photo_urls = await resolvePhotoUrls(photos);
-    const { error: err } = await run(() =>
-      saveTimelineEntry({
-        dog_id: dogId,
-        source: 'client',
-        category: 'client_update',
-        entry_date: date.trim(),
-        title: title.trim(),
-        notes: notes.trim() || null,
-        photo_urls,
-        author_id: profile?.id ?? null,
-      }),
-    );
-    if (err) {
-      setError(err);
-      return;
-    }
-    router.back();
+    setPhotos([]);
+    await refresh();
   }
 
   return (
@@ -63,23 +66,17 @@ export default function AddPhotosScreen() {
         <PageHeader eyebrow="Your Dog" title="Add Photos" />
         <View className="px-6">
           <Typography variant="bodyMuted" className="mb-5">
-            Share up to 3 photos of your dog. A name and date are required.
+            Share your own photos. The kennel reviews everything before it appears anywhere public.
           </Typography>
 
-          <Input
-            label="Name *"
-            placeholder="e.g. Beach day with Luna"
-            value={title}
-            onChangeText={setTitle}
-          />
-          <Input
-            label="Date * (YYYY-MM-DD)"
-            placeholder="2026-06-22"
-            autoCapitalize="none"
-            value={date}
-            onChangeText={setDate}
-          />
-          <Input label="Caption (optional)" value={notes} onChangeText={setNotes} multiline className="h-24" />
+          <View className="mb-4">
+            <Checkbox
+              checked={consent}
+              onChange={setConsent}
+              label="Are Diedericks Dobermanns allowed to make this photo public?"
+              description="Ticking this lets us use your photo on our website and social media. Leave it unticked and only you and the kennel will see it."
+            />
+          </View>
 
           <Typography variant="caption" className="mb-2 text-silver">
             Photos *
@@ -100,6 +97,23 @@ export default function AddPhotosScreen() {
             fullWidth
             className="mt-5"
           />
+
+          {myUploads.length > 0 ? (
+            <View className="mt-6 flex-row flex-wrap gap-3">
+              {myUploads.map((m) => (
+                <View key={m.id} className="h-24 w-24 overflow-hidden rounded-xl border border-gold/20 bg-surface">
+                  <Image source={{ uri: m.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  {!m.is_public ? (
+                    <View className="absolute inset-x-0 bottom-0 items-center bg-black/70 py-1">
+                      <Badge label="Awaiting kennel review" tone="gold" />
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <Button label="Done" variant="ghost" onPress={() => router.back()} fullWidth className="mt-6" />
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>

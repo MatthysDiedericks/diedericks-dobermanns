@@ -50,8 +50,21 @@ const PHOTO_BASE    = process.env.PHOTO_BASE_OVERRIDE || `C:\\Users\\mathy\\OneD
 // ─── CATEGORY MANIFEST ────────────────────────────────────────────────────────
 // folder:   subfolder name inside PHOTO_BASE
 // category: matches gallery_items.category — used for storage folder + tag
+// NOTE: `category` MUST be one of the values allowed by the
+// gallery_items_category_check constraint:
+//   puppies | elite_pups | protection_dogs | competition | kennel | family | training
+// Anything else is silently rejected by RLS/constraint and the photo never appears.
+// Several folders deliberately share a category (Achivements + Compititions both
+// feed the Competition tab; Pack + Team both feed Kennel) — `title` is what
+// distinguishes them on screen.
 const CATEGORIES = [
-  { folder: 'Puppies', category: 'puppies', title: 'Puppies' },
+  { folder: 'Puppies',      category: 'puppies',     title: 'Puppies' },
+  { folder: 'Training',     category: 'training',    title: 'Training' },
+  { folder: 'Dog School',   category: 'training',    title: 'Dog School' },
+  { folder: 'Achivements',  category: 'competition', title: 'Achievements' },
+  { folder: 'Compititions', category: 'competition', title: 'Competition' },
+  { folder: 'Pack',         category: 'kennel',      title: 'The Pack' },
+  { folder: 'Team',         category: 'kennel',      title: 'Our Team' },
 ];
 
 if (!SERVICE_KEY) {
@@ -114,7 +127,8 @@ async function processCategory(cat) {
     const baseName = path.basename(file, path.extname(file))
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .substring(0, 60);
-    const outName     = `${cat.category}-${baseName}.jpg`;
+    const folderSlug  = cat.folder.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const outName     = `${folderSlug}-${baseName}.jpg`;
     const storagePath = `${cat.category}/${outName}`;
 
     process.stdout.write(`    ${file.substring(0, 50).padEnd(52)} `);
