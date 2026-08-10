@@ -7,10 +7,18 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 
+interface EmailAttachment {
+  filename: string;
+  /** Base64-encoded file contents (no data: prefix). */
+  content: string;
+  contentType?: string;
+}
+
 interface EmailPayload {
   to: string;
   subject: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
@@ -27,14 +35,22 @@ serve(async (req) => {
   }
 
   try {
-    const { to, subject, html } = (await req.json()) as EmailPayload;
+    const { to, subject, html, attachments } = (await req.json()) as EmailPayload;
+    const body: Record<string, unknown> = { from: FROM, to, subject, html };
+    if (attachments?.length) {
+      body.attachments = attachments.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        content_type: a.contentType ?? 'application/pdf',
+      }));
+    }
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from: FROM, to, subject, html }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     return new Response(JSON.stringify(data), {
