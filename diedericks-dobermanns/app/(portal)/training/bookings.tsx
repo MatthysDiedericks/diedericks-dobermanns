@@ -24,6 +24,24 @@ const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
   cancelled: 'danger',
 };
 
+function isTrainingRequest(notes: string | null | undefined): boolean {
+  return (notes ?? '').startsWith('[TRAINING_REQUEST]');
+}
+
+function statusLabel(status: BookingStatus, isRequest: boolean): string {
+  if (isRequest) {
+    if (status === 'pending') return 'Requested';
+    if (status === 'confirmed') return 'Kennel replied';
+    if (status === 'cancelled') return 'Closed';
+    if (status === 'completed') return 'Completed';
+  }
+  if (status === 'pending') return 'Pending confirmation';
+  if (status === 'confirmed') return 'Booked';
+  if (status === 'cancelled') return 'Cancelled';
+  if (status === 'completed') return 'Completed';
+  return status;
+}
+
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -64,8 +82,15 @@ export default function MyBookingsScreen() {
 
       <View className="px-6">
         <Button
-          label="+ Book a Session"
+          label="+ Request training"
           variant="outline"
+          onPress={() => router.push('/(portal)/training/request' as never)}
+          fullWidth
+          className="mb-3"
+        />
+        <Button
+          label="+ Book a Session"
+          variant="ghost"
           onPress={() => router.push('/(portal)/training/index' as never)}
           fullWidth
           className="mb-4"
@@ -73,10 +98,15 @@ export default function MyBookingsScreen() {
 
         <View className="gap-3">
           {!loading && bookings.length === 0 ? (
-            <EmptyState title="No sessions yet" message="Book your first training session to get started." />
+            <EmptyState
+              title="No sessions yet"
+              message="Send a training request or book a session when you are ready."
+            />
           ) : (
             bookings.map((b) => {
+              const isRequest = isTrainingRequest(b.client_notes);
               const canJoin =
+                !isRequest &&
                 b.status === 'confirmed' &&
                 b.session_format === 'video_call' &&
                 !!b.video_room_url;
@@ -86,13 +116,24 @@ export default function MyBookingsScreen() {
                 <Card key={b.id}>
                   <View className="flex-row items-center">
                     <Typography variant="subtitle" className="flex-1">
-                      {b.session_type?.name ?? 'Training Session'}
+                      {isRequest
+                        ? 'Training request'
+                        : (b.session_type?.name ?? 'Training Session')}
                     </Typography>
-                    <Badge label={b.status} tone={STATUS_TONE[b.status]} />
+                    <Badge
+                      label={statusLabel(b.status, isRequest)}
+                      tone={STATUS_TONE[b.status]}
+                    />
                   </View>
-                  <Typography variant="caption" className="mt-1">
-                    {formatWhen(b.scheduled_at)}
-                  </Typography>
+                  {isRequest ? (
+                    <Typography variant="caption" className="mt-1">
+                      Not booked — waiting for the kennel to reply.
+                    </Typography>
+                  ) : (
+                    <Typography variant="caption" className="mt-1">
+                      {formatWhen(b.scheduled_at)}
+                    </Typography>
+                  )}
                   <View className="mt-2 flex-row flex-wrap items-center gap-2">
                     <Badge
                       label={b.session_format === 'video_call' ? 'Video Call' : 'In Person'}

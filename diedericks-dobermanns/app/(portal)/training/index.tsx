@@ -31,9 +31,7 @@ function next7Days(): string[] {
 }
 
 function formatLabel(fmt: SessionFormat): string {
-  if (fmt === 'in_person') return 'In Person';
-  if (fmt === 'video_call') return 'Video Call';
-  return 'In Person or Video';
+  return fmt === 'in_person' ? 'In Person' : fmt === 'video_call' ? 'Video Call' : 'In Person or Video';
 }
 
 export default function BookSessionScreen() {
@@ -120,24 +118,32 @@ export default function BookSessionScreen() {
       <PageHeader eyebrow="Training" title="Book a Session" />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-6" contentContainerStyle={{ gap: 8 }}>
-        <Pressable
-          onPress={() => router.push('/(portal)/training/bookings')}
-          className="rounded-full border border-gold/30 px-4 py-2"
-        >
-          <Typography variant="caption">My Sessions</Typography>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(portal)/training/videos' as never)}
-          className="rounded-full border border-gold bg-gold/15 px-4 py-2"
-        >
-          <Typography variant="caption" className="text-gold">
-            Training Library
-          </Typography>
-        </Pressable>
+        {(
+          [
+            { href: '/(portal)/training/request', label: 'Request training', active: true },
+            { href: '/(portal)/training/bookings', label: 'My Sessions' },
+            { href: '/(portal)/training/guides', label: 'Guides' },
+            { href: '/(portal)/training/videos', label: 'Videos' },
+          ] as const
+        ).map((chip) => (
+          <Pressable
+            key={chip.href}
+            onPress={() => router.push(chip.href as never)}
+            className={`rounded-full border px-4 py-2 ${
+              'active' in chip && chip.active ? 'border-gold bg-gold/15' : 'border-gold/30'
+            }`}
+          >
+            <Typography
+              variant="caption"
+              className={'active' in chip && chip.active ? 'text-gold' : undefined}
+            >
+              {chip.label}
+            </Typography>
+          </Pressable>
+        ))}
       </ScrollView>
 
       <View className="px-6">
-        {/* Session types */}
         <SectionHeader eyebrow="Step 1" title="Choose a Session" />
       </View>
       <ScrollView
@@ -233,66 +239,28 @@ export default function BookSessionScreen() {
         </View>
       ) : null}
 
-      {/* Booking form */}
       {selectedType && slot ? (
         <View className="mt-8 px-6">
           <SectionHeader eyebrow="Step 4" title="Details" />
-
           {selectedType.session_format === 'both' ? (
-            <View className="mb-4">
-              <Typography variant="label" className="mb-2">
-                Format
-              </Typography>
-              <View className="flex-row gap-3">
-                <Button
-                  label="In Person"
-                  variant={format === 'in_person' ? 'primary' : 'secondary'}
-                  onPress={() => setFormat('in_person')}
-                  className="flex-1"
-                />
-                <Button
-                  label="Video Call"
-                  variant={format === 'video_call' ? 'primary' : 'secondary'}
-                  onPress={() => setFormat('video_call')}
-                  className="flex-1"
-                />
-              </View>
+            <View className="mb-4 flex-row gap-3">
+              <Button label="In Person" variant={format === 'in_person' ? 'primary' : 'secondary'} onPress={() => setFormat('in_person')} className="flex-1" />
+              <Button label="Video Call" variant={format === 'video_call' ? 'primary' : 'secondary'} onPress={() => setFormat('video_call')} className="flex-1" />
             </View>
           ) : null}
-
           {myDogs.length > 0 ? (
-            <View className="mb-4">
-              <Typography variant="label" className="mb-2">
-                Which dog? (optional)
-              </Typography>
-              <View className="flex-row flex-wrap gap-2">
-                {myDogs.map((d) => {
-                  const active = dogId === d.id;
-                  return (
-                    <Pressable
-                      key={d.id}
-                      onPress={() => setDogId(active ? null : d.id)}
-                      className={`rounded-xl border px-4 py-2.5 ${active ? 'border-gold bg-gold/15' : 'border-gold/20 bg-surface'}`}
-                    >
-                      <Typography variant="caption" className={active ? 'text-gold' : 'text-ink-muted'}>
-                        {d.name}
-                      </Typography>
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <View className="mb-4 flex-row flex-wrap gap-2">
+              {myDogs.map((d) => {
+                const active = dogId === d.id;
+                return (
+                  <Pressable key={d.id} onPress={() => setDogId(active ? null : d.id)} className={`rounded-xl border px-4 py-2.5 ${active ? 'border-gold bg-gold/15' : 'border-gold/20 bg-surface'}`}>
+                    <Typography variant="caption" className={active ? 'text-gold' : 'text-ink-muted'}>{d.name}</Typography>
+                  </Pressable>
+                );
+              })}
             </View>
           ) : null}
-
-          <Input
-            label="What would you like to work on?"
-            value={clientNotes}
-            onChangeText={setClientNotes}
-            multiline
-            className="h-28"
-            placeholder="Tell us about your goals for the session…"
-          />
-
+          <Input label="What would you like to work on?" value={clientNotes} onChangeText={setClientNotes} multiline className="h-28" placeholder="Tell us about your goals for the session…" />
           <Button label="Request Session" onPress={submit} loading={submitting} fullWidth className="mt-2" />
         </View>
       ) : null}

@@ -75,6 +75,8 @@ export default function PortalLayout() {
         <Tabs.Screen name="add-photos/[dogId]" options={{ href: null }} />
         <Tabs.Screen name="training/index" options={{ href: null }} />
         <Tabs.Screen name="training/bookings" options={{ href: null }} />
+        <Tabs.Screen name="training/request" options={{ href: null }} />
+        <Tabs.Screen name="training/guides" options={{ href: null }} />
         <Tabs.Screen name="training/videos/index" options={{ href: null }} />
         <Tabs.Screen name="training/videos/[categoryId]" options={{ href: null }} />
         <Tabs.Screen name="training/videos/play/[videoId]" options={{ href: null }} />

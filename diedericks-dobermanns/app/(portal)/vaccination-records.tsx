@@ -1,13 +1,18 @@
-import { Alert, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
+import { useMemo, useState } from 'react';
 
+import { DocumentViewer } from '@/components/documents/DocumentViewer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
+import { useClientPortalDocuments } from '@/hooks/useDocuments';
 import { usePortalDogs } from '@/hooks/usePortal';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { portalCategoryLabel } from '@/lib/portal/documentLabels';
+import type { DocumentRecord } from '@/lib/documents/types';
 import {
   useVaccinationRecords,
   type DewormingRecord,
@@ -26,11 +31,7 @@ function dueDateTone(nextDue: string | null): 'default' | 'gold' | 'danger' {
   return 'default';
 }
 
-function HealthRecordCard({
-  record,
-}: {
-  record: VaccinationRecord | DewormingRecord;
-}) {
+function HealthRecordCard({ record }: { record: VaccinationRecord | DewormingRecord }) {
   const tone = dueDateTone(record.next_due_date);
   const dueClass =
     tone === 'danger' ? 'text-danger' : tone === 'gold' ? 'text-gold' : 'text-silver';
@@ -64,8 +65,21 @@ export default function VaccinationRecordsScreen() {
   const { dogs, loading: dogsLoading } = usePortalDogs();
   const primaryDog = dogs[0];
   const { vaccinations, deworming, loading, error } = useVaccinationRecords(primaryDog?.id);
+  const { documents } = useClientPortalDocuments();
+  const [viewerDoc, setViewerDoc] = useState<DocumentRecord | null>(null);
+
+  const scans = useMemo(
+    () =>
+      documents.filter(
+        (d) =>
+          d.category === 'vaccination_record' &&
+          (!primaryDog || d.entity_id === primaryDog.id),
+      ),
+    [documents, primaryDog],
+  );
+
   const isLoading = dogsLoading || loading;
-  const hasRecords = vaccinations.length > 0 || deworming.length > 0;
+  const hasRecords = vaccinations.length > 0 || deworming.length > 0 || scans.length > 0;
 
   return (
     <ScreenContainer>
@@ -89,11 +103,33 @@ export default function VaccinationRecordsScreen() {
         ) : !hasRecords ? (
           <EmptyState
             title="No vaccination records yet"
-            message="Check back after your puppy's first vet visit."
+            message="Check back after your puppy's first vet visit. Scanned cards will appear here too."
           />
         ) : (
           <>
             <Typography variant="label" className="mb-3 text-gold">
+              VACCINATION CARD SCANS
+            </Typography>
+            {scans.length === 0 ? (
+              <Typography variant="bodyMuted" className="mb-6">
+                Scanned vaccination cards you can show a vet or border official will appear here.
+              </Typography>
+            ) : (
+              scans.map((doc) => (
+                <Pressable
+                  key={doc.id}
+                  onPress={() => setViewerDoc(doc)}
+                  className="mb-2 rounded-xl border border-gold/15 bg-surface px-4 py-3"
+                >
+                  <Typography variant="subtitle">{doc.document_name}</Typography>
+                  <Typography variant="caption" className="mt-1 text-gold">
+                    {portalCategoryLabel(doc.category)} · tap to view or download
+                  </Typography>
+                </Pressable>
+              ))
+            )}
+
+            <Typography variant="label" className="mb-3 mt-4 text-gold">
               VACCINATIONS
             </Typography>
             {vaccinations.length === 0 ? (
@@ -122,9 +158,13 @@ export default function VaccinationRecordsScreen() {
           variant="secondary"
           fullWidth
           className="mt-8"
-          onPress={() => Alert.alert('Coming soon', 'PDF download will be available in a future update.')}
+          onPress={() =>
+            Alert.alert('Coming soon', 'PDF download will be available in a future update.')
+          }
         />
       </View>
+
+      <DocumentViewer document={viewerDoc} visible={!!viewerDoc} onClose={() => setViewerDoc(null)} />
     </ScreenContainer>
   );
 }

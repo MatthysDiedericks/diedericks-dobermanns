@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
+import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -12,7 +13,9 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useMyApplications, usePortalDogs } from '@/hooks/usePortal';
+import { ageFromDob, birthdayAgeWords, isBirthdayToday } from '@/lib/format';
 import { useAuthStore } from '@/stores/authStore';
 
 const BASE_QUICK_LINKS = [
@@ -37,9 +40,11 @@ export default function PortalDashboard() {
   const name = profile?.full_name?.split(' ')[0] ?? 'there';
   const { dogs, loading, error } = usePortalDogs();
   const { data: applications } = useMyApplications(profile?.id);
+  const { currentStep } = useBuyerJourney();
   const isApproved = applications.some((a) => a.status === 'approved');
   const quickLinks = [...BASE_QUICK_LINKS, isApproved ? PROFILE_LINK : APPLICATION_LINK];
   const primaryDog = dogs[0];
+  const birthdayDogs = dogs.filter((d) => isBirthdayToday(d.date_of_birth));
 
   return (
     <ScreenContainer>
@@ -50,11 +55,28 @@ export default function PortalDashboard() {
         </Typography>
       </View>
 
+      {birthdayDogs.map((dog) => (
+        <View
+          key={dog.id}
+          className="mx-6 mt-4 rounded-xl border border-gold bg-gold/15 px-4 py-3"
+        >
+          <Typography variant="subtitle" className="text-gold">
+            {dog.name} turns {birthdayAgeWords(dog.date_of_birth) ?? 'another year'} today
+          </Typography>
+        </View>
+      ))}
+
+      <View className="mt-6 px-6">
+        <JourneyBreadcrumb currentStep={currentStep} />
+      </View>
+
       <View className="mt-8 px-6">
         <SectionHeader eyebrow="Your Dogs" title="Linked Dogs" />
         {loading ? <CardListSkeleton count={2} /> : null}
         {error ? (
-          <Typography variant="body" className="text-danger">{error}</Typography>
+          <Typography variant="body" className="text-danger">
+            {error}
+          </Typography>
         ) : null}
         {!loading && dogs.length === 0 ? (
           <EmptyState
@@ -82,9 +104,22 @@ export default function PortalDashboard() {
                       <Badge label={primaryDog.status ?? 'active'} tone="gold" />
                     </View>
                     <Typography variant="caption" className="mt-2">
-                      {primaryDog.colour ?? '—'} · {primaryDog.sex ?? '—'}
+                      {[primaryDog.colour, primaryDog.sex, ageFromDob(primaryDog.date_of_birth)]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </Typography>
                   </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
+                </Card>
+              </Pressable>
+            </Link>
+            <Link href={'/(portal)/training/request' as never} asChild>
+              <Pressable>
+                <Card className="mt-3 flex-row items-center">
+                  <Ionicons name="paw" size={20} color={Colors.gold} />
+                  <Typography variant="subtitle" className="ml-3 flex-1">
+                    Request training
+                  </Typography>
                   <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
                 </Card>
               </Pressable>
@@ -139,9 +174,23 @@ export default function PortalDashboard() {
 
       <View className="mt-8 px-6">
         <SectionHeader eyebrow="Training" title="Sessions" />
-        <Link href="/(portal)/training" asChild>
+        <Link href={'/(portal)/training/request' as never} asChild>
           <Pressable>
             <Card className="flex-row items-center">
+              <Ionicons name="chatbubble-ellipses" size={20} color={Colors.gold} />
+              <View className="ml-3 flex-1">
+                <Typography variant="subtitle">Request training</Typography>
+                <Typography variant="caption" className="mt-0.5">
+                  Tell us what you need — not a booking
+                </Typography>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
+            </Card>
+          </Pressable>
+        </Link>
+        <Link href="/(portal)/training" asChild>
+          <Pressable>
+            <Card className="mt-3 flex-row items-center">
               <Ionicons name="calendar" size={20} color={Colors.gold} />
               <View className="ml-3 flex-1">
                 <Typography variant="subtitle">Book a Training Session</Typography>
@@ -164,12 +213,12 @@ export default function PortalDashboard() {
             </Card>
           </Pressable>
         </Link>
-        <Link href={'/(portal)/groups/index' as never} asChild>
+        <Link href={'/(portal)/training/guides' as never} asChild>
           <Pressable>
             <Card className="mt-3 flex-row items-center">
-              <Ionicons name="people" size={20} color={Colors.gold} />
+              <Ionicons name="book" size={20} color={Colors.gold} />
               <Typography variant="subtitle" className="ml-3 flex-1">
-                My Groups
+                Training library
               </Typography>
               <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
             </Card>

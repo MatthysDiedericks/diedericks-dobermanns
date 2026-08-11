@@ -73,8 +73,8 @@ export default function AddPhotosScreen() {
             <Checkbox
               checked={consent}
               onChange={setConsent}
-              label="Are Diedericks Dobermanns allowed to make this photo public?"
-              description="Ticking this lets us use your photo on our website and social media. Leave it unticked and only you and the kennel will see it."
+              label="Diedericks Dobermanns may use these photos publicly."
+              description="Leave unticked (default) to keep photos private to you and the kennel. Tick only if you allow website or social use after review."
             />
           </View>
 
