@@ -56,7 +56,7 @@ export default function FulfilmentScreen() {
     const { data: wait, error: wErr } = await supabase
       .from('waiting_list')
       .select(
-        'id, enquirer_name, deposit_paid_date, deposit_amount, quote_id, client:users(full_name)',
+        'id, enquirer_name, deposit_paid_date, deposit_amount, quote_id, client:users!waiting_list_client_id_fkey(full_name)',
       )
       .in('payment_status', ['deposit_paid', 'paid_in_full'])
       .is('assigned_dog_id', null)
@@ -69,7 +69,7 @@ export default function FulfilmentScreen() {
     }
     setWaiting(
       (wait ?? []).map((r) => {
-        const client = r.client as { full_name: string | null } | null;
+        const client = r.client as unknown as { full_name: string | null } | null;
         return {
           id: r.id,
           name: client?.full_name ?? r.enquirer_name ?? 'Unknown',
@@ -83,7 +83,7 @@ export default function FulfilmentScreen() {
     const { data: alloc, error: aErr } = await supabase
       .from('waiting_list')
       .select(
-        `id, enquirer_name, client:users(full_name),
+        `id, enquirer_name, client:users!waiting_list_client_id_fkey(full_name),
          dog:dogs!waiting_list_assigned_dog_id_fkey(id, name, handover_status, handover_date, delivered_at),
          litter:litters!waiting_list_assigned_litter_id_fkey(go_home_date)`,
       )
@@ -98,18 +98,18 @@ export default function FulfilmentScreen() {
     today.setHours(0, 0, 0, 0);
     const rows: AllocatedRow[] = [];
     for (const r of alloc ?? []) {
-      const dog = r.dog as {
+      const dog = r.dog as unknown as {
         id: string;
         name: string;
         handover_status: string | null;
         handover_date: string | null;
         delivered_at: string | null;
       } | null;
-      const litter = r.litter as { go_home_date: string | null } | null;
+      const litter = r.litter as unknown as { go_home_date: string | null } | null;
       if (!dog || dog.handover_status === 'delivered' || dog.delivered_at) continue;
       const goHome = dog.handover_date ?? litter?.go_home_date ?? null;
       const overdue = goHome ? new Date(`${goHome}T00:00:00`) < today : false;
-      const client = r.client as { full_name: string | null } | null;
+      const client = r.client as unknown as { full_name: string | null } | null;
       rows.push({
         id: r.id,
         name: client?.full_name ?? r.enquirer_name ?? 'Unknown',
@@ -129,7 +129,7 @@ export default function FulfilmentScreen() {
       .limit(30);
     setDelivered(
       (done ?? []).map((d) => {
-        const owner = d.owner as { full_name: string | null } | null;
+        const owner = d.owner as unknown as { full_name: string | null } | null;
         return {
           dogId: d.id,
           dogName: d.name,
@@ -156,11 +156,10 @@ export default function FulfilmentScreen() {
 
   return (
     <ScreenContainer>
-      <PageHeader
-        eyebrow="Pipeline"
-        title="Fulfilment"
-        subtitle="Paid → allocated → go-home → delivered"
-      />
+      <PageHeader eyebrow="Pipeline" title="Fulfilment" />
+      <Typography variant="bodyMuted" className="mb-4 px-6">
+        Paid → allocated → go-home → delivered
+      </Typography>
       {error ? (
         <Typography variant="body" className="px-6 text-danger">
           {error}

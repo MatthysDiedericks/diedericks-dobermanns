@@ -348,15 +348,14 @@ export function useDewormingForDog(dogId: string) {
       id?: string,
     ) => {
       const payload: TablesInsert<'deworming_records'> = {
-        dog_ids: [input.dog_id],
+        dog_id: input.dog_id,
         product_name: input.product_name,
-        date_treated: input.date_treated,
+        treatment_date: input.date_treated,
         treatment_type: input.treatment_type,
         schedule_type: input.schedule_type ?? 'quarterly',
         doctor_name: input.doctor_name ?? null,
         vet_practice_id: input.vet_practice_id ?? null,
         health_product_id: input.health_product_id ?? null,
-        weight_kg: input.weight_kg ?? null,
         notes: input.notes ?? null,
       };
       if (input.schedule_type === 'custom' && input.next_due_date) {
@@ -454,13 +453,12 @@ export function useVetVisitsForDog(dogId: string) {
         doctor_name: input.doctor_name ?? input.vet_name ?? null,
         vet_name: input.doctor_name ?? input.vet_name ?? null,
         vet_practice_id: input.vet_practice_id ?? null,
-        vet_clinic: input.vet_clinic ?? practice.data?.practice_name ?? null,
+        clinic_name: input.vet_clinic ?? practice.data?.practice_name ?? null,
         diagnosis: input.diagnosis ?? null,
         treatment: input.treatment ?? null,
         medications: input.medications ?? null,
         cost: input.cost ?? null,
         notes: input.notes ?? null,
-        follow_up_required: input.schedule_type !== 'none',
       };
       if (input.schedule_type === 'custom') {
         payload.next_due_date = input.next_due_date ?? input.follow_up_date ?? null;

@@ -25,7 +25,12 @@ export type AppDatabase = {
         Returns: { ancestor_id: string; depth: number; path: string }[];
       };
       sign_contract_as_client: {
-        Args: { p_contract_id: string; p_signature_url: string; p_device: string; p_ip: string | null };
+        Args: {
+          p_contract_id: string;
+          p_signature_url: string;
+          p_device: string;
+          p_ip?: string | null;
+        };
         Returns: void;
       };
       convert_quote_to_invoice: {

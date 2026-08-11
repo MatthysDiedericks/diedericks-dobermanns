@@ -351,6 +351,48 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          changed_fields: string[] | null
+          created_at: string
+          id: number
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: never
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: never
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       breed_heat_defaults: {
         Row: {
           avg_cycle_length_days: number
@@ -3422,6 +3464,39 @@ export type Database = {
           },
         ]
       }
+      page_views: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: number
+          is_bot: boolean
+          path: string
+          referrer_host: string | null
+          viewed_on: string
+          visitor_hash: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: never
+          is_bot?: boolean
+          path: string
+          referrer_host?: string | null
+          viewed_on?: string
+          visitor_hash: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: never
+          is_bot?: boolean
+          path?: string
+          referrer_host?: string | null
+          viewed_on?: string
+          visitor_hash?: string
+        }
+        Relationships: []
+      }
       pairings: {
         Row: {
           coi_estimate: number | null
@@ -5582,9 +5657,21 @@ export type Database = {
         }
         Relationships: []
       }
+      page_view_daily: {
+        Row: {
+          viewed_on: string | null
+          views: number | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
+      audit_record_id: {
+        Args: { p_row: Json; p_table: string }
+        Returns: string
+      }
       calculate_litter_dates: {
         Args: { p_mating_date?: string; p_ovulation_date?: string }
         Returns: {
@@ -5603,6 +5690,21 @@ export type Database = {
         Args: { p_dog_id: string }
         Returns: string
       }
+      capture_issue: {
+        Args: {
+          p_detail?: string
+          p_error_message?: string
+          p_error_stack?: string
+          p_page_path: string
+          p_title: string
+          p_user_agent?: string
+        }
+        Returns: {
+          is_new: boolean
+          occurrence: number
+          severity: string
+        }[]
+      }
       client_owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
       convert_quote_to_invoice: {
         Args: { p_quote_id: string }
@@ -5612,6 +5714,7 @@ export type Database = {
         Args: { p_quote_id: string; p_reason?: string }
         Returns: undefined
       }
+      enable_audit: { Args: { p_table: string }; Returns: undefined }
       evaluate_pairing: {
         Args: { p_dam_id: string; p_sire_id: string }
         Returns: {
@@ -5640,6 +5743,17 @@ export type Database = {
         }[]
       }
       my_dog_parent_ids: { Args: never; Returns: string[] }
+      purge_old_audit_log: { Args: never; Returns: undefined }
+      record_page_view: {
+        Args: {
+          p_country?: string
+          p_is_bot?: boolean
+          p_path: string
+          p_referrer_host?: string
+          p_visitor_hash: string
+        }
+        Returns: undefined
+      }
       sign_contract_as_client: {
         Args: {
           p_contract_id: string

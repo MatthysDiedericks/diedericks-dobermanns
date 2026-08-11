@@ -20,15 +20,21 @@ export interface ContractSignaturePayload {
  */
 export async function signContract(id: string, signature: ContractSignaturePayload): Promise<MutationResult> {
   if (!supabase) return simulate();
-  const { error } = await supabase.rpc('sign_contract_as_client', {
-    p_contract_id: id,
-    p_signature_url: signature.signatureStoragePath,
-    p_device: signature.device,
-    // `?? undefined` rather than passing null: the generated type is
-    // `p_ip?: string` — the argument may be omitted, but null is not a legal
-    // value for it. Omitting lets the function's own DEFAULT NULL apply, which
-    // stores exactly the same thing without lying to the type system.
-    p_ip: signature.ip ?? undefined,
-  });
+  // p_ip is optional; omit rather than passing null/undefined (merged RPC types disagree).
+  const { error } = await supabase.rpc(
+    'sign_contract_as_client',
+    signature.ip
+      ? {
+          p_contract_id: id,
+          p_signature_url: signature.signatureStoragePath,
+          p_device: signature.device,
+          p_ip: signature.ip,
+        }
+      : {
+          p_contract_id: id,
+          p_signature_url: signature.signatureStoragePath,
+          p_device: signature.device,
+        },
+  );
   return { error: error?.message ?? null };
 }
