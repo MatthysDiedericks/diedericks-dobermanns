@@ -1,0 +1,57 @@
+{
+  "_readme": [
+    "Drives scripts/check-parity.mjs.",
+    "",
+    "aliases  — the SAME screen named differently on each platform. Key is the app",
+    "           route, value is the website route. These are not gaps.",
+    "ignore   — routes that are not features at all (auth, dashboards, route groups).",
+    "webOnly / appOnly — screens that deliberately exist on one platform, with the",
+    "           reason. Anything not listed anywhere is treated as accidental drift.",
+    "",
+    "Adding an entry is a decision. Write the reason as if explaining it in six months."
+  ],
+
+  "aliases": {
+    "admin/breeding/pairing-builder": "admin/breeding/pairings",
+    "admin/breeding/trial-planner": "admin/breeding/trials",
+    "admin/breeding/litter-recorder": "admin/litters/record",
+    "admin/breeding-stock": "admin/breeding/stock",
+    "admin/client-groups": "admin/clients/groups",
+    "admin/client-groups/:id": "admin/clients/groups/:id",
+    "admin/waiting-list": "admin/waitlist",
+    "portal/health-schedule": "portal/health",
+    "portal/dogs/:id/health": "portal/health/:dogId",
+    "portal/training-updates/:dogId": "portal/training/:id",
+    "portal/application-status": "portal/application",
+    "portal/vaccination-records": "portal/vaccinations",
+
+    "admin/dogs/:id/edit": "admin/dogs/:id",
+    "admin/dogs/:id/pedigree": "admin/dogs/:id",
+    "admin/dogs/:id/photos": "admin/dogs/:id",
+    "admin/dogs/:id/story": "admin/dogs/:id",
+    "admin/dogs/:id/litter-history": "admin/dogs/:id"
+  },
+
+  "ignore": [
+    "admin/login",
+    "admin/panel",
+    "admin/dashboard",
+    "portal/login",
+    "portal/panel",
+    "portal/dashboard",
+    "portal/forgot-password",
+    "portal/reset-password"
+  ],
+
+  "webOnly": {
+    "admin/finance/import": "CSV/Excel upload needs a desktop file picker and a wide preview table. Not practical on a phone.",
+    "admin/finance/budget/edit": "Dense multi-row budget editing. Belongs on a large screen.",
+    "admin/settings/pricing": "Rarely changed, and changing a price is a considered act — desktop only is deliberate."
+  },
+
+  "appOnly": {
+    "portal/add-photos/:dogId": "Owners photograph their dog on a phone. The website equivalent is the upload control on the portal dog page, not a separate screen.",
+    "admin/breeding/organogram": "Pan/zoom pedigree tree built with native gestures. A web version needs its own approach, tracked in PARITY_5.",
+    "admin/notifications": "Push notification inbox is a device concept; the website uses the same data on the dashboard."
+  }
+}

@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
-import { coiColour, coiResultFromEstimate, type CoiResult } from '@/lib/breeding/coi';
+import { COI_NOT_AVAILABLE_LABEL, coiColour, coiResultFromEstimate, type CoiResult } from '@/lib/breeding/coi';
 import { evaluatePairing } from '@/lib/breeding/evaluatePairing';
 import type { PairingWithCoi, PlannerDog } from '@/types/breeding';
 
@@ -26,20 +26,24 @@ export const AllocateSireSheet = forwardRef<AllocateSireSheetHandle, AllocateSir
     const [sireId, setSireId] = useState('');
     const [existingId, setExistingId] = useState<string | undefined>();
     const [coiPreview, setCoiPreview] = useState<CoiResult | null>(null);
+    const [coiChecked, setCoiChecked] = useState(false);
     const [validityReason, setValidityReason] = useState('');
     const [saving, setSaving] = useState(false);
 
     const loadPreview = useCallback(async (dam: PlannerDog, sire: PlannerDog) => {
+      setCoiChecked(false);
       const evaluation = await evaluatePairing(sire.id, dam.id);
       if (!evaluation) {
         setValidityReason('Could not check pairing rules — try again.');
         setCoiPreview(null);
+        setCoiChecked(true);
         return;
       }
       setValidityReason(evaluation.allowed ? '' : evaluation.reasons.join(' '));
       setCoiPreview(
         evaluation.coiEstimate != null ? coiResultFromEstimate(evaluation.coiEstimate) : null,
       );
+      setCoiChecked(true);
     }, []);
 
     useImperativeHandle(ref, () => ({
@@ -50,6 +54,7 @@ export const AllocateSireSheet = forwardRef<AllocateSireSheetHandle, AllocateSir
         const initialSire = existing?.sire_id ?? m[0]?.id ?? '';
         setSireId(initialSire);
         setCoiPreview(existing?.coi ?? null);
+        setCoiChecked(Boolean(existing));
         setValidityReason('');
         sheetRef.current?.present();
         const sire = m.find((x) => x.id === initialSire);
@@ -114,6 +119,10 @@ export const AllocateSireSheet = forwardRef<AllocateSireSheetHandle, AllocateSir
           {coiPreview ? (
             <Typography variant="body" style={{ color: coiColour(coiPreview.severity) }}>
               COI preview: {coiPreview.coi}% — {coiPreview.severity}
+            </Typography>
+          ) : coiChecked ? (
+            <Typography variant="body" className="text-subtle">
+              {COI_NOT_AVAILABLE_LABEL} — no pedigree ancestor data on file for this pair yet.
             </Typography>
           ) : null}
           <Button

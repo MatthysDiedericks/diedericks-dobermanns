@@ -1,6 +1,6 @@
 import Svg, { Path, Rect, Text as SvgText } from 'react-native-svg';
 
-import { plannerLineColour } from '@/lib/breeding/coi';
+import { COI_UNKNOWN_COLOUR, coiShortLabel, plannerLineColour } from '@/lib/breeding/coi';
 import type { CardLayout, PairingWithCoi } from '@/types/breeding';
 
 export type LineSegment = {
@@ -28,6 +28,7 @@ function strokeDash(status: PairingWithCoi['status'], priority: PairingWithCoi['
 function strokeColor(pairing: PairingWithCoi): string {
   if (pairing.status === 'Prohibited') return '#7F1D1D';
   if (pairing.status === 'Completed') return '#6B7280';
+  if (pairing.coi == null) return COI_UNKNOWN_COLOUR;
   return plannerLineColour(pairing.coi.coi);
 }
 
@@ -54,7 +55,7 @@ export function PlannerLines({ width, height, segments }: PlannerLinesProps) {
         const dash = strokeDash(pairing.status, pairing.priority);
         const mx = (from.x + from.width / 2 + to.x + to.width / 2) / 2;
         const my = (from.y + to.y + to.height) / 2;
-        const label = pairing.status === 'Prohibited' ? '✗' : `${pairing.coi.coi}%`;
+        const label = pairing.status === 'Prohibited' ? '✗' : coiShortLabel(pairing.coi);
 
         return (
           <Path
@@ -72,7 +73,7 @@ export function PlannerLines({ width, height, segments }: PlannerLinesProps) {
         const mx = (from.x + from.width / 2 + to.x + to.width / 2) / 2;
         const my = (from.y + to.y + to.height) / 2;
         const color = strokeColor(pairing);
-        const label = pairing.status === 'Prohibited' ? '✗' : `${pairing.coi.coi}%`;
+        const label = pairing.status === 'Prohibited' ? '✗' : coiShortLabel(pairing.coi);
         const w = 36;
         const h = 16;
         return (
@@ -92,7 +93,7 @@ export function PlannerLines({ width, height, segments }: PlannerLinesProps) {
       {segments.map(({ pairing, from, to }) => {
         const mx = (from.x + from.width / 2 + to.x + to.width / 2) / 2;
         const my = (from.y + to.y + to.height) / 2;
-        const label = pairing.status === 'Prohibited' ? '✗' : `${pairing.coi.coi}%`;
+        const label = pairing.status === 'Prohibited' ? '✗' : coiShortLabel(pairing.coi);
         return (
           <SvgText
             key={`${pairing.id}-txt`}

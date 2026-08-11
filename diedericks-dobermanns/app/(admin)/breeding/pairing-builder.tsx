@@ -15,6 +15,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useBreedingDogs, useSavePairing } from '@/hooks/useBreedingProgramme';
+import { COI_NOT_AVAILABLE_LABEL } from '@/lib/breeding/coi';
 import { evaluatePairing, type PairingEvaluation } from '@/lib/breeding/evaluatePairing';
 import {
   ageGatePassed,
@@ -192,19 +193,25 @@ export default function PairingBuilderScreen() {
                     {ageGate?.warning ? ` — ${ageGate.warning}` : ''}
                   </Typography>
                 ) : null}
-                {evaluation?.coiEstimate != null ? (
-                  <Typography
-                    variant="caption"
-                    className={
-                      evaluation.severity === 'prohibited'
-                        ? 'text-danger'
-                        : evaluation.severity === 'caution'
-                          ? 'text-gold'
-                          : 'text-subtle'
-                    }
-                  >
-                    Est. COI: {evaluation.coiEstimate}%
-                  </Typography>
+                {evaluation && !evaluating ? (
+                  evaluation.coiEstimate != null ? (
+                    <Typography
+                      variant="caption"
+                      className={
+                        evaluation.severity === 'prohibited'
+                          ? 'text-danger'
+                          : evaluation.severity === 'caution'
+                            ? 'text-gold'
+                            : 'text-subtle'
+                      }
+                    >
+                      Est. COI: {evaluation.coiEstimate}%
+                    </Typography>
+                  ) : (
+                    <Typography variant="caption" className="text-subtle">
+                      {COI_NOT_AVAILABLE_LABEL} — no pedigree ancestor data on file for this pair yet.
+                    </Typography>
+                  )
                 ) : null}
               </Card>
             ) : null}

@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -78,6 +78,54 @@ export type Database = {
           value?: string | null
         }
         Relationships: []
+      }
+      application_events: {
+        Row: {
+          application_id: string
+          created_at: string
+          created_by: string | null
+          event_type: string
+          from_status: string | null
+          id: string
+          message: string | null
+          to_status: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_events_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       applications: {
         Row: {
@@ -408,6 +456,42 @@ export type Database = {
           {
             foreignKeyName: "broadcast_messages_sent_by_fkey"
             columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcast_reads: {
+        Row: {
+          broadcast_id: string
+          client_id: string
+          id: string
+          read_at: string
+        }
+        Insert: {
+          broadcast_id: string
+          client_id: string
+          id?: string
+          read_at?: string
+        }
+        Update: {
+          broadcast_id?: string
+          client_id?: string
+          id?: string
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_reads_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcast_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_reads_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -868,6 +952,133 @@ export type Database = {
           },
         ]
       }
+      contract_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          clause_ref: string
+          contract_id: string
+          id: string
+          ip_address: string | null
+          label_snapshot: string
+          user_agent: string | null
+        }
+        Insert: {
+          acknowledged_at?: string
+          clause_ref: string
+          contract_id: string
+          id?: string
+          ip_address?: string | null
+          label_snapshot: string
+          user_agent?: string | null
+        }
+        Update: {
+          acknowledged_at?: string
+          clause_ref?: string
+          contract_id?: string
+          id?: string
+          ip_address?: string | null
+          label_snapshot?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_acknowledgements_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_clauses: {
+        Row: {
+          clause_ref: string
+          created_at: string
+          id: string
+          is_required: boolean
+          label: string
+          sort_order: number
+          template_id: string
+        }
+        Insert: {
+          clause_ref: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label: string
+          sort_order?: number
+          template_id: string
+        }
+        Update: {
+          clause_ref?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label?: string
+          sort_order?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_clauses_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_events: {
+        Row: {
+          actor_id: string | null
+          actor_label: string | null
+          contract_id: string
+          created_at: string
+          detail: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_label?: string | null
+          contract_id: string
+          created_at?: string
+          detail?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_label?: string | null
+          contract_id?: string
+          created_at?: string
+          detail?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_templates: {
         Row: {
           body_html: string
@@ -879,11 +1090,14 @@ export type Database = {
           footer_text: string | null
           id: string
           is_active: boolean
+          is_addendum: boolean
           name: string
           party_1_label: string | null
           party_2_label: string | null
+          programme_tier: string | null
           sort_order: number
           updated_at: string
+          version: number
         }
         Insert: {
           body_html?: string
@@ -895,11 +1109,14 @@ export type Database = {
           footer_text?: string | null
           id?: string
           is_active?: boolean
+          is_addendum?: boolean
           name: string
           party_1_label?: string | null
           party_2_label?: string | null
+          programme_tier?: string | null
           sort_order?: number
           updated_at?: string
+          version?: number
         }
         Update: {
           body_html?: string
@@ -911,11 +1128,14 @@ export type Database = {
           footer_text?: string | null
           id?: string
           is_active?: boolean
+          is_addendum?: boolean
           name?: string
           party_1_label?: string | null
           party_2_label?: string | null
+          programme_tier?: string | null
           sort_order?: number
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -930,15 +1150,17 @@ export type Database = {
       contracts: {
         Row: {
           body_html: string | null
+          body_snapshot_at: string | null
           breeder_signed_at: string | null
           client_id: string
           client_ip_on_sign: string | null
           client_signature_device: string | null
           client_signature_url: string | null
           client_signed_at: string | null
+          contract_number: string | null
           contract_title: string | null
           created_at: string
-          document_url: string
+          document_url: string | null
           dog_id: string | null
           esign_expires_at: string | null
           esign_sent_at: string | null
@@ -946,24 +1168,28 @@ export type Database = {
           id: string
           litter_id: string | null
           notes: string | null
+          parent_contract_id: string | null
           reservation_id: string | null
           signed_at: string | null
           signed_by_breeder: boolean
           signed_by_client: boolean
           status: string
           template_id: string | null
+          template_version: number | null
         }
         Insert: {
           body_html?: string | null
+          body_snapshot_at?: string | null
           breeder_signed_at?: string | null
           client_id: string
           client_ip_on_sign?: string | null
           client_signature_device?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contract_number?: string | null
           contract_title?: string | null
           created_at?: string
-          document_url: string
+          document_url?: string | null
           dog_id?: string | null
           esign_expires_at?: string | null
           esign_sent_at?: string | null
@@ -971,24 +1197,28 @@ export type Database = {
           id?: string
           litter_id?: string | null
           notes?: string | null
+          parent_contract_id?: string | null
           reservation_id?: string | null
           signed_at?: string | null
           signed_by_breeder?: boolean
           signed_by_client?: boolean
           status?: string
           template_id?: string | null
+          template_version?: number | null
         }
         Update: {
           body_html?: string | null
+          body_snapshot_at?: string | null
           breeder_signed_at?: string | null
           client_id?: string
           client_ip_on_sign?: string | null
           client_signature_device?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contract_number?: string | null
           contract_title?: string | null
           created_at?: string
-          document_url?: string
+          document_url?: string | null
           dog_id?: string | null
           esign_expires_at?: string | null
           esign_sent_at?: string | null
@@ -996,12 +1226,14 @@ export type Database = {
           id?: string
           litter_id?: string | null
           notes?: string | null
+          parent_contract_id?: string | null
           reservation_id?: string | null
           signed_at?: string | null
           signed_by_breeder?: boolean
           signed_by_client?: boolean
           status?: string
           template_id?: string | null
+          template_version?: number | null
         }
         Relationships: [
           {
@@ -1023,6 +1255,13 @@ export type Database = {
             columns: ["litter_id"]
             isOneToOne: false
             referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_parent_contract_id_fkey"
+            columns: ["parent_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
           {
@@ -1169,7 +1408,11 @@ export type Database = {
           issued_by: string | null
           mime_type: string | null
           original_filename: string
+          related_invoice_id: string | null
+          related_quote_id: string | null
           requires_auth: boolean
+          review_note: string | null
+          review_status: string | null
           storage_path: string
           tags: string[] | null
           updated_at: string | null
@@ -1195,7 +1438,11 @@ export type Database = {
           issued_by?: string | null
           mime_type?: string | null
           original_filename: string
+          related_invoice_id?: string | null
+          related_quote_id?: string | null
           requires_auth?: boolean
+          review_note?: string | null
+          review_status?: string | null
           storage_path: string
           tags?: string[] | null
           updated_at?: string | null
@@ -1221,14 +1468,33 @@ export type Database = {
           issued_by?: string | null
           mime_type?: string | null
           original_filename?: string
+          related_invoice_id?: string | null
+          related_quote_id?: string | null
           requires_auth?: boolean
+          review_note?: string | null
+          review_status?: string | null
           storage_path?: string
           tags?: string[] | null
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_related_invoice_id_fkey"
+            columns: ["related_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_related_quote_id_fkey"
+            columns: ["related_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dog_media: {
         Row: {
@@ -1407,6 +1673,63 @@ export type Database = {
           },
         ]
       }
+      dog_timeline: {
+        Row: {
+          author_id: string | null
+          category: string
+          created_at: string
+          dog_id: string
+          entry_date: string
+          id: string
+          notes: string | null
+          photo_urls: string[]
+          source: string
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string
+          created_at?: string
+          dog_id: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          photo_urls?: string[]
+          source?: string
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          category?: string
+          created_at?: string
+          dog_id?: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          photo_urls?: string[]
+          source?: string
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dog_timeline_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dog_timeline_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dogs: {
         Row: {
           birth_weight_grams: number | null
@@ -1426,6 +1749,9 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           dcm_status: string | null
+          delivered_at: string | null
+          delivery_method: string | null
+          delivery_notes: string | null
           description: string | null
           dna_number: string | null
           ear_type: string | null
@@ -1444,6 +1770,8 @@ export type Database = {
           genetics_dcm2_status: string | null
           genetics_notes: string | null
           genetics_vwd_status: string | null
+          handover_date: string | null
+          handover_status: string | null
           health_dcm1: string | null
           health_dcm2: string | null
           health_dcm3: string | null
@@ -1508,6 +1836,9 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           dcm_status?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          delivery_notes?: string | null
           description?: string | null
           dna_number?: string | null
           ear_type?: string | null
@@ -1526,6 +1857,8 @@ export type Database = {
           genetics_dcm2_status?: string | null
           genetics_notes?: string | null
           genetics_vwd_status?: string | null
+          handover_date?: string | null
+          handover_status?: string | null
           health_dcm1?: string | null
           health_dcm2?: string | null
           health_dcm3?: string | null
@@ -1590,6 +1923,9 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           dcm_status?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          delivery_notes?: string | null
           description?: string | null
           dna_number?: string | null
           ear_type?: string | null
@@ -1608,6 +1944,8 @@ export type Database = {
           genetics_dcm2_status?: string | null
           genetics_notes?: string | null
           genetics_vwd_status?: string | null
+          handover_date?: string | null
+          handover_status?: string | null
           health_dcm1?: string | null
           health_dcm2?: string | null
           health_dcm3?: string | null
@@ -2484,6 +2822,97 @@ export type Database = {
           },
         ]
       }
+      issue_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          detail: string | null
+          error_message: string | null
+          error_stack: string | null
+          fingerprint: string | null
+          id: string
+          last_seen_at: string
+          occurrence_count: number
+          page_path: string | null
+          reported_by: string | null
+          reporter_role: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          screenshot_document_id: string | null
+          severity: string
+          source: string
+          status: string
+          title: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          detail?: string | null
+          error_message?: string | null
+          error_stack?: string | null
+          fingerprint?: string | null
+          id?: string
+          last_seen_at?: string
+          occurrence_count?: number
+          page_path?: string | null
+          reported_by?: string | null
+          reporter_role?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screenshot_document_id?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          detail?: string | null
+          error_message?: string | null
+          error_stack?: string | null
+          fingerprint?: string | null
+          id?: string
+          last_seen_at?: string
+          occurrence_count?: number
+          page_path?: string | null
+          reported_by?: string | null
+          reporter_role?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screenshot_document_id?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_reports_screenshot_document_id_fkey"
+            columns: ["screenshot_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kennel_documents: {
         Row: {
           category: string
@@ -3153,6 +3582,77 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string
+          id: string
+          invoice_id: string
+          method: string
+          notes: string | null
+          paid_at: string
+          proof_document_id: string | null
+          recorded_by: string | null
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          proof_document_id?: string | null
+          recorded_by?: string | null
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          proof_document_id?: string | null
+          recorded_by?: string | null
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_proof_document_id_fkey"
+            columns: ["proof_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedigree_ancestors: {
         Row: {
           created_at: string
@@ -3219,6 +3719,7 @@ export type Database = {
           id: string
           is_public: boolean
           price: number
+          price_on_request: boolean
           sort_order: number
           tier_key: string
           updated_at: string
@@ -3232,6 +3733,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           price?: number
+          price_on_request?: boolean
           sort_order?: number
           tier_key: string
           updated_at?: string
@@ -3245,6 +3747,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           price?: number
+          price_on_request?: boolean
           sort_order?: number
           tier_key?: string
           updated_at?: string
@@ -3426,17 +3929,21 @@ export type Database = {
       }
       quotes: {
         Row: {
+          accepted_at: string | null
+          accepted_by: string | null
           application_id: string | null
           client_id: string | null
           converted_invoice_id: string | null
           created_at: string
           created_by: string | null
           currency: string
+          declined_reason: string | null
           discount: number
           historical_client_name: string | null
           id: string
           notes: string | null
           quote_number: string
+          sent_at: string | null
           status: string
           subtotal: number
           total: number
@@ -3444,17 +3951,21 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
           application_id?: string | null
           client_id?: string | null
           converted_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
+          declined_reason?: string | null
           discount?: number
           historical_client_name?: string | null
           id?: string
           notes?: string | null
           quote_number: string
+          sent_at?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -3462,17 +3973,21 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
           application_id?: string | null
           client_id?: string | null
           converted_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
+          declined_reason?: string | null
           discount?: number
           historical_client_name?: string | null
           id?: string
           notes?: string | null
           quote_number?: string
+          sent_at?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -3480,6 +3995,13 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quotes_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quotes_application_id_fkey"
             columns: ["application_id"]
@@ -4019,6 +4541,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_guides: {
+        Row: {
+          body_html: string
+          category: string
+          created_at: string
+          id: string
+          is_published: boolean
+          max_age_weeks: number | null
+          min_age_weeks: number | null
+          slug: string
+          sort_order: number
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          body_html?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          max_age_weeks?: number | null
+          min_age_weeks?: number | null
+          slug: string
+          sort_order?: number
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          body_html?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          max_age_weeks?: number | null
+          min_age_weeks?: number | null
+          slug?: string
+          sort_order?: number
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       training_log_media: {
         Row: {
@@ -5020,6 +5584,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
       calculate_litter_dates: {
         Args: { p_mating_date?: string; p_ovulation_date?: string }
         Returns: {
@@ -5038,15 +5603,20 @@ export type Database = {
         Args: { p_dog_id: string }
         Returns: string
       }
+      client_owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
       convert_quote_to_invoice: {
         Args: { p_quote_id: string }
         Returns: string
+      }
+      decline_quote: {
+        Args: { p_quote_id: string; p_reason?: string }
+        Returns: undefined
       }
       evaluate_pairing: {
         Args: { p_dam_id: string; p_sire_id: string }
         Returns: {
           allowed: boolean
-          coi_estimate: number | null
+          coi_estimate: number
           reasons: string[]
           severity: string
         }[]
@@ -5074,11 +5644,12 @@ export type Database = {
         Args: {
           p_contract_id: string
           p_device: string
-          p_ip: string
+          p_ip?: string
           p_signature_url: string
         }
         Returns: undefined
       }
+      trigger_birthday_greetings_check: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

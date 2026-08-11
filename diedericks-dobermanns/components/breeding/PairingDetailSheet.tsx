@@ -3,7 +3,7 @@ import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
-import { coiColour } from '@/lib/breeding/coi';
+import { coiColour, COI_NOT_AVAILABLE_LABEL, COI_UNKNOWN_COLOUR } from '@/lib/breeding/coi';
 import type { PairingWithCoi } from '@/types/breeding';
 
 export interface PairingDetailSheetHandle {
@@ -47,7 +47,7 @@ export const PairingDetailSheet = forwardRef<PairingDetailSheetHandle, PairingDe
 
     const sireName = pairing.sire?.name ?? 'Sire';
     const damName = pairing.dam?.name ?? 'Dam';
-    const color = coiColour(pairing.coi.severity);
+    const color = pairing.coi ? coiColour(pairing.coi.severity) : COI_UNKNOWN_COLOUR;
 
     return (
       <BottomSheetModal
@@ -61,10 +61,14 @@ export const PairingDetailSheet = forwardRef<PairingDetailSheetHandle, PairingDe
             {sireName} × {damName}
           </Typography>
           <Typography variant="caption" className="mb-3" style={{ color }}>
-            COI {pairing.coi.coi}% · {pairing.coi.severity.toUpperCase()}
+            {pairing.coi
+              ? `COI ${pairing.coi.coi}% · ${pairing.coi.severity.toUpperCase()}`
+              : COI_NOT_AVAILABLE_LABEL}
           </Typography>
           <Typography variant="body" className="mb-4 text-subtle">
-            {pairing.coi.explanation}
+            {pairing.coi
+              ? pairing.coi.explanation
+              : 'No pedigree ancestor data on file for this sire/dam yet — COI cannot be estimated.'}
           </Typography>
           <Typography variant="caption" className="mb-1 text-muted">
             Status: {pairing.status} · Priority: {pairing.priority}

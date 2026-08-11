@@ -24,7 +24,11 @@ export async function signContract(id: string, signature: ContractSignaturePaylo
     p_contract_id: id,
     p_signature_url: signature.signatureStoragePath,
     p_device: signature.device,
-    p_ip: signature.ip,
+    // `?? undefined` rather than passing null: the generated type is
+    // `p_ip?: string` — the argument may be omitted, but null is not a legal
+    // value for it. Omitting lets the function's own DEFAULT NULL apply, which
+    // stores exactly the same thing without lying to the type system.
+    p_ip: signature.ip ?? undefined,
   });
   return { error: error?.message ?? null };
 }

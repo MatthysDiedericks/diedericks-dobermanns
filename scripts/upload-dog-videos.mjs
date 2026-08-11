@@ -67,6 +67,19 @@ const VIDEOS = [
     dogName: 'Santini',
     folder:  'Santini Videos',
   },
+  // Bruce and Jazzmine keep their footage in their MAIN photo folder rather
+  // than a separate "<name> Videos" folder. That is fine — this script filters
+  // on video extensions, so the stills alongside them are ignored.
+  {
+    dogId:   'f4fb4826-cb2a-4294-9f42-ce4b6ff20348',
+    dogName: 'Bruce',
+    folder:  'Bruce',
+  },
+  {
+    dogId:   '1f181a7d-c9d9-4d79-a4eb-54bc4dcf1e1d',
+    dogName: 'Jazzmine',
+    folder:  'Jazzmine',
+  },
 ];
 
 const SUPPORTED = new Set(['.mp4', '.mov', '.avi', '.m4v', '.webm']);

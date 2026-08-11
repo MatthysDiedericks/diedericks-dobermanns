@@ -106,7 +106,8 @@ export type CardLayout = {
 };
 
 export interface PairingWithCoi extends PairingRecord {
-  coi: CoiResult;
+  /** null when pedigree data isn't available for one or both dogs — render as "COI not available", never 0%. */
+  coi: CoiResult | null;
 }
 
 export interface FemaleAllocation {

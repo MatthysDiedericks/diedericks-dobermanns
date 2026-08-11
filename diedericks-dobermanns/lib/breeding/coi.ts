@@ -90,6 +90,16 @@ export function coiResultFromEstimate(coiPercent: number): CoiResult {
   return buildCoiResult(coiPercent, []);
 }
 
+/** Neutral colour for planner lines/badges when COI is unknown (no pedigree data). */
+export const COI_UNKNOWN_COLOUR = '#6B7280';
+
+export const COI_NOT_AVAILABLE_LABEL = 'COI not available';
+
+/** Short label for a possibly-unknown COI, e.g. for planner line pills. */
+export function coiShortLabel(coi: CoiResult | null): string {
+  return coi ? `${coi.coi}%` : '—';
+}
+
 export function coiColour(severity: CoiSeverity): string {
   switch (severity) {
     case 'excellent':

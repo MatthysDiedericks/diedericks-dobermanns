@@ -60,6 +60,13 @@ const UPLOADS = [
     label: 'Hannah x Hunter-King',
     file: 'WhatsApp Image 2026-07-29 at 16.30.47.jpeg',
   },
+  {
+    // Santini × Odessa, also expecting 24 Sep 2026. The litter record and its
+    // waiting list are already live; only the poster artwork is missing.
+    litterId: '81378dfc-4bbb-4f0f-8ee9-66faf277b2b9',
+    label: 'Santini x Odessa',
+    file: 'WhatsApp Image 2026-08-06 at 16.56.47.jpeg',
+  },
 ];
 
 if (!SERVICE_KEY) {

@@ -25,7 +25,7 @@ function statusLabel(pairing?: PairingWithCoi, locked?: boolean): string {
 }
 
 export function FemaleCard({ female, pairing, locked, onPress, onLayout }: FemaleCardProps) {
-  const coi = pairing?.coi.coi;
+  const coi = pairing?.coi?.coi;
   const coiColor = coi != null ? plannerLineColour(coi) : '#6B7280';
 
   return (
