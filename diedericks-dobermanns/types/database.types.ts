@@ -727,6 +727,72 @@ export type Database = {
           },
         ]
       }
+      check_ins: {
+        Row: {
+          channel: string | null
+          contact_id: string | null
+          created_at: string
+          dog_id: string
+          draft_message: string | null
+          due_date: string
+          handled_by: string | null
+          id: string
+          kind: string
+          response_at: string | null
+          response_notes: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string | null
+          contact_id?: string | null
+          created_at?: string
+          dog_id: string
+          draft_message?: string | null
+          due_date: string
+          handled_by?: string | null
+          id?: string
+          kind: string
+          response_at?: string | null
+          response_notes?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string | null
+          contact_id?: string | null
+          created_at?: string
+          dog_id?: string
+          draft_message?: string | null
+          due_date?: string
+          handled_by?: string | null
+          id?: string
+          kind?: string
+          response_at?: string | null
+          response_notes?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_ins_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_dog_notes: {
         Row: {
           client_id: string
@@ -1825,6 +1891,7 @@ export type Database = {
           delivery_notes: string | null
           description: string | null
           dna_number: string | null
+          do_not_contact: boolean
           ear_type: string | null
           elbow_score: string | null
           eye_colour: string | null
@@ -1869,9 +1936,14 @@ export type Database = {
           new_owner_name: string | null
           notes: string | null
           origin_pairing_id: string | null
+          owner_contact_id: string | null
           owner_id: string | null
+          ownership_notes: string | null
+          ownership_status: string
+          ownership_status_at: string | null
           passport_number: string | null
           pedigree_url: string | null
+          placement_date: string | null
           price: number | null
           programme_tier: string | null
           registered_name: string | null
@@ -1917,6 +1989,7 @@ export type Database = {
           delivery_notes?: string | null
           description?: string | null
           dna_number?: string | null
+          do_not_contact?: boolean
           ear_type?: string | null
           elbow_score?: string | null
           eye_colour?: string | null
@@ -1961,9 +2034,14 @@ export type Database = {
           new_owner_name?: string | null
           notes?: string | null
           origin_pairing_id?: string | null
+          owner_contact_id?: string | null
           owner_id?: string | null
+          ownership_notes?: string | null
+          ownership_status?: string
+          ownership_status_at?: string | null
           passport_number?: string | null
           pedigree_url?: string | null
+          placement_date?: string | null
           price?: number | null
           programme_tier?: string | null
           registered_name?: string | null
@@ -2009,6 +2087,7 @@ export type Database = {
           delivery_notes?: string | null
           description?: string | null
           dna_number?: string | null
+          do_not_contact?: boolean
           ear_type?: string | null
           elbow_score?: string | null
           eye_colour?: string | null
@@ -2053,9 +2132,14 @@ export type Database = {
           new_owner_name?: string | null
           notes?: string | null
           origin_pairing_id?: string | null
+          owner_contact_id?: string | null
           owner_id?: string | null
+          ownership_notes?: string | null
+          ownership_status?: string
+          ownership_status_at?: string | null
           passport_number?: string | null
           pedigree_url?: string | null
+          placement_date?: string | null
           price?: number | null
           programme_tier?: string | null
           registered_name?: string | null
@@ -2100,6 +2184,13 @@ export type Database = {
             columns: ["origin_pairing_id"]
             isOneToOne: false
             referencedRelation: "pairings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dogs_owner_contact_id_fkey"
+            columns: ["owner_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
@@ -3578,6 +3669,81 @@ export type Database = {
           },
         ]
       }
+      owner_health_reports: {
+        Row: {
+          age_at_death_months: number | null
+          cause_of_death: string | null
+          check_in_id: string | null
+          conditions: string[] | null
+          created_at: string
+          dcm_result: string | null
+          dcm_screened: boolean | null
+          died_at: string | null
+          dog_id: string
+          hips_elbows: string | null
+          id: string
+          notes: string | null
+          overall: string | null
+          recorded_by: string | null
+          reported_at: string
+          vet_practice: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          age_at_death_months?: number | null
+          cause_of_death?: string | null
+          check_in_id?: string | null
+          conditions?: string[] | null
+          created_at?: string
+          dcm_result?: string | null
+          dcm_screened?: boolean | null
+          died_at?: string | null
+          dog_id: string
+          hips_elbows?: string | null
+          id?: string
+          notes?: string | null
+          overall?: string | null
+          recorded_by?: string | null
+          reported_at?: string
+          vet_practice?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          age_at_death_months?: number | null
+          cause_of_death?: string | null
+          check_in_id?: string | null
+          conditions?: string[] | null
+          created_at?: string
+          dcm_result?: string | null
+          dcm_screened?: boolean | null
+          died_at?: string | null
+          dog_id?: string
+          hips_elbows?: string | null
+          id?: string
+          notes?: string | null
+          overall?: string | null
+          recorded_by?: string | null
+          reported_at?: string
+          vet_practice?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_health_reports_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_health_reports_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_views: {
         Row: {
           country: string | null
@@ -4353,9 +4519,15 @@ export type Database = {
       }
       testimonials: {
         Row: {
+          check_in_id: string | null
           client_name: string
+          consent_evidence: string | null
+          consent_given: boolean
+          consent_given_at: string | null
+          contact_id: string | null
           content: string
           created_at: string
+          dog_id: string | null
           dog_name: string | null
           id: string
           is_approved: boolean
@@ -4366,9 +4538,15 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          check_in_id?: string | null
           client_name: string
+          consent_evidence?: string | null
+          consent_given?: boolean
+          consent_given_at?: string | null
+          contact_id?: string | null
           content: string
           created_at?: string
+          dog_id?: string | null
           dog_name?: string | null
           id?: string
           is_approved?: boolean
@@ -4379,9 +4557,15 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          check_in_id?: string | null
           client_name?: string
+          consent_evidence?: string | null
+          consent_given?: boolean
+          consent_given_at?: string | null
+          contact_id?: string | null
           content?: string
           created_at?: string
+          dog_id?: string | null
           dog_name?: string | null
           id?: string
           is_approved?: boolean
@@ -4391,7 +4575,29 @@ export type Database = {
           sort_order?: number
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "testimonials_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "testimonials_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "testimonials_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       todo_items: {
         Row: {
@@ -5934,6 +6140,10 @@ export type Database = {
           reasons: string[]
           severity: string
         }[]
+      }
+      generate_due_check_ins: {
+        Args: { p_horizon_days?: number }
+        Returns: number
       }
       get_ancestors: {
         Args: { p_depth?: number; p_dog_id: string }

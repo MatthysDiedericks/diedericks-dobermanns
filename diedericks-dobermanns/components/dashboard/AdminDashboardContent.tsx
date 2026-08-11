@@ -11,6 +11,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDashboard } from '@/hooks/useDashboard';
+import { useDueCheckInCount } from '@/hooks/useOwnerFollowUps';
 import { formatAmount } from '@/lib/finance/formatters';
 import {
   daysInHeat,
@@ -29,6 +30,7 @@ function RowArrow() {
 export function AdminDashboardContent() {
   const router = useRouter();
   const { data, loading, error, refresh, completeTodo } = useDashboard();
+  const { count: followUpsDue, refresh: refreshFollowUps } = useDueCheckInCount();
 
   if (loading && !data) {
     return (
@@ -56,6 +58,33 @@ export function AdminDashboardContent() {
     >
       {/* Widget — Expiring Documents */}
       <ExpiringDocumentsWidget />
+
+      <SurfaceCard
+        title="Owner follow-ups"
+        href="/(admin)/follow-ups"
+        badge={followUpsDue}
+        badgeTone="gold"
+      >
+        {followUpsDue === 0 ? (
+          <Typography variant="caption" className="text-subtle">
+            Nothing due this week
+          </Typography>
+        ) : (
+          <Typography variant="body" className="text-text">
+            {followUpsDue} check-in{followUpsDue === 1 ? '' : 's'} due this week
+          </Typography>
+        )}
+        <Button
+          label="Open follow-ups"
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onPress={() => {
+            void refreshFollowUps();
+            router.push('/(admin)/follow-ups' as never);
+          }}
+        />
+      </SurfaceCard>
 
       {/* Widget 1 — Current Litters */}
       <LittersByYearWidget currentLitters={data.currentLitters} />

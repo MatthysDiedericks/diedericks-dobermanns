@@ -9,6 +9,7 @@ import { DogStatusPanel } from '@/components/dogs/detail/DogStatusPanel';
 import { DogWeightPanel } from '@/components/dogs/detail/DogWeightPanel';
 import { HeatStatusCard } from '@/components/dogs/detail/HeatStatusCard';
 import { SectionCard } from '@/components/dogs/detail/SectionCard';
+import { DogOwnerSection } from '@/components/followUps/DogOwnerSection';
 import { Button } from '@/components/ui/Button';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { formatDogAge } from '@/lib/kennel/formatters';
@@ -83,6 +84,8 @@ export function DogOverviewTab({
         <DetailRow label="Public" value={dog.is_public ? 'Yes' : 'No'} />
         <DetailRow label="Featured" value={dog.is_featured ? 'Yes' : 'No'} />
       </SectionCard>
+
+      <DogOwnerSection dog={dog} contact={dog.owner_contact} />
 
       <SectionCard title="Genetics">
         <DetailRow label="Wright's COI" value={dog.wrights_coi != null ? `${dog.wrights_coi}%` : null} />
