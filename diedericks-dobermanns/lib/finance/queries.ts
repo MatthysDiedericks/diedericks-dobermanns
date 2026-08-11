@@ -8,6 +8,7 @@ import {
   subYears,
 } from 'date-fns';
 
+import { fetchInvoicePayments } from '@/lib/finance/clientPayments';
 import { deltaPct, periodLabel } from '@/lib/finance/formatters';
 import { EXPENSE_CATEGORY_COLUMNS, EXPENSE_WITH_CATEGORY } from '@/lib/finance/expenseColumns';
 import { requireSupabase } from '@/lib/supabase';
@@ -118,11 +119,7 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithDetails> 
     .eq('invoice_id', id)
     .order('sort_order');
 
-  const { data: payments } = await supabase
-    .from('invoice_payments')
-    .select('id, invoice_id, amount, payment_date, payment_method, reference, notes, recorded_by, created_at')
-    .eq('invoice_id', id)
-    .order('payment_date', { ascending: false });
+  const mappedPayments = await fetchInvoicePayments(id);
 
   const row = invoice as unknown as InvoiceListRow & {
     client?: { full_name: string | null; email: string | null; phone?: string | null } | null;
@@ -135,7 +132,7 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithDetails> 
     clientPhone: row.client?.phone ?? null,
     dogName: row.dog?.name ?? null,
     items: (items ?? []) as InvoiceWithDetails['items'],
-    payments: (payments ?? []) as InvoiceWithDetails['payments'],
+    payments: mappedPayments,
   };
 }
 

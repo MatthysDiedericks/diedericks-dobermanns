@@ -129,22 +129,42 @@ export async function createInvoice(input: CreateInvoiceInput) {
   return invoice.id;
 }
 
+const PAYMENT_METHODS = ['eft', 'cash', 'card', 'other'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+function normalizePaymentMethod(method?: string | null): PaymentMethod {
+  const v = (method ?? '').toLowerCase().trim();
+  return (PAYMENT_METHODS as readonly string[]).includes(v) ? (v as PaymentMethod) : 'other';
+}
+
+/** Insert into `payments` only — never write invoice paid/outstanding/status columns. */
 export async function recordInvoicePayment(
   invoiceId: string,
   amount: number,
   paymentDate: string,
   method?: string,
   reference?: string,
+  opts?: { notes?: string | null; proof_document_id?: string | null },
 ) {
   const supabase = requireSupabase();
   const profileId = useAuthStore.getState().profile?.id;
 
-  const { error } = await supabase.from('invoice_payments').insert({
+  const { data: inv, error: invErr } = await supabase
+    .from('invoices')
+    .select('client_id')
+    .eq('id', invoiceId)
+    .single();
+  if (invErr) throw new Error(invErr.message);
+
+  const { error } = await supabase.from('payments').insert({
     invoice_id: invoiceId,
+    client_id: inv.client_id,
     amount,
-    payment_date: paymentDate,
-    payment_method: method ?? null,
-    reference: reference ?? null,
+    paid_at: paymentDate,
+    method: normalizePaymentMethod(method),
+    reference: reference?.trim() || null,
+    proof_document_id: opts?.proof_document_id ?? null,
+    notes: opts?.notes ?? null,
     recorded_by: profileId ?? null,
   });
 

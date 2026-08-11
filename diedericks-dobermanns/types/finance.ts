@@ -58,6 +58,7 @@ export interface InvoiceItem {
   sort_order: number;
 }
 
+/** UI shape mapped from live `payments` (paid_at → payment_date, method → payment_method). */
 export interface InvoicePayment {
   id: string;
   invoice_id: string;
@@ -68,6 +69,7 @@ export interface InvoicePayment {
   notes: string | null;
   recorded_by: string | null;
   created_at: string;
+  proof_document_id?: string | null;
 }
 
 export interface Expense {

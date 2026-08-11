@@ -10,6 +10,7 @@ import {
 } from '@/components/portal/ProfileFormOptions';
 import { ProfileSection } from '@/components/portal/ProfileSection';
 import { DeleteAccountModal } from '@/components/account/DeleteAccountModal';
+import { ReportProblemLink } from '@/components/portal/ReportProblemLink';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -257,6 +258,7 @@ export default function ProfileScreen() {
           ) : null}
         </View>
 
+        <ReportProblemLink />
         <Typography variant="caption" className="mb-6 text-center text-subtle">
           v{APP_VERSION}
         </Typography>

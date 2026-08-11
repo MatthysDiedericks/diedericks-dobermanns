@@ -173,7 +173,11 @@ export default function FinanceInvoiceDetailScreen() {
           {invoice.amount_outstanding > 0 ? (
             <Button
               label="Record payment"
-              onPress={() => setPaymentOpen(true)}
+              onPress={() => {
+                setPayAmount(String(invoice.amount_outstanding ?? ''));
+                setPayMethod('eft');
+                setPaymentOpen(true);
+              }}
               loading={busy}
               fullWidth
             />
@@ -208,7 +212,24 @@ export default function FinanceInvoiceDetailScreen() {
           className="mb-3"
         />
         <Input value={payDate} onChangeText={setPayDate} placeholder="Date YYYY-MM-DD" className="mb-3" />
-        <Input value={payMethod} onChangeText={setPayMethod} placeholder="Method" className="mb-3" />
+        <Typography variant="caption" className="mb-2 text-subtle">
+          Method
+        </Typography>
+        <View className="mb-3 flex-row flex-wrap gap-2">
+          {(['eft', 'cash', 'card', 'other'] as const).map((m) => (
+            <Pressable
+              key={m}
+              onPress={() => setPayMethod(m)}
+              className={`rounded-lg border px-3 py-2 ${
+                payMethod === m ? 'border-gold bg-gold/20' : 'border-gold/20'
+              }`}
+            >
+              <Typography variant="caption" className="uppercase">
+                {m}
+              </Typography>
+            </Pressable>
+          ))}
+        </View>
         <Input value={payRef} onChangeText={setPayRef} placeholder="Reference" className="mb-4" />
         <Button label="Save payment" onPress={handlePayment} loading={busy} fullWidth />
       </Modal>

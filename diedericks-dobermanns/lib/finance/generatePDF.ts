@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
+import { fetchClientPayments } from '@/lib/finance/clientPayments';
 import { formatAmountPlain } from '@/lib/finance/formatters';
 import {
   buildInvoiceHTML,
@@ -140,34 +141,7 @@ export async function exportClientStatement(clientId: string) {
   const invoices = (await fetchClientInvoices(clientId)).filter(
     (inv) => inv.status !== 'cancelled',
   );
-
-  const invoiceIds = invoices.map((i) => i.id);
-  let payments: Array<{
-    payment_date: string;
-    amount: number;
-    reference: string | null;
-    invoice_number: string;
-  }> = [];
-
-  if (invoiceIds.length > 0) {
-    const { data: payRows, error: payErr } = await supabase
-      .from('invoice_payments')
-      .select('payment_date, amount, reference, invoice:invoices(invoice_number)')
-      .in('invoice_id', invoiceIds);
-
-    if (payErr) throw new Error(payErr.message);
-
-    payments = (payRows ?? []).map((row) => {
-      const r = row as Record<string, unknown>;
-      const inv = r.invoice as { invoice_number: string } | null;
-      return {
-        payment_date: r.payment_date as string,
-        amount: r.amount as number,
-        reference: (r.reference as string | null) ?? null,
-        invoice_number: inv?.invoice_number ?? '',
-      };
-    });
-  }
+  const payments = await fetchClientPayments(clientId);
 
   const rows = buildStatementRows(invoices, payments);
   const html = buildStatementHTML(
