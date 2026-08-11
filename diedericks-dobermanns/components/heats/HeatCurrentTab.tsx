@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   HeatCycleActionSheets,
@@ -8,7 +8,6 @@ import {
 } from '@/components/heats/HeatCycleActionSheets';
 import { HeatStatusBadge } from '@/components/heats/HeatStatusBadge';
 import { PhaseTimeline } from '@/components/heats/PhaseTimeline';
-import { ProgesteroneChart } from '@/components/heats/ProgesteroneChart';
 import {
   RecordBottomSheet,
   type RecordSheetRef,
@@ -17,7 +16,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import {
-  useAddProgesteroneTest,
   useBreedDefaults,
   useConfirmHeat,
   useUpdateHeatCycle,
@@ -69,12 +67,9 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
   const { defaults } = useBreedDefaults();
   const confirmHeat = useConfirmHeat();
   const updateCycle = useUpdateHeatCycle();
-  const addProg = useAddProgesteroneTest();
   const actionSheets = useRef<HeatActionSheetsHandle>(null);
   const confirmSheet = useRef<RecordSheetRef>(null);
-  const progSheet = useRef<RecordSheetRef>(null);
   const [confirmValues, setConfirmValues] = useState<Record<string, string>>({});
-  const [progValues, setProgValues] = useState<Record<string, string>>({});
 
   const cycle =
     cycles.find(isActiveHeat) ??
@@ -108,21 +103,6 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
     if (!date || !cycleId) return;
     await confirmHeat(cycleId, date, confirmValues.notes);
     confirmSheet.current?.close();
-    onRefresh();
-  }
-
-  async function onAddProg() {
-    const date = parseDateInput(progValues.date ?? '');
-    const value = parseFloat(progValues.value ?? '');
-    if (!date || !Number.isFinite(value) || !cycleId) return;
-    await addProg(cycleId, cycle.progesterone_tests, {
-      date,
-      value_ng_ml: value,
-      lab: progValues.lab?.trim() || null,
-      notes: progValues.notes?.trim() || null,
-    });
-    progSheet.current?.close();
-    setProgValues({});
     onRefresh();
   }
 
@@ -180,20 +160,6 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
       </Card>
 
       <Card className="mb-4">
-        <View className="mb-3 flex-row items-center justify-between">
-          <Typography variant="label" className="text-gold">
-            PROGESTERONE
-          </Typography>
-          <Pressable onPress={() => progSheet.current?.open()}>
-            <Typography variant="caption" className="text-gold">
-              + Add Test
-            </Typography>
-          </Pressable>
-        </View>
-        <ProgesteroneChart tests={cycle.progesterone_tests ?? []} />
-      </Card>
-
-      <Card className="mb-4">
         <Typography variant="label" className="mb-2 text-gold">
           NOTES
         </Typography>
@@ -204,7 +170,6 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
         {!cycle.is_predicted ? (
           <>
             <Button label="Edit This Cycle" variant="outline" onPress={() => actionSheets.current?.openEdit()} fullWidth />
-            <Button label="Record Mating" variant="outline" onPress={() => actionSheets.current?.openMating()} fullWidth />
             <Button label="Mark as Completed" variant="outline" onPress={() => void markCompleted()} fullWidth />
           </>
         ) : null}
@@ -222,19 +187,6 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
         values={confirmValues}
         onChange={(k, v) => setConfirmValues((s) => ({ ...s, [k]: v }))}
         onSave={() => void onConfirm()}
-      />
-      <RecordBottomSheet
-        ref={progSheet}
-        title="Add Progesterone Test"
-        fields={[
-          { key: 'date', label: 'Test date', placeholder: 'YYYY-MM-DD', required: true },
-          { key: 'value', label: 'Value (ng/mL)', keyboard: 'numeric', required: true },
-          { key: 'lab', label: 'Lab / Vet' },
-          { key: 'notes', label: 'Notes' },
-        ]}
-        values={progValues}
-        onChange={(k, v) => setProgValues((s) => ({ ...s, [k]: v }))}
-        onSave={() => void onAddProg()}
       />
     </View>
   );

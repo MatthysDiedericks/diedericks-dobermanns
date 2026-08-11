@@ -63,6 +63,8 @@ export type HeatCycleWithDog = HeatCycle & {
   date_of_birth?: string | null;
   litter_count?: number;
   dam_name?: string;
+  planned_sire_name?: string | null;
+  age_label?: string | null;
 };
 
 export interface TodoItem {

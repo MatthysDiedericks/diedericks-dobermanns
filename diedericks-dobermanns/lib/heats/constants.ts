@@ -3,7 +3,39 @@ export const HEAT_CYCLE_SELECT =
   'estrus_start_date, ovulation_date, mating_date, mating_type, ' +
   'sire_id, expected_whelp_date, actual_whelp_date, resulting_litter_id, ' +
   'status, is_predicted, actual_cycle_length_days, cycle_confirmed_at, ' +
-  'progesterone_tests, cancelled_reason, notes, created_at, updated_at';
+  'progesterone_tests, cancelled_reason, notes, created_at, updated_at, ' +
+  'pregnancy_status, pregnancy_confirmed_date, pregnancy_confirmed_method, ' +
+  'pregnancy_notes, whelp_date_earliest, whelp_date_latest';
+
+export const MATING_SELECT =
+  'id, heat_cycle_id, sire_id, external_sire_name, mated_at, mating_type, ' +
+  'tie_minutes, successful, notes, created_at, updated_at';
+
+export const PROG_TEST_SELECT =
+  'id, heat_cycle_id, tested_at, value, unit, value_ng_ml, test_phase, ' +
+  'lab, notes, created_at';
+
+export const WHELP_TEMP_SELECT =
+  'id, heat_cycle_id, taken_at, temp_c, notes, created_at';
+
+export const WHELP_TEMP_DROP_C = 37.2;
+
+export const MATING_TYPES = [
+  { value: 'natural', label: 'Natural' },
+  { value: 'ai_fresh', label: 'AI — fresh' },
+  { value: 'ai_chilled', label: 'AI — chilled' },
+  { value: 'ai_frozen', label: 'AI — frozen' },
+] as const;
+
+export const PREGNANCY_STATUS_OPTIONS = [
+  { value: 'not_yet_known', label: 'Not yet known' },
+  { value: 'not_pregnant', label: 'Not pregnant' },
+  { value: 'pregnant', label: 'Pregnant' },
+  { value: 'false_pregnancy', label: 'False pregnancy' },
+  { value: 'loss_early', label: 'Loss before day 45' },
+  { value: 'loss_late', label: 'Loss after day 45' },
+  { value: 'loss_unspecified', label: 'Loss (unspecified)' },
+] as const;
 
 // Aliased to the app's internal field names (left of `:`) — the live
 // `breed_heat_defaults` table uses longer, more explicit column names
@@ -22,6 +54,43 @@ export interface ProgesteroneTest {
   value_ng_ml: number;
   lab?: string | null;
   notes?: string | null;
+}
+
+export interface MatingRecord {
+  id: string;
+  heat_cycle_id: string;
+  sire_id: string | null;
+  external_sire_name: string | null;
+  mated_at: string;
+  mating_type: string;
+  tie_minutes: number | null;
+  successful: boolean | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  sire?: { id: string; name: string } | null;
+}
+
+export interface ProgTestRecord {
+  id: string;
+  heat_cycle_id: string;
+  tested_at: string;
+  value: number;
+  unit: 'ng_ml' | 'nmol_l';
+  value_ng_ml: number;
+  test_phase: 'ovulation_timing' | 'reverse';
+  lab: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface WhelpTempRecord {
+  id: string;
+  heat_cycle_id: string;
+  taken_at: string;
+  temp_c: number;
+  notes: string | null;
+  created_at: string;
 }
 
 export interface HeatCycleRecord {
@@ -47,6 +116,12 @@ export interface HeatCycleRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  pregnancy_status: string | null;
+  pregnancy_confirmed_date: string | null;
+  pregnancy_confirmed_method: string | null;
+  pregnancy_notes: string | null;
+  whelp_date_earliest: string | null;
+  whelp_date_latest: string | null;
   is_overdue?: boolean;
   sire?: { id: string; name: string } | null;
 }

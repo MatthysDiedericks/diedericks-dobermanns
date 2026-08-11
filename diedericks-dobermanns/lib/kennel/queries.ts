@@ -1,6 +1,8 @@
 import {
+  differenceInDays,
   endOfMonth,
   format,
+  parseISO,
   startOfMonth,
   subMonths,
 } from 'date-fns';
@@ -86,15 +88,58 @@ export async function fetchInHeatNotMated(): Promise<HeatCycleWithDog[]> {
   const supabase = requireSupabase();
   const { data, error } = await supabase
     .from('heat_cycles')
-    .select('*, dog:dogs!heat_cycles_dog_id_fkey(name)')
-    .eq('status', 'in_heat')
+    .select(
+      '*, dog:dogs!heat_cycles_dog_id_fkey(name, date_of_birth), sire:dogs!heat_cycles_sire_id_fkey(name)',
+    )
+    .in('status', ['in_heat', 'active'])
+    .eq('is_predicted', false)
     .order('heat_start_date', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => {
+  if (!data?.length) return [];
+
+  const ids = data.map((r) => (r as { id: string }).id);
+  const { data: matingRows } = await supabase
+    .from('matings')
+    .select('heat_cycle_id')
+    .in('heat_cycle_id', ids);
+  const mated = new Set((matingRows ?? []).map((m) => m.heat_cycle_id));
+
+  const result: HeatCycleWithDog[] = [];
+  for (const row of data) {
     const r = row as Record<string, unknown>;
-    const dog = r.dog as { name: string } | null;
-    return { ...(r as unknown as HeatCycleWithDog), dog_name: dog?.name };
+    if (mated.has(r.id as string)) continue;
+    if (r.mating_date) continue;
+    const dog = r.dog as { name: string; date_of_birth: string | null } | null;
+    const sire = r.sire as { name: string } | null;
+    const { count } = await supabase
+      .from('litters')
+      .select('*', { count: 'exact', head: true })
+      .eq('mother_id', r.dog_id as string);
+
+    let age_label: string | null = null;
+    if (dog?.date_of_birth) {
+      const days = differenceInDays(new Date(), parseISO(dog.date_of_birth));
+      age_label = `${Math.floor(days / 365)}y ${Math.floor((days % 365) / 30)}m`;
+    }
+
+    result.push({
+      ...(r as unknown as HeatCycleWithDog),
+      dog_name: dog?.name,
+      planned_sire_name: sire?.name ?? null,
+      litter_count: count ?? 0,
+      age_label,
+    });
+  }
+
+  return result.sort((a, b) => {
+    const da = a.heat_start_date
+      ? differenceInDays(new Date(), parseISO(a.heat_start_date))
+      : 0;
+    const db = b.heat_start_date
+      ? differenceInDays(new Date(), parseISO(b.heat_start_date))
+      : 0;
+    return db - da;
   });
 }
 

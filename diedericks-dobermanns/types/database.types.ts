@@ -393,6 +393,27 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_pause_state: {
+        Row: {
+          id: boolean
+          paused_at: string | null
+          paused_by: string | null
+          reason: string | null
+        }
+        Insert: {
+          id?: boolean
+          paused_at?: string | null
+          paused_by?: string | null
+          reason?: string | null
+        }
+        Update: {
+          id?: boolean
+          paused_at?: string | null
+          paused_by?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       breed_heat_defaults: {
         Row: {
           avg_cycle_length_days: number
@@ -931,6 +952,7 @@ export type Database = {
           popia_consent: boolean
           popia_consent_date: string | null
           source: string | null
+          source_ref: string | null
           tags: string[] | null
           updated_at: string | null
           user_id: string | null
@@ -955,6 +977,7 @@ export type Database = {
           popia_consent?: boolean
           popia_consent_date?: string | null
           source?: string | null
+          source_ref?: string | null
           tags?: string[] | null
           updated_at?: string | null
           user_id?: string | null
@@ -979,6 +1002,7 @@ export type Database = {
           popia_consent?: boolean
           popia_consent_date?: string | null
           source?: string | null
+          source_ref?: string | null
           tags?: string[] | null
           updated_at?: string | null
           user_id?: string | null
@@ -2473,6 +2497,10 @@ export type Database = {
           notes: string | null
           ovulation_date: string | null
           predicted_next_heat_date: string | null
+          pregnancy_confirmed_date: string | null
+          pregnancy_confirmed_method: string | null
+          pregnancy_notes: string | null
+          pregnancy_status: string | null
           proestrus_start_date: string | null
           progesterone_tests: Json | null
           resulting_litter_id: string | null
@@ -2502,6 +2530,10 @@ export type Database = {
           notes?: string | null
           ovulation_date?: string | null
           predicted_next_heat_date?: string | null
+          pregnancy_confirmed_date?: string | null
+          pregnancy_confirmed_method?: string | null
+          pregnancy_notes?: string | null
+          pregnancy_status?: string | null
           proestrus_start_date?: string | null
           progesterone_tests?: Json | null
           resulting_litter_id?: string | null
@@ -2531,6 +2563,10 @@ export type Database = {
           notes?: string | null
           ovulation_date?: string | null
           predicted_next_heat_date?: string | null
+          pregnancy_confirmed_date?: string | null
+          pregnancy_confirmed_method?: string | null
+          pregnancy_notes?: string | null
+          pregnancy_status?: string | null
           proestrus_start_date?: string | null
           progesterone_tests?: Json | null
           resulting_litter_id?: string | null
@@ -3382,6 +3418,66 @@ export type Database = {
           },
         ]
       }
+      matings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          external_sire_name: string | null
+          heat_cycle_id: string
+          id: string
+          mated_at: string
+          mating_type: string
+          notes: string | null
+          sire_id: string | null
+          successful: boolean | null
+          tie_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          external_sire_name?: string | null
+          heat_cycle_id: string
+          id?: string
+          mated_at: string
+          mating_type?: string
+          notes?: string | null
+          sire_id?: string | null
+          successful?: boolean | null
+          tie_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          external_sire_name?: string | null
+          heat_cycle_id?: string
+          id?: string
+          mated_at?: string
+          mating_type?: string
+          notes?: string | null
+          sire_id?: string | null
+          successful?: boolean | null
+          tie_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matings_heat_cycle_id_fkey"
+            columns: ["heat_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "heat_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matings_sire_id_fkey"
+            columns: ["sire_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_conditions: {
         Row: {
           condition_name: string
@@ -3834,6 +3930,56 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progesterone_tests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          heat_cycle_id: string
+          id: string
+          lab: string | null
+          notes: string | null
+          test_phase: string
+          tested_at: string
+          unit: string
+          value: number
+          value_ng_ml: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          heat_cycle_id: string
+          id?: string
+          lab?: string | null
+          notes?: string | null
+          test_phase?: string
+          tested_at: string
+          unit: string
+          value: number
+          value_ng_ml?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          heat_cycle_id?: string
+          id?: string
+          lab?: string | null
+          notes?: string | null
+          test_phase?: string
+          tested_at?: string
+          unit?: string
+          value?: number
+          value_ng_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progesterone_tests_heat_cycle_id_fkey"
+            columns: ["heat_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "heat_cycles"
             referencedColumns: ["id"]
           },
         ]
@@ -5624,6 +5770,44 @@ export type Database = {
           },
         ]
       }
+      whelping_temperatures: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          heat_cycle_id: string
+          id: string
+          notes: string | null
+          taken_at: string
+          temp_c: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          heat_cycle_id: string
+          id?: string
+          notes?: string | null
+          taken_at: string
+          temp_c: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          heat_cycle_id?: string
+          id?: string
+          notes?: string | null
+          taken_at?: string
+          temp_c?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whelping_temperatures_heat_cycle_id_fkey"
+            columns: ["heat_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "heat_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       finance_category_summary: {
@@ -5752,6 +5936,7 @@ export type Database = {
         }[]
       }
       my_dog_parent_ids: { Args: never; Returns: string[] }
+      pause_audit: { Args: { p_reason: string }; Returns: string }
       purge_old_audit_log: { Args: never; Returns: undefined }
       record_page_view: {
         Args: {
@@ -5763,6 +5948,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      resume_audit: { Args: never; Returns: string }
       sign_contract_as_client: {
         Args: {
           p_contract_id: string

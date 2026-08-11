@@ -16,9 +16,11 @@ import { Pressable, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { useAddHeatCycle, useBreedDefaults, useUpdateHeatCycle } from '@/hooks/useHeatCycles';
+import { useMatings } from '@/hooks/useMatings';
 import { parseDateInput } from '@/lib/dogDetail/feedback';
 import { addDays, autoHeatDates, breedingWindowEnd } from '@/lib/heats/calculations';
 import type { HeatCycleRecord } from '@/lib/heats/constants';
+import { MATING_TYPES } from '@/lib/heats/constants';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { requireSupabase } from '@/lib/supabase';
 
@@ -35,7 +37,6 @@ interface HeatCycleActionSheetsProps {
   onSaved: () => void;
 }
 
-const MATING_TYPES = ['natural', 'fresh_chilled', 'frozen', 'surgical_ai'] as const;
 type SheetMode = 'add' | 'edit' | 'mating';
 
 function Field({
@@ -76,6 +77,7 @@ export const HeatCycleActionSheets = forwardRef<
   const { defaults } = useBreedDefaults();
   const addHeat = useAddHeatCycle();
   const updateCycle = useUpdateHeatCycle();
+  const { addMating } = useMatings(cycle?.id ?? null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [males, setMales] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
@@ -194,16 +196,12 @@ export const HeatCycleActionSheets = forwardRef<
       } else if (mode === 'mating' && cycle) {
         const matingDate = parseDateInput(values.mating_date ?? '');
         if (!matingDate) return;
-        const ov = cycle.ovulation_date;
-        await updateCycle(cycle.id, {
-          mating_date: matingDate,
-          mating_type: values.mating_type || null,
-          sire_id: values.sire_id?.trim() || null,
-          status: 'mated',
-          expected_whelp_date: ov
-            ? addDays(ov, defaults.gestation_days)
-            : addDays(matingDate, 60),
-          notes: values.notes?.trim() || cycle.notes,
+        if (!values.sire_id?.trim()) return;
+        await addMating({
+          mated_at: `${matingDate}T12:00:00.000Z`,
+          mating_type: values.mating_type || 'natural',
+          sire_id: values.sire_id.trim(),
+          notes: values.notes?.trim() || null,
         });
       }
       sheetRef.current?.dismiss();
@@ -236,13 +234,13 @@ export const HeatCycleActionSheets = forwardRef<
             <View className="mb-4 flex-row flex-wrap gap-2">
               {MATING_TYPES.map((t) => (
                 <Pressable
-                  key={t}
-                  onPress={() => setValues((s) => ({ ...s, mating_type: t }))}
+                  key={t.value}
+                  onPress={() => setValues((s) => ({ ...s, mating_type: t.value }))}
                   className={`rounded-full border px-3 py-1.5 ${
-                    values.mating_type === t ? 'border-gold bg-gold/15' : 'border-gold/20'
+                    values.mating_type === t.value ? 'border-gold bg-gold/15' : 'border-gold/20'
                   }`}
                 >
-                  <Typography variant="caption">{t.replace(/_/g, ' ')}</Typography>
+                  <Typography variant="caption">{t.label}</Typography>
                 </Pressable>
               ))}
             </View>

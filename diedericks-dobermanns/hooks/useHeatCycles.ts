@@ -220,7 +220,7 @@ export function useAddHeatCycle() {
         ovulation_date: extra?.ovulation_date ?? auto.ovulation_date,
         expected_whelp_date: extra?.expected_whelp_date ?? auto.expected_whelp_date,
         heat_end_date: extra?.heat_end_date ?? null,
-        status: extra?.status ?? 'active',
+        status: extra?.status ?? 'in_heat',
         is_predicted: false,
         notes: extra?.notes ?? null,
       } satisfies TablesInsert<'heat_cycles'>);
@@ -279,7 +279,7 @@ export function useConfirmHeat() {
         is_predicted: false,
         cycle_confirmed_at: new Date().toISOString(),
         heat_start_date: actualStart,
-        status: 'active',
+        status: 'in_heat',
         notes: notes?.trim() || null,
       })
       .eq('id', id);
