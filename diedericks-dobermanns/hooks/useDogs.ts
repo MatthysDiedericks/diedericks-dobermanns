@@ -38,11 +38,18 @@ const DOG_DETAIL_SELECT =
   'genetics_b_locus, genetics_d_locus, genetics_vwd_status, genetics_dcm1_status, genetics_dcm2_status, genetics_notes, ' +
   'status, category, price, is_public, is_featured, ' +
   'father_id, mother_id, litter_id, owner_id, ' +
+  'owner_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
+  'new_owner_name, reserved_for_name, ' +
+  'owner_contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone, whatsapp_number, email), ' +
   'dog_media(id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
 
 function mapDogMedia(row: Record<string, unknown>): Dog {
   const media = (row.dog_media as Dog['media']) ?? [];
-  return { ...(row as unknown as Dog), media };
+  const owner_contact =
+    (row.owner_contact as Dog['owner_contact']) ??
+    (row.contacts as Dog['owner_contact']) ??
+    null;
+  return { ...(row as unknown as Dog), media, owner_contact };
 }
 
 export function useDogs(options?: UseDogsOptions) {

@@ -31,15 +31,27 @@ export default function LitterDetailScreen() {
     );
   }
 
+  const goHomeLine = [
+    litter.go_home_date ? formatKennelDate(litter.go_home_date) : null,
+    litter.go_home_weeks != null ? `go home at ${litter.go_home_weeks} weeks` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <ScreenContainer>
       <PageHeader title={(litter.name as string) ?? 'Litter'} back />
+      {goHomeLine ? (
+        <Typography variant="caption" className="mb-2 px-6 text-gold">
+          {goHomeLine}
+        </Typography>
+      ) : null}
       <ScrollView className="px-6 pb-12">
         <Card>
           <Typography variant="body">Dam: {litter.mother?.name ?? '—'}</Typography>
           <Typography variant="body">Sire: {litter.father?.name ?? '—'}</Typography>
           <Typography variant="body">Born: {formatKennelDate(litter.actual_date)}</Typography>
-          <Typography variant="body">Go home: {formatKennelDate(litter.go_home_date)}</Typography>
+          <Typography variant="body">Go home: {goHomeLine || '—'}</Typography>
           <Typography variant="body">Puppies: {puppies.length}</Typography>
         </Card>
         <Typography variant="label" className="mt-6 mb-2 text-gold">PUPPIES</Typography>

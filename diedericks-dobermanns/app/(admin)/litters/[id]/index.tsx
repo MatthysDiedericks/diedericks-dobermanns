@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
+import { formatKennelDate } from '@/lib/kennel/formatters';
 import { useLitterWeights } from '@/hooks/useLitterWeights';
 import { useLitterDetail } from '@/hooks/useDogs';
 
@@ -94,6 +95,18 @@ export default function LitterDetailScreen() {
         eyebrow="Litter"
         title={detail.litter_letter ? `Litter ${detail.litter_letter}` : detail.name ?? 'Detail'}
       />
+      {detail.go_home_date || detail.go_home_weeks != null ? (
+        <Typography variant="caption" className="mb-3 px-6 text-gold">
+          {[
+            detail.go_home_date ? formatKennelDate(detail.go_home_date) : null,
+            detail.go_home_weeks != null
+              ? `go home at ${detail.go_home_weeks} weeks`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </Typography>
+      ) : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

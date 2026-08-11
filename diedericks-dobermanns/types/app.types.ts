@@ -282,6 +282,28 @@ export interface Dog {
   chest_depth_cm?: number | null;
   chest_girth_cm?: number | null;
   owner_id?: string | null;
+  owner_contact_id?: string | null;
+  placement_date?: string | null;
+  ownership_status?:
+    | 'unknown'
+    | 'with_owner'
+    | 'rehomed'
+    | 'returned'
+    | 'deceased'
+    | 'lost_contact'
+    | null;
+  ownership_status_at?: string | null;
+  ownership_notes?: string | null;
+  do_not_contact?: boolean | null;
+  new_owner_name?: string | null;
+  reserved_for_name?: string | null;
+  owner_contact?: {
+    id: string;
+    full_name: string;
+    phone: string | null;
+    whatsapp_number: string | null;
+    email: string | null;
+  } | null;
   /** When the "Release & Send Contract" action was taken for this puppy — independent of `status`. */
   released_at?: string | null;
   is_featured: boolean;

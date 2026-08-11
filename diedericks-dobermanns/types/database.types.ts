@@ -1798,6 +1798,9 @@ export type Database = {
       }
       dogs: {
         Row: {
+          birth_order: number | null
+          birth_time: string | null
+          birth_type: string | null
           birth_weight_grams: number | null
           bloodline: string | null
           bloodline_type: string | null
@@ -1815,6 +1818,8 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           dcm_status: string | null
+          deceased_at: string | null
+          deceased_cause: string | null
           delivered_at: string | null
           delivery_method: string | null
           delivery_notes: string | null
@@ -1885,6 +1890,9 @@ export type Database = {
           wrights_coi: number | null
         }
         Insert: {
+          birth_order?: number | null
+          birth_time?: string | null
+          birth_type?: string | null
           birth_weight_grams?: number | null
           bloodline?: string | null
           bloodline_type?: string | null
@@ -1902,6 +1910,8 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           dcm_status?: string | null
+          deceased_at?: string | null
+          deceased_cause?: string | null
           delivered_at?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
@@ -1972,6 +1982,9 @@ export type Database = {
           wrights_coi?: number | null
         }
         Update: {
+          birth_order?: number | null
+          birth_time?: string | null
+          birth_type?: string | null
           birth_weight_grams?: number | null
           bloodline?: string | null
           bloodline_type?: string | null
@@ -1989,6 +2002,8 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           dcm_status?: string | null
+          deceased_at?: string | null
+          deceased_cause?: string | null
           delivered_at?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
@@ -3056,6 +3071,7 @@ export type Database = {
           created_at: string | null
           dog_id: string | null
           id: string
+          is_public: boolean
           litter_id: string | null
           media_type: string
           public_url: string
@@ -3068,6 +3084,7 @@ export type Database = {
           created_at?: string | null
           dog_id?: string | null
           id?: string
+          is_public?: boolean
           litter_id?: string | null
           media_type: string
           public_url: string
@@ -3080,6 +3097,7 @@ export type Database = {
           created_at?: string | null
           dog_id?: string | null
           id?: string
+          is_public?: boolean
           litter_id?: string | null
           media_type?: string
           public_url?: string
