@@ -57,6 +57,33 @@ export default function AdminSettingsIndex() {
             className="mt-4"
           />
         </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
+            Analytics
+          </Typography>
+          <Button
+            label="Website traffic"
+            variant="outline"
+            onPress={() => router.push('/(admin)/analytics')}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
+            Audit log
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Who changed what — dogs, prices, invoices, contracts.
+          </Typography>
+          <Button
+            label="Open audit log"
+            variant="outline"
+            onPress={() => router.push('/(admin)/audit')}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
       </View>
     </ScreenContainer>
   );

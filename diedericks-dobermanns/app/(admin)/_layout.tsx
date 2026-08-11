@@ -100,6 +100,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="testimonials" options={{ href: null }} />
         <Tabs.Screen name="faq" options={{ href: null }} />
         <Tabs.Screen name="analytics" options={{ href: null }} />
+        <Tabs.Screen name="audit" options={{ href: null }} />
         <Tabs.Screen name="notifications" options={{ href: null }} />
         <Tabs.Screen name="waitlist/index" options={{ href: null }} />
         <Tabs.Screen name="waitlist/new" options={{ href: null }} />

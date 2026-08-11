@@ -22,6 +22,8 @@ const LINKS = [
   { label: 'Social settings', href: '/(admin)/settings/social' },
   { label: 'Legacy admin dashboard', href: '/(admin)/dashboard' },
   { label: 'Marketing', href: '/(admin)/marketing' },
+  { label: 'Analytics', href: '/(admin)/analytics' },
+  { label: 'Audit log', href: '/(admin)/audit' },
 ] as const;
 
 export default function SettingsScreen() {

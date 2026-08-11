@@ -105,6 +105,15 @@ export function DogOverviewTab({
           fullWidth
           className="mb-3"
         />
+        <Button
+          label="History"
+          variant="outline"
+          onPress={() =>
+            router.push(`/(admin)/audit?table=dogs&record=${dog.id}` as never)
+          }
+          fullWidth
+          className="mb-3"
+        />
         {dog.sex === 'female' ? (
           <Button
             label="Litter History"
