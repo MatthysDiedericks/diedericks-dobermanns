@@ -5705,6 +5705,15 @@ export type Database = {
           severity: string
         }[]
       }
+      claim_my_records: {
+        Args: never
+        Returns: {
+          applications: number
+          contracts: number
+          quotes: number
+          waitlist: number
+        }[]
+      }
       client_owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
       convert_quote_to_invoice: {
         Args: { p_quote_id: string }

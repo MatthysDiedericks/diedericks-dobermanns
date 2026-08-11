@@ -9,6 +9,7 @@ import {
   updatePassword as authUpdatePassword,
   verifySignupOtp,
 } from '@/lib/auth';
+import { claimMyRecords } from '@/lib/claimMyRecords';
 import { useAuthStore } from '@/stores/authStore';
 
 export function useAuth() {
@@ -25,6 +26,7 @@ export function useAuth() {
       try {
         const { error } = await signInWithEmail(email.trim(), password);
         if (error) throw new Error(error);
+        await claimMyRecords();
         await refresh();
       } finally {
         setIsLoading(false);
@@ -52,6 +54,7 @@ export function useAuth() {
       try {
         const { error } = await verifySignupOtp(email.trim(), token.trim());
         if (error) throw new Error(error);
+        await claimMyRecords();
         await refresh();
       } finally {
         setIsLoading(false);
