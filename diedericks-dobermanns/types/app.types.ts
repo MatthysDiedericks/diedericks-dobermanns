@@ -295,6 +295,8 @@ export interface Dog {
   ownership_status_at?: string | null;
   ownership_notes?: string | null;
   do_not_contact?: boolean | null;
+  deceased_at?: string | null;
+  deceased_cause?: string | null;
   new_owner_name?: string | null;
   reserved_for_name?: string | null;
   owner_contact?: {

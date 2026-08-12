@@ -6131,6 +6131,7 @@ export type Database = {
         Args: { p_quote_id: string; p_reason?: string }
         Returns: undefined
       }
+      dog_is_contactable: { Args: { p_dog_id: string }; Returns: boolean }
       enable_audit: { Args: { p_table: string }; Returns: undefined }
       evaluate_pairing: {
         Args: { p_dam_id: string; p_sire_id: string }
@@ -6186,7 +6187,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      trigger_birthday_greetings_check: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

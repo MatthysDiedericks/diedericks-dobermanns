@@ -105,14 +105,7 @@ export function useMatings(heatCycleId: string | null) {
         showError(err.message);
         throw new Error(err.message);
       }
-      const { data: cycle } = await client
-        .from('heat_cycles')
-        .select('status')
-        .eq('id', heatCycleId)
-        .maybeSingle();
-      if (cycle && (cycle.status === 'in_heat' || cycle.status === 'active')) {
-        await client.from('heat_cycles').update({ status: 'mated' }).eq('id', heatCycleId);
-      }
+      // Status in_heat → mated is handled by sync_heat_cycle_from_matings.
       await refreshCycleWhelpDates(heatCycleId);
       showSaved();
       await refresh();
@@ -129,17 +122,7 @@ export function useMatings(heatCycleId: string | null) {
         showError(err.message);
         throw new Error(err.message);
       }
-      const { count } = await client
-        .from('matings')
-        .select('id', { count: 'exact', head: true })
-        .eq('heat_cycle_id', heatCycleId);
-      if ((count ?? 0) === 0) {
-        await client
-          .from('heat_cycles')
-          .update({ status: 'in_heat' })
-          .eq('id', heatCycleId)
-          .eq('status', 'mated');
-      }
+      // Last-mating → in_heat is handled by sync_heat_cycle_from_matings.
       await refreshCycleWhelpDates(heatCycleId);
       await refresh();
     },

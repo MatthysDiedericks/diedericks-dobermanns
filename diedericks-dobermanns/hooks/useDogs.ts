@@ -39,6 +39,7 @@ const DOG_DETAIL_SELECT =
   'status, category, price, is_public, is_featured, ' +
   'father_id, mother_id, litter_id, owner_id, ' +
   'owner_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
+  'deceased_at, deceased_cause, ' +
   'new_owner_name, reserved_for_name, ' +
   'owner_contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone, whatsapp_number, email), ' +
   'dog_media(id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';

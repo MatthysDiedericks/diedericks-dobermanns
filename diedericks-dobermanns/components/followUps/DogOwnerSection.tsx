@@ -7,6 +7,7 @@ import {
   useDogCheckInHistory,
   useOwnerHealthReports,
 } from '@/hooks/useOwnerHealthReports';
+import { contactabilityBlockReason } from '@/lib/followUps/contactability';
 import { KIND_LABELS, OWNERSHIP_LABELS, type OwnershipStatus } from '@/lib/followUps/types';
 import type { Dog } from '@/types/app.types';
 
@@ -28,6 +29,7 @@ export function DogOwnerSection({
     ownership_status?: OwnershipStatus | null;
     ownership_notes?: string | null;
     do_not_contact?: boolean | null;
+    deceased_at?: string | null;
     new_owner_name?: string | null;
     reserved_for_name?: string | null;
   };
@@ -42,9 +44,22 @@ export function DogOwnerSection({
 
   const status = (dog.ownership_status ?? 'unknown') as OwnershipStatus;
   const phone = contact?.whatsapp_number || contact?.phone || null;
+  const blockReason = contactabilityBlockReason({
+    do_not_contact: dog.do_not_contact,
+    deceased_at: dog.deceased_at,
+    status: dog.status,
+    ownership_status: status,
+  });
 
   return (
     <View>
+      {blockReason ? (
+        <SectionCard title="Contact">
+          <Typography variant="caption" className="text-amber-300">
+            {blockReason}
+          </Typography>
+        </SectionCard>
+      ) : null}
       <SectionCard title="Owner">
         <DetailRow label="Contact" value={contact?.full_name ?? dog.new_owner_name ?? dog.reserved_for_name} />
         <DetailRow label="Phone" value={phone} />
