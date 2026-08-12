@@ -8,10 +8,12 @@ export interface LitterIndexRow {
   litter_letter: string | null;
   status: string;
   actual_date: string | null;
+  expected_date: string | null;
   go_home_date: string | null;
   male_count: number | null;
   female_count: number | null;
   deceased_count: number | null;
+  mother_id: string | null;
   mother: { id: string; name: string } | null;
   father: { id: string; name: string } | null;
   puppies: {
@@ -27,7 +29,7 @@ export interface LitterIndexRow {
 }
 
 const LITTER_INDEX_SELECT = `
-  id, name, litter_letter, status, actual_date, go_home_date,
+  id, name, litter_letter, status, actual_date, expected_date, go_home_date, mother_id,
   male_count, female_count, deceased_count,
   mother:dogs!litters_mother_id_fkey(id, name),
   father:dogs!litters_father_id_fkey(id, name),
@@ -58,8 +60,7 @@ export function useLittersIndex() {
     try {
       const { data, error: err } = await requireSupabase()
         .from('litters')
-        .select(LITTER_INDEX_SELECT)
-        .order('actual_date', { ascending: false, nullsFirst: false });
+        .select(LITTER_INDEX_SELECT);
       if (err) throw new Error(err.message);
       setLitters((data ?? []) as unknown as LitterIndexRow[]);
     } catch (e) {
