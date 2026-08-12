@@ -53,18 +53,83 @@ export async function signUpWithEmail(
           ? error.message
           : 'Sign up failed. Please try again or contact support.';
       console.error('[signUpWithEmail]', error);
+      const lower = msg.toLowerCase();
+      let specific = 'AUTH_SIGNUP_OTHER';
+      if (lower.includes('password') && (lower.includes('character') || lower.includes('length'))) {
+        specific = 'AUTH_PASSWORD_POLICY';
+      } else if (lower.includes('rate') || lower.includes('limit')) {
+        specific = 'AUTH_RATE_LIMIT';
+      } else if (lower.includes('email') || lower.includes('smtp') || lower.includes('mail')) {
+        specific = 'AUTH_EMAIL_DELIVERY';
+      }
+      void import('@/lib/auth/logSignupFailure').then(({ logSignupFailure }) =>
+        logSignupFailure({ errorCode: specific, email }),
+      );
+      void import('@/lib/errors/logError').then(({ logError }) =>
+        logError({
+          code: 'AUTH_REGISTRATION_BLOCKED',
+          area: 'auth',
+          severity: 'error',
+          message: msg,
+          detail: { specific_code: specific },
+          email,
+          actorRole: 'anon',
+          surface: 'app',
+          route: '/sign-up',
+        }),
+      );
       return { error: msg };
     }
 
-    // Supabase returns user=null when the email already exists but is unconfirmed
+    // Empty identities = email already registered (enumeration protection).
+    // Do not confirm existence — same generic message as the website.
+    if (
+      data.user &&
+      Array.isArray(data.user.identities) &&
+      data.user.identities.length === 0
+    ) {
+      return {
+        error:
+          'If that address already has an account, sign in or reset your password.',
+      };
+    }
+
+    // Form claimed success but no user — critical phantom signup.
     if (!data.user) {
-      return { error: 'This email may already be registered. Try signing in or check your inbox for a confirmation email.' };
+      void import('@/lib/errors/logError').then(({ logError }) =>
+        logError({
+          code: 'AUTH_SIGNUP_PHANTOM',
+          area: 'auth',
+          severity: 'critical',
+          message: 'signUp reported success without creating a user',
+          email,
+          actorRole: 'anon',
+          surface: 'app',
+          route: '/sign-up',
+        }),
+      );
+      return {
+        error:
+          'Something went wrong creating your account. Try again, or WhatsApp us and we will help.',
+      };
     }
 
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'An unexpected error occurred.';
     console.error('[signUpWithEmail] threw:', e);
+    void import('@/lib/errors/logError').then(({ logError }) =>
+      logError({
+        code: 'AUTH_REGISTRATION_BLOCKED',
+        area: 'auth',
+        severity: 'error',
+        message: msg,
+        email,
+        actorRole: 'anon',
+        surface: 'app',
+        route: '/sign-up',
+      }),
+    );
     return { error: msg };
   }
 }

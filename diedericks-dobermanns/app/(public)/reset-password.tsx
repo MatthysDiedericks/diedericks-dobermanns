@@ -8,6 +8,11 @@ import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  MIN_PASSWORD_LENGTH,
+  passwordLengthHint,
+  passwordTooShortMessage,
+} from '@/lib/auth/passwordPolicy';
 import { subscribeToAuthDeepLinks } from '@/lib/auth/deepLink';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -32,8 +37,8 @@ export default function ResetPasswordScreen() {
   async function onSubmit() {
     setError(null);
     let valid = true;
-    if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(passwordTooShortMessage());
       valid = false;
     } else {
       setPasswordError(undefined);
@@ -67,7 +72,7 @@ export default function ResetPasswordScreen() {
           <AuthBackButton />
           <Typography variant="display">New Password</Typography>
           <Typography variant="bodyMuted" className="mb-8 mt-2">
-            Choose a strong password for your account.
+            Choose a strong password for your account. {passwordLengthHint()}
           </Typography>
 
           {!sessionReady ? (

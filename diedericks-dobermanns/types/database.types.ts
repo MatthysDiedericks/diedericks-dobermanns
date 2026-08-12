@@ -4517,6 +4517,27 @@ export type Database = {
           },
         ]
       }
+      signup_failures: {
+        Row: {
+          created_at: string
+          email_domain: string
+          error_code: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          email_domain: string
+          error_code: string
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          email_domain?: string
+          error_code?: string
+          id?: never
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           check_in_id: string | null

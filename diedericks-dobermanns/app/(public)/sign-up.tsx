@@ -11,6 +11,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  MIN_PASSWORD_LENGTH,
+  passwordLengthHint,
+  passwordTooShortMessage,
+} from '@/lib/auth/passwordPolicy';
 
 interface FieldProps {
   label: string;
@@ -91,16 +96,32 @@ export default function SignUpScreen() {
     setError(null);
     if (!fullName.trim()) return setError('Please enter your full name.');
     if (!EMAIL_REGEX.test(email.trim())) return setError('Please enter a valid email address.');
-    if (password.length < 8) return setError('Password must be at least 8 characters.');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return setError(passwordTooShortMessage());
+    }
     if (password !== confirm) return setError('Passwords do not match.');
     try {
       await signUp(email, password, fullName);
       router.replace({ pathname: '/(public)/verify-code', params: { email: email.trim() } });
     } catch (e) {
-      let msg = 'Registration failed. Please try again.';
-      if (e instanceof Error && e.message && e.message !== '{}') msg = e.message;
-      else if (typeof e === 'string' && e && e !== '{}') msg = e;
-      console.error('[SignUp]', e);
+      let msg = 'Something went wrong creating your account. Try again, or WhatsApp us and we will help.';
+      const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
+      const lower = raw.toLowerCase();
+      if (raw && raw !== '{}') {
+        if (lower.includes('password') && (lower.includes('character') || lower.includes('length'))) {
+          msg = passwordTooShortMessage();
+        } else if (lower.includes('rate') || lower.includes('limit')) {
+          msg = raw;
+        } else if (lower.includes('email') || lower.includes('smtp') || lower.includes('mail')) {
+          msg =
+            'We could not send the confirmation email. Try again in a minute, or WhatsApp us and we will set your account up.';
+        } else {
+          console.error('[SignUp]', e);
+        }
+      } else {
+        console.error('[SignUp]', e);
+      }
+      // Logging is done inside signUpWithEmail — never block the UI on it.
       setError(msg);
     }
   }
@@ -139,12 +160,29 @@ export default function SignUpScreen() {
             label="PASSWORD"
             value={password}
             onChange={setPassword}
-            placeholder="Min. 8 characters"
+            placeholder={`Min. ${MIN_PASSWORD_LENGTH} characters`}
             secure
             showToggle
             visible={showPassword}
             onToggleVisible={() => setShowPassword((v) => !v)}
           />
+          {password.length > 0 ? (
+            <Typography
+              variant="caption"
+              className={`mb-3 ${
+                password.length >= MIN_PASSWORD_LENGTH ? 'text-success' : 'text-amber-400'
+              }`}
+            >
+              {passwordLengthHint()} ·{' '}
+              {password.length >= MIN_PASSWORD_LENGTH
+                ? 'length met'
+                : `${password.length}/${MIN_PASSWORD_LENGTH}`}
+            </Typography>
+          ) : (
+            <Typography variant="caption" className="mb-3 text-muted">
+              {passwordLengthHint()}
+            </Typography>
+          )}
           <Field
             label="CONFIRM PASSWORD"
             value={confirm}

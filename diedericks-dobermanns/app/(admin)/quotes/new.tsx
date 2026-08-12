@@ -17,7 +17,9 @@ import { useQuoteDetail } from '@/hooks/useQuotes';
 import { useQuotePrefillMatch } from '@/hooks/useQuotePrefillMatch';
 import { formatPrice } from '@/lib/format';
 import type { LineItemInput } from '@/lib/finance/mutations';
+import { assertQuoteLineCount, assertQuoteTotalsMatch } from '@/lib/errors/assertQuote';
 import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
+import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
 import { updateWaitlistEntry } from '@/lib/waitlist/mutations';
 import type { Quote } from '@/types/app.types';
 
@@ -114,16 +116,49 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
   }
 
   async function onSave(status: 'draft' | 'sent') {
-    const cleanItems: LineItemInput[] = items
-      .filter((it) => it.description.trim())
-      .map((it) => ({
-        item_type: it.item_type,
-        dog_id: it.dog_id ?? null,
-        description: it.description,
-        quantity: it.quantity,
-        unit_price: it.unit_price,
-      }));
-    if (cleanItems.length === 0) return;
+    const intendedMeaningful = items.filter(
+      (it) => Boolean(it.dog_id) || it.unit_price > 0 || it.description.trim(),
+    );
+    const prepared = prepareQuoteLinesForSave(items);
+    if (!prepared.ok) {
+      Alert.alert('Check line items', prepared.error);
+      return;
+    }
+    const cleanItems: LineItemInput[] = prepared.lines.map((it) => ({
+      item_type: it.item_type as LineItemInput['item_type'],
+      dog_id: it.dog_id ?? null,
+      description: it.description,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+    }));
+    if (cleanItems.length < intendedMeaningful.length) {
+      const dropErr = await assertQuoteLineCount({
+        intendedCount: intendedMeaningful.length,
+        writtenCount: cleanItems.length,
+        droppedDescriptions: intendedMeaningful
+          .slice(cleanItems.length)
+          .map((it) => it.description.trim() || `${it.item_type} @ ${it.unit_price}`),
+        quoteId: initial?.id ?? null,
+      });
+      if (dropErr) {
+        Alert.alert('Quote blocked', dropErr);
+        return;
+      }
+    }
+    const displayedTotal = Math.max(
+      cleanItems.reduce((s, it) => s + it.quantity * it.unit_price, 0) - discountNum,
+      0,
+    );
+    const totalErr = await assertQuoteTotalsMatch({
+      displayedTotal,
+      lines: cleanItems,
+      discount: discountNum,
+      quoteId: initial?.id ?? null,
+    });
+    if (totalErr) {
+      Alert.alert('Quote blocked', totalErr);
+      return;
+    }
     const combinedNotes = [notes.trim(), walkinContact.trim() ? `Contact: ${walkinContact.trim()}` : '']
       .filter(Boolean)
       .join('\n');
