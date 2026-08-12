@@ -37,8 +37,17 @@ export function EntryCard({ entry, onPress, onLongPress }: Props) {
           <PreferenceBadges entry={entry} />
         </View>
         <View className="mt-2 flex-row flex-wrap items-center gap-2">
-          <Typography variant="caption" className="text-silver">
-            {daysWaiting(entry.created_at)} days
+          <Typography
+            variant="caption"
+            className={
+              daysWaiting(entry.date_added ?? entry.created_at) >= 180
+                ? 'text-base font-bold text-danger'
+                : daysWaiting(entry.date_added ?? entry.created_at) >= 90
+                  ? 'font-semibold text-warning'
+                  : 'text-silver'
+            }
+          >
+            {daysWaiting(entry.date_added ?? entry.created_at)} days waiting
           </Typography>
           {entry.follow_up_date ? (
             <Typography variant="caption" className={overdue ? 'text-danger' : 'text-silver'}>

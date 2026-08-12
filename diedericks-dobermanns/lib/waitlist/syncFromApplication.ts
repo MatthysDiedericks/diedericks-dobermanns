@@ -79,6 +79,72 @@ async function defaultListTypeId(): Promise<string | null> {
 }
 
 /**
+ * On application submit: seed waiting list at `application`. Idempotent.
+ * Best-effort — public RLS may block; web apply uses the admin client instead.
+ */
+export async function ensureWaitlistOnApplicationSubmitted(
+  app: Pick<
+    Application,
+    | 'id'
+    | 'user_id'
+    | 'full_name'
+    | 'email'
+    | 'phone'
+    | 'country'
+    | 'dog_interest'
+    | 'preferred_sex'
+    | 'preferred_colour'
+    | 'tail_preference'
+    | 'budget_range'
+    | 'preferred_timeline'
+    | 'special_requests'
+    | 'why_dobermann'
+  >,
+): Promise<{ error: string | null; waitlistId?: string }> {
+  if (!supabase) return { error: null };
+
+  const { data: existing } = await supabase
+    .from('waiting_list')
+    .select('id')
+    .eq('application_id', app.id)
+    .limit(1)
+    .maybeSingle();
+  if (existing) return { error: null, waitlistId: existing.id };
+
+  const listTypeId = await defaultListTypeId();
+  const prefs = prefsFromApplication(app, undefined);
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('waiting_list')
+    .insert({
+      list_type_id: listTypeId,
+      pipeline_stage: 'application',
+      stage_updated_at: now,
+      client_id: app.user_id,
+      application_id: app.id,
+      enquirer_name: app.full_name,
+      enquirer_email: app.email,
+      enquirer_phone: app.phone,
+      enquirer_country: app.country,
+      source: 'app',
+      preferred_category: prefs.preferred_category ?? categoryFromDogInterest(app.dog_interest),
+      preferred_sex: prefs.preferred_sex ?? app.preferred_sex ?? 'any',
+      preferred_colour: prefs.preferred_colour ?? app.preferred_colour ?? 'no_preference',
+      tail_preference: prefs.tail_preference ?? app.tail_preference ?? 'no_preference',
+      budget_range: prefs.budget_range ?? app.budget_range ?? null,
+      preferred_timeline: prefs.preferred_timeline ?? app.preferred_timeline ?? null,
+      preference_notes: prefs.preference_notes ?? null,
+      priority: 'normal',
+      status: 'active',
+      stage_change_note: 'Application submitted',
+    } as never)
+    .select('id')
+    .single();
+
+  return { error: error?.message ?? null, waitlistId: data?.id };
+}
+
+/**
  * On approval: create or update the linked waiting-list entry at `approved`,
  * copying preferences. Visible/overridable — not a trigger.
  */

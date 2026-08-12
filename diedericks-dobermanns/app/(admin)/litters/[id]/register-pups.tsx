@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
+import { DOG_COLOUR_OPTIONS, type DogColourCode } from '@/lib/colours/dogColours';
 import { type CollarColourId } from '@/lib/litters/collarColours';
 import { seedLitterTodos } from '@/hooks/useLitterTodos';
 import { gramsToKg } from '@/hooks/useLitterWeights';
@@ -23,7 +24,7 @@ export default function RegisterPupsScreen() {
   const [pupIndex, setPupIndex] = useState(puppies.length + 1);
   const [timeBorn, setTimeBorn] = useState(new Date().toTimeString().slice(0, 5));
   const [sex, setSex] = useState<'male' | 'female'>('male');
-  const [colour, setColour] = useState('Black & Tan');
+  const [colour, setColour] = useState<DogColourCode>('black_tan');
   const [collar, setCollar] = useState<CollarColourId | null>(null);
   const [birthGrams, setBirthGrams] = useState('');
   const [saving, setSaving] = useState(false);
@@ -140,7 +141,22 @@ export default function RegisterPupsScreen() {
             </Pressable>
           ))}
         </View>
-        <Input label="Colour" value={colour} onChangeText={setColour} />
+        <Typography variant="caption" className="mb-2 text-subtle">
+          Colour
+        </Typography>
+        <View className="mb-4 flex-row gap-2">
+          {DOG_COLOUR_OPTIONS.map((opt) => (
+            <Pressable
+              key={opt.value}
+              onPress={() => setColour(opt.value)}
+              className={`flex-1 rounded-xl border py-3 ${colour === opt.value ? 'border-gold bg-gold/15' : 'border-gold/25'}`}
+            >
+              <Typography variant="caption" className="text-center">
+                {opt.label}
+              </Typography>
+            </Pressable>
+          ))}
+        </View>
         <Typography variant="caption" className="mb-2 mt-2 text-subtle">
           Collar colour
         </Typography>

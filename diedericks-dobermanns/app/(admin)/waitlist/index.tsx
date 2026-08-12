@@ -16,12 +16,14 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useFinanceAccess } from '@/hooks/useFinanceAccess';
 import { useFollowUps } from '@/hooks/useFollowUps';
-import { filterWaitlistEntries, useWaitingList, useWaitlistTypes } from '@/hooks/useWaitingList';
+import { filterWaitlistEntries, sortWaitlistEntries, useWaitingList, useWaitlistTypes } from '@/hooks/useWaitingList';
 import { createWaitlistType } from '@/hooks/useMutations';
+import { PIPELINE_STAGES, stageLabel } from '@/lib/waitlist/constants';
 import { effectiveStage, entryEmail, entryDisplayName } from '@/lib/waitlist/helpers';
 import type { WaitingListEntry } from '@/types/app.types';
 
 type ViewMode = 'pipeline' | 'list';
+const CATEGORY_FILTERS = ['any', 'standard', 'elite', 'protection'] as const;
 
 function SummaryStrip({ entries }: { entries: WaitingListEntry[] }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -59,11 +61,24 @@ export default function WaitlistHomeScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>('pipeline');
   const [listTypeId, setListTypeId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [stageFilter, setStageFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [unmetOnly, setUnmetOnly] = useState(false);
   const [stagePickerFor, setStagePickerFor] = useState<WaitingListEntry | null>(null);
 
   const filtered = useMemo(
-    () => filterWaitlistEntries(data, { listTypeId, search, excludeDoNotSell: !listTypeId }),
-    [data, listTypeId, search],
+    () =>
+      sortWaitlistEntries(
+        filterWaitlistEntries(data, {
+          listTypeId,
+          search,
+          stage: stageFilter,
+          category: categoryFilter,
+          unmetOnly,
+          excludeDoNotSell: !listTypeId,
+        }),
+      ),
+    [data, listTypeId, search, stageFilter, categoryFilter, unmetOnly],
   );
 
   const doNotSell = useMemo(() => data.filter((e) => effectiveStage(e) === 'do_not_sell'), [data]);
@@ -138,6 +153,64 @@ export default function WaitlistHomeScreen() {
           Showing {filtered.length} of {data.length}
         </Typography>
       </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 px-4">
+        <Pressable
+          onPress={() => setStageFilter(null)}
+          className={`mr-2 rounded-full border px-3 py-1.5 ${!stageFilter ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
+        >
+          <Typography variant="caption">All stages</Typography>
+        </Pressable>
+        {PIPELINE_STAGES.map((s) => (
+          <Pressable
+            key={s}
+            onPress={() => setStageFilter(s)}
+            className={`mr-2 rounded-full border px-3 py-1.5 ${stageFilter === s ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
+          >
+            <Typography variant="caption">{stageLabel(s)}</Typography>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 px-4">
+        <Pressable
+          onPress={() => setCategoryFilter(null)}
+          className={`mr-2 rounded-full border px-3 py-1.5 ${!categoryFilter ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
+        >
+          <Typography variant="caption">All categories</Typography>
+        </Pressable>
+        {CATEGORY_FILTERS.map((c) => (
+          <Pressable
+            key={c}
+            onPress={() => setCategoryFilter(c)}
+            className={`mr-2 rounded-full border px-3 py-1.5 ${categoryFilter === c ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
+          >
+            <Typography variant="caption" className="capitalize">
+              {c}
+            </Typography>
+          </Pressable>
+        ))}
+        <Pressable
+          onPress={() => setUnmetOnly((v) => !v)}
+          className={`mr-2 rounded-full border px-3 py-1.5 ${unmetOnly ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
+        >
+          <Typography variant="caption">Unmet prefs</Typography>
+        </Pressable>
+        {stageFilter || categoryFilter || unmetOnly ? (
+          <Pressable
+            onPress={() => {
+              setStageFilter(null);
+              setCategoryFilter(null);
+              setUnmetOnly(false);
+            }}
+            className="rounded-full border border-gold/30 px-3 py-1.5"
+          >
+            <Typography variant="caption" className="text-gold">
+              Clear filters
+            </Typography>
+          </Pressable>
+        ) : null}
+      </ScrollView>
 
       <View className="mb-3 flex-row gap-2 px-4">
         <Button

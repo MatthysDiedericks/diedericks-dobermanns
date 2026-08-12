@@ -176,10 +176,17 @@ serve(async (req) => {
   }
 
   if (order.order_type === 'deposit') {
+    const now = new Date().toISOString();
     await supabase
       .from('waiting_list')
-      .update({ pipeline_stage: 'deposit_paid', status: 'active' })
-      .eq('client_id', order.client_id);
+      .update({
+        pipeline_stage: 'deposit_paid',
+        payment_status: 'deposit_paid',
+        status: 'active',
+        stage_updated_at: now,
+      })
+      .eq('client_id', order.client_id)
+      .in('pipeline_stage', ['approved', 'quote_sent', 'enquiry', 'application']);
   }
 
   return new Response('OK', { status: 200 });

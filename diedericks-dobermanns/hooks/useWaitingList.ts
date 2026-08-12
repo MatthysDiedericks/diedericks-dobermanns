@@ -4,6 +4,7 @@ import { MOCK_WAITING_LIST } from '@/lib/mockData';
 import { supabase } from '@/lib/supabase';
 import { isFollowUpOverdue } from '@/lib/waitlist/constants';
 import { effectiveStage } from '@/lib/waitlist/helpers';
+import { stageRank } from '@/lib/waitlist/pipeline';
 import { WAITLIST_SELECT, WAITLIST_TYPE_SELECT } from '@/lib/waitlist/queries';
 import type { WaitingListEntry, WaitingListType } from '@/types/app.types';
 
@@ -100,6 +101,8 @@ export function filterWaitlistEntries(
   opts: {
     listTypeId?: string | null;
     stage?: string | null;
+    category?: string | null;
+    unmetOnly?: boolean;
     priority?: string | null;
     search?: string;
     excludeDoNotSell?: boolean;
@@ -110,6 +113,18 @@ export function filterWaitlistEntries(
     if (opts.excludeDoNotSell && effectiveStage(e) === 'do_not_sell') return false;
     if (opts.listTypeId && e.list_type_id !== opts.listTypeId) return false;
     if (opts.stage && effectiveStage(e) !== opts.stage) return false;
+    if (opts.category && (e.preferred_category ?? 'any') !== opts.category) return false;
+    if (opts.unmetOnly) {
+      if (e.assigned_dog_id) return false;
+      const hasSex = Boolean(e.preferred_sex && e.preferred_sex !== 'any' && e.preferred_sex !== 'no_preference');
+      const hasColour = Boolean(
+        e.preferred_colour && e.preferred_colour !== 'any' && e.preferred_colour !== 'no_preference',
+      );
+      const hasTail = Boolean(
+        e.tail_preference && e.tail_preference !== 'any' && e.tail_preference !== 'no_preference',
+      );
+      if (!(hasSex || hasColour || hasTail)) return false;
+    }
     if (opts.priority && e.priority !== opts.priority) return false;
     if (!q) return true;
     const hay = [
@@ -124,5 +139,17 @@ export function filterWaitlistEntries(
       .join(' ')
       .toLowerCase();
     return hay.includes(q);
+  });
+}
+
+/** Sort by pipeline stage order, then longest waiting first. */
+export function sortWaitlistEntries(entries: WaitingListEntry[]): WaitingListEntry[] {
+  return [...entries].sort((a, b) => {
+    const ra = stageRank(effectiveStage(a));
+    const rb = stageRank(effectiveStage(b));
+    if (ra !== rb) return ra - rb;
+    const da = a.date_added ?? a.created_at;
+    const db = b.date_added ?? b.created_at;
+    return da.localeCompare(db);
   });
 }

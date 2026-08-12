@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
+import { ensureWaitlistOnApplicationSubmitted } from '@/lib/waitlist/syncFromApplication';
 import type { Application } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
 
@@ -12,6 +13,15 @@ export type ApplicationDraft = Omit<
 interface SubmitResult {
   referenceId: string | null;
   error: string | null;
+}
+
+function newId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  return `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 async function logEnquiry(draft: ApplicationDraft, referenceId: string) {
@@ -59,10 +69,15 @@ export function useSubmitApplication() {
       // and reported as "new row violates row-level security policy" — which is
       // exactly why submissions silently failed before. Insert-only avoids that.
       const referenceId = `DD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+      const applicationId = newId();
 
       // Cast: reference_code was just added to the table; regenerate
       // database.types.ts (npm run gen:types) to drop this cast.
-      const insertRow = { ...draft, reference_code: referenceId } as TablesInsert<'applications'>;
+      const insertRow = {
+        ...draft,
+        id: applicationId,
+        reference_code: referenceId,
+      } as TablesInsert<'applications'>;
       const { error } = await supabase.from('applications').insert(insertRow);
       if (error) {
         console.error('[useSubmitApplication] insert:', error);
@@ -75,6 +90,24 @@ export function useSubmitApplication() {
         void logEnquiry(draft, referenceId);
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user) void logClientNotification(userData.user.id, referenceId);
+        void ensureWaitlistOnApplicationSubmitted({
+          id: applicationId,
+          user_id: userData.user?.id ?? draft.user_id ?? null,
+          full_name: draft.full_name,
+          email: draft.email,
+          phone: draft.phone,
+          country: draft.country,
+          dog_interest: draft.dog_interest,
+          preferred_sex: draft.preferred_sex,
+          preferred_colour: draft.preferred_colour,
+          tail_preference: draft.tail_preference,
+          budget_range: draft.budget_range,
+          preferred_timeline: draft.preferred_timeline,
+          special_requests: draft.special_requests,
+          why_dobermann: draft.why_dobermann,
+        }).then(({ error: wlErr }) => {
+          if (wlErr) console.error('[useSubmitApplication] waitlist seed:', wlErr);
+        });
       } catch (followUpErr) {
         console.error('[useSubmitApplication] follow-up:', followUpErr);
       }

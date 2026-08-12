@@ -134,10 +134,15 @@ function statedPreferencesMet(entry: WaitingListEntry, dog: MatchableDog): boole
   return sex.matched && colour.matched && tail.matched;
 }
 
+/** Newborns are registered as `puppy`; both are inventory for matching. */
+export function isMatchableDogStatus(status: string | null | undefined): boolean {
+  return status === 'available' || status === 'puppy';
+}
+
 export function passesHardFilters(entry: WaitingListEntry, dog: MatchableDog): boolean {
   const stage = entry.pipeline_stage ?? 'enquiry';
   if (!(MATCHABLE_STAGES as readonly string[]).includes(stage)) return false;
-  if (dog.status !== 'available') return false;
+  if (!isMatchableDogStatus(dog.status)) return false;
   if (!categoryMatches(entry, dog)) return false;
   return true;
 }
@@ -234,10 +239,10 @@ export function rankDogsForBuyer(
   entry: WaitingListEntry,
   dogs: MatchableDog[],
 ): { dog: MatchableDog; candidate: MatchCandidate }[] {
-  const available = dogs.filter((d) => d.status === 'available');
+  const inventory = dogs.filter((d) => isMatchableDogStatus(d.status));
   const waitMap = waitPointsForQueue([entry]);
   const waitPts = waitMap.get(entry.id) ?? 0;
-  return available
+  return inventory
     .filter((d) => passesHardFilters(entry, d))
     .map((dog) => ({ dog, candidate: scoreMatch(entry, dog, waitPts) }))
     .sort((a, b) => {
