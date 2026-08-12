@@ -13,7 +13,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAdminDogs, useAdminLitters, useClients } from '@/hooks/useAdmin';
-import { useDeliveryRates } from '@/hooks/useDeliveryRates';
 import { useQuoteDetail } from '@/hooks/useQuotes';
 import { useQuotePrefillMatch } from '@/hooks/useQuotePrefillMatch';
 import { formatPrice } from '@/lib/format';
@@ -58,7 +57,6 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
   const { data: clients } = useClients();
   const { data: dogs } = useAdminDogs();
   const { data: litters } = useAdminLitters();
-  const { rates: deliveryRates } = useDeliveryRates({ activeOnly: true });
 
   // Only one of client_id / historical_client_name is ever set on a quote —
   // `mode` tracks which one this builder is currently editing.
@@ -266,13 +264,7 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
             onConfirmWalkin={confirmWalkin}
           />
 
-          <LineItemList
-            items={items}
-            onUpdate={updateItem}
-            onRemove={removeItem}
-            onAdd={addBlank}
-            deliveryRates={deliveryRates}
-          />
+          <LineItemList items={items} onUpdate={updateItem} onRemove={removeItem} onAdd={addBlank} />
 
           {dogs.length ? (
             <View className="mt-5">

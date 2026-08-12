@@ -18,11 +18,6 @@ export function QuoteRevisionList({ revisions }: { revisions: QuoteRevisionRow[]
             Revision {r.revision}
             {r.sent_at ? ` · ${new Date(r.sent_at).toLocaleDateString()}` : ''}
           </Typography>
-          {r.sent_to ? (
-            <Typography variant="caption" className="text-silver">
-              Sent to {r.sent_to}
-            </Typography>
-          ) : null}
           <Typography variant="caption" className="text-gold">
             {formatPrice(r.total)}
           </Typography>

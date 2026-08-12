@@ -1,5 +1,5 @@
--- 0059_contacts_dedupe — Contact de-duplication, E.164 phones, merge soft-delete.
--- Note: 0059_breeding_cycle_capture.sql also exists; filenames share the 0059 prefix.
+-- 0068_contacts_dedupe -- Contact de-duplication, E.164 phones, merge soft-delete.
+-- Renamed from 0059_contacts_dedupe to avoid colliding with 0059_breeding_cycle_capture (already applied).
 -- Folds in the source_ref unique index applied by hand on 11 Aug 2026.
 
 -- Records the partial unique index applied by hand on 11 Aug 2026.
