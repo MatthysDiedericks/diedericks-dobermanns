@@ -85,6 +85,8 @@ export default function PortalLayout() {
         <Tabs.Screen name="expected-litters" options={{ href: null }} />
         <Tabs.Screen name="invoices/index" options={{ href: null }} />
         <Tabs.Screen name="invoices/[id]" options={{ href: null }} />
+        <Tabs.Screen name="quotes/index" options={{ href: null }} />
+        <Tabs.Screen name="quotes/[id]" options={{ href: null }} />
         <Tabs.Screen name="waitlist" options={{ href: null }} />
         <Tabs.Screen name="groups/index" options={{ href: null }} />
         <Tabs.Screen name="contracts/[id]" options={{ href: null }} />

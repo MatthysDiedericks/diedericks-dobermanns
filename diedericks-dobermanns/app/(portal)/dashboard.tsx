@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
@@ -18,22 +18,23 @@ import { useMyApplications, usePortalDogs } from '@/hooks/usePortal';
 import { ageFromDob, birthdayAgeWords, isBirthdayToday } from '@/lib/format';
 import { useAuthStore } from '@/stores/authStore';
 
-const BASE_QUICK_LINKS = [
-  { href: '/(portal)/documents', icon: 'folder-open' as const, label: 'Documents' },
-  { href: '/(portal)/contracts', icon: 'create' as const, label: 'Contracts' },
-] as const;
+const BASE_QUICK_LINKS: { href: Href; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
+  { href: '/(portal)/quotes' as Href, icon: 'pricetag', label: 'Quotes' },
+  { href: '/(portal)/documents', icon: 'folder-open', label: 'Documents' },
+  { href: '/(portal)/contracts', icon: 'create', label: 'Contracts' },
+];
 
-const PROFILE_LINK = {
+const PROFILE_LINK: { href: Href; icon: keyof typeof Ionicons.glyphMap; label: string } = {
   href: '/(portal)/profile',
-  icon: 'person-circle-outline' as const,
+  icon: 'person-circle-outline',
   label: 'My Profile',
-} as const;
+};
 
-const APPLICATION_LINK = {
+const APPLICATION_LINK: { href: Href; icon: keyof typeof Ionicons.glyphMap; label: string } = {
   href: '/(portal)/application-status',
-  icon: 'reader' as const,
+  icon: 'reader',
   label: 'My Application',
-} as const;
+};
 
 export default function PortalDashboard() {
   const profile = useAuthStore((s) => s.profile);
@@ -230,7 +231,7 @@ export default function PortalDashboard() {
         <SectionHeader eyebrow="Shortcuts" title="Quick Links" />
         <View className="flex-row gap-3">
           {quickLinks.map((link) => (
-            <Link key={link.href} href={link.href} asChild>
+            <Link key={String(link.href)} href={link.href} asChild>
               <Pressable className="flex-1 items-center rounded-2xl border border-gold/15 bg-black-rich py-5">
                 <Ionicons name={link.icon} size={22} color={Colors.gold} />
                 <Typography variant="caption" className="mt-2 text-center">
