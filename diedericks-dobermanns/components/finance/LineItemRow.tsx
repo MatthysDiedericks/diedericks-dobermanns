@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { formatPrice, titleCase } from '@/lib/format';
+import type { DeliveryRate } from '@/lib/finance/deliveryRates';
 import type { LineItemInput } from '@/lib/finance/mutations';
 import type { LineItemType } from '@/types/app.types';
 
@@ -29,12 +30,14 @@ export function LineItemRow({
   canRemove,
   onUpdate,
   onRemove,
+  deliveryRates = [],
 }: {
   item: DraftLineItem;
   index: number;
   canRemove: boolean;
   onUpdate: (key: string, patch: Partial<DraftLineItem>) => void;
   onRemove: (key: string) => void;
+  deliveryRates?: DeliveryRate[];
 }) {
   return (
     <Card>
@@ -64,13 +67,43 @@ export function LineItemRow({
           );
         })}
       </View>
+      {item.item_type === 'delivery' ? (
+        <View className="mb-3 gap-2">
+          {deliveryRates.length === 0 ? (
+            <Typography variant="caption" className="text-subtle">
+              No delivery rates set yet. Add one in Settings → Pricing.
+            </Typography>
+          ) : (
+            <View className="flex-row flex-wrap gap-2">
+              {deliveryRates.map((rate) => (
+                <Pressable
+                  key={rate.id}
+                  onPress={() =>
+                    onUpdate(item.key, {
+                      description: rate.notes
+                        ? `${rate.label}\n${rate.notes}`
+                        : rate.label,
+                      unit_price: rate.amount,
+                    })
+                  }
+                  className="rounded-lg border border-gold/30 bg-gold/10 px-2.5 py-1.5"
+                >
+                  <Typography variant="caption" className="text-gold">
+                    {rate.label} · {formatPrice(rate.amount)}
+                  </Typography>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      ) : null}
       <Input
         placeholder="Description"
         value={item.description}
         onChangeText={(v) => onUpdate(item.key, { description: v.slice(0, 500) })}
         multiline
         textAlignVertical="top"
-        className="min-h-[56px]"
+        className="min-h-[56px] max-h-[144px]"
         maxLength={500}
       />
       {item.description.length >= 400 ? (

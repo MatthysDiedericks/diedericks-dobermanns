@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
+import type { DeliveryRate } from '@/lib/finance/deliveryRates';
 
 import { LineItemRow, type DraftLineItem } from './LineItemRow';
 
@@ -10,11 +11,13 @@ export function LineItemList({
   onUpdate,
   onRemove,
   onAdd,
+  deliveryRates = [],
 }: {
   items: DraftLineItem[];
   onUpdate: (key: string, patch: Partial<DraftLineItem>) => void;
   onRemove: (key: string) => void;
   onAdd: () => void;
+  deliveryRates?: DeliveryRate[];
 }) {
   return (
     <>
@@ -28,6 +31,7 @@ export function LineItemList({
             canRemove={items.length > 1}
             onUpdate={onUpdate}
             onRemove={onRemove}
+            deliveryRates={deliveryRates}
           />
         ))}
       </View>

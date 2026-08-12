@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 
+import { DeliveryRatesSection } from '@/components/admin/DeliveryRatesSection';
 import { PricingTierEditor } from '@/components/admin/PricingTierEditor';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -78,6 +79,8 @@ export default function AdminPricingScreen() {
             </Card>
           ))
         )}
+
+        <DeliveryRatesSection />
       </View>
 
       <PricingTierEditor tier={editing} onClose={() => setEditing(null)} onSave={save} />
