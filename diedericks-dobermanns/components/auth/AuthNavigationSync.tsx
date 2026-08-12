@@ -23,7 +23,8 @@ const PROTECTED_GROUPS = new Set(['(portal)', '(admin)', '(tabs)', '(trainer)'])
  */
 export function AuthNavigationSync() {
   const router = useRouter();
-  const segments = useSegments();
+  // expo-router types useSegments() as a 1-tuple; widen for safe indexing.
+  const segments = useSegments() as string[];
   const initializing = useAuthStore((s) => s.initializing);
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
