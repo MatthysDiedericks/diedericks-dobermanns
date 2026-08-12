@@ -36,5 +36,20 @@ export async function signContract(id: string, signature: ContractSignaturePaylo
           p_device: signature.device,
         },
   );
+  if (error) {
+    void import('@/lib/errors/logError').then(({ logError }) =>
+      logError({
+        code: 'CONTRACT_SIGN_FAILED',
+        area: 'contract',
+        severity: 'error',
+        message: error.message,
+        detail: { device: signature.device },
+        entityType: 'contract',
+        entityId: id,
+        surface: 'app',
+        actorRole: 'client',
+      }),
+    );
+  }
   return { error: error?.message ?? null };
 }

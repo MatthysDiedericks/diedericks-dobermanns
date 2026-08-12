@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
+import { ErrorHealthStrip } from '@/components/admin/ErrorHealthStrip';
 import { SurfaceCard } from '@/components/admin/SurfaceCard';
 import { ExpiringDocumentsWidget } from '@/components/dashboard/ExpiringDocumentsWidget';
 import { LittersByYearWidget } from '@/components/dashboard/LittersByYearWidget';
@@ -58,6 +59,8 @@ export function AdminDashboardContent() {
     >
       {/* Widget — Expiring Documents */}
       <ExpiringDocumentsWidget />
+
+      <ErrorHealthStrip />
 
       <SurfaceCard
         title="Owner follow-ups"

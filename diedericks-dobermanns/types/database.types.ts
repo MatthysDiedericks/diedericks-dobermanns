@@ -2265,6 +2265,69 @@ export type Database = {
           },
         ]
       }
+      error_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          area: string
+          code: string
+          detail: Json | null
+          email_domain: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: number
+          message: string | null
+          occurred_at: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          route: string | null
+          session_ref: string | null
+          severity: string
+          surface: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          area: string
+          code: string
+          detail?: Json | null
+          email_domain?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: number
+          message?: string | null
+          occurred_at?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route?: string | null
+          session_ref?: string | null
+          severity?: string
+          surface?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          area?: string
+          code?: string
+          detail?: Json | null
+          email_domain?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: number
+          message?: string | null
+          occurred_at?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route?: string | null
+          session_ref?: string | null
+          severity?: string
+          surface?: string | null
+        }
+        Relationships: []
+      }
       expense_categories: {
         Row: {
           colour: string | null
@@ -6188,6 +6251,7 @@ export type Database = {
       my_dog_parent_ids: { Args: never; Returns: string[] }
       pause_audit: { Args: { p_reason: string }; Returns: string }
       purge_old_audit_log: { Args: never; Returns: undefined }
+      purge_old_error_events: { Args: never; Returns: undefined }
       record_page_view: {
         Args: {
           p_country?: string
@@ -6197,6 +6261,10 @@ export type Database = {
           p_visitor_hash: string
         }
         Returns: undefined
+      }
+      resolve_error_events: {
+        Args: { p_ids: number[]; p_note?: string }
+        Returns: number
       }
       resume_audit: { Args: never; Returns: string }
       sign_contract_as_client: {
@@ -6208,6 +6276,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      sweep_error_consistency: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

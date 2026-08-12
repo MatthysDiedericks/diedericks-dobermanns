@@ -138,6 +138,27 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
           });
         if (uploadError) throw new Error(uploadError.message);
 
+        const { data: exists } = await supabase.storage.from(BUCKET).list(
+          storagePath.split('/').slice(0, -1).join('/'),
+          { search: storagePath.split('/').pop() },
+        );
+        if (!exists?.length) {
+          void import('@/lib/errors/logError').then(({ logError }) =>
+            logError({
+              code: 'UPLOAD_OBJECT_MISSING',
+              area: 'upload',
+              severity: 'critical',
+              message: 'Storage object missing after upload',
+              detail: { storage_path: storagePath, bucket: BUCKET },
+              entityType: entityType,
+              entityId: entityId,
+              surface: 'app',
+              actorRole: 'admin',
+            }),
+          );
+          throw new Error('Upload did not land in storage. Try again.');
+        }
+
         const payload: TablesInsert<'documents'> = {
           entity_type: entityType,
           entity_id: entityId,

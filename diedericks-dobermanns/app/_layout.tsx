@@ -1,6 +1,14 @@
 import '@/global.css';
 
-import { Platform } from 'react-native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { ActivityIndicator, AppState, Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Apply dark class to the HTML root for NativeWind web dark mode (class strategy).
 // Guard with try/catch — document may not exist during SSR or Expo web cold start.
@@ -11,16 +19,6 @@ try {
 } catch {
   // Silently ignore — dark mode will apply on next render cycle
 }
-
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthNavigationSync } from '@/components/auth/AuthNavigationSync';
 import { DevSwitcher } from '@/components/dev/DevSwitcher';
@@ -50,6 +48,17 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
     configureAndroidChannel().catch(() => undefined);
+    void import('@/lib/errors/logError').then(({ flushErrorEventQueue }) =>
+      flushErrorEventQueue(),
+    );
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void import('@/lib/errors/logError').then(({ flushErrorEventQueue }) =>
+          flushErrorEventQueue(),
+        );
+      }
+    });
+    return () => sub.remove();
   }, [initialize]);
 
   // Register every authenticated device (client or admin) for push.
