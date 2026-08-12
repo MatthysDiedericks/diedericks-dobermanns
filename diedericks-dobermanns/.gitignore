@@ -21,8 +21,13 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# Supabase CLI local cache (project-ref, versions, etc. — not real project code)
+# Supabase CLI local state
 supabase/.temp/
+**/supabase/.temp/
+
+# Generated script output — MAY CONTAIN CLIENT PERSONAL DATA. Never commit.
+scripts/output/
+**/scripts/output/
 
 # debug
 npm-debug.*
@@ -33,8 +38,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Local env
 .env
+.env.local
 .env*.local
 
 # typescript

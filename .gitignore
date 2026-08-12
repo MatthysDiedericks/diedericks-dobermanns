@@ -47,11 +47,15 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 
-# Supabase local
+# Supabase CLI local state
 supabase/.branches
 supabase/.temp
 **/supabase/.temp/
 **/supabase/.branches/
+
+# Generated script output — MAY CONTAIN CLIENT PERSONAL DATA. Never commit.
+scripts/output/
+**/scripts/output/
 
 # diedericksdobermann-web has its own separate git repo + GitHub remote
 # (diedericksdobermanns-web.git) — do not track its files again in this
