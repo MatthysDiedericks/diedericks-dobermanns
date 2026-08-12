@@ -1,4 +1,5 @@
 import type { LineItemInput } from '@/lib/finance/mutations';
+import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
@@ -27,14 +28,19 @@ export function quoteEmail(quote: Quote): string | null {
 }
 
 /** Plain-text summary shared by the WhatsApp and email send actions. */
-export function buildQuoteMessage(quote: Quote): string {
+export function buildQuoteMessage(quote: Quote, changeNote?: string | null): string {
   const name = quote.client?.full_name ?? quote.historical_client_name ?? 'there';
+  const rev = quote.revision && quote.revision > 1 ? ` · Revision ${quote.revision}` : '';
   const lines = (quote.items ?? []).map((it) => `- ${it.description}: R${it.line_total.toFixed(2)}`);
   const validUntil = quote.valid_until
     ? `\nValid until ${new Date(quote.valid_until).toLocaleDateString()}.`
     : '';
+  const revisionBlock = changeNote?.trim()
+    ? [``, changeNote.trim(), `This replaces the earlier version.`, ``]
+    : [];
   return [
-    `Hi ${name}, here is your quote${quote.quote_number ? ` ${quote.quote_number}` : ''} from Diedericks Dobermanns:`,
+    `Hi ${name}, here is your quote${quote.quote_number ? ` ${quote.quote_number}${rev}` : ''} from Diedericks Dobermanns:`,
+    ...revisionBlock,
     '',
     ...lines,
     '',
@@ -72,6 +78,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 const QUOTE_SELECT =
   'id, quote_number, client_id, historical_client_name, application_id, status, currency, subtotal, discount, total, ' +
   'notes, valid_until, converted_invoice_id, created_by, created_at, updated_at, ' +
+  'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
   'client:users(id, full_name, phone, email), ' +
   'items:quote_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order)';
 
@@ -166,9 +173,34 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
   return quoteId;
 }
 
-/** Updates a quote's header + fully replaces its line items. */
-export async function updateQuote(id: string, header: QuoteHeaderInput, items: LineItemInput[]): Promise<void> {
+/** Updates a quote's header + fully replaces its line items. Status-gated. */
+export async function updateQuote(
+  id: string,
+  header: QuoteHeaderInput,
+  items: LineItemInput[],
+  opts?: { changeNote?: string | null },
+): Promise<void> {
   const supabase = requireSupabase();
+
+  const { data: existing, error: loadErr } = await supabase
+    .from('quotes')
+    .select('id, status, converted_invoice_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (loadErr) throw new Error(loadErr.message);
+  if (!existing) throw new Error('Quote not found.');
+
+  const gate = assertQuoteEditable({
+    status: existing.status as QuoteStatus,
+    converted_invoice_id: existing.converted_invoice_id,
+  });
+  if (!gate.ok) throw new Error(gate.error);
+
+  const changeNote = opts?.changeNote?.trim() || null;
+  if (changeNote) {
+    await supabase.rpc('set_audit_change_note' as never, { p_note: changeNote } as never);
+  }
+
   const { rows, subtotal } = priceItems(items);
   const discount = round2(header.discount ?? 0);
   const total = Math.max(round2(subtotal - discount), 0);
@@ -179,14 +211,15 @@ export async function updateQuote(id: string, header: QuoteHeaderInput, items: L
       client_id: header.client_id,
       historical_client_name: header.historical_client_name ?? null,
       application_id: header.application_id ?? null,
-      status: header.status,
+      status: gate.nextStatus,
       subtotal,
       discount,
       total,
       notes: header.notes ?? null,
       valid_until: header.valid_until ?? null,
+      last_edit_note: changeNote,
       updated_at: new Date().toISOString(),
-    })
+    } as never)
     .eq('id', id);
   if (error) throw new Error(error.message);
 
@@ -197,6 +230,44 @@ export async function updateQuote(id: string, header: QuoteHeaderInput, items: L
     const { error: itemErr } = await supabase.from('quote_items').insert(itemRows);
     if (itemErr) throw new Error(itemErr.message);
   }
+}
+
+/** Reopen an accepted quote so it can be edited. */
+export async function reopenQuote(id: string, reason: string): Promise<void> {
+  const supabase = requireSupabase();
+  const trimmed = reason.trim();
+  if (!trimmed) throw new Error('A reason is required to reopen an accepted quote.');
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: existing, error: loadErr } = await supabase
+    .from('quotes')
+    .select('id, status, converted_invoice_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (loadErr) throw new Error(loadErr.message);
+  if (!existing) throw new Error('Quote not found.');
+  if (existing.converted_invoice_id) {
+    throw new Error('This quote has been converted to an invoice and cannot be reopened.');
+  }
+  if (existing.status !== 'accepted') {
+    throw new Error('Only accepted quotes need to be reopened.');
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('quotes')
+    .update({
+      status: 'sent',
+      reopened_at: now,
+      reopened_by: user?.id ?? null,
+      reopen_reason: trimmed,
+      updated_at: now,
+    } as never)
+    .eq('id', id);
+  if (error) throw new Error(error.message);
 }
 
 export async function updateQuoteStatus(id: string, status: QuoteStatus): Promise<void> {

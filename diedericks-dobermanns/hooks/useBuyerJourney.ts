@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { formatRevisionBanner } from '@/lib/finance/quoteEditGuards';
 import {
   deriveBuyerJourneyStep,
   type BuyerJourneyStep,
@@ -16,11 +17,15 @@ type ProofRow = { id: string; review_status: string | null };
 export function useBuyerJourney() {
   const userId = useAuthStore((s) => s.session?.user.id);
   const [currentStep, setCurrentStep] = useState<BuyerJourneyStep>(1);
+  const [quoteRevisionNote, setQuoteRevisionNote] = useState<string | null>(null);
+  const [quoteRevision, setQuoteRevision] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!userId) {
       setCurrentStep(1);
+      setQuoteRevisionNote(null);
+      setQuoteRevision(null);
       setLoading(false);
       return;
     }
@@ -36,7 +41,7 @@ export function useBuyerJourney() {
           .limit(1),
         supabase
           .from('quotes')
-          .select('id, status')
+          .select('id, status, revision, sent_at, last_sent_revision')
           .neq('status', 'draft')
           .order('created_at', { ascending: false }),
         supabase.from('dogs').select('id').eq('owner_id', userId).limit(1),
@@ -50,7 +55,13 @@ export function useBuyerJourney() {
         .eq('uploaded_by', userId);
 
       const application = appsRes.data?.[0] ?? null;
-      const quotes = quotesRes.data ?? [];
+      const quotes = (quotesRes.data ?? []) as unknown as {
+        id: string;
+        status: string;
+        revision?: number | null;
+        sent_at?: string | null;
+        last_sent_revision?: number | null;
+      }[];
       const dogs = dogsRes.data ?? [];
       const proofs = (proofData ?? []) as unknown as ProofRow[];
 
@@ -62,6 +73,24 @@ export function useBuyerJourney() {
       const paymentConfirmed =
         proofs.some((p) => p.review_status === 'cleared') ||
         quotes.some((q) => q.status === 'paid' || q.status === 'converted');
+
+      const latest = quotes[0];
+      const rev = latest?.revision ?? latest?.last_sent_revision ?? 1;
+      setQuoteRevision(rev > 1 ? rev : null);
+      if (latest && (rev ?? 1) > 1) {
+        const { data: revs } = await supabase
+          .from('quote_revisions' as never)
+          .select('sent_at, revision')
+          .eq('quote_id' as never, latest.id)
+          .order('revision' as never, { ascending: false })
+          .limit(2);
+        const rows = (revs ?? []) as unknown as { sent_at: string | null; revision: number }[];
+        setQuoteRevisionNote(
+          formatRevisionBanner(rows[0]?.sent_at ?? latest.sent_at ?? null, rows[1]?.sent_at ?? null),
+        );
+      } else {
+        setQuoteRevisionNote(null);
+      }
 
       setCurrentStep(
         deriveBuyerJourneyStep({
@@ -77,6 +106,8 @@ export function useBuyerJourney() {
     } catch (e) {
       console.error('[useBuyerJourney]', e);
       setCurrentStep(1);
+      setQuoteRevisionNote(null);
+      setQuoteRevision(null);
     } finally {
       setLoading(false);
     }
@@ -86,5 +117,5 @@ export function useBuyerJourney() {
     void refresh();
   }, [refresh]);
 
-  return { currentStep, loading, refresh };
+  return { currentStep, quoteRevision, quoteRevisionNote, loading, refresh };
 }

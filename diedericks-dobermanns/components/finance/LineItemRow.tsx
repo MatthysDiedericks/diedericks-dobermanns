@@ -67,8 +67,17 @@ export function LineItemRow({
       <Input
         placeholder="Description"
         value={item.description}
-        onChangeText={(v) => onUpdate(item.key, { description: v })}
+        onChangeText={(v) => onUpdate(item.key, { description: v.slice(0, 500) })}
+        multiline
+        textAlignVertical="top"
+        className="min-h-[56px]"
+        maxLength={500}
       />
+      {item.description.length >= 400 ? (
+        <Typography variant="caption" className="mb-2 text-right text-silver">
+          {item.description.length}/500
+        </Typography>
+      ) : null}
       <View className="flex-row gap-3">
         <Input
           containerClassName="mb-0 flex-1"

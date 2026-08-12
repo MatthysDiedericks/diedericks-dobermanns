@@ -706,6 +706,12 @@ export interface Quote {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  sent_at?: string | null;
+  revision?: number;
+  last_sent_revision?: number | null;
+  reopened_at?: string | null;
+  reopen_reason?: string | null;
+  last_edit_note?: string | null;
   // Joined / derived
   client?: AppUser;
   items?: LineItem[];

@@ -18,6 +18,7 @@ import { useQuotePrefillMatch } from '@/hooks/useQuotePrefillMatch';
 import { formatPrice } from '@/lib/format';
 import type { LineItemInput } from '@/lib/finance/mutations';
 import { assertQuoteLineCount, assertQuoteTotalsMatch } from '@/lib/errors/assertQuote';
+import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
 import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
 import { updateWaitlistEntry } from '@/lib/waitlist/mutations';
@@ -72,7 +73,14 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
   );
   const [discount, setDiscount] = useState(initial ? String(initial.discount) : '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [changeNote, setChangeNote] = useState('');
   const [validUntil, setValidUntil] = useState(initial?.valid_until ?? '');
+  const editGate = initial
+    ? assertQuoteEditable({
+        status: initial.status,
+        converted_invoice_id: initial.converted_invoice_id,
+      })
+    : { ok: true as const, nextStatus: 'draft' as const };
 
   useQuotePrefillMatch(prefill, Boolean(initial), dogs, litters, addDog, setItems, nextKey);
 
@@ -116,6 +124,17 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
   }
 
   async function onSave(status: 'draft' | 'sent') {
+    if (initial && !editGate.ok) {
+      Alert.alert('Cannot edit', editGate.error);
+      return;
+    }
+    if (initial?.status === 'sent' && !changeNote.trim()) {
+      Alert.alert(
+        'What changed?',
+        'Note the change for the audit trail. The revision number only increases when you resend.',
+      );
+      return;
+    }
     const intendedMeaningful = items.filter(
       (it) => Boolean(it.dog_id) || it.unit_price > 0 || it.description.trim(),
     );
@@ -174,7 +193,9 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
     try {
       let quoteId: string;
       if (initial) {
-        await updateQuote(initial.id, header, cleanItems);
+        await updateQuote(initial.id, header, cleanItems, {
+          changeNote: changeNote.trim() || null,
+        });
         quoteId = initial.id;
       } else {
         quoteId = await createQuote(header, cleanItems);
@@ -215,6 +236,19 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow="Sales" title={initial ? 'Edit Quote' : 'New Quote'} />
         <View className="px-6">
+          {initial && !editGate.ok ? (
+            <Card className="mb-4">
+              <Typography variant="bodyMuted">{editGate.error}</Typography>
+            </Card>
+          ) : null}
+          {initial?.status === 'sent' ? (
+            <Card className="mb-4">
+              <Typography variant="bodyMuted">
+                This quote has already been sent. Saving updates the next revision draft — the
+                revision number only increases when you resend.
+              </Typography>
+            </Card>
+          ) : null}
           <ClientOrWalkinPicker
             mode={mode}
             clientId={clientId}
@@ -259,6 +293,16 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
               onChangeText={setValidUntil}
             />
             <Input label="Notes" value={notes} onChangeText={setNotes} multiline className="h-24" />
+            {initial ? (
+              <Input
+                label={initial.status === 'sent' ? 'What changed (required)' : 'Edit note (optional)'}
+                value={changeNote}
+                onChangeText={setChangeNote}
+                multiline
+                className="h-20"
+                placeholder="e.g. Added delivery line"
+              />
+            ) : null}
           </View>
 
           <Card className="mt-2">
@@ -272,15 +316,25 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
             </View>
           </Card>
 
-          <Button label="Save & Mark Sent" onPress={() => onSave('sent')} loading={submitting} fullWidth className="mt-4" />
-          <Button
-            label="Save as Draft"
-            variant="outline"
-            onPress={() => onSave('draft')}
-            loading={submitting}
-            fullWidth
-            className="mt-2"
-          />
+          {editGate.ok ? (
+            <>
+              <Button
+                label="Save & Mark Sent"
+                onPress={() => onSave('sent')}
+                loading={submitting}
+                fullWidth
+                className="mt-4"
+              />
+              <Button
+                label="Save as Draft"
+                variant="outline"
+                onPress={() => onSave('draft')}
+                loading={submitting}
+                fullWidth
+                className="mt-2"
+              />
+            </>
+          ) : null}
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>

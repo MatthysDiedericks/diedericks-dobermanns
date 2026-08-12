@@ -24,7 +24,7 @@ const TONE: Record<ApplicationStatus, BadgeTone> = {
 export default function ApplicationStatusScreen() {
   const profile = useAuthStore((s) => s.profile);
   const { data: applications, loading } = useMyApplications(profile?.id);
-  const { currentStep } = useBuyerJourney();
+  const { currentStep, quoteRevision, quoteRevisionNote } = useBuyerJourney();
   const app = applications[0];
 
   if (!loading && !app) {
@@ -55,6 +55,22 @@ export default function ApplicationStatusScreen() {
           </View>
 
           <JourneyBreadcrumb currentStep={currentStep} />
+
+          {quoteRevision || quoteRevisionNote ? (
+            <Card className="mt-4">
+              <Typography variant="label" className="mb-1 text-gold">
+                YOUR QUOTE
+              </Typography>
+              {quoteRevision ? (
+                <Typography variant="body">Current revision {quoteRevision}</Typography>
+              ) : null}
+              {quoteRevisionNote ? (
+                <Typography variant="bodyMuted" className="mt-1">
+                  {quoteRevisionNote}
+                </Typography>
+              ) : null}
+            </Card>
+          ) : null}
 
           {app.admin_notes ? (
             <Card className="mt-4">

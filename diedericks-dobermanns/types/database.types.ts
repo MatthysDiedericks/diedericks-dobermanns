@@ -4395,6 +4395,59 @@ export type Database = {
           },
         ]
       }
+      quote_revisions: {
+        Row: {
+          change_note: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          id: string
+          quote_id: string
+          revision: number
+          sent_at: string | null
+          sent_to: string | null
+          snapshot: Json
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          change_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          quote_id: string
+          revision: number
+          sent_at?: string | null
+          sent_to?: string | null
+          snapshot: Json
+          subtotal: number
+          total: number
+        }
+        Update: {
+          change_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          quote_id?: string
+          revision?: number
+          sent_at?: string | null
+          sent_to?: string | null
+          snapshot?: Json
+          subtotal?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_revisions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           accepted_at: string | null
@@ -4409,8 +4462,14 @@ export type Database = {
           discount: number
           historical_client_name: string | null
           id: string
+          last_edit_note: string | null
+          last_sent_revision: number | null
           notes: string | null
           quote_number: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
+          revision: number
           sent_at: string | null
           status: string
           subtotal: number
@@ -4431,8 +4490,14 @@ export type Database = {
           discount?: number
           historical_client_name?: string | null
           id?: string
+          last_edit_note?: string | null
+          last_sent_revision?: number | null
           notes?: string | null
           quote_number: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          revision?: number
           sent_at?: string | null
           status?: string
           subtotal?: number
@@ -4453,8 +4518,14 @@ export type Database = {
           discount?: number
           historical_client_name?: string | null
           id?: string
+          last_edit_note?: string | null
+          last_sent_revision?: number | null
           notes?: string | null
           quote_number?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          revision?: number
           sent_at?: string | null
           status?: string
           subtotal?: number
@@ -6267,6 +6338,7 @@ export type Database = {
         Returns: number
       }
       resume_audit: { Args: never; Returns: string }
+      set_audit_change_note: { Args: { p_note: string }; Returns: undefined }
       sign_contract_as_client: {
         Args: {
           p_contract_id: string
