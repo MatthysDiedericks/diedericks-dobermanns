@@ -1,4 +1,5 @@
 import { requireSupabase } from '@/lib/supabase';
+import { markWaitlistQuoteSent } from '@/lib/waitlist/stageAdvance';
 
 export type QuoteRevisionRow = {
   id: string;
@@ -138,6 +139,17 @@ export async function recordQuoteSendRevision(input: {
     } as never)
     .eq('id', input.quoteId);
   if (updErr) throw new Error(updErr.message);
+
+  // Pipeline advances on sent_at — never on draft create.
+  const { error: wlErr } = await markWaitlistQuoteSent({
+    quoteId: input.quoteId,
+    applicationId: header.application_id,
+    total: Number(header.total),
+    validUntil: header.valid_until,
+    actorId: input.actorId,
+    sentAt: now,
+  });
+  if (wlErr) console.error('[recordQuoteSendRevision] waitlist advance:', wlErr);
 
   return { revision: nextRevision };
 }

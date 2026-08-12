@@ -21,7 +21,7 @@ import { assertQuoteLineCount, assertQuoteTotalsMatch } from '@/lib/errors/asser
 import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
 import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
-import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
+import { requireSupabase } from '@/lib/supabase';
 import type { Quote } from '@/types/app.types';
 
 interface QuotePrefill {
@@ -201,22 +201,19 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
         quoteId = await createQuote(header, cleanItems);
       }
 
-      // Link back to the waiting list entry this quote was built from. A failure
-      // here is logged and surfaced, but doesn't unwind the already-created quote —
-      // money-adjacent records fail safe, not away.
+      // Link the draft quote to the waitlist entry. Stage advances to quote_sent
+      // only when sent_at is stamped (recordQuoteSendRevision), never on create.
       if (!initial && prefill?.waitlistId) {
         const quotedTotal = Math.max(
           cleanItems.reduce((s, it) => s + it.quantity * it.unit_price, 0) - discountNum,
           0,
         );
-        const { error: waitlistError } = await advanceWaitlistStage(prefill.waitlistId, 'quote_sent', {
-          status: 'active',
-          quote_id: quoteId,
-          quoted_price: quotedTotal,
-          quote_sent_date: new Date().toISOString().slice(0, 10),
-        });
+        const { error: waitlistError } = await requireSupabase()
+          .from('waiting_list')
+          .update({ quote_id: quoteId, quoted_price: quotedTotal, status: 'active' })
+          .eq('id', prefill.waitlistId);
         if (waitlistError) {
-          console.error('[QuoteBuilder] waitlist link:', waitlistError);
+          console.error('[QuoteBuilder] waitlist link:', waitlistError.message);
         }
         router.replace({ pathname: '/(admin)/waitlist/[id]', params: { id: prefill.waitlistId } });
         return;

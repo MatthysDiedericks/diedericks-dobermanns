@@ -243,6 +243,11 @@ export async function updateQuoteStatus(id: string, status: QuoteStatus): Promis
   const supabase = requireSupabase();
   const { error } = await supabase.from('quotes').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) throw new Error(error.message);
+  if (status === 'cancelled') {
+    const { flagWaitlistQuoteCancelled } = await import('@/lib/waitlist/stageAdvance');
+    const { error: flagErr } = await flagWaitlistQuoteCancelled(id);
+    if (flagErr) console.error('[updateQuoteStatus] waitlist flag:', flagErr);
+  }
 }
 
 /**

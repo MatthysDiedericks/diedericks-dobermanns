@@ -33,6 +33,43 @@ export async function advanceWaitlistStage(
   return { error: error?.message ?? null };
 }
 
+/** Advance linked waitlist rows to quote_sent when sent_at is stamped. Never reverses. */
+export async function markWaitlistQuoteSent(input: {
+  quoteId: string;
+  applicationId?: string | null;
+  total: number;
+  validUntil?: string | null;
+  actorId?: string | null;
+  sentAt: string;
+}): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const orParts = [`quote_id.eq.${input.quoteId}`];
+  if (input.applicationId) orParts.push(`application_id.eq.${input.applicationId}`);
+  const { data: rows, error } = await supabase
+    .from('waiting_list')
+    .select('id, pipeline_stage')
+    .or(orParts.join(','));
+  if (error) return { error: error.message };
+
+  const stamp = {
+    quote_id: input.quoteId,
+    quote_sent_date: input.sentAt.slice(0, 10),
+    quoted_price: input.total,
+    quote_expires_date: input.validUntil ?? null,
+  };
+
+  for (const row of rows ?? []) {
+    const forward = buildForwardStagePatch(row.pipeline_stage, 'quote_sent', input.actorId, stamp);
+    const patch = forward ?? stamp;
+    const { error: upErr } = await supabase
+      .from('waiting_list')
+      .update(patch as TablesUpdate<'waiting_list'>)
+      .eq('id', row.id);
+    if (upErr) return { error: upErr.message };
+  }
+  return { error: null };
+}
+
 /** Flag a cancelled quote — never reverse the pipeline stage. */
 export async function flagWaitlistQuoteCancelled(quoteId: string): Promise<MutationResult> {
   if (!supabase) return simulate();

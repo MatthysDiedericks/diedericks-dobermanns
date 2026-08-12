@@ -65,6 +65,7 @@ export type PipelineAdvancePatch = {
   stage_updated_by?: string | null;
   quote_id?: string | null;
   quote_sent_date?: string | null;
+  quote_expires_date?: string | null;
   quoted_price?: number | null;
   deposit_invoice_id?: string | null;
   deposit_paid_date?: string | null;
