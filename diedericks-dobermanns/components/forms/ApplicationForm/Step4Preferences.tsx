@@ -1,10 +1,10 @@
-import type { Control } from 'react-hook-form';
-import { View } from 'react-native';
-
+import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
+import { PREFERENCE_COLOUR_OPTIONS } from '@/lib/colours/dogColours';
 import { ControlledAgreement } from '@/components/forms/ApplicationForm/AgreementBox';
 import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fields';
 import { Typography } from '@/components/ui/Typography';
-import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
+import type { Control } from 'react-hook-form';
+import { View } from 'react-native';
 
 interface StepProps {
   control: Control<ApplicationFormValues>;
@@ -48,11 +48,7 @@ export function Step4Preferences({ control }: StepProps) {
         control={control}
         name="preferred_colour"
         label="Preferred colour *"
-        options={[
-          { value: 'black_tan', label: 'Black & Tan' },
-          { value: 'brown_tan', label: 'Brown & Tan' },
-          { value: 'no_preference', label: 'No preference' },
-        ]}
+        options={PREFERENCE_COLOUR_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
       />
       <OptionGroup
         control={control}

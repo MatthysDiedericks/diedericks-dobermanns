@@ -22,7 +22,7 @@ export function isDoNotSell(entry: WaitingListEntry): boolean {
 
 export function isActiveMatchStage(entry: WaitingListEntry): boolean {
   const stage = effectiveStage(entry);
-  return ['deposit_paid', 'matched', 'reserved'].includes(stage) && !isDoNotSell(entry);
+  return ['approved', 'quote_sent', 'deposit_paid'].includes(stage) && !isDoNotSell(entry);
 }
 
 export const CATEGORY_LABELS: Record<string, string> = {

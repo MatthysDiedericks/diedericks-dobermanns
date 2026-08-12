@@ -41,9 +41,15 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
 
   async function moveTo(stage: string) {
     if (!entry) return;
-    if (stage === 'do_not_sell' && !reason.trim()) return;
+    const needsReason = stage === 'do_not_sell' || stage === 'on_hold' || stage === 'withdrawn';
+    if (needsReason && !reason.trim() && !note.trim()) return;
     const { error } = await run(() =>
-      moveWaitlistStage(entry.id, stage, note.trim() || null, stage === 'do_not_sell' ? reason.trim() : undefined),
+      moveWaitlistStage(
+        entry.id,
+        stage,
+        note.trim() || reason.trim() || null,
+        stage === 'do_not_sell' ? reason.trim() || note.trim() : undefined,
+      ),
     );
     if (!error) {
       if (stage === 'handover_complete') {
@@ -91,7 +97,13 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
   }
 
   function selectStage(stage: string) {
-    if (stage === 'do_not_sell' && !reason.trim()) return;
+    if (
+      (stage === 'do_not_sell' || stage === 'on_hold' || stage === 'withdrawn') &&
+      !reason.trim() &&
+      !note.trim()
+    ) {
+      return;
+    }
     if (stage === 'quote_sent') {
       goToQuoteBuilder();
       return;
@@ -174,7 +186,7 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
                 ))}
               </ScrollView>
               <Input
-                label="Do Not Sell reason (required for that stage)"
+                label="Reason (required for On Hold / Do Not Sell / Withdrawn)"
                 value={reason}
                 onChangeText={setReason}
                 multiline

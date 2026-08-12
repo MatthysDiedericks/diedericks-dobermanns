@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { MOCK_DOGS, MOCK_WAITING_LIST } from '@/lib/mockData';
-import { rankMatches } from '@/lib/waitlist/matching';
+import { rankBuyersForDog, type MatchableDog } from '@/lib/waitlist/matching';
 import { supabase } from '@/lib/supabase';
 import { filterWaitlistEntries, useWaitingList } from '@/hooks/useWaitingList';
 import type { Dog } from '@/types/app.types';
@@ -14,13 +14,15 @@ export function usePreferenceMatch() {
   useEffect(() => {
     void (async () => {
       if (!supabase) {
-        setDogs(MOCK_DOGS.filter((d) => d.status === 'available' || d.status === 'reserved'));
+        setDogs(MOCK_DOGS.filter((d) => d.status === 'available'));
         return;
       }
       const { data } = await supabase
         .from('dogs')
-        .select('id, name, breed, colour, sex, status, category, date_of_birth')
-        .in('status', ['available', 'reserved', 'puppy'])
+        .select(
+          'id, name, breed, colour, sex, status, category, programme_tier, date_of_birth, litter_id, tail_type',
+        )
+        .eq('status', 'available')
         .order('name');
       setDogs((data ?? []) as Dog[]);
     })();
@@ -34,7 +36,17 @@ export function usePreferenceMatch() {
 
   const results = useMemo(() => {
     if (!selectedDog) return [];
-    return rankMatches(matchable, selectedDog);
+    const dog: MatchableDog = {
+      id: selectedDog.id,
+      name: selectedDog.name,
+      sex: selectedDog.sex,
+      colour: selectedDog.colour,
+      status: selectedDog.status,
+      programme_tier: selectedDog.programme_tier,
+      category: selectedDog.category,
+      tail_type: selectedDog.tail_type ?? null,
+    };
+    return rankBuyersForDog(matchable, dog);
   }, [matchable, selectedDog]);
 
   const selectDog = useCallback((id: string | null) => setSelectedDogId(id), []);

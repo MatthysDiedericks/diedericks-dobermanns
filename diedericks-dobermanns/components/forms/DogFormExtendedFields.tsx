@@ -49,6 +49,15 @@ export function DogFormExtendedFields({ control }: DogFormExtendedFieldsProps) {
           { value: 'unknown', label: 'Unknown' },
         ]}
       />
+      <OptionGroup
+        control={control}
+        name="tail_type"
+        label="Tail type"
+        options={[
+          { value: 'docked', label: 'Docked' },
+          { value: 'natural', label: 'Natural' },
+        ]}
+      />
       <ControlledInput control={control} name="eye_colour" label="Eye colour" autoCapitalize="words" />
 
       <Typography variant="label" className="mb-2 mt-2">

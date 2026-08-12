@@ -2065,6 +2065,8 @@ export type Database = {
           sex: string | null
           standard: string | null
           status: string
+          tail_docked_date: string | null
+          tail_type: string | null
           tattoo_number: string | null
           temperament_notes: string | null
           training_notes: string | null
@@ -2163,6 +2165,8 @@ export type Database = {
           sex?: string | null
           standard?: string | null
           status?: string
+          tail_docked_date?: string | null
+          tail_type?: string | null
           tattoo_number?: string | null
           temperament_notes?: string | null
           training_notes?: string | null
@@ -2261,6 +2265,8 @@ export type Database = {
           sex?: string | null
           standard?: string | null
           status?: string
+          tail_docked_date?: string | null
+          tail_type?: string | null
           tattoo_number?: string | null
           temperament_notes?: string | null
           training_notes?: string | null
@@ -5954,6 +5960,7 @@ export type Database = {
           assigned_dog_id: string | null
           assigned_litter_id: string | null
           balance_invoice_id: string | null
+          budget_range: string | null
           client_id: string | null
           contacted_count: number
           created_at: string
@@ -5981,6 +5988,7 @@ export type Database = {
           preferred_category: string | null
           preferred_colour: string | null
           preferred_sex: string | null
+          preferred_timeline: string | null
           priority: string
           quote_expires_date: string | null
           quote_id: string | null
@@ -5988,6 +5996,7 @@ export type Database = {
           quoted_price: number | null
           registration_type: string | null
           source: string | null
+          stage_change_note: string | null
           stage_updated_at: string | null
           stage_updated_by: string | null
           status: string
@@ -6000,6 +6009,7 @@ export type Database = {
           assigned_dog_id?: string | null
           assigned_litter_id?: string | null
           balance_invoice_id?: string | null
+          budget_range?: string | null
           client_id?: string | null
           contacted_count?: number
           created_at?: string
@@ -6027,6 +6037,7 @@ export type Database = {
           preferred_category?: string | null
           preferred_colour?: string | null
           preferred_sex?: string | null
+          preferred_timeline?: string | null
           priority?: string
           quote_expires_date?: string | null
           quote_id?: string | null
@@ -6034,6 +6045,7 @@ export type Database = {
           quoted_price?: number | null
           registration_type?: string | null
           source?: string | null
+          stage_change_note?: string | null
           stage_updated_at?: string | null
           stage_updated_by?: string | null
           status?: string
@@ -6046,6 +6058,7 @@ export type Database = {
           assigned_dog_id?: string | null
           assigned_litter_id?: string | null
           balance_invoice_id?: string | null
+          budget_range?: string | null
           client_id?: string | null
           contacted_count?: number
           created_at?: string
@@ -6073,6 +6086,7 @@ export type Database = {
           preferred_category?: string | null
           preferred_colour?: string | null
           preferred_sex?: string | null
+          preferred_timeline?: string | null
           priority?: string
           quote_expires_date?: string | null
           quote_id?: string | null
@@ -6080,6 +6094,7 @@ export type Database = {
           quoted_price?: number | null
           registration_type?: string | null
           source?: string | null
+          stage_change_note?: string | null
           stage_updated_at?: string | null
           stage_updated_by?: string | null
           status?: string
@@ -6577,6 +6592,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_confirmed_user_id: { Args: { p_email: string }; Returns: string }
       resolve_error_events: {
         Args: { p_ids: number[]; p_note?: string }
         Returns: number

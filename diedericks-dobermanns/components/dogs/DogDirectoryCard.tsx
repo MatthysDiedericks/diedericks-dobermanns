@@ -10,12 +10,10 @@ import { Colors } from '@/constants/colors';
 import type { ExpectingDogEntry, KennelDog } from '@/hooks/useKennelDogs';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { DogColour } from '@/types/app.types';
+import { COLOUR_HEX as SHARED_COLOUR_HEX } from '@/lib/colours/dogColours';
 
 const COLOUR_HEX: Record<DogColour | string, string> = {
-  'black/rust': '#1a1a1a',
-  'blue/rust': '#2563eb',
-  'fawn/rust': '#d2691e',
-  'red/rust': '#dc2626',
+  ...SHARED_COLOUR_HEX,
 };
 
 function PulsingDot() {

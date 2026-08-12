@@ -1,6 +1,7 @@
 import { callNotify } from '@/lib/functions';
 import { supabase } from '@/lib/supabase';
 import { categoryFromDogInterest } from '@/lib/waitlist/helpers';
+import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
 import type { Application, WaitingListEntry } from '@/types/app.types';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 
@@ -12,6 +13,8 @@ export interface WaitlistUpdate {
   status?: WaitingListEntry['status'];
   position?: number | null;
   pipeline_stage?: string | null;
+  stage_updated_at?: string | null;
+  stage_updated_by?: string | null;
   follow_up_date?: string | null;
   preference_notes?: string | null;
   litter_id?: string | null;
@@ -26,6 +29,8 @@ export interface WaitlistUpdate {
   preferred_colour?: string | null;
   ear_preference?: string | null;
   tail_preference?: string | null;
+  budget_range?: string | null;
+  preferred_timeline?: string | null;
   registration_preference?: string | null;
   priority?: WaitingListEntry['priority'];
   payment_status?: WaitingListEntry['payment_status'];
@@ -44,6 +49,7 @@ export interface WaitlistUpdate {
   client_visible_note?: string | null;
   internal_flags?: string[];
   do_not_sell_reason?: string | null;
+  hold_reason?: string | null;
   stage_change_note?: string | null;
 }
 
@@ -60,6 +66,9 @@ export interface CreateWaitlistInput {
   preferred_category?: string;
   preferred_sex?: string | null;
   preferred_colour?: string | null;
+  tail_preference?: string | null;
+  budget_range?: string | null;
+  preferred_timeline?: string | null;
   preference_notes?: string | null;
   follow_up_date?: string | null;
   priority?: WaitingListEntry['priority'];
@@ -71,9 +80,12 @@ export async function createWaitlistEntry(input: CreateWaitlistInput): Promise<S
     return { error: null, id: 'wl-demo' };
   }
 
+  const { data: auth } = await supabase.auth.getUser();
   const row = {
     list_type_id: input.list_type_id,
     pipeline_stage: input.pipeline_stage ?? 'enquiry',
+    stage_updated_at: new Date().toISOString(),
+    stage_updated_by: auth.user?.id ?? null,
     client_id: input.client_id ?? null,
     application_id: input.application_id ?? null,
     enquirer_name: input.enquirer_name ?? null,
@@ -84,6 +96,9 @@ export async function createWaitlistEntry(input: CreateWaitlistInput): Promise<S
     preferred_category: input.preferred_category ?? 'any',
     preferred_sex: input.preferred_sex ?? 'any',
     preferred_colour: input.preferred_colour ?? null,
+    tail_preference: input.tail_preference ?? null,
+    budget_range: input.budget_range ?? null,
+    preferred_timeline: input.preferred_timeline ?? null,
     preference_notes: input.preference_notes ?? null,
     follow_up_date: input.follow_up_date ?? null,
     priority: input.priority ?? 'normal',
@@ -101,7 +116,7 @@ export async function createWaitlistFromApplication(
 ): Promise<SaveResult> {
   const result = await createWaitlistEntry({
     list_type_id: listTypeId,
-    pipeline_stage: 'application',
+    pipeline_stage: app.status === 'approved' ? 'approved' : 'application',
     client_id: app.user_id,
     application_id: app.id,
     enquirer_name: app.full_name,
@@ -112,6 +127,9 @@ export async function createWaitlistFromApplication(
     preferred_category: categoryFromDogInterest(app.dog_interest),
     preferred_sex: app.preferred_sex ?? 'any',
     preferred_colour: app.preferred_colour ?? null,
+    tail_preference: app.tail_preference ?? null,
+    budget_range: app.budget_range ?? null,
+    preferred_timeline: app.preferred_timeline ?? null,
     preference_notes: app.special_requests ?? app.why_dobermann,
     ...overrides,
   });
@@ -135,16 +153,35 @@ export async function updateWaitlistEntry(
   if (values.pipeline_stage === 'do_not_sell' && !values.do_not_sell_reason) {
     return { error: 'A reason is required when marking Do Not Sell.' };
   }
+  if (values.pipeline_stage === 'on_hold' && !values.stage_change_note) {
+    return { error: 'A reason is required when placing On Hold.' };
+  }
+  if (values.pipeline_stage === 'withdrawn' && !values.stage_change_note) {
+    return { error: 'A reason is required when marking Withdrawn.' };
+  }
 
   let clientId: string | null = null;
-  if (values.pipeline_stage === 'reserved') {
-    const { data } = await supabase.from('waiting_list').select('client_id').eq('id', id).single();
-    clientId = data?.client_id ?? null;
+  let patch: WaitlistUpdate = { ...values };
+
+  if (values.pipeline_stage) {
+    const { data: current } = await supabase
+      .from('waiting_list')
+      .select('client_id, pipeline_stage')
+      .eq('id', id)
+      .single();
+    clientId = values.pipeline_stage === 'reserved' ? (current?.client_id ?? null) : null;
+
+    const { data: auth } = await supabase.auth.getUser();
+    patch = {
+      ...patch,
+      stage_updated_at: new Date().toISOString(),
+      stage_updated_by: auth.user?.id ?? null,
+    } as WaitlistUpdate;
   }
 
   const { error } = await supabase
     .from('waiting_list')
-    .update(values as TablesUpdate<'waiting_list'>)
+    .update(patch as TablesUpdate<'waiting_list'>)
     .eq('id', id);
   if (error) return { error: error.message };
 
@@ -184,24 +221,12 @@ export async function assignWaitlistMatch(
   id: string,
   opts: { dogId?: string | null; litterId?: string | null },
 ): Promise<MutationResult> {
-  const patch: WaitlistUpdate = {
-    pipeline_stage: 'matched',
+  // Suggest → allocate path only. No client notification from matching.
+  return advanceWaitlistStage(id, 'matched', {
     assigned_dog_id: opts.dogId ?? null,
     assigned_litter_id: opts.litterId ?? null,
     stage_change_note: 'Assigned via preference matching',
-  };
-  const result = await updateWaitlistEntry(id, patch);
-  if (result.error || !supabase) return result;
-
-  const { data } = await supabase.from('waiting_list').select('client_id').eq('id', id).single();
-  if (data?.client_id) {
-    void callNotify({
-      userId: data.client_id,
-      title: 'Potential Match Found',
-      body: 'Great news — we may have found your match. Your breeder will be in touch.',
-    });
-  }
-  return result;
+  });
 }
 
 export async function reorderWaitlistPosition(

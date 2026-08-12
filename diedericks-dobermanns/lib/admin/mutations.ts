@@ -3,6 +3,7 @@ import { callCreateVideoRoom, callNotify } from '@/lib/functions';
 import { formatDateTime } from '@/lib/format';
 import { SOCIAL_SETTING_KEYS } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
+import { syncWaitlistOnApplicationApproved } from '@/lib/waitlist/syncFromApplication';
 import type {
   AppSettings,
   ApplicationStatus,
@@ -243,6 +244,11 @@ export async function reviewApplication(
     // itself look like it failed — the application IS approved at this point.
     void createDraftQuoteFromApplication(id).then(({ error: qErr }) => {
       if (qErr) console.error('[reviewApplication] auto-quote:', qErr);
+    });
+
+    const { data: auth } = await supabase.auth.getUser();
+    void syncWaitlistOnApplicationApproved(id, auth.user?.id ?? null).then(({ error: wlErr }) => {
+      if (wlErr) console.error('[reviewApplication] waitlist sync:', wlErr);
     });
 
     if (app.user_id) {

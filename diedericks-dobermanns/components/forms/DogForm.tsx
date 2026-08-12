@@ -1,17 +1,17 @@
+import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fields';
+import { Button } from '@/components/ui/Button';
+import { Typography } from '@/components/ui/Typography';
+import { DOG_COLOUR_OPTIONS } from '@/lib/colours/dogColours';
+import { replaceDogMedia, saveDog, useSubmitting } from '@/hooks/useMutations';
+import type { Dog, DogCategory } from '@/types/app.types';
+import type { TablesInsert } from '@/types/database.types';
+import { DogFormExtendedFields } from '@/components/forms/DogFormExtendedFields';
+import { MediaUploader, type UploaderValue } from '@/components/forms/MediaUploader';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { z } from 'zod';
-
-import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fields';
-import { DogFormExtendedFields } from '@/components/forms/DogFormExtendedFields';
-import { MediaUploader, type UploaderValue } from '@/components/forms/MediaUploader';
-import { Button } from '@/components/ui/Button';
-import { Typography } from '@/components/ui/Typography';
-import { replaceDogMedia, saveDog, useSubmitting } from '@/hooks/useMutations';
-import type { Dog, DogCategory } from '@/types/app.types';
-import type { TablesInsert } from '@/types/database.types';
 
 const dogSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -46,8 +46,9 @@ const dogSchema = z.object({
   sex: z.union([z.literal(''), z.enum(['male', 'female'])]),
   colour: z.union([
     z.literal(''),
-    z.enum(['black/rust', 'blue/rust', 'fawn/rust', 'red/rust']),
+    z.enum(['black_tan', 'brown_tan']),
   ]),
+  tail_type: z.union([z.literal(''), z.enum(['docked', 'natural'])]),
   bloodline: z.union([
     z.literal(''),
     z.enum(['altobello', 'dominator', 'quantum', 'american', 'kennel_own']),
@@ -89,6 +90,7 @@ function toDefaults(dog?: Dog, defaultCategory?: DogCategory): DogFormValues {
     status: dog?.status ?? 'available',
     sex: dog?.sex ?? '',
     colour: dog?.colour ?? '',
+    tail_type: dog?.tail_type ?? '',
     bloodline: dog?.bloodline ?? '',
     dcm_status: dog?.dcm_status ?? '',
     date_of_birth: dog?.date_of_birth ?? '',
@@ -152,6 +154,7 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
       status: values.status,
       sex: values.sex || null,
       colour: values.colour || null,
+      tail_type: values.tail_type || null,
       bloodline: values.bloodline || null,
       dcm_status: values.dcm_status || null,
       date_of_birth: blank(values.date_of_birth),
@@ -248,12 +251,7 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
         control={control}
         name="colour"
         label="Colour"
-        options={[
-          { value: 'black/rust', label: 'Black/Rust' },
-          { value: 'blue/rust', label: 'Blue/Rust' },
-          { value: 'fawn/rust', label: 'Fawn/Rust' },
-          { value: 'red/rust', label: 'Red/Rust' },
-        ]}
+        options={DOG_COLOUR_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
       />
       <OptionGroup
         control={control}

@@ -1,6 +1,7 @@
 import { createInvoice, recordInvoicePayment } from '@/hooks/useInvoices';
 import { entryDisplayName } from '@/lib/waitlist/helpers';
 import { updateWaitlistEntry } from '@/lib/waitlist/mutations';
+import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
 import type { WaitingListEntry } from '@/types/app.types';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -50,8 +51,7 @@ export async function recordWaitlistDeposit(
     return { error: e instanceof Error ? e.message : 'Could not record deposit' };
   }
 
-  const { error } = await updateWaitlistEntry(entry.id, {
-    pipeline_stage: 'deposit_paid',
+  const { error } = await advanceWaitlistStage(entry.id, 'deposit_paid', {
     status: 'active',
     payment_status: 'deposit_paid',
     deposit_amount: round2(amount),

@@ -1,4 +1,5 @@
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
+import { COLOUR_LABELS } from '@/lib/colours/dogColours';
 
 const LABELS: Partial<Record<keyof ApplicationFormValues, Record<string, string>>> = {
   home_type: {
@@ -77,11 +78,7 @@ const LABELS: Partial<Record<keyof ApplicationFormValues, Record<string, string>
     female: 'Female',
     no_preference: 'No preference',
   },
-  preferred_colour: {
-    black_tan: 'Black & Tan',
-    brown_tan: 'Brown & Tan',
-    no_preference: 'No preference',
-  },
+  preferred_colour: { ...COLOUR_LABELS },
   tail_preference: {
     docked: 'Docked (traditional)',
     natural: 'Natural (undocked)',

@@ -78,8 +78,14 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Pro
                     </Typography>
                   ) : null}
                 </View>
+                <Typography
+                  variant="subtitle"
+                  className={`mt-2 ${daysWaiting(entry.date_added ?? entry.created_at) >= 180 ? 'text-danger' : daysWaiting(entry.date_added ?? entry.created_at) >= 90 ? 'text-warning' : 'text-gold'}`}
+                >
+                  {daysWaiting(entry.date_added ?? entry.created_at)} days waiting
+                </Typography>
                 <Typography variant="caption" className="mt-1 text-silver">
-                  {daysWaiting(entry.created_at)}d · {entry.enquirer_country ?? '—'}
+                  {entry.enquirer_country ?? '—'}
                 </Typography>
                 {entry.follow_up_date ? (
                   <Typography variant="caption" className={overdue ? 'text-danger' : 'text-silver'}>

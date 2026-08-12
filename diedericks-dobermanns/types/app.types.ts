@@ -173,7 +173,7 @@ export interface TrainingBooking {
   media?: TrainingBookingMedia[];
 }
 
-export type DogColour = 'black/rust' | 'blue/rust' | 'fawn/rust' | 'red/rust';
+export type DogColour = 'black_tan' | 'brown_tan';
 export type DogSex = 'male' | 'female';
 export type DogStatus =
   | 'available'
@@ -256,6 +256,9 @@ export interface Dog {
   coat_type?: string | null;
   height_cm?: number | null;
   ear_type?: 'natural' | 'cropped' | 'unknown' | null;
+  tail_type?: 'docked' | 'natural' | null;
+  tail_docked_date?: string | null;
+  programme_tier?: string | null;
   eye_colour?: string | null;
   tattoo_number?: string | null;
   passport_number?: string | null;
@@ -626,6 +629,8 @@ export interface WaitingListEntry {
   preferred_colour: string | null;
   ear_preference: string | null;
   tail_preference: string | null;
+  budget_range?: string | null;
+  preferred_timeline?: string | null;
   registration_preference: string | null;
   priority: WaitlistPriority;
   payment_status: WaitlistPaymentStatus;
@@ -645,9 +650,13 @@ export interface WaitingListEntry {
   client_visible_note: string | null;
   internal_flags: string[];
   do_not_sell_reason: string | null;
+  hold_reason?: string | null;
   position: number | null;
   status: WaitingListStatus;
   pipeline_stage: string | null;
+  stage_updated_at?: string | null;
+  stage_updated_by?: string | null;
+  date_added?: string | null;
   follow_up_date: string | null;
   feedback: string | null;
   expected_delivery_date: string | null;

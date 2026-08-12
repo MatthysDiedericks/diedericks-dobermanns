@@ -21,7 +21,7 @@ import { assertQuoteLineCount, assertQuoteTotalsMatch } from '@/lib/errors/asser
 import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
 import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
-import { updateWaitlistEntry } from '@/lib/waitlist/mutations';
+import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
 import type { Quote } from '@/types/app.types';
 
 interface QuotePrefill {
@@ -209,8 +209,7 @@ function QuoteBuilder({ initial, prefill }: { initial?: Quote | null; prefill?: 
           cleanItems.reduce((s, it) => s + it.quantity * it.unit_price, 0) - discountNum,
           0,
         );
-        const { error: waitlistError } = await updateWaitlistEntry(prefill.waitlistId, {
-          pipeline_stage: 'quote_sent',
+        const { error: waitlistError } = await advanceWaitlistStage(prefill.waitlistId, 'quote_sent', {
           status: 'active',
           quote_id: quoteId,
           quoted_price: quotedTotal,
