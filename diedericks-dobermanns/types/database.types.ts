@@ -785,6 +785,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "check_ins_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "check_ins_dog_id_fkey"
             columns: ["dog_id"]
             isOneToOne: false
@@ -954,6 +961,74 @@ export type Database = {
           },
         ]
       }
+      contact_duplicate_candidates: {
+        Row: {
+          confidence: string
+          contact_a_id: string
+          contact_b_id: string
+          created_at: string
+          id: string
+          match_detail: string | null
+          match_reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          confidence: string
+          contact_a_id: string
+          contact_b_id: string
+          created_at?: string
+          id?: string
+          match_detail?: string | null
+          match_reason: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          confidence?: string
+          contact_a_id?: string
+          contact_b_id?: string
+          created_at?: string
+          id?: string
+          match_detail?: string | null
+          match_reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_duplicate_candidates_contact_a_id_fkey"
+            columns: ["contact_a_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_duplicate_candidates_contact_a_id_fkey"
+            columns: ["contact_a_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_duplicate_candidates_contact_b_id_fkey"
+            columns: ["contact_b_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_duplicate_candidates_contact_b_id_fkey"
+            columns: ["contact_b_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           body: string | null
@@ -996,6 +1071,13 @@ export type Database = {
             referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contacts: {
@@ -1013,8 +1095,12 @@ export type Database = {
           id_number: string | null
           is_do_not_sell: boolean
           marketing_opt_in: boolean
+          merged_at: string | null
+          merged_by: string | null
+          merged_into_contact_id: string | null
           notes: string | null
           phone: string | null
+          phone_e164: string | null
           popia_consent: boolean
           popia_consent_date: string | null
           source: string | null
@@ -1022,6 +1108,7 @@ export type Database = {
           tags: string[] | null
           updated_at: string | null
           user_id: string | null
+          whatsapp_e164: string | null
           whatsapp_number: string | null
         }
         Insert: {
@@ -1038,8 +1125,12 @@ export type Database = {
           id_number?: string | null
           is_do_not_sell?: boolean
           marketing_opt_in?: boolean
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_contact_id?: string | null
           notes?: string | null
           phone?: string | null
+          phone_e164?: string | null
           popia_consent?: boolean
           popia_consent_date?: string | null
           source?: string | null
@@ -1047,6 +1138,7 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string | null
           user_id?: string | null
+          whatsapp_e164?: string | null
           whatsapp_number?: string | null
         }
         Update: {
@@ -1063,8 +1155,12 @@ export type Database = {
           id_number?: string | null
           is_do_not_sell?: boolean
           marketing_opt_in?: boolean
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_contact_id?: string | null
           notes?: string | null
           phone?: string | null
+          phone_e164?: string | null
           popia_consent?: boolean
           popia_consent_date?: string | null
           source?: string | null
@@ -1072,9 +1168,24 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string | null
           user_id?: string | null
+          whatsapp_e164?: string | null
           whatsapp_number?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_merged_into_contact_id_fkey"
+            columns: ["merged_into_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_merged_into_contact_id_fkey"
+            columns: ["merged_into_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_user_id_fkey"
             columns: ["user_id"]
@@ -2191,6 +2302,13 @@ export type Database = {
             columns: ["owner_contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dogs_owner_contact_id_fkey"
+            columns: ["owner_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
             referencedColumns: ["id"]
           },
           {
@@ -4746,6 +4864,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "testimonials_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "testimonials_dog_id_fkey"
             columns: ["dog_id"]
             isOneToOne: false
@@ -6189,6 +6314,121 @@ export type Database = {
       }
     }
     Views: {
+      contacts_active: {
+        Row: {
+          address: string | null
+          city: string | null
+          company: string | null
+          contact_type: string | null
+          country: string | null
+          created_at: string | null
+          email: string | null
+          first_contact_date: string | null
+          full_name: string | null
+          id: string | null
+          id_number: string | null
+          is_do_not_sell: boolean | null
+          marketing_opt_in: boolean | null
+          merged_at: string | null
+          merged_by: string | null
+          merged_into_contact_id: string | null
+          notes: string | null
+          phone: string | null
+          phone_e164: string | null
+          popia_consent: boolean | null
+          popia_consent_date: string | null
+          source: string | null
+          source_ref: string | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string | null
+          whatsapp_e164: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company?: string | null
+          contact_type?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_contact_date?: string | null
+          full_name?: string | null
+          id?: string | null
+          id_number?: string | null
+          is_do_not_sell?: boolean | null
+          marketing_opt_in?: boolean | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_contact_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          phone_e164?: string | null
+          popia_consent?: boolean | null
+          popia_consent_date?: string | null
+          source?: string | null
+          source_ref?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp_e164?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company?: string | null
+          contact_type?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_contact_date?: string | null
+          full_name?: string | null
+          id?: string | null
+          id_number?: string | null
+          is_do_not_sell?: boolean | null
+          marketing_opt_in?: boolean | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_contact_id?: string | null
+          notes?: string | null
+          phone?: string | null
+          phone_e164?: string | null
+          popia_consent?: boolean | null
+          popia_consent_date?: string | null
+          source?: string | null
+          source_ref?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp_e164?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_merged_into_contact_id_fkey"
+            columns: ["merged_into_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_merged_into_contact_id_fkey"
+            columns: ["merged_into_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_category_summary: {
         Row: {
           amount: number | null
@@ -6311,6 +6551,10 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
+      merge_contacts: {
+        Args: { p_actor_id?: string; p_loser_id: string; p_survivor_id: string }
+        Returns: undefined
+      }
       my_dog_ids: { Args: never; Returns: string[] }
       my_dog_lineage: {
         Args: { target_dog_id: string }

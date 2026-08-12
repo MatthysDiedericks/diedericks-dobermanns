@@ -125,9 +125,18 @@ export function detectDuplicates(active) {
   const queueMedium = [];
   const queueLow = [];
 
+  /** Both sides have emails and they disagree — evidence conflict, never auto-merge. */
+  function emailsConflict(a, b) {
+    const ea = normaliseEmail(a.email);
+    const eb = normaliseEmail(b.email);
+    return Boolean(ea && eb && ea !== eb);
+  }
+
   for (const [, edge] of edgeReasons) {
     const { a, b, reason, detail } = edge;
-    if (namesCompatible(a.full_name, b.full_name)) {
+    // Same name + phone/email edge is usually safe, but differing emails mean a
+    // typo pair (gmail/gamil) or two real people — human review, not auto-merge.
+    if (namesCompatible(a.full_name, b.full_name) && !emailsConflict(a, b)) {
       autoMerges.push({ a, b, reason, detail, survivor: pickSurvivor(a, b) });
     } else {
       queueMedium.push({ a, b, reason, detail, confidence: 'medium' });

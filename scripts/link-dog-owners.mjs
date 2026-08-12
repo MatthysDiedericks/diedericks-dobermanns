@@ -138,16 +138,21 @@ async function fetchAll(table, select) {
 
 console.log(DRY ? '=== DRY RUN (no writes) ===' : '=== LINKING OWNERS ===');
 
-const contacts = await fetchAll(
-  'contacts',
-  'id, full_name, phone, whatsapp_number, email',
-);
+const contacts = (
+  await fetchAll(
+    'contacts',
+    'id, full_name, phone, whatsapp_number, email, merged_into_contact_id',
+  )
+).filter((c) => !c.merged_into_contact_id);
 const dogs = (
   await fetchAll(
     'dogs',
     'id, name, status, new_owner_name, reserved_for_name, owner_contact_id',
   )
-).filter((d) => d.status === 'sold' && !d.owner_contact_id);
+).filter(
+  (d) =>
+    (d.status === 'sold' || d.status === 'reserved') && !d.owner_contact_id,
+);
 
 const byExact = new Map();
 const byNorm = new Map();
@@ -236,7 +241,7 @@ writeFileSync(
   'utf8',
 );
 
-console.log(`Sold dogs without owner_contact_id: ${dogs.length}`);
+console.log(`Sold/reserved dogs without owner_contact_id: ${dogs.length}`);
 console.log(`Would link (exact/normalised):       ${linked.length}`);
 console.log(`Ambiguous / weak (review file):      ${ambiguous.length}`);
 console.log(`No candidate name:                   ${noCandidate.length}`);

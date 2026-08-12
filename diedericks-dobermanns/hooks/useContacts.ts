@@ -58,7 +58,11 @@ export function useContacts(
     setError(null);
     try {
       const supabase = requireSupabase();
-      let q = supabase.from('contacts').select(CONTACT_SELECT).order('full_name');
+      // contacts_active excludes soft-merged losers (merged_into_contact_id set).
+      let q = supabase
+        .from('contacts_active' as 'contacts')
+        .select(CONTACT_SELECT)
+        .order('full_name');
       if (tag && tag !== 'all') q = q.contains('tags', [tag]);
       if (contactType === 'client') q = q.eq('contact_type', 'client');
       else if (contactType === 'prospect') q = q.eq('contact_type', 'prospect');
@@ -101,7 +105,9 @@ export function useContactSummary() {
     setLoading(true);
     try {
       const supabase = requireSupabase();
-      const { data, error } = await supabase.from('contacts').select('contact_type, is_do_not_sell');
+      const { data, error } = await supabase
+        .from('contacts_active' as 'contacts')
+        .select('contact_type, is_do_not_sell');
       if (error) throw error;
       let rows = data ?? [];
       if (role !== 'super_admin') {
