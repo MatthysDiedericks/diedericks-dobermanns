@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, TextInput, TouchableOpacity,
 
 import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { LoginLogo } from '@/components/auth/LoginLogo';
+import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -91,9 +92,11 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [helpVisible, setHelpVisible] = useState(false);
 
   async function onSubmit() {
     setError(null);
+    setHelpVisible(false);
     if (!fullName.trim()) return setError('Please enter your full name.');
     if (!EMAIL_REGEX.test(email.trim())) return setError('Please enter a valid email address.');
     if (password.length < MIN_PASSWORD_LENGTH) {
@@ -123,6 +126,7 @@ export default function SignUpScreen() {
       }
       // Logging is done inside signUpWithEmail — never block the UI on it.
       setError(msg);
+      setHelpVisible(true);
     }
   }
 
@@ -199,6 +203,7 @@ export default function SignUpScreen() {
               <Typography variant="caption" className="text-red-400">
                 {error}
               </Typography>
+              {helpVisible ? <WhatsAppHelpLink className="mt-2" /> : null}
             </View>
           ) : null}
 

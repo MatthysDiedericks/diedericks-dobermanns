@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
@@ -6,9 +7,10 @@ interface EmptyStateProps {
   title: string;
   message?: string;
   className?: string;
+  children?: ReactNode;
 }
 
-export function EmptyState({ title, message, className }: EmptyStateProps) {
+export function EmptyState({ title, message, className, children }: EmptyStateProps) {
   return (
     <View
       className={`items-center justify-center rounded-2xl border border-gold/10 bg-black-rich px-6 py-12 ${className ?? ''}`}
@@ -21,6 +23,7 @@ export function EmptyState({ title, message, className }: EmptyStateProps) {
           {message}
         </Typography>
       ) : null}
+      {children}
     </View>
   );
 }

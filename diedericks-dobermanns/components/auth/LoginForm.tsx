@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
@@ -54,6 +55,7 @@ export function LoginForm({
           <Typography variant="caption" className="text-amber-200">
             {serverError}
           </Typography>
+          <WhatsAppHelpLink className="mt-2" />
         </View>
       ) : null}
 

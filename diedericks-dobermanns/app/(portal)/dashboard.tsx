@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
 import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
 import { Badge } from '@/components/ui/Badge';
@@ -82,8 +83,10 @@ export default function PortalDashboard() {
         {!loading && dogs.length === 0 ? (
           <EmptyState
             title="No dogs linked"
-            message="No dogs linked to your account yet. Contact us to link your dog."
-          />
+            message="No dogs linked to your account yet. WhatsApp us and we will help."
+          >
+            <WhatsAppHelpLink className="mt-3" />
+          </EmptyState>
         ) : null}
         {primaryDog ? (
           <>
