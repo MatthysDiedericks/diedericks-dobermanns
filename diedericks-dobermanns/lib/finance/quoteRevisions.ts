@@ -1,3 +1,4 @@
+import { assertDeliveryReadyToSend } from '@/lib/finance/catalogue';
 import { requireSupabase } from '@/lib/supabase';
 import { markWaitlistQuoteSent } from '@/lib/waitlist/stageAdvance';
 
@@ -55,7 +56,7 @@ export async function recordQuoteSendRevision(input: {
   const { data: quote, error } = await supabase
     .from('quotes')
     .select(
-      'id, quote_number, revision, last_sent_revision, status, currency, subtotal, discount, total, notes, valid_until, client_id, historical_client_name, application_id, sent_at',
+      'id, quote_number, revision, last_sent_revision, status, currency, subtotal, discount, total, notes, valid_until, client_id, historical_client_name, application_id, sent_at, delivery_decision',
     )
     .eq('id', input.quoteId)
     .single();
@@ -76,14 +77,34 @@ export async function recordQuoteSendRevision(input: {
     historical_client_name: string | null;
     application_id: string | null;
     sent_at: string | null;
+    delivery_decision:
+      | 'collection'
+      | 'included'
+      | 'charged'
+      | 'to_be_confirmed'
+      | 'not_applicable'
+      | null;
   };
 
   const { data: items, error: itemsErr } = await supabase
     .from('quote_items')
-    .select('item_type, dog_id, description, quantity, unit_price, line_total, sort_order')
+    .select(
+      'item_type, dog_id, description, quantity, unit_price, line_total, sort_order, catalogue_code',
+    )
     .eq('quote_id', input.quoteId)
     .order('sort_order');
   if (itemsErr) throw new Error(itemsErr.message);
+
+  const deliveryLine = (items ?? []).find(
+    (it) =>
+      (it as { catalogue_code?: string | null }).catalogue_code === 'delivery_travel' ||
+      it.item_type === 'delivery',
+  );
+  const deliveryErr = assertDeliveryReadyToSend({
+    deliveryDecision: header.delivery_decision,
+    deliveryLineAmount: deliveryLine ? Number(deliveryLine.unit_price) : null,
+  });
+  if (deliveryErr) throw new Error(deliveryErr);
 
   const previouslySent = Boolean(header.sent_at) || Boolean(header.last_sent_revision);
   const nextRevision = previouslySent
@@ -140,7 +161,6 @@ export async function recordQuoteSendRevision(input: {
     .eq('id', input.quoteId);
   if (updErr) throw new Error(updErr.message);
 
-  // Pipeline advances on sent_at — never on draft create.
   const { error: wlErr } = await markWaitlistQuoteSent({
     quoteId: input.quoteId,
     applicationId: header.application_id,

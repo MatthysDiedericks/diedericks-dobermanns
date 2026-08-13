@@ -36,8 +36,9 @@ const QUOTE_SELECT =
   'id, quote_number, client_id, historical_client_name, application_id, status, currency, subtotal, discount, total, ' +
   'notes, valid_until, converted_invoice_id, created_by, created_at, updated_at, ' +
   'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
+  'delivery_decision, delivery_note, ' +
   'client:users(id, full_name, phone, email), ' +
-  'items:quote_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order)';
+  'items:quote_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order, catalogue_code)';
 
 export interface QuoteHeaderInput {
   /** Exactly one of client_id / historical_client_name should be set. */
@@ -48,6 +49,14 @@ export interface QuoteHeaderInput {
   notes?: string | null;
   valid_until?: string | null;
   discount?: number;
+  delivery_decision?:
+    | 'collection'
+    | 'included'
+    | 'charged'
+    | 'to_be_confirmed'
+    | 'not_applicable'
+    | null;
+  delivery_note?: string | null;
 }
 
 /** Prices line items and returns rows ready for insert, plus the subtotal. */
@@ -59,6 +68,7 @@ function priceItems(items: LineItemInput[]) {
     quantity: it.quantity,
     unit_price: round2(it.unit_price),
     sort_order: i,
+    catalogue_code: it.catalogue_code ?? null,
   }));
   const subtotal = round2(rows.reduce((s, it) => s + it.quantity * it.unit_price, 0));
   return { rows, subtotal };
@@ -128,6 +138,8 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
       total,
       notes: header.notes ?? null,
       valid_until: header.valid_until ?? null,
+      delivery_decision: header.delivery_decision ?? null,
+      delivery_note: header.delivery_note ?? null,
     })
     .select('id')
     .single();
@@ -186,6 +198,8 @@ export async function updateQuote(
       total,
       notes: header.notes ?? null,
       valid_until: header.valid_until ?? null,
+      delivery_decision: header.delivery_decision ?? null,
+      delivery_note: header.delivery_note ?? null,
       last_edit_note: changeNote,
       updated_at: new Date().toISOString(),
     } as never)

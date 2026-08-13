@@ -727,6 +727,57 @@ export type Database = {
           },
         ]
       }
+      catalogue_items: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          default_price: number | null
+          description_template: string | null
+          id: string
+          is_active: boolean
+          item_type: string
+          label: string
+          notes: string | null
+          price_varies: boolean
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          default_price?: number | null
+          description_template?: string | null
+          id?: string
+          is_active?: boolean
+          item_type: string
+          label: string
+          notes?: string | null
+          price_varies?: boolean
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          default_price?: number | null
+          description_template?: string | null
+          id?: string
+          is_active?: boolean
+          item_type?: string
+          label?: string
+          notes?: string | null
+          price_varies?: boolean
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       check_ins: {
         Row: {
           channel: string | null
@@ -2963,6 +3014,7 @@ export type Database = {
       }
       invoice_items: {
         Row: {
+          catalogue_code: string | null
           created_at: string
           description: string
           id: string
@@ -2974,6 +3026,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          catalogue_code?: string | null
           created_at?: string
           description: string
           id?: string
@@ -2985,6 +3038,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          catalogue_code?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -3064,6 +3118,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           currency: string
+          delivery_decision: string | null
+          delivery_note: string | null
           discount_amount: number
           dog_id: string | null
           due_date: string | null
@@ -3092,6 +3148,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          delivery_decision?: string | null
+          delivery_note?: string | null
           discount_amount?: number
           dog_id?: string | null
           due_date?: string | null
@@ -3120,6 +3178,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          delivery_decision?: string | null
+          delivery_note?: string | null
           discount_amount?: number
           dog_id?: string | null
           due_date?: string | null
@@ -4470,6 +4530,7 @@ export type Database = {
       }
       quote_items: {
         Row: {
+          catalogue_code: string | null
           description: string
           dog_id: string | null
           id: string
@@ -4481,6 +4542,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          catalogue_code?: string | null
           description: string
           dog_id?: string | null
           id?: string
@@ -4492,6 +4554,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          catalogue_code?: string | null
           description?: string
           dog_id?: string | null
           id?: string
@@ -4583,6 +4646,8 @@ export type Database = {
           created_by: string | null
           currency: string
           declined_reason: string | null
+          delivery_decision: string | null
+          delivery_note: string | null
           discount: number
           historical_client_name: string | null
           id: string
@@ -4611,6 +4676,8 @@ export type Database = {
           created_by?: string | null
           currency?: string
           declined_reason?: string | null
+          delivery_decision?: string | null
+          delivery_note?: string | null
           discount?: number
           historical_client_name?: string | null
           id?: string
@@ -4639,6 +4706,8 @@ export type Database = {
           created_by?: string | null
           currency?: string
           declined_reason?: string | null
+          delivery_decision?: string | null
+          delivery_note?: string | null
           discount?: number
           historical_client_name?: string | null
           id?: string

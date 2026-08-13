@@ -17,4 +17,6 @@ export interface LineItemInput {
   description: string;
   quantity: number;
   unit_price: number;
+  catalogue_code?: string | null;
+  allowZeroPrice?: boolean;
 }

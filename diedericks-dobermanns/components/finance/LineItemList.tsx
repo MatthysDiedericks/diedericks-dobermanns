@@ -10,11 +10,13 @@ export function LineItemList({
   onUpdate,
   onRemove,
   onAdd,
+  onAddCatalogue,
 }: {
   items: DraftLineItem[];
   onUpdate: (key: string, patch: Partial<DraftLineItem>) => void;
   onRemove: (key: string) => void;
   onAdd: () => void;
+  onAddCatalogue?: () => void;
 }) {
   return (
     <>
@@ -31,8 +33,11 @@ export function LineItemList({
           />
         ))}
       </View>
-      <View className="mt-3 flex-row gap-2">
-        <Button label="+ Add item" variant="outline" onPress={onAdd} />
+      <View className="mt-3 flex-row flex-wrap gap-2">
+        {onAddCatalogue ? (
+          <Button label="+ Catalogue" variant="outline" onPress={onAddCatalogue} />
+        ) : null}
+        <Button label="+ Free-text line" variant="outline" onPress={onAdd} />
       </View>
     </>
   );

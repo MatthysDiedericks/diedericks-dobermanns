@@ -687,6 +687,7 @@ export interface LineItem {
   unit_price: number;
   line_total: number;
   sort_order: number;
+  catalogue_code?: string | null;
 }
 
 export type QuoteStatus =
@@ -721,6 +722,14 @@ export interface Quote {
   reopened_at?: string | null;
   reopen_reason?: string | null;
   last_edit_note?: string | null;
+  delivery_decision?:
+    | 'collection'
+    | 'included'
+    | 'charged'
+    | 'to_be_confirmed'
+    | 'not_applicable'
+    | null;
+  delivery_note?: string | null;
   // Joined / derived
   client?: AppUser;
   items?: LineItem[];

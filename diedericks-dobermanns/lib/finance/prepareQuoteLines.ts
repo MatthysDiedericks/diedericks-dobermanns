@@ -19,13 +19,14 @@ export type DraftishLine = {
   unit_price: number;
   dog_id?: string | null;
   item_type: string;
+  allowZeroPrice?: boolean;
 };
 
 /**
  * Prepare quote lines for save:
  * - drop genuinely empty lines (no description, no price, no dog)
  * - default description from item type when a priced/dog line lacks one
- * - block with a named error when a line still cannot be saved
+ * - allow R0 when allowZeroPrice (included delivery)
  */
 export function prepareQuoteLinesForSave<T extends DraftishLine>(
   items: T[],
@@ -37,11 +38,12 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
     const desc = it.description.trim();
     const hasDog = Boolean(it.dog_id);
     const hasPrice = it.unit_price > 0;
+    const allowZero = Boolean(it.allowZeroPrice) && it.unit_price === 0;
     const lineNo = i + 1;
 
-    if (!desc && !hasPrice && !hasDog) continue;
+    if (!desc && !hasPrice && !hasDog && !allowZero) continue;
 
-    if (!desc && (hasPrice || hasDog)) {
+    if (!desc && (hasPrice || hasDog || allowZero)) {
       kept.push({
         ...it,
         description: defaultDescriptionForType(it.item_type),
@@ -49,7 +51,7 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
       continue;
     }
 
-    if (desc && !hasPrice && !hasDog) {
+    if (desc && !hasPrice && !hasDog && !allowZero) {
       return {
         ok: false,
         error: `Line ${lineNo} has a description but no price. Add an amount, or remove the line.`,

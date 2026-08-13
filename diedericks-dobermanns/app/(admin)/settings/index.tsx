@@ -47,6 +47,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            Quote catalogue
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            What you sell — crates, certificates, delivery, training — for the quote picker.
+          </Typography>
+          <Button
+            label="Manage catalogue"
+            variant="outline"
+            onPress={() => router.push('/(admin)/settings/catalogue' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Notifications
           </Typography>
           <Button

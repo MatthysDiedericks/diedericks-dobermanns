@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 
+import { LastChargedHint } from '@/components/finance/LastChargedHint';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
@@ -73,11 +74,6 @@ export function LineItemRow({
         className="min-h-[56px]"
         maxLength={500}
       />
-      {item.description.length >= 400 ? (
-        <Typography variant="caption" className="mb-2 text-right text-silver">
-          {item.description.length}/500
-        </Typography>
-      ) : null}
       <View className="flex-row gap-3">
         <Input
           containerClassName="mb-0 flex-1"
@@ -94,6 +90,10 @@ export function LineItemRow({
           onChangeText={(v) => onUpdate(item.key, { unit_price: Number(v) || 0 })}
         />
       </View>
+      <LastChargedHint
+        catalogueCode={item.catalogue_code}
+        onPickAmount={(amount) => onUpdate(item.key, { unit_price: amount })}
+      />
       <Typography variant="caption" className="mt-2 text-right">
         Line total: {formatPrice(item.quantity * item.unit_price)}
       </Typography>
