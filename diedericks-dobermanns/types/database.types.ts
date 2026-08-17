@@ -2830,6 +2830,10 @@ export type Database = {
           dog_id: string
           estrus_start_date: string | null
           expected_whelp_date: string | null
+          forecast_basis: string | null
+          forecast_offset_days: number | null
+          forecast_range_earliest: string | null
+          forecast_range_latest: string | null
           go_home_earliest: string | null
           go_home_latest: string | null
           heat_end_date: string | null
@@ -2851,8 +2855,10 @@ export type Database = {
           sire_id: string | null
           status: string
           updated_at: string
+          whelp_date_basis: string | null
           whelp_date_earliest: string | null
           whelp_date_latest: string | null
+          whelp_date_locked: boolean
         }
         Insert: {
           actual_cycle_length_days?: number | null
@@ -2863,6 +2869,10 @@ export type Database = {
           dog_id: string
           estrus_start_date?: string | null
           expected_whelp_date?: string | null
+          forecast_basis?: string | null
+          forecast_offset_days?: number | null
+          forecast_range_earliest?: string | null
+          forecast_range_latest?: string | null
           go_home_earliest?: string | null
           go_home_latest?: string | null
           heat_end_date?: string | null
@@ -2884,8 +2894,10 @@ export type Database = {
           sire_id?: string | null
           status?: string
           updated_at?: string
+          whelp_date_basis?: string | null
           whelp_date_earliest?: string | null
           whelp_date_latest?: string | null
+          whelp_date_locked?: boolean
         }
         Update: {
           actual_cycle_length_days?: number | null
@@ -2896,6 +2908,10 @@ export type Database = {
           dog_id?: string
           estrus_start_date?: string | null
           expected_whelp_date?: string | null
+          forecast_basis?: string | null
+          forecast_offset_days?: number | null
+          forecast_range_earliest?: string | null
+          forecast_range_latest?: string | null
           go_home_earliest?: string | null
           go_home_latest?: string | null
           heat_end_date?: string | null
@@ -2917,8 +2933,10 @@ export type Database = {
           sire_id?: string | null
           status?: string
           updated_at?: string
+          whelp_date_basis?: string | null
           whelp_date_earliest?: string | null
           whelp_date_latest?: string | null
+          whelp_date_locked?: boolean
         }
         Relationships: [
           {
@@ -4539,9 +4557,11 @@ export type Database = {
           id: string
           item_type: string
           line_total: number | null
+          litter_id: string | null
           quantity: number
           quote_id: string
           sort_order: number
+          subject_kind: string
           unit_price: number
         }
         Insert: {
@@ -4551,9 +4571,11 @@ export type Database = {
           id?: string
           item_type: string
           line_total?: number | null
+          litter_id?: string | null
           quantity?: number
           quote_id: string
           sort_order?: number
+          subject_kind?: string
           unit_price?: number
         }
         Update: {
@@ -4563,9 +4585,11 @@ export type Database = {
           id?: string
           item_type?: string
           line_total?: number | null
+          litter_id?: string | null
           quantity?: number
           quote_id?: string
           sort_order?: number
+          subject_kind?: string
           unit_price?: number
         }
         Relationships: [
@@ -4574,6 +4598,13 @@ export type Database = {
             columns: ["dog_id"]
             isOneToOne: false
             referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
             referencedColumns: ["id"]
           },
           {
@@ -4759,6 +4790,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
             referencedColumns: ["id"]
           },
           {
@@ -6823,3 +6861,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

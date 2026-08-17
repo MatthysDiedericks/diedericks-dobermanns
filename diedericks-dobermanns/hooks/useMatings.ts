@@ -9,10 +9,11 @@ async function refreshCycleWhelpDates(cycleId: string) {
   const client = requireSupabase();
   const { data: cycle } = await client
     .from('heat_cycles')
-    .select('ovulation_date, mating_date, heat_start_date, expected_whelp_date')
+    .select('ovulation_date, mating_date, heat_start_date, expected_whelp_date, whelp_date_locked, whelp_date_basis')
     .eq('id', cycleId)
     .maybeSingle();
   if (!cycle) return;
+  if (cycle.whelp_date_locked || cycle.whelp_date_basis === 'manual') return;
 
   const { data: matings } = await client
     .from('matings')
@@ -38,6 +39,7 @@ async function refreshCycleWhelpDates(cycleId: string) {
       expected_whelp_date: window.expected,
       whelp_date_earliest: window.earliest,
       whelp_date_latest: window.latest,
+      whelp_date_basis: window.basis,
       go_home_earliest: goHome.earliest,
       go_home_latest: goHome.latest,
     })

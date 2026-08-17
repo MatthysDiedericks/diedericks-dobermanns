@@ -32,21 +32,42 @@ export interface GoHomeWindow {
   latest: string;
 }
 
+const AUTO_OVULATION_OFFSET_DAYS = 11;
+
 export function whelpWindow(
   ovulationDate: string | null | undefined,
   matingDate: string | null | undefined,
   expectedWhelpDate?: string | null,
   heatStartDate?: string | null,
   lastMatingDate?: string | null,
+  storedBasis?: string | null,
 ): WhelpWindow {
-  if (ovulationDate) {
+  if (storedBasis === 'manual' && expectedWhelpDate) {
+    return {
+      earliest: addDays(expectedWhelpDate, -4),
+      expected: expectedWhelpDate,
+      latest: addDays(expectedWhelpDate, 4),
+      basis: 'stored_expected',
+      basisLabel: 'typed by hand — not recalculated.',
+    };
+  }
+
+  const autoOvulation = heatStartDate
+    ? addDays(heatStartDate, AUTO_OVULATION_OFFSET_DAYS)
+    : null;
+  const ovulationLooksReal = Boolean(ovulationDate && ovulationDate !== autoOvulation);
+  const useOvulation =
+    storedBasis === 'ovulation' ||
+    (storedBasis !== 'last_mating' && storedBasis !== 'heat_start' && ovulationLooksReal);
+
+  if (useOvulation && ovulationDate) {
     return {
       earliest: addDays(ovulationDate, 60),
       expected: addDays(ovulationDate, 63),
       latest: addDays(ovulationDate, 66),
       basis: 'ovulation',
       basisLabel:
-        '63 days from ovulation (±3 days). Confirm with reverse progesterone if the window matters.',
+        '63 days from ovulation (±3). Confirm with reverse progesterone if the window matters.',
     };
   }
 
@@ -58,7 +79,7 @@ export function whelpWindow(
       latest: addDays(mating, 65),
       basis: 'last_mating',
       basisLabel:
-        '63 days from mating (±4 days). Confirm ovulation by progesterone to narrow this.',
+        '63 days from mating (±4). Confirm ovulation by progesterone to narrow this.',
     };
   }
 
@@ -94,5 +115,5 @@ export function goHomeWindow(expectedWhelpDate: string): GoHomeWindow {
 
 /** Format a due-date line that always states its basis. */
 export function formatDueBasis(window: WhelpWindow, formatDate: (iso: string) => string): string {
-  return `Due ${formatDate(window.expected)} (${window.basisLabel})`;
+  return `Due ${formatDate(window.expected)} — ${window.basisLabel}`;
 }

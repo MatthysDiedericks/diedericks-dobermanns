@@ -22,6 +22,7 @@ import {
 } from '@/hooks/useHeatCycles';
 import { parseDateInput } from '@/lib/dogDetail/feedback';
 import { breedingWindowEnd, daysUntil, isActiveHeat } from '@/lib/heats/calculations';
+import { goHomeWindow, whelpWindow } from '@/lib/dogs/whelpDates';
 import type { HeatCycleRecord } from '@/lib/heats/constants';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { Dog } from '@/types/app.types';
@@ -30,6 +31,7 @@ interface HeatCurrentTabProps {
   dog: Dog | null;
   dogId: string;
   cycles: HeatCycleRecord[];
+  lastMating?: string | null;
   onRefresh: () => void;
 }
 
@@ -63,7 +65,13 @@ function StaticRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTabProps) {
+export function HeatCurrentTab({
+  dog,
+  dogId,
+  cycles,
+  lastMating,
+  onRefresh,
+}: HeatCurrentTabProps) {
   const { defaults } = useBreedDefaults();
   const confirmHeat = useConfirmHeat();
   const updateCycle = useUpdateHeatCycle();
@@ -83,6 +91,15 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
     ovulation && parseDateInput(ovulation)
       ? `${formatKennelDate(ovulation)} – ${formatKennelDate(breedingWindowEnd(ovulation))}`
       : null;
+  const whelp = whelpWindow(
+    cycle?.ovulation_date,
+    cycle?.mating_date,
+    cycle?.expected_whelp_date,
+    cycle?.heat_start_date,
+    lastMating,
+    cycle?.whelp_date_basis,
+  );
+  const goHome = goHomeWindow(whelp.expected);
 
   const cycleId = cycle?.id;
 
@@ -156,7 +173,11 @@ export function HeatCurrentTab({ dog, dogId, cycles, onRefresh }: HeatCurrentTab
         <DateRow label="Estrus start (fertile)" date={cycle.estrus_start_date} />
         <DateRow label="Ovulation (est.)" date={cycle.ovulation_date} />
         <StaticRow label="Optimal breeding window" value={breedingWindow} />
-        <DateRow label="Expected whelp" date={cycle.expected_whelp_date} />
+        <DateRow label="Expected whelp" date={whelp.expected} />
+        <StaticRow label="Whelp basis" value={whelp.basisLabel} />
+        {cycle.pregnancy_status === 'pregnant' || cycle.status === 'confirmed_pregnant' ? (
+          <DateRow label="Go home" date={cycle.go_home_earliest ?? goHome.standard} />
+        ) : null}
       </Card>
 
       <Card className="mb-4">

@@ -1,45 +1,32 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-  autoHeatDates,
-  computeIsOverdue,
-  daysSince,
-  daysUntil,
   isActiveHeat,
   parseProgesteroneTests,
   withOverdueFlag,
-  addDays,
 } from '@/lib/heats/calculations';
 import { notifyCalendarRefresh } from '@/lib/calendar/refresh';
 import {
   BREED_DEFAULTS_SELECT,
+  DOBERMANN_DEFAULTS,
   HEAT_CYCLE_SELECT,
   type BreedHeatDefaults,
   type FemaleHeatSummary,
   type HeatCycleRecord,
   type ProgesteroneTest,
 } from '@/lib/heats/constants';
+import { recordActualHeat } from '@/lib/heats/recordHeat';
+import { buildFemaleHeatSummary, sortBreedingFemales } from '@/lib/heats/summaries';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { requireSupabase } from '@/lib/supabase';
-import type { Json, TablesInsert, TablesUpdate } from '@/types/database.types';
-
-const DOBERMANN_DEFAULTS: BreedHeatDefaults = {
-  id: 'default',
-  breed: 'Dobermann',
-  avg_cycle_days: 180,
-  ovulation_offset_days: 11,
-  proestrus_days: 9,
-  estrus_days: 7,
-  diestrus_days: 75,
-  anestrus_days: 89,
-  gestation_days: 63,
-};
+import type { Json, TablesUpdate } from '@/types/database.types';
 
 function mapCycle(row: Record<string, unknown>): HeatCycleRecord {
   return withOverdueFlag({
     ...(row as unknown as HeatCycleRecord),
     progesterone_tests: parseProgesteroneTests(row.progesterone_tests),
     is_predicted: Boolean(row.is_predicted),
+    whelp_date_locked: Boolean(row.whelp_date_locked),
   });
 }
 
@@ -133,9 +120,9 @@ export function useFemaleHeatSummaries() {
       const client = requireSupabase();
       const { data: dogs, error: dErr } = await client
         .from('dogs')
-        .select('id, name, dog_media(url, is_primary)')
+        .select('id, name, date_of_birth, dog_media(url, is_primary)')
         .eq('sex', 'female')
-        .in('status', ['keep'])
+        .or('category.eq.breeding_stock,status.eq.breeding_stock,status.eq.stud,status.eq.keep')
         .order('name');
       if (dErr) throw new Error(dErr.message);
 
@@ -152,6 +139,14 @@ export function useFemaleHeatSummaries() {
         .order('heat_start_date', { ascending: false });
       if (hErr) throw new Error(hErr.message);
 
+      const { data: defaultsRow } = await client
+        .from('breed_heat_defaults')
+        .select(BREED_DEFAULTS_SELECT)
+        .ilike('breed', '%dober%')
+        .limit(1)
+        .maybeSingle();
+      const defaults = (defaultsRow as BreedHeatDefaults | null) ?? DOBERMANN_DEFAULTS;
+
       const byDog = new Map<string, HeatCycleRecord[]>();
       for (const row of heats ?? []) {
         const c = mapCycle(row as unknown as Record<string, unknown>);
@@ -160,35 +155,43 @@ export function useFemaleHeatSummaries() {
         byDog.set(c.dog_id, arr);
       }
 
+      const litterIds = [
+        ...new Set(
+          (heats ?? [])
+            .map((h) => (h as { resulting_litter_id?: string | null }).resulting_litter_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const litterGoHome: Record<string, string | null> = {};
+      if (litterIds.length) {
+        const { data: litters } = await client
+          .from('litters')
+          .select('id, go_home_date')
+          .in('id', litterIds);
+        for (const row of litters ?? []) {
+          litterGoHome[row.id] = row.go_home_date;
+        }
+      }
+
       setSummaries(
-        (dogs ?? []).map((dog) => {
-          const media =
-            (dog.dog_media as unknown as { url: string; is_primary: boolean }[] | null) ?? [];
-          const photo =
-            media.find((m) => m.is_primary)?.url ?? media[0]?.url ?? null;
-          const cycles = byDog.get(dog.id) ?? [];
-          const activeHeat = cycles.find(isActiveHeat) ?? null;
-          const nextPredicted =
-            cycles
-              .filter((c) => c.is_predicted)
-              .sort((a, b) => a.heat_start_date.localeCompare(b.heat_start_date))[0] ??
-            null;
-          const isOverdue = nextPredicted ? computeIsOverdue(nextPredicted) : false;
-          return {
-            id: dog.id,
-            name: dog.name,
-            photoUrl: photo,
-            activeHeat,
-            nextPredicted,
-            isOverdue,
-            daysInHeat: activeHeat ? daysSince(activeHeat.heat_start_date) : null,
-            daysUntilNext: nextPredicted ? daysUntil(nextPredicted.heat_start_date) : null,
-            daysOverdue:
-              isOverdue && nextPredicted
-                ? Math.abs(daysUntil(nextPredicted.heat_start_date) ?? 0)
-                : null,
-          };
-        }),
+        sortBreedingFemales(
+          (dogs ?? []).map((dog) => {
+            const media =
+              (dog.dog_media as unknown as { url: string; is_primary: boolean }[] | null) ?? [];
+            const photo = media.find((m) => m.is_primary)?.url ?? media[0]?.url ?? null;
+            return buildFemaleHeatSummary(
+              {
+                id: dog.id,
+                name: dog.name,
+                photoUrl: photo,
+                dateOfBirth: (dog as { date_of_birth?: string | null }).date_of_birth,
+              },
+              byDog.get(dog.id) ?? [],
+              defaults,
+              litterGoHome,
+            );
+          }),
+        ),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load heats');
@@ -206,56 +209,32 @@ export function useFemaleHeatSummaries() {
 }
 
 export function useAddHeatCycle() {
-  const { defaults } = useBreedDefaults();
-
   return useCallback(
-    async (dogId: string, heatStart: string, extra?: Partial<HeatCycleRecord>) => {
-      const client = requireSupabase();
-      const auto = autoHeatDates(heatStart, defaults);
-      const { error } = await client.from('heat_cycles').insert({
-        dog_id: dogId,
-        heat_start_date: heatStart,
-        proestrus_start_date: extra?.proestrus_start_date ?? auto.proestrus_start_date,
-        estrus_start_date: extra?.estrus_start_date ?? auto.estrus_start_date,
-        ovulation_date: extra?.ovulation_date ?? auto.ovulation_date,
-        expected_whelp_date: extra?.expected_whelp_date ?? auto.expected_whelp_date,
-        heat_end_date: extra?.heat_end_date ?? null,
-        status: extra?.status ?? 'in_heat',
-        is_predicted: false,
-        notes: extra?.notes ?? null,
-      } satisfies TablesInsert<'heat_cycles'>);
-      if (error) {
-        console.error('[useAddHeatCycle]', error.message);
-        showError(error.message);
-        throw new Error(error.message);
-      }
-
-      const { data: existingPredicted } = await client
-        .from('heat_cycles')
-        .select('id')
-        .eq('dog_id', dogId)
-        .eq('is_predicted', true)
-        .gte('heat_start_date', heatStart)
-        .limit(1);
-      if (!existingPredicted?.length) {
-        const nextStart = addDays(heatStart, defaults.avg_cycle_days);
-        const nextAuto = autoHeatDates(nextStart, defaults);
-        await client.from('heat_cycles').insert({
+    async (
+      dogId: string,
+      heatStart: string,
+      extra?: Partial<HeatCycleRecord> & { mated?: boolean },
+    ) => {
+      try {
+        const result = await recordActualHeat({
           dog_id: dogId,
-          heat_start_date: nextStart,
-          proestrus_start_date: nextAuto.proestrus_start_date,
-          estrus_start_date: nextAuto.estrus_start_date,
-          ovulation_date: nextAuto.ovulation_date,
-          expected_whelp_date: nextAuto.expected_whelp_date,
-          is_predicted: true,
-          status: 'predicted',
-        } satisfies TablesInsert<'heat_cycles'>);
+          heat_start_date: heatStart,
+          heat_end_date: extra?.heat_end_date,
+          notes: extra?.notes,
+          mated: extra?.mated,
+          status: extra?.status,
+        });
+        showSaved(result.offsetMessage ?? undefined);
+        notifyCalendarRefresh();
+        return result;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Could not save heat cycle.';
+        console.error('[useAddHeatCycle]', message);
+        showError(message);
+        throw e;
       }
-
-      showSaved();
-      notifyCalendarRefresh();
     },
-    [defaults],
+    [],
   );
 }
 
@@ -273,7 +252,22 @@ export function useUpdateHeatCycle() {
 
 export function useConfirmHeat() {
   return useCallback(async (id: string, actualStart: string, notes?: string) => {
-    const { error } = await requireSupabase()
+    const client = requireSupabase();
+    const { data: existing } = await client
+      .from('heat_cycles')
+      .select('heat_start_date, is_predicted')
+      .eq('id', id)
+      .maybeSingle();
+    const predictedStart = existing?.is_predicted ? existing.heat_start_date : null;
+    const offset =
+      predictedStart != null
+        ? Math.round(
+            (new Date(`${actualStart}T00:00:00`).getTime() -
+              new Date(`${predictedStart}T00:00:00`).getTime()) /
+              86_400_000,
+          )
+        : null;
+    const { error } = await client
       .from('heat_cycles')
       .update({
         is_predicted: false,
@@ -281,6 +275,8 @@ export function useConfirmHeat() {
         heat_start_date: actualStart,
         status: 'in_heat',
         notes: notes?.trim() || null,
+        ovulation_date: null,
+        forecast_offset_days: offset,
       })
       .eq('id', id);
     if (error) {
@@ -288,7 +284,13 @@ export function useConfirmHeat() {
       showError();
       throw new Error(error.message);
     }
-    showSaved();
+    const message =
+      offset == null || offset === 0
+        ? undefined
+        : offset < 0
+          ? `Came into season ${Math.abs(offset)} days earlier than forecast — forecast updated.`
+          : `Came into season ${offset} days later than forecast — forecast updated.`;
+    showSaved(message);
   }, []);
 }
 

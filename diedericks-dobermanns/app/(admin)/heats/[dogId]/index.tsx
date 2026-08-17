@@ -52,6 +52,7 @@ export default function DogHeatDetailScreen() {
             cycle.expected_whelp_date,
             cycle.heat_start_date,
             lastMating,
+            cycle.whelp_date_basis,
           )
         : null,
     [cycle, lastMating],
@@ -109,6 +110,7 @@ export default function DogHeatDetailScreen() {
               dog={dog}
               dogId={id}
               cycles={cycles}
+              lastMating={lastMating}
               onRefresh={() => void refreshRef.current()}
             />
             {cycle && whelp ? (
@@ -133,7 +135,7 @@ export default function DogHeatDetailScreen() {
         ) : tab === 'history' ? (
           <HeatHistoryTab cycles={cycles} />
         ) : (
-          <HeatPredictionsTab dogId={id} cycles={cycles} />
+          <HeatPredictionsTab cycles={cycles} dateOfBirth={dog?.date_of_birth} />
         )}
       </ScrollView>
     </ScreenContainer>

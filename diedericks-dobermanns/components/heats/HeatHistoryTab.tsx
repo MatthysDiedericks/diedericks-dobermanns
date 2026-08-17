@@ -4,6 +4,7 @@ import { FlatList, View } from 'react-native';
 import { CycleHistoryRow } from '@/components/heats/CycleHistoryRow';
 import { Typography } from '@/components/ui/Typography';
 import { personalCycleAverage } from '@/lib/heats/calculations';
+import { intervalBefore } from '@/lib/heats/forecast';
 import type { HeatCycleRecord } from '@/lib/heats/constants';
 
 interface HeatHistoryTabProps {
@@ -29,6 +30,7 @@ export function HeatHistoryTab({ cycles }: HeatHistoryTabProps) {
           renderItem={({ item }) => (
             <CycleHistoryRow
               cycle={item}
+              intervalDays={intervalBefore(item, confirmed)}
               expanded={expandedId === item.id}
               onPress={() => setExpandedId((id) => (id === item.id ? null : item.id))}
             />

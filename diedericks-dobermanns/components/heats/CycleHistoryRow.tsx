@@ -8,11 +8,12 @@ import { formatKennelDate } from '@/lib/kennel/formatters';
 
 interface CycleHistoryRowProps {
   cycle: HeatCycleRecord;
+  intervalDays?: number | null;
   expanded?: boolean;
   onPress?: () => void;
 }
 
-export function CycleHistoryRow({ cycle, expanded, onPress }: CycleHistoryRowProps) {
+export function CycleHistoryRow({ cycle, intervalDays, expanded, onPress }: CycleHistoryRowProps) {
   return (
     <Pressable onPress={onPress} className="mb-2 rounded-xl border border-gold/15 bg-surface p-3">
       <View className="flex-row items-center justify-between">
@@ -24,7 +25,12 @@ export function CycleHistoryRow({ cycle, expanded, onPress }: CycleHistoryRowPro
         )}
       </View>
       <Typography variant="caption" className="mt-1 text-muted">
-        Cycle length: {cycle.actual_cycle_length_days != null ? `${cycle.actual_cycle_length_days} days` : '—'}
+        Cycle length:{' '}
+        {intervalDays != null
+          ? `${intervalDays} days`
+          : cycle.actual_cycle_length_days != null
+            ? `${cycle.actual_cycle_length_days} days`
+            : '—'}
         {' · '}Mating: {cycle.mating_date ? '✓' : '—'}
         {' · '}Litter: {cycle.resulting_litter_id ? '✓' : '—'}
       </Typography>

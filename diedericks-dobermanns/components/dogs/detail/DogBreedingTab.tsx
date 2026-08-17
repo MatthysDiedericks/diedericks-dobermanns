@@ -7,18 +7,20 @@ import { BreedingProgrammeSection } from '@/components/dogs/detail/BreedingProgr
 import { DetailRow } from '@/components/dogs/detail/DetailRow';
 import { EmptyTabState } from '@/components/dogs/detail/EmptyTabState';
 import { SectionCard } from '@/components/dogs/detail/SectionCard';
+import { AddPastHeatForm } from '@/components/heats/AddPastHeatForm';
 import { HeatStatusBadge } from '@/components/heats/HeatStatusBadge';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import {
   useActiveHeat,
+  useBreedDefaults,
   useHeatCyclesForDog,
-  useNextPredictedHeat,
 } from '@/hooks/useHeatCycles';
 import { requireSupabase } from '@/lib/supabase';
 import { formatKennelDate } from '@/lib/kennel/formatters';
-import { daysUntil } from '@/lib/heats/calculations';
+import { forecastFromHistory, goHomeForCycle, isPregnantCycle } from '@/lib/heats/forecast';
+import { formatDueBasis, whelpWindow } from '@/lib/dogs/whelpDates';
 import { titleCase } from '@/lib/format';
 import type { Dog } from '@/types/app.types';
 
@@ -31,13 +33,16 @@ interface LitterRow {
   puppy_count: number | null;
   available_count: number | null;
   litter_letter: string | null;
+  go_home_date: string | null;
 }
 
 export function DogBreedingTab({ dog }: { dog: Dog }) {
   const router = useRouter();
-  const { cycles, loading: heatsLoading } = useHeatCyclesForDog(dog.id);
+  const { cycles, loading: heatsLoading, refresh: refreshHeats } = useHeatCyclesForDog(dog.id);
   const { heat: activeHeat } = useActiveHeat(dog.id);
-  const { predicted: nextPredicted } = useNextPredictedHeat(dog.id);
+  const { defaults } = useBreedDefaults();
+  const forecast = forecastFromHistory(cycles, defaults, dog.date_of_birth);
+  const pregnant = cycles.find(isPregnantCycle) ?? null;
   const [litters, setLitters] = useState<LitterRow[]>([]);
   const [stats, setStats] = useState({ count: 0, puppies: 0, avg: 0 });
 
@@ -47,7 +52,7 @@ export function DogBreedingTab({ dog }: { dog: Dog }) {
       const { data, error } = await client
         .from('litters')
         .select(
-          'id, name, status, expected_date, actual_date, puppy_count, available_count, litter_letter',
+          'id, name, status, expected_date, actual_date, puppy_count, available_count, litter_letter, go_home_date',
         )
         .or(`mother_id.eq.${dog.id},father_id.eq.${dog.id}`)
         .order('actual_date', { ascending: false });
@@ -91,11 +96,40 @@ export function DogBreedingTab({ dog }: { dog: Dog }) {
                 No active heat
               </Typography>
             )}
-            {nextPredicted ? (
-              <DetailRow
-                label="Next predicted"
-                value={`${formatKennelDate(nextPredicted.heat_start_date)} (${daysUntil(nextPredicted.heat_start_date) ?? '—'} days)`}
-              />
+            {pregnant ? (
+              <>
+                <DetailRow
+                  label="Due"
+                  value={formatDueBasis(
+                    whelpWindow(
+                      pregnant.ovulation_date,
+                      pregnant.mating_date,
+                      pregnant.expected_whelp_date,
+                      pregnant.heat_start_date,
+                      null,
+                      pregnant.whelp_date_basis,
+                    ),
+                    formatKennelDate,
+                  )}
+                />
+                <DetailRow
+                  label="Go home"
+                  value={formatKennelDate(
+                    goHomeForCycle(
+                      pregnant,
+                      litters.find((l) => l.id === pregnant.resulting_litter_id)?.go_home_date,
+                    ),
+                  )}
+                />
+              </>
+            ) : null}
+            {forecast ? (
+              <>
+                <DetailRow label="Next heat" value={forecast.rangeLabel.replace('Expected ', '')} />
+                <Typography variant="caption" className="mb-2 text-muted">
+                  {forecast.basisLabel}
+                </Typography>
+              </>
             ) : null}
             <Button
               label="View Full Heat History →"
@@ -104,6 +138,10 @@ export function DogBreedingTab({ dog }: { dog: Dog }) {
               fullWidth
               className="mt-3"
             />
+          </SectionCard>
+
+          <SectionCard title="Add past heat">
+            <AddPastHeatForm dogId={dog.id} onSaved={() => void refreshHeats()} />
           </SectionCard>
 
           <AccordionSection title="Recent heats" count={Math.min(cycles.length, 3)} defaultOpen>

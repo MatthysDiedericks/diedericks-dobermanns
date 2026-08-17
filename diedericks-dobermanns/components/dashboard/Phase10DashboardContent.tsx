@@ -36,7 +36,7 @@ export function Phase10DashboardContent() {
         >
           <QuickStatsRow />
           <LitterWidgets />
-          <HeatWidgets upcoming={data.upcomingHeats} inHeat={data.inHeat} />
+          <HeatWidgets />
           <EnquiryWidget enquiries={data.enquiries} />
           <TodoWidget todos={data.todos} onComplete={completeTodo} />
         </ScrollView>

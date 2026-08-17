@@ -107,6 +107,11 @@ export function PregnancyControl({
           <Typography variant="caption" className="mt-1 text-muted">
             {formatDueBasis(whelp, formatKennelDate)}
           </Typography>
+          {cycle.go_home_earliest ? (
+            <Typography variant="caption" className="mt-1 text-gold">
+              Go home {formatKennelDate(cycle.go_home_earliest)}
+            </Typography>
+          ) : null}
         </View>
       ) : null}
 

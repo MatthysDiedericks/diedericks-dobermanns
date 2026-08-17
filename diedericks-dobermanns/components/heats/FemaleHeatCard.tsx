@@ -6,7 +6,6 @@ import { Animated, Pressable, View } from 'react-native';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { FemaleHeatSummary } from '@/lib/heats/constants';
-import { formatKennelDate } from '@/lib/kennel/formatters';
 
 interface FemaleHeatCardProps {
   summary: FemaleHeatSummary;
@@ -36,7 +35,7 @@ function PulsingDot() {
 }
 
 export function FemaleHeatCard({ summary, onPress }: FemaleHeatCardProps) {
-  const { activeHeat, nextPredicted, isOverdue, daysInHeat, daysUntilNext, daysOverdue } =
+  const { activeHeat, isOverdue, daysInHeat, daysUntilNext } =
     summary;
 
   let statusLine: React.ReactNode;
@@ -49,30 +48,35 @@ export function FemaleHeatCard({ summary, onPress }: FemaleHeatCardProps) {
         </Typography>
       </View>
     );
-  } else if (isOverdue && nextPredicted) {
+  } else if (summary.pregnantCycle) {
+    statusLine = (
+      <Typography variant="caption" className="text-gold">
+        {summary.statusDetail}
+      </Typography>
+    );
+  } else if (isOverdue) {
     statusLine = (
       <View className="flex-row items-center gap-2">
         <Ionicons name="warning" size={14} color="#fb923c" />
         <Typography variant="caption" style={{ color: '#fb923c' }}>
-          Overdue — expected {formatKennelDate(nextPredicted.heat_start_date)},{' '}
-          {daysOverdue} days late
+          {summary.statusDetail}
         </Typography>
       </View>
     );
-  } else if (nextPredicted) {
+  } else if (summary.forecastRangeLabel) {
     statusLine = (
       <View className="flex-row items-center gap-2">
         <Ionicons name="time-outline" size={14} color={Colors.gold} />
         <Typography variant="caption" className="text-muted">
-          Next heat: {formatKennelDate(nextPredicted.heat_start_date)}
-          {daysUntilNext != null ? ` (in ${daysUntilNext} days)` : ''}
+          {summary.forecastRangeLabel}
+          {daysUntilNext != null && daysUntilNext >= 0 ? ` (in ${daysUntilNext} days)` : ''}
         </Typography>
       </View>
     );
   } else {
     statusLine = (
       <Typography variant="caption" className="text-muted">
-        No heat history
+        {summary.statusDetail}
       </Typography>
     );
   }
