@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { DogCard } from '@/components/dogs/DogCard';
@@ -33,6 +33,14 @@ export default function PuppiesScreen() {
   return (
     <ScreenContainer>
       <PageHeader eyebrow="Next Generation" title="Puppies" back={false} />
+
+      <View className="mb-6 px-6">
+        <Link href="/elite-developed" asChild>
+          <Pressable>
+            <Typography variant="label">The Elite Developed Puppy Programme →</Typography>
+          </Pressable>
+        </Link>
+      </View>
 
       {nothingToShow ? (
         <View className="px-6">

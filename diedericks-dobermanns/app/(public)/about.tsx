@@ -23,6 +23,7 @@ const OFFERINGS = [
     icon: 'ribbon' as const,
     title: 'Elite Developed Puppies',
     body: 'We develop our Elite pups in-kennel until six months of age — an obedience foundation, an introduction to protection work, structured socialisation, and real-world environmental exposure most buyers could never replicate on their own. And we don\u2019t send a courier: we deliver personally and hand over formally, so you and your dog begin the right way.',
+    href: '/elite-developed' as const,
   },
   {
     icon: 'shield-checkmark' as const,
@@ -115,24 +116,36 @@ export default function AboutScreen() {
         <View className="mt-10">
           <SectionHeader eyebrow="Three Tiers" title="What We Offer" />
           <View className="gap-4">
-            {OFFERINGS.map((o) => (
-              <View
-                key={o.title}
-                className="rounded-2xl border border-gold/15 bg-black-rich p-5"
-              >
-                <View className="flex-row items-center">
-                  <View className="h-10 w-10 items-center justify-center rounded-full bg-gold/15">
-                    <Ionicons name={o.icon} size={20} color={Colors.gold} />
+            {OFFERINGS.map((o) => {
+              const inner = (
+                <View className="rounded-2xl border border-gold/15 bg-black-rich p-5">
+                  <View className="flex-row items-center">
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-gold/15">
+                      <Ionicons name={o.icon} size={20} color={Colors.gold} />
+                    </View>
+                    <Typography variant="subtitle" className="ml-4 flex-1 text-gold">
+                      {o.title}
+                    </Typography>
                   </View>
-                  <Typography variant="subtitle" className="ml-4 flex-1 text-gold">
-                    {o.title}
+                  <Typography variant="bodyMuted" className="mt-3">
+                    {o.body}
                   </Typography>
+                  {'href' in o && o.href ? (
+                    <Typography variant="label" className="mt-3">
+                      Read the programme →
+                    </Typography>
+                  ) : null}
                 </View>
-                <Typography variant="bodyMuted" className="mt-3">
-                  {o.body}
-                </Typography>
-              </View>
-            ))}
+              );
+              if ('href' in o && o.href) {
+                return (
+                  <Pressable key={o.title} onPress={() => router.push(o.href)}>
+                    {inner}
+                  </Pressable>
+                );
+              }
+              return <View key={o.title}>{inner}</View>;
+            })}
           </View>
         </View>
 

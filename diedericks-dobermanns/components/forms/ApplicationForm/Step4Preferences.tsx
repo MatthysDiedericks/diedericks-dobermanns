@@ -4,13 +4,15 @@ import { ControlledAgreement } from '@/components/forms/ApplicationForm/Agreemen
 import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fields';
 import { Typography } from '@/components/ui/Typography';
 import type { Control } from 'react-hook-form';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 interface StepProps {
   control: Control<ApplicationFormValues>;
 }
 
 export function Step4Preferences({ control }: StepProps) {
+  const router = useRouter();
   return (
     <View>
       <OptionGroup
@@ -23,6 +25,11 @@ export function Step4Preferences({ control }: StepProps) {
           { value: 'protection_dog', label: 'Fully Trained Protection Dog' },
         ]}
       />
+      <Pressable onPress={() => router.push('/elite-developed')} className="mb-4">
+        <Typography variant="caption" className="text-gold">
+          Elite Developed — what six months includes →
+        </Typography>
+      </Pressable>
       <OptionGroup
         control={control}
         name="purpose"

@@ -63,6 +63,7 @@ export default function PublicLayout() {
       <Tabs.Screen name="about" options={{ href: null }} />
       <Tabs.Screen name="breeding-stock" options={{ href: null }} />
       <Tabs.Screen name="training-philosophy" options={{ href: null }} />
+      <Tabs.Screen name="elite-developed" options={{ href: null }} />
       <Tabs.Screen name="achievements" options={{ href: null }} />
       <Tabs.Screen name="litters/index" options={{ href: null }} />
       <Tabs.Screen name="litters/[id]" options={{ href: null }} />

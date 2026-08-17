@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { Link } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -77,6 +78,11 @@ export default function TrainingPhilosophyScreen() {
             <Typography variant="bodyMuted">{d.body}</Typography>
           </Collapsible>
         ))}
+        <Link href="/elite-developed" asChild>
+          <Pressable className="mt-6">
+            <Typography variant="label">The Elite Developed Puppy Programme →</Typography>
+          </Pressable>
+        </Link>
       </View>
     </ScreenContainer>
   );

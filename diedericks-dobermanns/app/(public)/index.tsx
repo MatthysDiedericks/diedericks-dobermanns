@@ -28,6 +28,7 @@ const TIERS = [
   {
     title: 'Elite Developed Puppies',
     desc: '6-month in-kennel programme with personal delivery and full handover.',
+    href: '/elite-developed' as const,
   },
   {
     title: 'Elite Family Protection Dogs',
@@ -113,16 +114,31 @@ export default function HomeScreen() {
       <View className="px-6 pt-12">
         <SectionHeader eyebrow="Programmes" title="Three Ways In" />
         <View className="gap-3">
-          {TIERS.map((tier) => (
-            <Card key={tier.title}>
-              <Typography variant="subtitle" className="text-gold">
-                {tier.title}
-              </Typography>
-              <Typography variant="bodyMuted" className="mt-2">
-                {tier.desc}
-              </Typography>
-            </Card>
-          ))}
+          {TIERS.map((tier) => {
+            const card = (
+              <Card>
+                <Typography variant="subtitle" className="text-gold">
+                  {tier.title}
+                </Typography>
+                <Typography variant="bodyMuted" className="mt-2">
+                  {tier.desc}
+                </Typography>
+                {'href' in tier && tier.href ? (
+                  <Typography variant="label" className="mt-3">
+                    Read the programme →
+                  </Typography>
+                ) : null}
+              </Card>
+            );
+            if ('href' in tier && tier.href) {
+              return (
+                <Link key={tier.title} href={tier.href} asChild>
+                  <Pressable>{card}</Pressable>
+                </Link>
+              );
+            }
+            return <View key={tier.title}>{card}</View>;
+          })}
         </View>
       </View>
 
