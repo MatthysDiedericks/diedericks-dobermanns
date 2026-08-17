@@ -80,7 +80,19 @@ export default function TrainingPhilosophyScreen() {
         ))}
         <Link href={'/(public)/elite-developed' as Href} asChild>
           <Pressable className="mt-6">
-            <Typography variant="label">The Elite Developed Puppy Programme →</Typography>
+            <Card>
+              <Typography variant="subtitle" className="text-gold">
+                The Elite Developed Puppy Programme
+              </Typography>
+              <Typography variant="bodyMuted" className="mt-2">
+                From day three until six months: Puppy Culture, foundation,
+                home obedience, socialisation, and protection foundation. The
+                dog sets the pace.
+              </Typography>
+              <Typography variant="label" className="mt-3">
+                Read the full programme →
+              </Typography>
+            </Card>
           </Pressable>
         </Link>
       </View>

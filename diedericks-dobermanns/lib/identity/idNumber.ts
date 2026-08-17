@@ -1,3 +1,5 @@
+/** ID format checks. Flag, never block.
+ *  Keep in lockstep with diedericksdobermann-web/src/lib/identity/idNumber.ts */
 export const ID_TYPES = ["sa_id", "passport", "other_national_id"] as const;
 export type IdType = (typeof ID_TYPES)[number];
 
