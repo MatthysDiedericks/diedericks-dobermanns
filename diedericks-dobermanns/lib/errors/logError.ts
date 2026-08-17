@@ -6,6 +6,7 @@ import {
 } from '@/lib/errors/codes';
 import { drainErrorEventQueue, enqueueErrorEvent, type QueuedErrorRow } from '@/lib/errors/offlineQueue';
 import { emailDomainOnly, sanitizeDetail } from '@/lib/errors/sanitize';
+import { appErrorMeta } from '@/lib/errors/appMeta';
 import { getErrorSessionRef } from '@/lib/errors/sessionRef';
 import { requireSupabase, supabase } from '@/lib/supabase';
 
@@ -27,14 +28,21 @@ export type LogErrorInput = {
 };
 
 function buildRow(input: LogErrorInput, actorRole: string, actorId: string | null): QueuedErrorRow {
+  const meta = appErrorMeta(input.route);
+  const detail = sanitizeDetail({
+    ...(input.detail ?? {}),
+    screen: meta.screen,
+    app_version: meta.app_version,
+    build: meta.build,
+  });
   return {
     code: String(input.code).slice(0, 120),
     area: input.area,
     severity: input.severity ?? 'error',
     message: input.message?.slice(0, 2000) ?? null,
-    detail: sanitizeDetail(input.detail ?? null),
+    detail,
     surface: input.surface ?? 'app',
-    route: input.route?.slice(0, 500) ?? null,
+    route: input.route?.slice(0, 500) ?? meta.screen,
     actor_role: actorRole,
     actor_id: actorId,
     email_domain:

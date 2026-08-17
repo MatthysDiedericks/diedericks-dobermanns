@@ -2447,6 +2447,7 @@ export type Database = {
           area: string
           code: string
           detail: Json | null
+          digest: string | null
           email_domain: string | null
           entity_id: string | null
           entity_type: string | null
@@ -2467,6 +2468,7 @@ export type Database = {
           area: string
           code: string
           detail?: Json | null
+          digest?: string | null
           email_domain?: string | null
           entity_id?: string | null
           entity_type?: string | null
@@ -2487,6 +2489,7 @@ export type Database = {
           area?: string
           code?: string
           detail?: Json | null
+          digest?: string | null
           email_domain?: string | null
           entity_id?: string | null
           entity_type?: string | null
@@ -3276,6 +3279,7 @@ export type Database = {
           admin_notes: string | null
           created_at: string
           detail: string | null
+          digest: string | null
           error_message: string | null
           error_stack: string | null
           fingerprint: string | null
@@ -3298,6 +3302,7 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           detail?: string | null
+          digest?: string | null
           error_message?: string | null
           error_stack?: string | null
           fingerprint?: string | null
@@ -3320,6 +3325,7 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           detail?: string | null
+          digest?: string | null
           error_message?: string | null
           error_stack?: string | null
           fingerprint?: string | null
@@ -6631,6 +6637,7 @@ export type Database = {
       capture_issue: {
         Args: {
           p_detail?: string
+          p_digest?: string
           p_error_message?: string
           p_error_stack?: string
           p_page_path: string

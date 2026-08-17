@@ -67,7 +67,17 @@ type Row = {
   session_ref: string | null;
   email_domain: string | null;
   detail: { specific_code?: string } | null;
+  digest: string | null;
   occurred_at: string;
+};
+
+type IssueRow = {
+  id: string;
+  digest: string | null;
+  fingerprint: string | null;
+  page_path: string | null;
+  title: string;
+  occurrence_count: number;
 };
 
 Deno.serve(async (req) => {
@@ -79,7 +89,7 @@ Deno.serve(async (req) => {
     const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const { data, error } = await admin
       .from('error_events')
-      .select('id, code, area, severity, message, session_ref, email_domain, detail, occurred_at')
+      .select('id, code, area, severity, message, session_ref, email_domain, detail, digest, occurred_at')
       .is('resolved_at', null)
       .gte('occurred_at', since)
       .order('occurred_at', { ascending: false })
@@ -87,35 +97,70 @@ Deno.serve(async (req) => {
     if (error) throw new Error(error.message);
 
     const rows = (data ?? []) as Row[];
-    if (rows.length === 0) {
+
+    const { data: issues } = await admin
+      .from('issue_reports')
+      .select('id, digest, fingerprint, page_path, title, occurrence_count')
+      .eq('source', 'captured')
+      .in('status', ['open', 'investigating'])
+      .gte('last_seen_at', since)
+      .limit(200);
+    const captured = (issues ?? []) as IssueRow[];
+
+    if (rows.length === 0 && captured.length === 0) {
       return json({ ok: true, events: 0, emailsSent: 0, skipped: 'clean_day' });
     }
 
-    const byCode = new Map<string, Row[]>();
+    const byDigest = new Map<string, Row[]>();
     for (const r of rows) {
-      const key = r.detail?.specific_code || r.code;
-      const list = byCode.get(key) ?? [];
+      const key = r.digest || r.detail?.specific_code || r.code;
+      const list = byDigest.get(key) ?? [];
       list.push(r);
-      byCode.set(key, list);
+      byDigest.set(key, list);
     }
 
-    const lines = [...byCode.entries()]
-      .map(([code, list]) => {
+    const eventLines = [...byDigest.entries()]
+      .map(([key, list]) => {
         const people = new Set(list.map((e) => e.session_ref || e.email_domain || `id:${e.id}`));
-        return `<li><strong>${code}</strong> — ${list.length} event(s), ${people.size} people · ${list[0]?.severity}</li>`;
+        const digestNote = list[0]?.digest
+          ? `digest ${list[0].digest} — search this in Vercel → Logs`
+          : key;
+        return `<li><strong>${digestNote}</strong> — ${list.length} event(s), ${people.size} people · ${list[0]?.severity}</li>`;
       })
       .join('');
 
-    const subject = `Error trail — ${rows.length} unresolved in 24h (${byCode.size} codes)`;
+    const byIssueDigest = new Map<string, IssueRow[]>();
+    for (const r of captured) {
+      const key = r.digest || r.fingerprint || r.id;
+      const list = byIssueDigest.get(key) ?? [];
+      list.push(r);
+      byIssueDigest.set(key, list);
+    }
+
+    const issueLines = [...byIssueDigest.entries()]
+      .map(([key, list]) => {
+        const times = list.reduce((n, r) => n + (r.occurrence_count || 1), 0);
+        const path = list[0]?.page_path ?? '/';
+        const digestNote = list[0]?.digest
+          ? `Digest ${list[0].digest} — ${path} ×${times}. Search this in Vercel → Logs for the full message.`
+          : `${path} ×${times} · ${list[0]?.title ?? key}`;
+        return `<li>${digestNote}</li>`;
+      })
+      .join('');
+
+    const subject = `Error trail — ${rows.length} unresolved in 24h (${byDigest.size} codes)`;
     const html = `
       <div style="font-family: Georgia, serif; background:#0b0a08; color:#f5f0e8; padding:24px;">
         <h2 style="color:#c4a35a; letter-spacing: 0.08em; text-transform: uppercase; font-size: 14px;">
           Internal failure digest
         </h2>
-        <p>Unresolved error_events in the last 24 hours. Nothing here is sent to clients.</p>
-        <ul>${lines}</ul>
+        <p>Unresolved error_events in the last 24 hours, grouped by digest so the same fault is one problem. Nothing here is sent to clients.</p>
+        ${eventLines ? `<ul>${eventLines}</ul>` : '<p>No error_events in this window.</p>'}
+        ${issueLines ? `<h3 style="color:#c4a35a; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;">Captured page errors</h3><ul>${issueLines}</ul>` : ''}
         <p style="margin-top:24px;">
           <a href="${SITE_URL}/admin/errors" style="color:#C4A35A;">Open system health →</a>
+          &nbsp;·&nbsp;
+          <a href="${SITE_URL}/admin/issues" style="color:#C4A35A;">Open issues →</a>
         </p>
       </div>
     `;
@@ -138,7 +183,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ ok: true, events: rows.length, codes: byCode.size, emailsSent });
+    return json({ ok: true, events: rows.length, codes: byDigest.size, emailsSent });
   } catch (err) {
     console.error('[error-events-digest] failed:', String(err));
     return json({ error: String(err) }, 500);

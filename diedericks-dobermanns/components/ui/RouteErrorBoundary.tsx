@@ -1,11 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ErrorBoundaryProps } from 'expo-router';
+import { usePathname } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { appErrorMeta } from '@/lib/errors/appMeta';
+import { logError } from '@/lib/errors/logError';
 
 /**
  * Branded fallback for Expo Router error boundaries. Re-export the `ErrorBoundary`
@@ -14,6 +18,21 @@ import { Colors } from '@/constants/colors';
  *   export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const screen = usePathname();
+
+  useEffect(() => {
+    const meta = appErrorMeta(screen);
+    void logError({
+      code: 'APP_SCREEN_CRASH',
+      area: 'app',
+      severity: 'error',
+      message: 'Screen error',
+      route: meta.screen,
+      surface: 'app',
+      detail: meta,
+    });
+  }, [error, screen]);
+
   return (
     <ScreenContainer scroll={false} className="items-center justify-center px-8">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-danger/15">
