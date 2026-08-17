@@ -6,9 +6,9 @@ export const GRID_PAGE_SIZE = 24;
  * Keep in lockstep with diedericksdobermann-web/src/lib/thumbs.ts.
  */
 export const IMAGE_SIZES = {
-  grid: { width: 400, quality: 70 },
-  hero: { width: 800, quality: 70 },
-  avatar: { width: 200, quality: 70 },
+  grid: { width: 900, quality: 82 },
+  hero: { width: 1600, quality: 85 },
+  avatar: { width: 200, quality: 80 },
 } as const;
 
 export type ImageSizeKey = keyof typeof IMAGE_SIZES;

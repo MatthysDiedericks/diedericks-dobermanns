@@ -7,8 +7,8 @@ import { IMAGE_SIZES, supabaseThumbUrl } from './thumbs';
 function main() {
   const original =
     'https://nlmwxodvquwbjinhhbmr.supabase.co/storage/v1/object/public/gallery/foo.jpg';
-  assert.equal(IMAGE_SIZES.grid.width, 400);
-  assert.equal(IMAGE_SIZES.grid.quality, 70);
+  assert.equal(IMAGE_SIZES.grid.width, 900);
+  assert.equal(IMAGE_SIZES.grid.quality, 82);
   const thumb = supabaseThumbUrl(original);
   assert.ok(thumb);
   assert.match(thumb, /\/render\/image\/public\/gallery\/foo\.jpg/);
