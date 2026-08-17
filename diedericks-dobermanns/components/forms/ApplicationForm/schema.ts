@@ -118,6 +118,7 @@ export const applicationSchema = z.object({
   agreed_to_terms: z.boolean().refine((v) => v === true, {
     message: 'You must agree to the full Terms & Conditions of Sale',
   }),
+  marketing_opt_in: z.boolean().optional(),
 });
 
 export type ApplicationFormValues = z.infer<typeof applicationSchema>;
@@ -197,4 +198,5 @@ export const defaultApplicationValues: Partial<ApplicationFormValues> = {
   agreed_welfare_commitment: false,
   agreed_microchip_policy: false,
   agreed_to_terms: false,
+  marketing_opt_in: false,
 };

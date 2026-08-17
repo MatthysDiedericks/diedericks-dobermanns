@@ -7,7 +7,16 @@ import type { TablesInsert } from '@/types/database.types';
 
 export type ApplicationDraft = Omit<
   Application,
-  'id' | 'status' | 'admin_notes' | 'reviewed_by' | 'reviewed_at' | 'created_at' | 'updated_at'
+  | 'id'
+  | 'status'
+  | 'admin_notes'
+  | 'reviewed_by'
+  | 'reviewed_at'
+  | 'created_at'
+  | 'updated_at'
+  | 'archived_at'
+  | 'archived_by'
+  | 'archived_reason'
 >;
 
 interface SubmitResult {
@@ -54,7 +63,10 @@ async function logClientNotification(userId: string, referenceId: string) {
 export function useSubmitApplication() {
   const [submitting, setSubmitting] = useState(false);
 
-  async function submit(draft: ApplicationDraft): Promise<SubmitResult> {
+  async function submit(
+    draft: ApplicationDraft,
+    marketingOptIn?: boolean,
+  ): Promise<SubmitResult> {
     setSubmitting(true);
     try {
       if (!supabase) {
@@ -82,6 +94,18 @@ export function useSubmitApplication() {
       if (error) {
         console.error('[useSubmitApplication] insert:', error);
         return { referenceId: null, error: error.message };
+      }
+
+      if (marketingOptIn) {
+        const { error: consentErr } = await supabase.rpc('record_marketing_consent' as never, {
+          p_email: draft.email,
+          p_opt_in: true,
+          p_source: 'application_form',
+          p_full_name: draft.full_name,
+          p_phone: draft.phone,
+          p_user_id: draft.user_id,
+        } as never);
+        if (consentErr) console.error('[useSubmitApplication] marketing consent:', consentErr.message);
       }
 
       // Best-effort follow-ups. Neither should ever block the applicant from

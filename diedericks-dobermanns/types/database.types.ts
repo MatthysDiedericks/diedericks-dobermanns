@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       achievements: {
@@ -137,6 +162,9 @@ export type Database = {
           agreed_right_of_recall: boolean | null
           agreed_to_terms: boolean
           agreed_welfare_commitment: boolean | null
+          archived_at: string | null
+          archived_by: string | null
+          archived_reason: string | null
           aware_of_commitment: string | null
           aware_of_costs: string | null
           aware_of_dcm: string | null
@@ -160,7 +188,10 @@ export type Database = {
           home_type: string | null
           hours_alone_per_day: string | null
           id: string
+          id_check_note: string | null
+          id_check_status: string | null
           id_number: string | null
+          id_type: string | null
           instagram_handle: string | null
           last_reminder_sent_at: string | null
           litter_interest_id: string | null
@@ -201,6 +232,9 @@ export type Database = {
           agreed_right_of_recall?: boolean | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_reason?: string | null
           aware_of_commitment?: string | null
           aware_of_costs?: string | null
           aware_of_dcm?: string | null
@@ -224,7 +258,10 @@ export type Database = {
           home_type?: string | null
           hours_alone_per_day?: string | null
           id?: string
+          id_check_note?: string | null
+          id_check_status?: string | null
           id_number?: string | null
+          id_type?: string | null
           instagram_handle?: string | null
           last_reminder_sent_at?: string | null
           litter_interest_id?: string | null
@@ -265,6 +302,9 @@ export type Database = {
           agreed_right_of_recall?: boolean | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_reason?: string | null
           aware_of_commitment?: string | null
           aware_of_costs?: string | null
           aware_of_dcm?: string | null
@@ -288,7 +328,10 @@ export type Database = {
           home_type?: string | null
           hours_alone_per_day?: string | null
           id?: string
+          id_check_note?: string | null
+          id_check_status?: string | null
           id_number?: string | null
+          id_type?: string | null
           instagram_handle?: string | null
           last_reminder_sent_at?: string | null
           litter_interest_id?: string | null
@@ -321,6 +364,13 @@ export type Database = {
           yard_size?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "applications_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "applications_litter_interest_id_fkey"
             columns: ["litter_interest_id"]
@@ -723,6 +773,121 @@ export type Database = {
             columns: ["litter_id"]
             isOneToOne: false
             referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_recipients: {
+        Row: {
+          campaign_id: string
+          contact_id: string
+          email: string
+          id: string
+          reason: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          contact_id: string
+          email: string
+          id?: string
+          reason?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          contact_id?: string
+          email?: string
+          id?: string
+          reason?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          audience: string
+          body_html: string
+          created_at: string
+          created_by: string | null
+          id: string
+          page_id: string | null
+          recipient_count: number | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience: string
+          body_html: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          page_id?: string | null
+          recipient_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          body_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          page_id?: string | null
+          recipient_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,9 +1308,14 @@ export type Database = {
           first_contact_date: string | null
           full_name: string
           id: string
+          id_check_status: string | null
           id_number: string | null
+          id_type: string | null
           is_do_not_sell: boolean
           marketing_opt_in: boolean
+          marketing_opt_in_at: string | null
+          marketing_opt_in_source: string | null
+          marketing_opt_out_at: string | null
           merged_at: string | null
           merged_by: string | null
           merged_into_contact_id: string | null
@@ -1173,9 +1343,14 @@ export type Database = {
           first_contact_date?: string | null
           full_name: string
           id?: string
+          id_check_status?: string | null
           id_number?: string | null
+          id_type?: string | null
           is_do_not_sell?: boolean
           marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          marketing_opt_in_source?: string | null
+          marketing_opt_out_at?: string | null
           merged_at?: string | null
           merged_by?: string | null
           merged_into_contact_id?: string | null
@@ -1203,9 +1378,14 @@ export type Database = {
           first_contact_date?: string | null
           full_name?: string
           id?: string
+          id_check_status?: string | null
           id_number?: string | null
+          id_type?: string | null
           is_do_not_sell?: boolean
           marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          marketing_opt_in_source?: string | null
+          marketing_opt_out_at?: string | null
           merged_at?: string | null
           merged_by?: string | null
           merged_into_contact_id?: string | null
@@ -3797,6 +3977,50 @@ export type Database = {
             columns: ["retained_male_id"]
             isOneToOne: false
             referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_pages: {
+        Row: {
+          body_html: string
+          created_at: string
+          created_by: string | null
+          excerpt: string | null
+          id: string
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          id?: string
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          id?: string
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_pages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -6612,6 +6836,10 @@ export type Database = {
     }
     Functions: {
       accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
+      apply_marketing_opt_out: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
       audit_record_id: {
         Args: { p_row: Json; p_table: string }
         Returns: string
@@ -6660,6 +6888,7 @@ export type Database = {
         }[]
       }
       client_owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
+      contact_is_customer: { Args: { p_id: string }; Returns: boolean }
       convert_quote_to_invoice: {
         Args: { p_quote_id: string }
         Returns: string
@@ -6667,6 +6896,16 @@ export type Database = {
       decline_quote: {
         Args: { p_quote_id: string; p_reason?: string }
         Returns: undefined
+      }
+      dog_cycle_forecast: {
+        Args: { p_dog_id: string }
+        Returns: {
+          basis: string
+          last_start: string
+          length_days: number
+          max_days: number
+          min_days: number
+        }[]
       }
       dog_is_contactable: { Args: { p_dog_id: string }; Returns: boolean }
       enable_audit: { Args: { p_table: string }; Returns: undefined }
@@ -6693,6 +6932,20 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
+      marketing_audience_counts: {
+        Args: never
+        Returns: {
+          customers: number
+          no_permission: number
+          subscribers: number
+        }[]
+      }
+      marketing_audience_ids: {
+        Args: { p_audience: string }
+        Returns: {
+          contact_id: string
+        }[]
+      }
       merge_contacts: {
         Args: { p_actor_id?: string; p_loser_id: string; p_survivor_id: string }
         Returns: undefined
@@ -6709,6 +6962,17 @@ export type Database = {
       pause_audit: { Args: { p_reason: string }; Returns: string }
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
+      record_marketing_consent: {
+        Args: {
+          p_email: string
+          p_full_name?: string
+          p_opt_in: boolean
+          p_phone?: string
+          p_source: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
       record_page_view: {
         Args: {
           p_country?: string
@@ -6719,6 +6983,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      refresh_dog_heat_forecast: {
+        Args: { p_dog_id: string }
+        Returns: undefined
+      }
       resolve_confirmed_user_id: { Args: { p_email: string }; Returns: string }
       resolve_error_events: {
         Args: { p_ids: number[]; p_note?: string }
@@ -6726,6 +6994,10 @@ export type Database = {
       }
       resume_audit: { Args: never; Returns: string }
       set_audit_change_note: { Args: { p_note: string }; Returns: undefined }
+      set_my_marketing_opt_in: {
+        Args: { p_opt_in: boolean }
+        Returns: undefined
+      }
       sign_contract_as_client: {
         Args: {
           p_contract_id: string
@@ -6864,8 +7136,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
-

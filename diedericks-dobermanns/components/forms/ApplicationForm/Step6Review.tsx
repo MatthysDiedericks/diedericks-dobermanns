@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import type { UseFormGetValues } from 'react-hook-form';
-import { View } from 'react-native';
+import { Controller, type Control, type UseFormGetValues } from 'react-hook-form';
+import { Pressable, View } from 'react-native';
 
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
@@ -8,6 +8,7 @@ import { Typography } from '@/components/ui/Typography';
 
 interface StepProps {
   getValues: UseFormGetValues<ApplicationFormValues>;
+  control: Control<ApplicationFormValues>;
 }
 
 function ReviewRow({ label, value }: { label: string; value?: string }) {
@@ -32,7 +33,7 @@ function ReviewSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-export function Step6Review({ getValues }: StepProps) {
+export function Step6Review({ getValues, control }: StepProps) {
   const v = getValues();
 
   return (
@@ -84,6 +85,39 @@ export function Step6Review({ getValues }: StepProps) {
         <ReviewRow label="Terms & Conditions" value={v.agreed_to_terms ? '✓ Agreed' : '—'} />
         <ReviewRow label="Delivery acknowledged" value={v.delivery_acknowledged ? '✓ Agreed' : '—'} />
       </ReviewSection>
+
+      <View className="mt-4 rounded-xl border border-gold/20 bg-black-rich p-4">
+        <Controller
+          control={control}
+          name="marketing_opt_in"
+          render={({ field }) => (
+            <Pressable
+              onPress={() => field.onChange(!field.value)}
+              className="flex-row items-start gap-3"
+            >
+              <View
+                className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
+                  field.value ? 'border-gold bg-gold' : 'border-gold/40'
+                }`}
+              >
+                {field.value ? (
+                  <Typography variant="caption" className="font-bold text-black">
+                    ✓
+                  </Typography>
+                ) : null}
+              </View>
+              <View className="flex-1">
+                <Typography variant="body">
+                  Send me news about upcoming litters and training
+                </Typography>
+                <Typography variant="caption" className="mt-1">
+                  Optional. Separate from the terms above. Never required to apply.
+                </Typography>
+              </View>
+            </Pressable>
+          )}
+        />
+      </View>
     </View>
   );
 }

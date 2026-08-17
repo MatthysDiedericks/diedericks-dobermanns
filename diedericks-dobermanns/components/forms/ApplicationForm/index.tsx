@@ -110,7 +110,7 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
 
   async function onValid(values: ApplicationFormValues) {
     setSubmitError(null);
-    const { referenceId, error } = await submit(buildApplicationDraft(values));
+    const { referenceId, error } = await submit(buildApplicationDraft(values), values.marketing_opt_in);
     if (error) setSubmitError(error);
     else if (referenceId) onSubmitted(referenceId);
   }
@@ -119,7 +119,7 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
     <View>
       <ProgressBar step={step} total={STEP_FIELDS.length} />
 
-      {StepBody ? <StepBody control={control} /> : <Step6Review getValues={getValues} />}
+      {StepBody ? <StepBody control={control} /> : <Step6Review getValues={getValues} control={control} />}
 
       {submitError ? (
         <Typography variant="caption" className="mb-3 text-danger">

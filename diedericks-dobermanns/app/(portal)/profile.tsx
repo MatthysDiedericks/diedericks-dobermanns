@@ -8,6 +8,7 @@ import {
   PROPERTY_OPTIONS,
   PURPOSE_OPTIONS,
 } from '@/components/portal/ProfileFormOptions';
+import { MarketingConsentToggle } from '@/components/portal/MarketingConsentToggle';
 import { ProfileSection } from '@/components/portal/ProfileSection';
 import { DeleteAccountModal } from '@/components/account/DeleteAccountModal';
 import { ReportProblemLink } from '@/components/portal/ReportProblemLink';
@@ -234,6 +235,8 @@ export default function ProfileScreen() {
           <Input label="Vet's name" value={vetName} onChangeText={setVetName} />
           <Input label="Phone" value={vetPhone} onChangeText={setVetPhone} keyboardType="phone-pad" />
         </ProfileSection>
+
+        <MarketingConsentToggle initial={Boolean(profile?.marketing_opt_in)} />
 
         <Typography variant="label" className="mb-2 text-gold">
           ACCOUNT
