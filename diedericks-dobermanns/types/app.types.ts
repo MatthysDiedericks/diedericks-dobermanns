@@ -564,6 +564,9 @@ export interface Application {
   agreed_welfare_commitment: boolean;
   agreed_microchip_policy: boolean;
   agreed_to_terms: boolean;
+  archived_at?: string | null;
+  archived_by?: string | null;
+  archived_reason?: string | null;
   created_at: string;
   updated_at: string;
 }

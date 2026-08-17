@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
       .from('applications')
       .select('id, full_name, created_at, last_reminder_sent_at, reminder_count')
       .eq('status', 'submitted')
+      .is('archived_at', null)
       .or(`last_reminder_sent_at.is.null,last_reminder_sent_at.lt.${cutoff}`)
       .order('created_at');
     if (appsError) throw new Error(`Query applications failed: ${appsError.message}`);

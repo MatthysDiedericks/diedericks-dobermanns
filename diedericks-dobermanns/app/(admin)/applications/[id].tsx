@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { ApprovalQuoteStatus } from '@/components/applications/ApprovalQuoteStatus';
+import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { DocumentSection } from '@/components/documents/DocumentList';
@@ -61,7 +62,7 @@ function needsFollowUp(app: Application) {
 export default function ApplicationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { application: app, loading, error } = useApplicationDetail(id);
+  const { application: app, loading, error, refresh } = useApplicationDetail(id);
   const { types } = useWaitlistTypes();
   const { submitting, run } = useSubmitting();
   const [notes, setNotes] = useState('');
@@ -168,8 +169,6 @@ export default function ApplicationDetailScreen() {
 
         <Card>
           <Typography variant="label" className="mb-2 text-gold">Personal</Typography>
-          <Field label="Date of birth" value={app.date_of_birth} />
-          <Field label="ID / Passport" value={app.id_number} />
           <Field label="Email" value={app.email} />
           <Field label="Phone" value={app.phone} />
           <Field label="Occupation" value={app.occupation} />
@@ -264,6 +263,12 @@ export default function ApplicationDetailScreen() {
               fullWidth
             />
           ))}
+          <ApplicationArchiveBlock
+            applicationId={app.id}
+            archivedAt={app.archived_at}
+            archivedReason={app.archived_reason}
+            onDone={() => void refresh()}
+          />
         </View>
       </View>
     </ScreenContainer>
