@@ -55,7 +55,11 @@ export async function signUpWithEmail(
       console.error('[signUpWithEmail]', error);
       const lower = msg.toLowerCase();
       let specific = 'AUTH_SIGNUP_OTHER';
-      if (lower.includes('password') && (lower.includes('character') || lower.includes('length'))) {
+      if (
+        (lower.includes('password') &&
+          (lower.includes('character') || lower.includes('length') || lower.includes('weak'))) ||
+        lower.includes('weak_password')
+      ) {
         specific = 'AUTH_PASSWORD_POLICY';
       } else if (lower.includes('rate') || lower.includes('limit')) {
         specific = 'AUTH_RATE_LIMIT';

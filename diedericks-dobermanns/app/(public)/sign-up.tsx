@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, TextInput, TouchableOpacity,
 
 import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { LoginLogo } from '@/components/auth/LoginLogo';
+import { PasswordChecklist } from '@/components/auth/PasswordChecklist';
 import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
 import { Button } from '@/components/ui/Button';
@@ -13,9 +14,8 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  MIN_PASSWORD_LENGTH,
-  passwordLengthHint,
-  passwordTooShortMessage,
+  passwordMeetsPolicy,
+  passwordPolicyFailMessage,
 } from '@/lib/auth/passwordPolicy';
 
 interface FieldProps {
@@ -99,8 +99,8 @@ export default function SignUpScreen() {
     setHelpVisible(false);
     if (!fullName.trim()) return setError('Please enter your full name.');
     if (!EMAIL_REGEX.test(email.trim())) return setError('Please enter a valid email address.');
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      return setError(passwordTooShortMessage());
+    if (!passwordMeetsPolicy(password)) {
+      return setError(passwordPolicyFailMessage());
     }
     if (password !== confirm) return setError('Passwords do not match.');
     try {
@@ -111,8 +111,8 @@ export default function SignUpScreen() {
       const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : '';
       const lower = raw.toLowerCase();
       if (raw && raw !== '{}') {
-        if (lower.includes('password') && (lower.includes('character') || lower.includes('length'))) {
-          msg = passwordTooShortMessage();
+        if (lower.includes('password') && (lower.includes('character') || lower.includes('length') || lower.includes('weak'))) {
+          msg = passwordPolicyFailMessage();
         } else if (lower.includes('rate') || lower.includes('limit')) {
           msg = raw;
         } else if (lower.includes('email') || lower.includes('smtp') || lower.includes('mail')) {
@@ -160,29 +160,13 @@ export default function SignUpScreen() {
             label="PASSWORD"
             value={password}
             onChange={setPassword}
-            placeholder={`Min. ${MIN_PASSWORD_LENGTH} characters`}
+            placeholder="Choose a password"
             secure
             showToggle
             visible={showPassword}
             onToggleVisible={() => setShowPassword((v) => !v)}
           />
-          {password.length > 0 ? (
-            <Typography
-              variant="caption"
-              className={`mb-3 ${
-                password.length >= MIN_PASSWORD_LENGTH ? 'text-success' : 'text-amber-400'
-              }`}
-            >
-              {passwordLengthHint()} ·{' '}
-              {password.length >= MIN_PASSWORD_LENGTH
-                ? 'length met'
-                : `${password.length}/${MIN_PASSWORD_LENGTH}`}
-            </Typography>
-          ) : (
-            <Typography variant="caption" className="mb-3 text-muted">
-              {passwordLengthHint()}
-            </Typography>
-          )}
+          <PasswordChecklist password={password} />
           <Field
             label="CONFIRM PASSWORD"
             value={confirm}
@@ -214,7 +198,7 @@ export default function SignUpScreen() {
             onPress={onSubmit}
             variant="solid"
             fullWidth
-            disabled={isLoading}
+            disabled={isLoading || !passwordMeetsPolicy(password) || password !== confirm}
             className="mt-2"
           />
 

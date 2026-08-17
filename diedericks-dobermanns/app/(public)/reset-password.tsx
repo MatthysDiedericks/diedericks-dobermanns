@@ -3,15 +3,15 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { AuthBackButton } from '@/components/auth/AuthBackButton';
+import { PasswordChecklist } from '@/components/auth/PasswordChecklist';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  MIN_PASSWORD_LENGTH,
-  passwordLengthHint,
-  passwordTooShortMessage,
+  passwordMeetsPolicy,
+  passwordPolicyFailMessage,
 } from '@/lib/auth/passwordPolicy';
 import { subscribeToAuthDeepLinks } from '@/lib/auth/deepLink';
 import { useAuthStore } from '@/stores/authStore';
@@ -37,8 +37,8 @@ export default function ResetPasswordScreen() {
   async function onSubmit() {
     setError(null);
     let valid = true;
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setPasswordError(passwordTooShortMessage());
+    if (!passwordMeetsPolicy(password)) {
+      setPasswordError(passwordPolicyFailMessage());
       valid = false;
     } else {
       setPasswordError(undefined);
@@ -84,7 +84,7 @@ export default function ResetPasswordScreen() {
           <AuthBackButton />
           <Typography variant="display">New Password</Typography>
           <Typography variant="bodyMuted" className="mb-8 mt-2">
-            Choose a strong password for your account. {passwordLengthHint()}
+            Choose a strong password for your account.
           </Typography>
 
           {!sessionReady ? (
@@ -101,6 +101,7 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             error={passwordError}
           />
+          <PasswordChecklist password={password} />
           <Input
             label="Confirm Password"
             value={confirm}
@@ -121,7 +122,12 @@ export default function ResetPasswordScreen() {
             variant="solid"
             onPress={() => void onSubmit()}
             loading={isLoading}
-            disabled={isLoading || !sessionReady}
+            disabled={
+              isLoading ||
+              !sessionReady ||
+              !passwordMeetsPolicy(password) ||
+              password !== confirm
+            }
             fullWidth
           />
             </>
