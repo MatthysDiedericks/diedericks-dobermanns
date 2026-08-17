@@ -49,7 +49,22 @@ export default function LoginScreen() {
       }
       router.replace(getHomeRouteForRole(role) as never);
     } catch (e) {
-      setServerError(e instanceof Error ? e.message : 'Sign in failed.');
+      const message = e instanceof Error ? e.message : 'Sign in failed.';
+      const lower = message.toLowerCase();
+      if (!lower.includes('invalid') && !lower.includes('credentials')) {
+        void import('@/lib/errors/logError').then(({ logError }) =>
+          logError({
+            code: 'AUTH_SIGNIN_FAILED',
+            area: 'auth',
+            severity: 'error',
+            message,
+            actorRole: 'anon',
+            surface: 'app',
+            route: '/login',
+          }),
+        );
+      }
+      setServerError(message);
     }
   }
 

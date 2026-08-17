@@ -66,12 +66,12 @@ export async function claimMyRecords(): Promise<ClaimCounts> {
       contracts: Number(row?.contracts ?? 0) || 0,
     };
   } catch (err) {
-    console.error('[claimMyRecords]', err);
+    const message = err instanceof Error ? err.message : 'claim failed';
     void logError({
       code: ERROR_CODES.PORTAL_CLAIM_FAILED,
       area: 'portal',
       severity: 'error',
-      message: err instanceof Error ? err.message : 'claim failed',
+      message,
       detail: { reason: 'exception' },
       surface: 'app',
       route: '/claim',

@@ -26,7 +26,7 @@ export function useAuth() {
       try {
         const { error } = await signInWithEmail(email.trim(), password);
         if (error) throw new Error(error);
-        await claimMyRecords();
+        void claimMyRecords();
         await refresh();
       } finally {
         setIsLoading(false);
@@ -54,7 +54,7 @@ export function useAuth() {
       try {
         const { error } = await verifySignupOtp(email.trim(), token.trim());
         if (error) throw new Error(error);
-        await claimMyRecords();
+        void claimMyRecords();
         await refresh();
       } finally {
         setIsLoading(false);

@@ -58,7 +58,19 @@ export default function ResetPasswordScreen() {
         params: { message: 'Password updated successfully' },
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not update password.');
+      const message = e instanceof Error ? e.message : 'Could not update password.';
+      void import('@/lib/errors/logError').then(({ logError }) =>
+        logError({
+          code: 'AUTH_SIGNIN_FAILED',
+          area: 'auth',
+          severity: 'error',
+          message,
+          actorRole: 'client',
+          surface: 'app',
+          route: '/reset-password',
+        }),
+      );
+      setError(message);
     }
   }
 

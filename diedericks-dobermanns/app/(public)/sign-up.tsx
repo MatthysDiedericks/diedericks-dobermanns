@@ -118,11 +118,7 @@ export default function SignUpScreen() {
         } else if (lower.includes('email') || lower.includes('smtp') || lower.includes('mail')) {
           msg =
             'We could not send the confirmation email. Try again in a minute, or WhatsApp us and we will set your account up.';
-        } else {
-          console.error('[SignUp]', e);
         }
-      } else {
-        console.error('[SignUp]', e);
       }
       // Logging is done inside signUpWithEmail — never block the UI on it.
       setError(msg);
