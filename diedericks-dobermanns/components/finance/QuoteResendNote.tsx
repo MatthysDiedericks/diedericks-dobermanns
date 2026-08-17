@@ -14,6 +14,7 @@ export function QuoteResendNote({
   onResendWhatsApp,
   onResendEmail,
   onCancel,
+  blockedReason,
 }: {
   changeNote: string;
   onChangeNote: (v: string) => void;
@@ -23,6 +24,7 @@ export function QuoteResendNote({
   onResendWhatsApp: () => void;
   onResendEmail: () => void;
   onCancel: () => void;
+  blockedReason?: string | null;
 }) {
   return (
     <Card>
@@ -53,6 +55,11 @@ export function QuoteResendNote({
         />
         <Button label="Cancel" variant="ghost" onPress={onCancel} />
       </View>
+      {blockedReason ? (
+        <Typography variant="caption" className="mt-2 text-gold">
+          {blockedReason}
+        </Typography>
+      ) : null}
     </Card>
   );
 }

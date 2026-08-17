@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, type TextInput } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
@@ -11,16 +11,22 @@ export function LineItemList({
   onRemove,
   onAdd,
   onAddCatalogue,
+  bindDescription,
+  bindPrice,
 }: {
   items: DraftLineItem[];
   onUpdate: (key: string, patch: Partial<DraftLineItem>) => void;
   onRemove: (key: string) => void;
   onAdd: () => void;
   onAddCatalogue?: () => void;
+  bindDescription?: (key: string, el: TextInput | null) => void;
+  bindPrice?: (key: string, el: TextInput | null) => void;
 }) {
   return (
     <>
-      <Typography variant="label" className="mb-2 text-silver">Line items</Typography>
+      <Typography variant="label" className="mb-2 text-silver">
+        Line items
+      </Typography>
       <View className="gap-3">
         {items.map((it, idx) => (
           <LineItemRow
@@ -30,6 +36,8 @@ export function LineItemList({
             canRemove={items.length > 1}
             onUpdate={onUpdate}
             onRemove={onRemove}
+            bindDescription={bindDescription}
+            bindPrice={bindPrice}
           />
         ))}
       </View>

@@ -5,6 +5,7 @@ import { Alert, Linking, View } from 'react-native';
 import { QuoteReopenCard } from '@/components/finance/QuoteReopenCard';
 import { QuoteResendNote } from '@/components/finance/QuoteResendNote';
 import { QuoteRevisionList } from '@/components/finance/QuoteRevisionList';
+import { QuoteDetailSendActions, quoteSendLock } from '@/components/finance/QuoteDetailSendActions';
 import { LineItems } from '@/components/sales/LineItems';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
@@ -67,6 +68,9 @@ export default function QuoteDetailScreen() {
     !quote?.converted_invoice_id && (quote?.status === 'sent' || quote?.status === 'accepted');
   const canSend = quote?.status === 'draft' || quote?.status === 'sent';
   const phone = quote ? quotePhone(quote) : null;
+  const sendLock = quote
+    ? quoteSendLock(quote)
+    : { outstanding: [], sendWhy: null as string | null, sendLocked: false };
 
   async function setStatus(status: QuoteStatus) {
     if (!id) return;
@@ -144,6 +148,10 @@ export default function QuoteDetailScreen() {
   }
 
   function requestSend(channel: 'whatsapp' | 'email') {
+    if (sendLock.sendLocked) {
+      Alert.alert('Complete the quote first', sendLock.sendWhy ?? '');
+      return;
+    }
     if (previouslySent && !awaitingNote) {
       void prepareChangeNote().then((n) => {
         setChangeNote(n);
@@ -207,8 +215,9 @@ export default function QuoteDetailScreen() {
               changeNote={changeNote}
               onChangeNote={setChangeNote}
               busy={busy}
-              phoneDisabled={!phone}
-              emailDisabled={false}
+              phoneDisabled={!phone || sendLock.sendLocked}
+              emailDisabled={sendLock.sendLocked}
+              blockedReason={sendLock.sendWhy}
               onResendWhatsApp={() => void finalizeSend('whatsapp')}
               onResendEmail={() => void finalizeSend('email')}
               onCancel={() => setAwaitingNote(false)}
@@ -229,10 +238,7 @@ export default function QuoteDetailScreen() {
                     setShowReopen(false);
                     await refresh();
                   } catch (e) {
-                    Alert.alert(
-                      'Could not reopen',
-                      e instanceof Error ? e.message : 'Please try again.',
-                    );
+                    Alert.alert('Could not reopen', e instanceof Error ? e.message : 'Please try again.');
                   } finally {
                     setBusy(false);
                   }
@@ -248,21 +254,14 @@ export default function QuoteDetailScreen() {
           </View>
 
           {canSend && !awaitingNote ? (
-            <View className="flex-row flex-wrap gap-2">
-              <Button
-                label={previouslySent ? 'Resend via WhatsApp' : 'Send via WhatsApp'}
-                variant="outline"
-                onPress={() => requestSend('whatsapp')}
-                loading={busy}
-                disabled={!phone}
-              />
-              <Button
-                label={previouslySent ? 'Resend via Email' : 'Send via Email'}
-                variant="outline"
-                onPress={() => requestSend('email')}
-                loading={busy}
-              />
-            </View>
+            <QuoteDetailSendActions
+              quote={quote}
+              previouslySent={previouslySent}
+              phone={phone}
+              busy={busy}
+              onSend={requestSend}
+              onSelectOutstanding={goEdit}
+            />
           ) : null}
 
           <Button
@@ -276,15 +275,9 @@ export default function QuoteDetailScreen() {
                 setBusy(true);
                 try {
                   const invoiceId = await convertQuoteToInvoice(quote.id);
-                  router.replace({
-                    pathname: '/(admin)/finance/invoices/[id]',
-                    params: { id: invoiceId },
-                  });
+                  router.replace({ pathname: '/(admin)/finance/invoices/[id]', params: { id: invoiceId } });
                 } catch (e) {
-                  Alert.alert(
-                    'Could not convert to invoice',
-                    e instanceof Error ? e.message : 'Please try again.',
-                  );
+                  Alert.alert('Could not convert to invoice', e instanceof Error ? e.message : 'Please try again.');
                 } finally {
                   setBusy(false);
                 }

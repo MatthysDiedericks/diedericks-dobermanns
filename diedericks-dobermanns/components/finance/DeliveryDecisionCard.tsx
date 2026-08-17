@@ -26,13 +26,18 @@ export function DeliveryDecisionCard({
   onDismissExportPrompt: () => void;
 }) {
   return (
-    <Card className="gap-3 p-4">
+    <Card nativeID="quote-delivery-decision" className="gap-3 p-4">
       <Typography variant="subtitle" className="text-gold">
         Delivery decision
       </Typography>
       <Typography variant="caption" className="text-ink-muted">
         Required before send. Saving a draft undecided is fine.
       </Typography>
+      {decision == null ? (
+        <Typography variant="caption" className="text-gold">
+          Undecided — required before send
+        </Typography>
+      ) : null}
       <View className="flex-row flex-wrap gap-2">
         <Pressable
           onPress={() => onDecisionChange(null)}

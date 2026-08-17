@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, View, type TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { CatalogueItemPicker } from '@/components/finance/CatalogueItemPicker';
@@ -7,6 +7,7 @@ import { DeliveryDecisionCard } from '@/components/finance/DeliveryDecisionCard'
 import { LineItemList } from '@/components/finance/LineItemList';
 import { type DraftLineItem } from '@/components/finance/LineItemRow';
 import { QuoteBuyerPicker } from '@/components/finance/QuoteBuyerPicker';
+import { QuoteSendChecklist } from '@/components/finance/QuoteSendChecklist';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -33,6 +34,7 @@ import {
 import { resolveQuotePrice } from '@/lib/finance/quotePrice';
 import { saveAppQuote } from '@/lib/finance/saveAppQuote';
 import { formatPrice } from '@/lib/format';
+import { collectQuoteOutstanding, type QuoteOutstandingItem } from '@/lib/finance/quoteOutstanding';
 import type { Quote } from '@/types/app.types';
 
 export type { QuotePrefill };
@@ -64,6 +66,8 @@ export function AppQuoteBuilder({
   const [deliveryReason, setDeliveryReason] = useState<string | null>(null);
   const [exportPrompt, setExportPrompt] = useState<string | null>(null);
   const autoApplied = useRef(Boolean(initial?.delivery_decision));
+  const descRefs = useRef<Record<string, TextInput | null>>({});
+  const priceRefs = useRef<Record<string, TextInput | null>>({});
   const parsed = parseBuyerKey(selectedBuyer);
 
   const editGate = initial
@@ -103,6 +107,15 @@ export function AppQuoteBuilder({
   const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
   const discountNum = Number(discount) || 0;
   const total = Math.max(subtotal - discountNum, 0);
+  const outstanding = collectQuoteOutstanding(items, deliveryDecision);
+
+  function focusOutstanding(item: QuoteOutstandingItem) {
+    if (item.target === 'description' && item.lineKey) {
+      descRefs.current[item.lineKey]?.focus();
+    } else if (item.target === 'price' && item.lineKey) {
+      priceRefs.current[item.lineKey]?.focus();
+    }
+  }
 
   function addDog(dog: QuoteDogOption) {
     const resolved = resolveQuotePrice(
@@ -196,6 +209,12 @@ export function AppQuoteBuilder({
               ])
             }
             onAddCatalogue={() => setPickerOpen(true)}
+            bindDescription={(key, el) => {
+              descRefs.current[key] = el;
+            }}
+            bindPrice={(key, el) => {
+              priceRefs.current[key] = el;
+            }}
           />
           <DeliveryDecisionCard
             decision={deliveryDecision}
@@ -234,6 +253,7 @@ export function AppQuoteBuilder({
               className="h-20"
             />
           ) : null}
+          <QuoteSendChecklist items={outstanding} onSelect={focusOutstanding} />
           <Card>
             <View className="flex-row justify-between">
               <Typography variant="bodyMuted">Total</Typography>
@@ -241,7 +261,14 @@ export function AppQuoteBuilder({
             </View>
           </Card>
           {editGate.ok ? (
-            <Button label="Save & Preview" onPress={() => void onSave()} loading={submitting} fullWidth />
+            <>
+              <Button label="Save & Preview" onPress={() => void onSave()} loading={submitting} fullWidth />
+              {outstanding.length ? (
+                <Typography variant="caption" className="text-gold">
+                  You can save a draft. Send stays blocked until the items above are done.
+                </Typography>
+              ) : null}
+            </>
           ) : null}
         </View>
       </ScreenContainer>
