@@ -1,39 +1,15 @@
 import type { LineItemInput } from '@/lib/finance/mutations';
 import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
-import { resolveClientForApplicationQuote } from '@/lib/finance/linkQuoteClient';
-import { buildQuoteMessage } from '@/lib/finance/quoteMessage';
+import { resolveQuoteBuyer } from '@/lib/finance/resolveQuoteBuyer';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
 export { buildQuoteMessage, quoteEmail, quotePhone } from '@/lib/finance/quoteMessage';
 
-/** Logs a "quote sent" notification for an app-account client (Task 5's email path). */
-export async function logQuoteEmailNotification(quote: Quote): Promise<void> {
-  if (!quote.client_id) return;
-  const supabase = requireSupabase();
-  const { error } = await supabase.from('notifications_log').insert({
-    recipient_id: quote.client_id,
-    subject: `Your Quote${quote.quote_number ? ` ${quote.quote_number}` : ''}`,
-    body: buildQuoteMessage(quote),
-    type: 'email',
-    status: 'sent',
-  });
-  if (error) console.error('[logQuoteEmailNotification]', error.message);
-}
-
-// Intentionally no `createQuickAddClient()` here: `public.users.id` is a hard
-// FK to `auth.users(id)` (ON DELETE CASCADE), so a walk-in client with no
-// login can't get a real `users` row without first creating a fake
-// `auth.users` account — and there's no admin-invite-a-client flow anywhere
-// in this codebase (checked `hooks/useAdmin.ts` and the Clients admin
-// screens) to create one properly. Quick-add just sets
-// `quotes.historical_client_name` directly, the same nullable-text fallback
-// `invoices` already uses for buyers with no app account.
-
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const QUOTE_SELECT =
-  'id, quote_number, client_id, historical_client_name, application_id, status, currency, subtotal, discount, total, ' +
+  'id, quote_number, client_id, contact_id, historical_client_name, application_id, status, currency, subtotal, discount, total, ' +
   'notes, valid_until, converted_invoice_id, created_by, created_at, updated_at, ' +
   'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
   'delivery_decision, delivery_note, ' +
@@ -41,9 +17,11 @@ const QUOTE_SELECT =
   'items:quote_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order, catalogue_code)';
 
 export interface QuoteHeaderInput {
-  /** Exactly one of client_id / historical_client_name should be set. */
   client_id: string | null;
+  contact_id?: string | null;
   historical_client_name?: string | null;
+  buyer_kind?: 'applicant' | 'user' | 'contact' | 'walkin';
+  buyer_id?: string | null;
   application_id?: string | null;
   status?: QuoteStatus;
   notes?: string | null;
@@ -113,23 +91,27 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
   const discount = round2(header.discount ?? 0);
   const total = Math.max(round2(subtotal - discount), 0);
 
-  let clientId = header.client_id;
-  let historicalName = header.historical_client_name ?? null;
-  if (header.application_id) {
-    const linked = await resolveClientForApplicationQuote(
-      header.application_id,
-      header.client_id,
-    );
-    clientId = linked.clientId;
-    if (clientId) historicalName = null;
-    else if (!historicalName) historicalName = linked.historicalName;
-  }
+  const linked = await resolveQuoteBuyer({
+    kind:
+      header.buyer_kind ??
+      (header.application_id
+        ? 'applicant'
+        : header.client_id
+          ? 'user'
+          : header.contact_id
+            ? 'contact'
+            : 'walkin'),
+    id: header.buyer_id ?? header.application_id ?? header.client_id ?? header.contact_id,
+    applicationId: header.application_id,
+    walkinName: header.historical_client_name,
+  });
 
   const { data, error } = await supabase
     .from('quotes')
     .insert({
-      client_id: clientId,
-      historical_client_name: historicalName,
+      client_id: linked.clientId,
+      contact_id: linked.contactId,
+      historical_client_name: linked.historicalName,
       application_id: header.application_id ?? null,
       status: header.status ?? 'draft',
       currency: 'ZAR',
@@ -186,11 +168,27 @@ export async function updateQuote(
   const discount = round2(header.discount ?? 0);
   const total = Math.max(round2(subtotal - discount), 0);
 
+  const linked = await resolveQuoteBuyer({
+    kind:
+      header.buyer_kind ??
+      (header.application_id
+        ? 'applicant'
+        : header.client_id
+          ? 'user'
+          : header.contact_id
+            ? 'contact'
+            : 'walkin'),
+    id: header.buyer_id ?? header.application_id ?? header.client_id ?? header.contact_id,
+    applicationId: header.application_id,
+    walkinName: header.historical_client_name,
+  });
+
   const { error } = await supabase
     .from('quotes')
     .update({
-      client_id: header.client_id,
-      historical_client_name: header.historical_client_name ?? null,
+      client_id: linked.clientId,
+      contact_id: linked.contactId,
+      historical_client_name: linked.historicalName,
       application_id: header.application_id ?? null,
       status: gate.nextStatus,
       subtotal,

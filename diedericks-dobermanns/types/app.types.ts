@@ -420,6 +420,7 @@ export interface Litter {
   description: string | null;
   status: LitterStatus | null;
   is_public: boolean;
+  default_programme_tier?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -704,6 +705,7 @@ export interface Quote {
   client_id: string | null;
   /** Walk-in client with no app account — mirrors invoices.historical_client_name. */
   historical_client_name: string | null;
+  contact_id?: string | null;
   application_id: string | null;
   status: QuoteStatus;
   currency: string;

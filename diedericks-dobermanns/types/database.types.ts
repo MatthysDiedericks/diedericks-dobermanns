@@ -3630,6 +3630,7 @@ export type Database = {
           birth_weight_grams: number | null
           created_at: string
           deceased_count: number
+          default_programme_tier: string | null
           description: string | null
           expected_date: string | null
           father_id: string | null
@@ -3668,6 +3669,7 @@ export type Database = {
           birth_weight_grams?: number | null
           created_at?: string
           deceased_count?: number
+          default_programme_tier?: string | null
           description?: string | null
           expected_date?: string | null
           father_id?: string | null
@@ -3706,6 +3708,7 @@ export type Database = {
           birth_weight_grams?: number | null
           created_at?: string
           deceased_count?: number
+          default_programme_tier?: string | null
           description?: string | null
           expected_date?: string | null
           father_id?: string | null
@@ -4641,6 +4644,7 @@ export type Database = {
           accepted_by: string | null
           application_id: string | null
           client_id: string | null
+          contact_id: string | null
           converted_invoice_id: string | null
           created_at: string
           created_by: string | null
@@ -4671,6 +4675,7 @@ export type Database = {
           accepted_by?: string | null
           application_id?: string | null
           client_id?: string | null
+          contact_id?: string | null
           converted_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -4701,6 +4706,7 @@ export type Database = {
           accepted_by?: string | null
           application_id?: string | null
           client_id?: string | null
+          contact_id?: string | null
           converted_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -4746,6 +4752,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {

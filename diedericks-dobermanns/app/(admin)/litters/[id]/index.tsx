@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { DocumentList } from '@/components/documents/DocumentList';
+import { LitterBulkTierAction } from '@/components/litters/LitterBulkTierAction';
 import { LitterCalendarTab } from '@/components/litters/LitterCalendarTab';
 import { LitterContractsTab } from '@/components/litters/LitterContractsTab';
 import { LitterFinancialsTab } from '@/components/litters/LitterFinancialsTab';
@@ -126,7 +127,15 @@ export default function LitterDetailScreen() {
       </ScrollView>
 
       <ScrollView className="px-6 pb-12">
-        {tab === 'puppies' ? <LitterPuppiesTab litterId={litterId} puppies={puppies} /> : null}
+        {tab === 'puppies' ? (
+          <>
+            <LitterBulkTierAction
+              litterId={litterId}
+              currentTier={(detail as { default_programme_tier?: string | null }).default_programme_tier}
+            />
+            <LitterPuppiesTab litterId={litterId} puppies={puppies} />
+          </>
+        ) : null}
         {tab === 'calendar' ? (
           <LitterCalendarTab litterId={litterId} puppyIds={puppyIds} />
         ) : null}

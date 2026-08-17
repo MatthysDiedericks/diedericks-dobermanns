@@ -22,6 +22,7 @@ const ITEM_TYPES: LineItemType[] = [
 
 export interface DraftLineItem extends LineItemInput {
   key: string;
+  priceSourceLabel?: string | null;
 }
 
 export function LineItemRow({
@@ -94,6 +95,11 @@ export function LineItemRow({
         catalogueCode={item.catalogue_code}
         onPickAmount={(amount) => onUpdate(item.key, { unit_price: amount })}
       />
+      {item.priceSourceLabel ? (
+        <Typography variant="caption" className="mt-1 text-gold">
+          {item.priceSourceLabel}
+        </Typography>
+      ) : null}
       <Typography variant="caption" className="mt-2 text-right">
         Line total: {formatPrice(item.quantity * item.unit_price)}
       </Typography>

@@ -11,6 +11,7 @@ interface ApprovalQuoteStatusProps {
   quoteFailed: boolean;
   linkedQuote: LinkedQuote | null;
   onViewQuote: (quote: LinkedQuote) => void;
+  onCreateQuote?: () => void;
   onBack: () => void;
 }
 
@@ -25,6 +26,7 @@ export function ApprovalQuoteStatus({
   quoteFailed,
   linkedQuote,
   onViewQuote,
+  onCreateQuote,
   onBack,
 }: ApprovalQuoteStatusProps) {
   return (
@@ -50,9 +52,16 @@ export function ApprovalQuoteStatus({
           />
         </>
       ) : quoteFailed ? (
-        <Typography variant="caption" className="mt-2 text-silver">
-          Quote could not be created automatically — create one manually.
-        </Typography>
+        <>
+          <Typography variant="caption" className="mt-2 text-silver">
+            Quote could not be created automatically — create one from this application.
+          </Typography>
+          {onCreateQuote ? (
+            <Button label="Create Quote" variant="outline" onPress={onCreateQuote} className="mt-3" />
+          ) : null}
+        </>
+      ) : onCreateQuote ? (
+        <Button label="Create Quote" variant="outline" onPress={onCreateQuote} className="mt-3" />
       ) : null}
       <Button label="Back to Applications" variant="ghost" onPress={onBack} className="mt-3" />
     </Card>

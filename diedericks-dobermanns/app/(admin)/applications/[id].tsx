@@ -144,6 +144,12 @@ export default function ApplicationDetailScreen() {
             quoteFailed={quoteFailed}
             linkedQuote={linkedQuote}
             onViewQuote={openQuote}
+            onCreateQuote={() =>
+              router.push({
+                pathname: '/(admin)/quotes/new',
+                params: { applicationId: id ?? '' },
+              })
+            }
             onBack={() => router.back()}
           />
         ) : null}

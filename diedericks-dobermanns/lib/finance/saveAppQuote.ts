@@ -10,8 +10,9 @@ import type { Quote } from '@/types/app.types';
 export async function saveAppQuote(input: {
   initial?: Quote | null;
   items: DraftLineItem[];
-  mode: 'client' | 'walkin';
-  clientId: string | null;
+  buyerKind: 'applicant' | 'user' | 'contact' | 'walkin';
+  buyerId: string | null;
+  applicationId: string | null;
   walkinName: string;
   walkinContact: string;
   notes: string;
@@ -68,8 +69,12 @@ export async function saveAppQuote(input: {
     .join('\n');
 
   const header = {
-    client_id: input.mode === 'client' ? input.clientId : null,
-    historical_client_name: input.mode === 'walkin' ? input.walkinName.trim() || null : null,
+    client_id: input.buyerKind === 'user' ? input.buyerId : null,
+    contact_id: input.buyerKind === 'contact' ? input.buyerId : null,
+    historical_client_name: input.buyerKind === 'walkin' ? input.walkinName.trim() || null : null,
+    buyer_kind: input.buyerKind,
+    buyer_id: input.buyerId,
+    application_id: input.applicationId,
     status: 'draft' as const,
     notes: combinedNotes || null,
     valid_until: input.validUntil.trim() || null,

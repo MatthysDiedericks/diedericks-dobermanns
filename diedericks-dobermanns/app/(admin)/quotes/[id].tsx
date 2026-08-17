@@ -17,13 +17,12 @@ import { assertQuoteEditable, summariseQuoteChanges } from '@/lib/finance/quoteE
 import {
   buildQuoteMessage,
   convertQuoteToInvoice,
-  logQuoteEmailNotification,
-  quoteEmail,
   quotePhone,
   reopenQuote,
   updateQuoteStatus,
 } from '@/lib/finance/quoteQueries';
-import { fetchQuoteRevisions, recordQuoteSendRevision } from '@/lib/finance/quoteRevisions';
+import { sendQuoteToRecipient } from '@/lib/finance/sendQuote';
+import { fetchQuoteRevisions } from '@/lib/finance/quoteRevisions';
 import type { QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
 import { formatPrice, titleCase } from '@/lib/format';
 import { QUOTE_TONE, quoteClientLabel } from '@/app/(admin)/quotes/index';
@@ -68,7 +67,6 @@ export default function QuoteDetailScreen() {
     !quote?.converted_invoice_id && (quote?.status === 'sent' || quote?.status === 'accepted');
   const canSend = quote?.status === 'draft' || quote?.status === 'sent';
   const phone = quote ? quotePhone(quote) : null;
-  const email = quote ? quoteEmail(quote) : null;
 
   async function setStatus(status: QuoteStatus) {
     if (!id) return;
@@ -125,21 +123,11 @@ export default function QuoteDetailScreen() {
         if (!phone) throw new Error('No phone number on file.');
         const text = encodeURIComponent(buildQuoteMessage(quote, note));
         await Linking.openURL(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`);
-      } else if (quote.client_id) {
-        await logQuoteEmailNotification(quote);
-      } else {
-        if (!email) throw new Error('No email on file.');
-        const subject = encodeURIComponent(
-          `Your Quote${quote.quote_number ? ` ${quote.quote_number}` : ''}`,
-        );
-        await Linking.openURL(
-          `mailto:${email}?subject=${subject}&body=${encodeURIComponent(buildQuoteMessage(quote, note))}`,
-        );
+        setBusy(false);
+        return;
       }
 
-      await recordQuoteSendRevision({
-        quoteId: quote.id,
-        sentTo: channel === 'whatsapp' ? phone : email,
+      const result = await sendQuoteToRecipient(quote, {
         changeNote: note,
         actorId: user?.id ?? null,
       });
@@ -147,6 +135,7 @@ export default function QuoteDetailScreen() {
       setChangeNote('');
       await refresh();
       setRevisions(await fetchQuoteRevisions(quote.id));
+      Alert.alert('Quote sent', `Emailed to ${result.sentTo} with the PDF attached.`);
     } catch (e) {
       Alert.alert('Could not send', e instanceof Error ? e.message : 'Please try again.');
     } finally {
@@ -219,7 +208,7 @@ export default function QuoteDetailScreen() {
               onChangeNote={setChangeNote}
               busy={busy}
               phoneDisabled={!phone}
-              emailDisabled={!quote.client_id && !email}
+              emailDisabled={false}
               onResendWhatsApp={() => void finalizeSend('whatsapp')}
               onResendEmail={() => void finalizeSend('email')}
               onCancel={() => setAwaitingNote(false)}
@@ -272,7 +261,6 @@ export default function QuoteDetailScreen() {
                 variant="outline"
                 onPress={() => requestSend('email')}
                 loading={busy}
-                disabled={!quote.client_id && !email}
               />
             </View>
           ) : null}
