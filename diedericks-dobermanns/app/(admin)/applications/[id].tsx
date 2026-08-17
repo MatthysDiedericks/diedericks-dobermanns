@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { ApprovalQuoteStatus } from '@/components/applications/ApprovalQuoteStatus';
 import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
+import { IdCheckBlock } from '@/components/applications/IdCheckBlock';
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { DocumentSection } from '@/components/documents/DocumentList';
@@ -166,6 +167,8 @@ export default function ApplicationDetailScreen() {
             </Typography>
           </Card>
         ) : null}
+
+        <IdCheckBlock app={app} onDone={() => void refresh()} />
 
         <Card>
           <Typography variant="label" className="mb-2 text-gold">Personal</Typography>

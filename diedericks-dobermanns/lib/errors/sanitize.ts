@@ -1,5 +1,5 @@
 /** Keys that must never appear in error_events.detail (case-insensitive). */
-export const FORBIDDEN_DETAIL_KEY = /pass|token|secret|otp|key/i;
+export const FORBIDDEN_DETAIL_KEY = /pass|token|secret|otp|key|id_number/i;
 
 export function assertDetailSafe(detail: unknown): void {
   if (detail == null || typeof detail !== 'object' || Array.isArray(detail)) {

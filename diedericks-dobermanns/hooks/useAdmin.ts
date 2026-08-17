@@ -71,7 +71,7 @@ export function useAdminApplications(): ListResult<Application> {
   return useRemoteList<Application>(MOCK_APPLICATIONS, (client) =>
     client
       .from('applications')
-      .select('id, full_name, email, phone, status, purpose, country, created_at, admin_notes, archived_at, archived_reason, archived_by')
+      .select('id, full_name, email, phone, status, purpose, country, created_at, admin_notes, archived_at, archived_reason, archived_by, id_type, id_check_status, id_check_note')
       .order('created_at', { ascending: false }),
   );
 }
@@ -188,7 +188,7 @@ export function useClientGroup(groupId: string | undefined) {
 }
 
 const APPLICATION_DETAIL_SELECT =
-  'id, user_id, full_name, date_of_birth, email, phone, id_number, occupation, employer, country, province, city, address, instagram_handle, facebook_profile, dog_interest, specific_dog_id, litter_interest_id, purpose, experience_with_dobermanns, current_pets, home_type, has_secure_yard, yard_size, sleeping_arrangement, hours_alone_per_day, exercise_level, why_dobermann, dobermann_experience_level, aware_of_dcm, aware_of_commitment, aware_of_costs, previous_dog_fate, preferred_sex, preferred_colour, tail_preference, preferred_timeline, budget_range, training_planned, security_requirements, delivery_acknowledged, special_requests, children_ages, vet_name, vet_phone, personal_reference_name, personal_reference_phone, status, admin_notes, reviewed_by, reviewed_at, agreed_no_breeding_rights, agreed_right_of_recall, agreed_no_resale, agreed_welfare_commitment, agreed_microchip_policy, agreed_to_terms, archived_at, archived_by, archived_reason, created_at, updated_at';
+  'id, user_id, full_name, date_of_birth, email, phone, id_number, id_type, id_check_status, id_check_note, occupation, employer, country, province, city, address, instagram_handle, facebook_profile, dog_interest, specific_dog_id, litter_interest_id, purpose, experience_with_dobermanns, current_pets, home_type, has_secure_yard, yard_size, sleeping_arrangement, hours_alone_per_day, exercise_level, why_dobermann, dobermann_experience_level, aware_of_dcm, aware_of_commitment, aware_of_costs, previous_dog_fate, preferred_sex, preferred_colour, tail_preference, preferred_timeline, budget_range, training_planned, security_requirements, delivery_acknowledged, special_requests, children_ages, vet_name, vet_phone, personal_reference_name, personal_reference_phone, status, admin_notes, reviewed_by, reviewed_at, agreed_no_breeding_rights, agreed_right_of_recall, agreed_no_resale, agreed_welfare_commitment, agreed_microchip_policy, agreed_to_terms, archived_at, archived_by, archived_reason, created_at, updated_at';
 
 /** Full application record for admin review (explicit columns — no select *). */
 export function useApplicationDetail(id: string | undefined) {

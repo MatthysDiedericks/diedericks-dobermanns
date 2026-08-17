@@ -12,7 +12,8 @@ import { z } from 'zod';
 export const applicationSchema = z.object({
   // ── STEP 1: Personal Information ─────────────────────────────────────────
   full_name: z.string().min(2, 'Please enter your full name'),
-  date_of_birth: z.string().min(4, 'Date of birth is required'),
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter your date of birth'),
+  id_type: z.enum(['sa_id', 'passport', 'other_national_id']),
   id_number: z.string().min(6, 'ID or passport number is required'),
   email: z.string().email('Enter a valid email address'),
   phone: z.string().min(7, 'Enter a valid phone number'),
@@ -124,7 +125,7 @@ export const applicationSchema = z.object({
 export type ApplicationFormValues = z.infer<typeof applicationSchema>;
 
 export const STEP_FIELDS: (keyof ApplicationFormValues)[][] = [
-  ['full_name', 'date_of_birth', 'id_number', 'email', 'phone', 'occupation', 'country', 'address'],
+  ['full_name', 'date_of_birth', 'id_type', 'id_number', 'email', 'phone', 'occupation', 'country', 'address'],
   ['home_type', 'has_secure_yard', 'yard_size', 'sleeping_arrangement', 'hours_alone_per_day', 'exercise_level'],
   ['why_dobermann', 'dobermann_experience_level', 'aware_of_dcm', 'aware_of_commitment', 'aware_of_costs'],
   [
@@ -160,6 +161,7 @@ export const STEP_TITLES = [
 export const defaultApplicationValues: Partial<ApplicationFormValues> = {
   full_name: '',
   date_of_birth: '',
+  id_type: 'sa_id',
   id_number: '',
   email: '',
   phone: '',

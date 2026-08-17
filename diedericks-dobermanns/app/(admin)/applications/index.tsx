@@ -27,11 +27,17 @@ export default function AdminApplicationsScreen() {
   const router = useRouter();
   const { data: applications, loading, refetch } = useAdminApplications();
   const [showArchived, setShowArchived] = useState(false);
+  const [idFailedOnly, setIdFailedOnly] = useState(false);
 
   const visible = useMemo(
     () =>
-      applications.filter((app) => (showArchived ? Boolean(app.archived_at) : !app.archived_at)),
-    [applications, showArchived],
+      applications.filter((app) => {
+        const archivedOk = showArchived ? Boolean(app.archived_at) : !app.archived_at;
+        if (!archivedOk) return false;
+        if (idFailedOnly && app.id_check_status !== 'failed') return false;
+        return true;
+      }),
+    [applications, showArchived, idFailedOnly],
   );
 
   return (
@@ -41,6 +47,11 @@ export default function AdminApplicationsScreen() {
         <Pressable onPress={() => setShowArchived((v) => !v)}>
           <Typography variant="caption" className="text-gold">
             {showArchived ? '← Active applications' : 'Show archived'}
+          </Typography>
+        </Pressable>
+        <Pressable onPress={() => setIdFailedOnly((v) => !v)} className="mt-2">
+          <Typography variant="caption" className="text-gold">
+            {idFailedOnly ? '← All ID checks' : 'Show failed ID checks'}
           </Typography>
         </Pressable>
       </View>
@@ -60,6 +71,17 @@ export default function AdminApplicationsScreen() {
                     <Typography variant="caption" className="mt-1">
                       {titleCase(app.dog_interest)} · {titleCase(app.purpose)}
                     </Typography>
+                    {app.id_check_status === 'failed' ? (
+                      <Typography variant="caption" className="mt-0.5 text-amber-400">
+                        ID failed the format check
+                      </Typography>
+                    ) : app.id_type === 'sa_id' &&
+                      app.country &&
+                      app.country.trim().toLowerCase() !== 'south africa' ? (
+                      <Typography variant="caption" className="mt-0.5 text-gold">
+                        Confirm ID — country does not match a South African ID
+                      </Typography>
+                    ) : null}
                     <Typography variant="caption" className="mt-0.5 opacity-60">
                       {showArchived && app.archived_reason
                         ? `${app.archived_reason} · ${formatDateTime(app.archived_at ?? app.created_at)}`

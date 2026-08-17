@@ -1,13 +1,25 @@
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import type { ApplicationDraft } from '@/hooks/useApplications';
+import {
+  checkIdNumber,
+  defaultIdType,
+  normalizeIdNumber,
+  type IdType,
+} from '@/lib/identity/idNumber';
 
 /** Maps validated form values to a Supabase applications insert row. */
 export function buildApplicationDraft(values: ApplicationFormValues): ApplicationDraft {
+  const idType = (values.id_type ?? defaultIdType(values.country)) as IdType;
+  const idNumber = normalizeIdNumber(values.id_number, idType);
+  const idCheck = checkIdNumber({ type: idType, number: idNumber, country: values.country });
   return {
     user_id: null,
     full_name: values.full_name,
     date_of_birth: values.date_of_birth,
-    id_number: values.id_number,
+    id_type: idType,
+    id_number: idNumber,
+    id_check_status: idCheck.status,
+    id_check_note: idCheck.confirmNote ?? (idCheck.ok ? null : idCheck.adminSummary),
     email: values.email,
     phone: values.phone,
     occupation: values.occupation,

@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { Typography } from '@/components/ui/Typography';
+import { ID_TYPE_LABELS } from '@/lib/identity/idNumber';
 
 interface StepProps {
   getValues: UseFormGetValues<ApplicationFormValues>;
@@ -45,6 +46,7 @@ export function Step6Review({ getValues, control }: StepProps) {
       <ReviewSection title="Personal Details">
         <ReviewRow label="Name" value={v.full_name} />
         <ReviewRow label="Date of birth" value={v.date_of_birth} />
+        <ReviewRow label="Document" value={ID_TYPE_LABELS[v.id_type]} />
         <ReviewRow label="ID / Passport" value={v.id_number} />
         <ReviewRow label="Email" value={v.email} />
         <ReviewRow label="Phone" value={v.phone} />

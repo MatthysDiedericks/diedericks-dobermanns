@@ -514,6 +514,9 @@ export interface Application {
   email: string;
   phone: string;
   id_number: string | null;
+  id_type?: 'sa_id' | 'passport' | 'other_national_id' | null;
+  id_check_status?: 'passed' | 'failed' | 'not_checked' | 'manual_override' | null;
+  id_check_note?: string | null;
   occupation: string | null;
   employer: string | null;
   country: string;
