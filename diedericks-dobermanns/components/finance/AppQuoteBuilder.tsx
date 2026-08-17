@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, View, type TextInput } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, View, type TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { CatalogueItemPicker } from '@/components/finance/CatalogueItemPicker';
@@ -14,7 +14,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { useQuoteBuilderData, type QuoteDogOption } from '@/hooks/useQuoteBuilderData';
+import { useQuoteBuilderData } from '@/hooks/useQuoteBuilderData';
 import type { CatalogueItem, DeliveryDecision } from '@/lib/finance/catalogue';
 import { fetchActiveCatalogueItems } from '@/lib/finance/catalogueQueries';
 import {
@@ -31,10 +31,10 @@ import {
   lineFromCatalogue,
   syncDeliveryLine,
 } from '@/lib/finance/quoteDelivery';
-import { resolveQuotePrice } from '@/lib/finance/quotePrice';
 import { saveAppQuote } from '@/lib/finance/saveAppQuote';
 import { formatPrice } from '@/lib/format';
 import { collectQuoteOutstanding, type QuoteOutstandingItem } from '@/lib/finance/quoteOutstanding';
+import { subjectStatement } from '@/lib/finance/quoteSubject';
 import type { Quote } from '@/types/app.types';
 
 export type { QuotePrefill };
@@ -48,7 +48,7 @@ export function AppQuoteBuilder({
 }) {
   const router = useRouter();
   const applicationId = prefill?.applicationId ?? initial?.application_id ?? null;
-  const { buyers, dogs, tiers } = useQuoteBuilderData(applicationId);
+  const { buyers, dogs, litters, tiers } = useQuoteBuilderData(applicationId);
   const [submitting, setSubmitting] = useState(false);
   const [catalogue, setCatalogue] = useState<CatalogueItem[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -78,16 +78,11 @@ export function AppQuoteBuilder({
     void fetchActiveCatalogueItems().then(setCatalogue).catch(() => setCatalogue([]));
   }, []);
 
-  const preferredLitter = prefill?.application?.litterInterestId ?? prefill?.litterId ?? null;
-  const orderedDogs = useMemo(() => {
-    if (!preferredLitter) return dogs;
-    return [...dogs].sort(
-      (a, b) => Number(b.litter_id === preferredLitter) - Number(a.litter_id === preferredLitter),
-    );
-  }, [dogs, preferredLitter]);
-
   const dogTier = useMemo(
-    () => items.filter((it) => it.dog_id).map((it) => dogs.find((d) => d.id === it.dog_id)?.programme_tier ?? null),
+    () =>
+      items
+        .filter((it) => it.item_type === 'dog')
+        .map((it) => it.programme_tier ?? (it.dog_id ? dogs.find((d) => d.id === it.dog_id)?.programme_tier : null)),
     [items, dogs],
   );
 
@@ -108,42 +103,29 @@ export function AppQuoteBuilder({
   const discountNum = Number(discount) || 0;
   const total = Math.max(subtotal - discountNum, 0);
   const outstanding = collectQuoteOutstanding(items, deliveryDecision);
+  const statements = items
+    .filter((it) => it.item_type === 'dog')
+    .map((it) => {
+      const kind = it.subject_kind ?? (it.dog_id ? 'dog' : it.litter_id ? 'litter' : 'unallocated');
+      return subjectStatement({
+        kind,
+        puppy: it.dog_id ? dogs.find((d) => d.id === it.dog_id) ?? null : null,
+        litter: it.litter_id ? litters.find((l) => l.id === it.litter_id) ?? null : null,
+        tierLabel: it.programme_tier ? tiers.find((t) => t.tier_key === it.programme_tier)?.display_label : null,
+      });
+    })
+    .filter(Boolean);
 
   function focusOutstanding(item: QuoteOutstandingItem) {
-    if (item.target === 'description' && item.lineKey) {
-      descRefs.current[item.lineKey]?.focus();
-    } else if (item.target === 'price' && item.lineKey) {
-      priceRefs.current[item.lineKey]?.focus();
-    }
-  }
-
-  function addDog(dog: QuoteDogOption) {
-    const resolved = resolveQuotePrice(
-      {
-        dogPrice: dog.price,
-        dogTier: dog.programme_tier,
-        litterDefaultTier: dog.litter_default_tier,
-        applicationTier: prefill?.application?.applicationTier ?? null,
-      },
-      tiers,
-    );
-    setItems((prev) => [
-      ...prev,
-      {
-        key: nextQuoteLineKey(),
-        item_type: 'dog',
-        dog_id: dog.id,
-        description: dog.name,
-        quantity: 1,
-        unit_price: resolved.unitPrice ?? 0,
-        priceSourceLabel: resolved.sourceLabel,
-      },
-    ]);
-    autoApplied.current = false;
+    if (item.target === 'description' && item.lineKey) descRefs.current[item.lineKey]?.focus();
+    else if (item.target === 'price' && item.lineKey) priceRefs.current[item.lineKey]?.focus();
   }
 
   async function onSave() {
-    if (initial && !editGate.ok) { Alert.alert('Cannot edit', editGate.error); return; }
+    if (initial && !editGate.ok) {
+      Alert.alert('Cannot edit', editGate.error);
+      return;
+    }
     if (initial?.status === 'sent' && !changeNote.trim()) {
       Alert.alert('What changed?', 'Note the change for the audit trail.');
       return;
@@ -200,12 +182,25 @@ export function AppQuoteBuilder({
           />
           <LineItemList
             items={items}
+            puppies={dogs}
+            litters={litters}
+            tiers={tiers}
+            applicationTier={prefill?.application?.applicationTier ?? null}
             onUpdate={(key, patch) => setItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)))}
             onRemove={(key) => setItems((prev) => prev.filter((it) => it.key !== key))}
             onAdd={() =>
               setItems((prev) => [
                 ...prev,
-                { key: nextQuoteLineKey(), item_type: 'other', dog_id: null, description: '', quantity: 1, unit_price: 0 },
+                {
+                  key: nextQuoteLineKey(),
+                  item_type: 'other',
+                  dog_id: null,
+                  litter_id: null,
+                  subject_kind: 'unallocated',
+                  description: '',
+                  quantity: 1,
+                  unit_price: 0,
+                },
               ])
             }
             onAddCatalogue={() => setPickerOpen(true)}
@@ -228,19 +223,6 @@ export function AppQuoteBuilder({
             onNoteChange={setDeliveryNote}
             onDismissExportPrompt={() => setExportPrompt(null)}
           />
-          {orderedDogs.length ? (
-            <View className="flex-row flex-wrap gap-2">
-              {orderedDogs.slice(0, 12).map((d) => (
-                <Pressable
-                  key={d.id}
-                  onPress={() => addDog(d)}
-                  className="rounded-xl border border-gold/20 bg-surface px-3 py-2"
-                >
-                  <Typography variant="caption" className="text-ink-muted">+ {d.name}</Typography>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
           <Input label="Discount (ZAR)" keyboardType="phone-pad" value={discount} onChangeText={setDiscount} />
           <Input label="Valid until (YYYY-MM-DD)" value={validUntil} onChangeText={setValidUntil} />
           <Input label="Notes" value={notes} onChangeText={setNotes} multiline className="h-24" />
@@ -259,6 +241,9 @@ export function AppQuoteBuilder({
               <Typography variant="bodyMuted">Total</Typography>
               <Typography variant="subtitle" className="text-gold">{formatPrice(total)}</Typography>
             </View>
+            {statements.map((s) => (
+              <Typography key={s} variant="caption" className="mt-2 text-ink-muted">{s}</Typography>
+            ))}
           </Card>
           {editGate.ok ? (
             <>

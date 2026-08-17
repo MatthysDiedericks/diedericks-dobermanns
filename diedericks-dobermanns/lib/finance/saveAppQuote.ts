@@ -3,6 +3,7 @@ import { assertQuoteLineCount, assertQuoteTotalsMatch } from '@/lib/errors/asser
 import type { LineItemInput } from '@/lib/finance/mutations';
 import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
 import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
+import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
 import type { DeliveryDecision } from '@/lib/finance/catalogue';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote } from '@/types/app.types';
@@ -29,7 +30,7 @@ export async function saveAppQuote(input: {
 
   const cleanItems: LineItemInput[] = prepared.lines.map((it) => ({
     item_type: it.item_type as LineItemInput['item_type'],
-    dog_id: it.dog_id ?? null,
+    ...subjectColumnsForSave(it),
     description: it.description,
     quantity: it.quantity,
     unit_price: it.unit_price,
@@ -38,7 +39,13 @@ export async function saveAppQuote(input: {
   }));
 
   const intendedMeaningful = input.items.filter(
-    (it) => Boolean(it.dog_id) || it.unit_price > 0 || it.description.trim() || it.allowZeroPrice,
+    (it) =>
+      Boolean(it.dog_id) ||
+      Boolean(it.litter_id) ||
+      Boolean(it.programme_tier) ||
+      it.unit_price > 0 ||
+      it.description.trim() ||
+      it.allowZeroPrice,
   );
   if (cleanItems.length < intendedMeaningful.length) {
     const dropErr = await assertQuoteLineCount({

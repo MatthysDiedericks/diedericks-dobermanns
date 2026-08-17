@@ -683,6 +683,8 @@ export interface LineItem {
   id: string;
   item_type: LineItemType;
   dog_id: string | null;
+  litter_id?: string | null;
+  subject_kind?: string | null;
   description: string;
   quantity: number;
   unit_price: number;

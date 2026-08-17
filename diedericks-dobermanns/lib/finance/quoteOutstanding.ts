@@ -1,12 +1,17 @@
 /** What still has to be filled in before a quote can be sent — not saved. */
 
-export type QuoteOutstandingTarget = 'description' | 'price' | 'delivery';
+import { TIER_REQUIRED_MESSAGE } from '@/lib/finance/quoteSubject';
+import { lineNeedsTier } from '@/lib/finance/quoteSubjectSave';
+
+export type QuoteOutstandingTarget = 'description' | 'price' | 'delivery' | 'tier';
 
 export type QuoteOutstandingLine = {
   key?: string;
   description: string;
   unit_price: number | null | undefined;
   allowZeroPrice?: boolean;
+  item_type?: string;
+  programme_tier?: string | null;
 };
 
 export type QuoteOutstandingItem = {
@@ -20,6 +25,7 @@ export type QuoteOutstandingItem = {
 
 export const HINT_ADD_DESCRIPTION = 'Add a description';
 export const HINT_SET_PRICE = 'Set a price';
+export const HINT_SET_TIER = TIER_REQUIRED_MESSAGE;
 export const HINT_DELIVERY = 'Undecided — required before send';
 
 export function quoteFieldId(
@@ -63,6 +69,16 @@ export function collectQuoteOutstanding(
         phrase: `a price on line ${lineNo}`,
         hint: HINT_SET_PRICE,
         target: 'price',
+        lineKey: line.key,
+        lineIndex: i,
+      });
+    }
+    if (lineNeedsTier(line)) {
+      out.push({
+        id: `${key}-tier`,
+        phrase: `a tier on line ${lineNo}`,
+        hint: HINT_SET_TIER,
+        target: 'tier',
         lineKey: line.key,
         lineIndex: i,
       });
@@ -115,6 +131,7 @@ export function outstandingForSavedQuote(quote: {
       key: it.id,
       description: it.description,
       unit_price: it.unit_price,
+      item_type: it.item_type,
       allowZeroPrice:
         it.item_type === 'delivery' &&
         Number(it.unit_price) === 0 &&

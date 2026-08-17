@@ -1,19 +1,15 @@
 import type { LineItemType } from '@/types/app.types';
+import type { QuoteSubjectKind } from '@/lib/finance/quoteSubject';
 
 /**
- * Shared draft line-item shape for `LineItemRow`/`LineItemList` (currently
- * only used by the quote builder — `app/(admin)/quotes/new.tsx`; invoice
- * creation has its own `DraftLineItem` in `types/finance.ts`).
- *
- * The actual quote CRUD (create/update/status/convert-to-invoice) lives in
- * `lib/finance/quoteQueries.ts`, and invoice CRUD lives in
- * `hooks/useInvoices.ts` — this file used to duplicate both against a schema
- * that didn't match the live database; that dead code has been removed so
- * there's exactly one code path for each.
+ * Shared draft line-item shape for `LineItemRow`/`LineItemList`.
  */
 export interface LineItemInput {
   item_type: LineItemType;
   dog_id?: string | null;
+  litter_id?: string | null;
+  subject_kind?: QuoteSubjectKind | null;
+  programme_tier?: string | null;
   description: string;
   quantity: number;
   unit_price: number;

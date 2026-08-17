@@ -15,6 +15,10 @@ export type QuoteRevisionRow = {
       unit_price: number;
       line_total: number;
       sort_order?: number;
+      item_type?: string;
+      dog_id?: string | null;
+      litter_id?: string | null;
+      subject_kind?: string | null;
     }[];
     total?: number;
   };
@@ -89,7 +93,7 @@ export async function recordQuoteSendRevision(input: {
   const { data: items, error: itemsErr } = await supabase
     .from('quote_items')
     .select(
-      'item_type, dog_id, description, quantity, unit_price, line_total, sort_order, catalogue_code',
+      'item_type, dog_id, litter_id, subject_kind, description, quantity, unit_price, line_total, sort_order, catalogue_code',
     )
     .eq('quote_id', input.quoteId)
     .order('sort_order');

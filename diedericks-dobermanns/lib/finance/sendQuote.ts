@@ -128,6 +128,10 @@ export async function sendQuoteToRecipient(
       quantity: it.quantity,
       unit_price: it.unit_price,
       line_total: it.line_total,
+      item_type: it.item_type,
+      dog_id: it.dog_id,
+      litter_id: it.litter_id ?? null,
+      subject_kind: it.subject_kind ?? null,
     })),
   };
 

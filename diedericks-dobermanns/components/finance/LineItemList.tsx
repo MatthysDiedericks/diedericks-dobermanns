@@ -2,6 +2,7 @@ import { View, type TextInput } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
+import type { QuoteLitterOption, QuotePuppyOption, QuoteSubjectTier } from '@/lib/finance/quoteSubject';
 
 import { LineItemRow, type DraftLineItem } from './LineItemRow';
 
@@ -13,6 +14,10 @@ export function LineItemList({
   onAddCatalogue,
   bindDescription,
   bindPrice,
+  puppies,
+  litters,
+  tiers,
+  applicationTier,
 }: {
   items: DraftLineItem[];
   onUpdate: (key: string, patch: Partial<DraftLineItem>) => void;
@@ -21,6 +26,10 @@ export function LineItemList({
   onAddCatalogue?: () => void;
   bindDescription?: (key: string, el: TextInput | null) => void;
   bindPrice?: (key: string, el: TextInput | null) => void;
+  puppies: QuotePuppyOption[];
+  litters: QuoteLitterOption[];
+  tiers: QuoteSubjectTier[];
+  applicationTier?: string | null;
 }) {
   return (
     <>
@@ -38,6 +47,10 @@ export function LineItemList({
             onRemove={onRemove}
             bindDescription={bindDescription}
             bindPrice={bindPrice}
+            puppies={puppies}
+            litters={litters}
+            tiers={tiers}
+            applicationTier={applicationTier}
           />
         ))}
       </View>

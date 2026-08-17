@@ -2,6 +2,13 @@ import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { fetchPricingTiers } from '@/lib/finance/pricingQueries';
 import { resolveQuotePrice } from '@/lib/finance/quotePrice';
+import {
+  defaultSubjectKind,
+  litterLineDescription,
+  unallocatedLineDescription,
+  type QuoteLitterOption,
+  type QuoteSubjectKind,
+} from '@/lib/finance/quoteSubject';
 import { requireSupabase } from '@/lib/supabase';
 
 const QUOTE_LABELS: Record<string, Record<string, string>> = {
@@ -16,6 +23,7 @@ export type AppQuotePrefill = {
   notes: string;
   description: string;
   dogId: string | null;
+  subjectKind: QuoteSubjectKind;
   unitPrice: number | null;
   priceOnRequest: boolean;
   priceSourceLabel: string;
@@ -74,6 +82,11 @@ export async function buildAppQuotePrefill(
   let litterDefaultTier: string | null = null;
   let dogPrice: number | null = null;
   let dogTier: string | null = null;
+  let litterOpt: QuoteLitterOption | null = null;
+  const subjectKind = defaultSubjectKind({
+    specificDogId: app.specific_dog_id,
+    litterInterestId: app.litter_interest_id,
+  });
   if (app.specific_dog_id) {
     const { data: dog } = await supabase
       .from('dogs')
@@ -90,10 +103,24 @@ export async function buildAppQuotePrefill(
   } else if (app.litter_interest_id) {
     const { data: litter } = await supabase
       .from('litters')
-      .select('default_programme_tier')
+      .select(
+        'id, status, expected_date, default_programme_tier, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
+      )
       .eq('id', app.litter_interest_id)
       .maybeSingle();
-    litterDefaultTier = litter?.default_programme_tier ?? null;
+    if (litter) {
+      litterDefaultTier = litter.default_programme_tier ?? null;
+      const mother = Array.isArray(litter.mother) ? litter.mother[0] : litter.mother;
+      const father = Array.isArray(litter.father) ? litter.father[0] : litter.father;
+      litterOpt = {
+        id: litter.id,
+        mother_name: (mother as { name?: string | null } | null)?.name ?? '',
+        father_name: (father as { name?: string | null } | null)?.name ?? '',
+        expected_date: litter.expected_date,
+        status: litter.status,
+        default_programme_tier: litterDefaultTier,
+      };
+    }
   }
 
   const resolved = resolveQuotePrice(
@@ -110,14 +137,23 @@ export async function buildAppQuotePrefill(
     tier?.display_label ??
     labelFor('dog_interest', (app.dog_interest ?? undefined) as never);
 
+  const prefs = preferenceSummary(app);
+  const description =
+    subjectKind === 'litter' && litterOpt
+      ? `${litterLineDescription(litterOpt, tierLabel)}${prefs}`
+      : subjectKind === 'unallocated'
+        ? `${unallocatedLineDescription(tierLabel)}${prefs}`
+        : `${tierLabel}${prefs}`;
+
   return {
     applicationId,
     clientId: app.user_id,
     clientName: app.full_name,
     clientEmail: app.email,
     notes: `From application ${applicationId.slice(0, 8)}.`,
-    description: `${tierLabel}${preferenceSummary(app)}`,
-    dogId: app.specific_dog_id,
+    description,
+    dogId: subjectKind === 'dog' ? app.specific_dog_id : null,
+    subjectKind,
     unitPrice: resolved.unitPrice,
     priceOnRequest: resolved.priceOnRequest || resolved.unitPrice == null,
     priceSourceLabel: resolved.sourceLabel,

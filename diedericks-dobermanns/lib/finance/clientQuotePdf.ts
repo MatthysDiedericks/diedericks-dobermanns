@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
+import { noteForSavedQuoteLine } from '@/lib/finance/quoteSubjectNote';
 import { formatAmountPlain, formatDate } from '@/lib/finance/formatters';
 import { LOGO_BASE64 } from '@/lib/finance/logoBase64';
 import type { QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
@@ -22,19 +23,29 @@ export function buildClientQuoteHtml(
   const number = snapshot?.quote_number ?? quote.quote_number;
   const revision = snapshot?.revision ?? quote.last_sent_revision ?? quote.revision ?? 1;
   const total = Number(snapshot?.total ?? quote.total);
-  const items =
-    snapshot?.items?.map((it) => ({
-      description: it.description,
-      quantity: Number(it.quantity),
-      unit_price: Number(it.unit_price),
-      line_total: Number(it.line_total),
-    })) ?? quote.items;
+  const source = snapshot?.items ?? quote.items;
+  const items = source.map((it) => ({
+    description: it.description,
+    quantity: Number(it.quantity),
+    unit_price: Number(it.unit_price),
+    line_total: Number(it.line_total),
+    subjectNote:
+      ('subjectNote' in it && it.subjectNote) ||
+      noteForSavedQuoteLine(it as { description: string; item_type?: string; dog_id?: string | null; litter_id?: string | null; subject_kind?: string | null }),
+  }));
 
   const rows = items
     .map(
       (it) => `
       <tr>
-        <td style="padding:8px 0; border-bottom:1px solid #eee;">${escapeHtml(it.description)}</td>
+        <td style="padding:8px 0; border-bottom:1px solid #eee;">
+          ${escapeHtml(it.description)}
+          ${
+            it.subjectNote
+              ? `<div style="font-size:11px; color:#666; margin-top:4px;">${escapeHtml(it.subjectNote)}</div>`
+              : ''
+          }
+        </td>
         <td style="padding:8px 0; border-bottom:1px solid #eee; text-align:right;">${formatAmountPlain(it.line_total)}</td>
       </tr>`,
     )

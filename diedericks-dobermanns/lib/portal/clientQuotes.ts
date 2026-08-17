@@ -1,4 +1,5 @@
 import { requireSupabase } from '@/lib/supabase';
+import { litterPairLabel, subjectStatement, type QuoteSubjectKind } from '@/lib/finance/quoteSubject';
 
 export type ClientQuoteListRow = {
   id: string;
@@ -22,8 +23,19 @@ export type ClientQuoteDetail = ClientQuoteListRow & {
     quantity: number;
     unit_price: number;
     line_total: number;
+    subjectNote?: string | null;
+    item_type?: string;
+    dog_id?: string | null;
+    litter_id?: string | null;
+    subject_kind?: string | null;
   }[];
 };
+
+type Named = { name: string | null };
+function one<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 /** Non-draft quotes visible to the signed-in client (RLS). */
 export async function fetchMyClientQuotes(): Promise<ClientQuoteListRow[]> {
@@ -56,10 +68,44 @@ export async function fetchMyClientQuoteById(id: string): Promise<ClientQuoteDet
 
   const { data: items, error: itemsErr } = await supabase
     .from('quote_items')
-    .select('description, quantity, unit_price, line_total')
+    .select('description, quantity, unit_price, line_total, dog_id, litter_id, subject_kind, item_type')
     .eq('quote_id', id)
     .order('sort_order');
   if (itemsErr) throw new Error(itemsErr.message);
+
+  const rows = (items ?? []) as {
+    description: string;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+    dog_id: string | null;
+    litter_id: string | null;
+    subject_kind: string | null;
+    item_type: string;
+  }[];
+  const dogIds = [...new Set(rows.map((r) => r.dog_id).filter(Boolean))] as string[];
+  const litterIds = [...new Set(rows.map((r) => r.litter_id).filter(Boolean))] as string[];
+  const [{ data: dogs }, { data: litters }] = await Promise.all([
+    dogIds.length
+      ? supabase
+          .from('dogs')
+          .select(
+            'id, name, sex, colour, collar_colour, tail_type, birth_order, status, price, programme_tier, litter_id, litter:litters(mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name))',
+          )
+          .in('id', dogIds)
+      : Promise.resolve({ data: [] as never[] }),
+    litterIds.length
+      ? supabase
+          .from('litters')
+          .select(
+            'id, status, expected_date, default_programme_tier, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
+          )
+          .in('id', litterIds)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
+
+  const dogMap = new Map((dogs ?? []).map((d) => [d.id, d]));
+  const litterMap = new Map((litters ?? []).map((l) => [l.id, l]));
 
   const row = quote as unknown as ClientQuoteDetail;
   return {
@@ -67,11 +113,69 @@ export async function fetchMyClientQuoteById(id: string): Promise<ClientQuoteDet
     total: Number(row.total),
     subtotal: Number(row.subtotal),
     discount: Number(row.discount),
-    items: ((items ?? []) as ClientQuoteDetail['items']).map((it) => ({
-      ...it,
-      quantity: Number(it.quantity),
-      unit_price: Number(it.unit_price),
-      line_total: Number(it.line_total),
-    })),
+    items: rows.map((it) => {
+      if (it.item_type !== 'dog') {
+        return {
+          description: it.description,
+          quantity: Number(it.quantity),
+          unit_price: Number(it.unit_price),
+          line_total: Number(it.line_total),
+          subjectNote: null,
+        };
+      }
+      const kind: QuoteSubjectKind =
+        (it.subject_kind as QuoteSubjectKind | null) ??
+        (it.dog_id ? 'dog' : it.litter_id ? 'litter' : 'unallocated');
+      const dog = it.dog_id ? dogMap.get(it.dog_id) : null;
+      const litter = it.litter_id ? litterMap.get(it.litter_id) : null;
+      const litterJoin = dog
+        ? one(
+            dog.litter as
+              | { mother?: Named | Named[] | null; father?: Named | Named[] | null }
+              | { mother?: Named | Named[] | null; father?: Named | Named[] | null }[]
+              | null,
+          )
+        : null;
+      const subjectNote = subjectStatement({
+        kind,
+        puppy: dog
+          ? {
+              id: dog.id,
+              name: dog.name,
+              sex: dog.sex,
+              colour: dog.colour,
+              collar_colour: (dog as { collar_colour?: string | null }).collar_colour ?? null,
+              tail_type: (dog as { tail_type?: string | null }).tail_type ?? null,
+              birth_order: (dog as { birth_order?: number | null }).birth_order ?? null,
+              status: dog.status,
+              price: dog.price,
+              programme_tier: dog.programme_tier,
+              litter_id: dog.litter_id,
+              litter_default_tier: null,
+              litter_label: litterPairLabel({
+                mother_name: one(litterJoin?.mother as Named | Named[] | null)?.name,
+                father_name: one(litterJoin?.father as Named | Named[] | null)?.name,
+              }),
+            }
+          : null,
+        litter: litter
+          ? {
+              id: litter.id,
+              mother_name: one(litter.mother as unknown as Named | Named[] | null)?.name ?? '',
+              father_name: one(litter.father as unknown as Named | Named[] | null)?.name ?? '',
+              expected_date: litter.expected_date,
+              status: litter.status,
+              default_programme_tier: litter.default_programme_tier ?? null,
+            }
+          : null,
+      });
+      return {
+        description: it.description,
+        quantity: Number(it.quantity),
+        unit_price: Number(it.unit_price),
+        line_total: Number(it.line_total),
+        subjectNote,
+      };
+    }),
   };
 }

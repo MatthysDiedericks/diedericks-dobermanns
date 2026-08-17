@@ -6,6 +6,8 @@ export type DraftishCatalogueLine = {
   key: string;
   item_type: LineItemType;
   dog_id?: string | null;
+  litter_id?: string | null;
+  subject_kind?: 'dog' | 'litter' | 'unallocated' | null;
   description: string;
   quantity: number;
   unit_price: number;
@@ -21,6 +23,8 @@ export function lineFromCatalogue(
     key: nextKey(),
     item_type: item.item_type as LineItemType,
     dog_id: null,
+    litter_id: null,
+    subject_kind: 'unallocated',
     description: item.description_template?.trim() || item.label,
     quantity: 1,
     unit_price: item.price_varies || item.default_price == null ? 0 : item.default_price,
@@ -71,6 +75,8 @@ export function syncDeliveryLine(
         key: nextKey(),
         item_type: 'delivery',
         dog_id: null,
+        litter_id: null,
+        subject_kind: 'unallocated',
         description: template.description_template || template.label,
         quantity: 1,
         unit_price: 0,
@@ -99,6 +105,8 @@ export function syncDeliveryLine(
         key: nextKey(),
         item_type: 'delivery',
         dog_id: null,
+        litter_id: null,
+        subject_kind: 'unallocated',
         description: template.description_template || template.label,
         quantity: 1,
         unit_price: 0,

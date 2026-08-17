@@ -1,6 +1,7 @@
 import type { DraftLineItem } from '@/components/finance/LineItemRow';
 import type { AppQuotePrefill } from '@/lib/finance/buildAppQuotePrefill';
 import { buyerKey } from '@/lib/finance/quoteBuyerOptions';
+import { defaultSubjectKind, inferTierKeyFromDescription } from '@/lib/finance/quoteSubject';
 import type { Quote } from '@/types/app.types';
 
 export type QuotePrefill = {
@@ -22,23 +23,38 @@ export function seedAppQuoteItems(
   application?: AppQuotePrefill,
 ): DraftLineItem[] {
   if (quote?.items?.length) {
-    return quote.items.map((it) => ({
-      key: nextQuoteLineKey(),
-      item_type: it.item_type,
-      dog_id: it.dog_id,
-      description: it.description,
-      quantity: it.quantity,
-      unit_price: it.unit_price,
-      catalogue_code: it.catalogue_code ?? null,
-      allowZeroPrice: it.item_type === 'delivery' && it.unit_price === 0,
-    }));
+    return quote.items.map((it) => {
+      const kind =
+        (it.subject_kind as DraftLineItem['subject_kind']) ??
+        (it.dog_id ? 'dog' : it.litter_id ? 'litter' : 'unallocated');
+      return {
+        key: nextQuoteLineKey(),
+        item_type: it.item_type,
+        dog_id: it.dog_id,
+        litter_id: it.litter_id ?? null,
+        subject_kind: kind,
+        programme_tier: inferTierKeyFromDescription(it.description),
+        description: it.description,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        catalogue_code: it.catalogue_code ?? null,
+        allowZeroPrice: it.item_type === 'delivery' && it.unit_price === 0,
+      };
+    });
   }
   if (application) {
+    const kind = application.subjectKind ?? defaultSubjectKind({
+      specificDogId: application.dogId,
+      litterInterestId: application.litterInterestId,
+    });
     return [
       {
         key: nextQuoteLineKey(),
         item_type: 'dog',
         dog_id: application.dogId,
+        litter_id: kind === 'litter' ? application.litterInterestId : null,
+        subject_kind: kind,
+        programme_tier: application.applicationTier,
         description: application.description,
         quantity: 1,
         unit_price: application.unitPrice ?? 0,
@@ -51,6 +67,9 @@ export function seedAppQuoteItems(
       key: nextQuoteLineKey(),
       item_type: 'dog',
       dog_id: null,
+      litter_id: null,
+      subject_kind: 'unallocated',
+      programme_tier: null,
       description: '',
       quantity: 1,
       unit_price: 0,

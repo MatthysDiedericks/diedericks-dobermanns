@@ -1,4 +1,7 @@
 /** Default description when the admin picks a type and amount but leaves the text blank. */
+import { subjectSaveError } from '@/lib/finance/quoteSubjectSave';
+import type { QuoteSubjectKind } from '@/lib/finance/quoteSubject';
+
 export const DEFAULT_LINE_DESCRIPTIONS: Record<string, string> = {
   dog: 'Dog',
   delivery: 'Delivery / travel',
@@ -18,14 +21,30 @@ export type DraftishLine = {
   quantity: number;
   unit_price: number;
   dog_id?: string | null;
+  litter_id?: string | null;
+  subject_kind?: QuoteSubjectKind | null;
+  programme_tier?: string | null;
   item_type: string;
   allowZeroPrice?: boolean;
 };
 
+function isMeaningful(it: DraftishLine): boolean {
+  return (
+    Boolean(it.description.trim()) ||
+    it.unit_price > 0 ||
+    Boolean(it.allowZeroPrice && it.unit_price === 0) ||
+    Boolean(it.dog_id) ||
+    Boolean(it.litter_id) ||
+    Boolean(it.programme_tier) ||
+    (it.item_type === 'dog' && Boolean(it.subject_kind) && it.subject_kind !== 'unallocated')
+  );
+}
+
 /**
  * Prepare quote lines for save:
- * - drop genuinely empty lines (no description, no price, no dog)
- * - default description from item type when a priced/dog line lacks one
+ * - drop genuinely empty lines
+ * - default description from item type when a priced/subject line lacks one
+ * - block when a dog line has no tier or an inconsistent subject
  * - allow R0 when allowZeroPrice (included delivery)
  */
 export function prepareQuoteLinesForSave<T extends DraftishLine>(
@@ -37,13 +56,21 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
     const it = items[i]!;
     const desc = it.description.trim();
     const hasDog = Boolean(it.dog_id);
+    const hasLitter = Boolean(it.litter_id);
+    const hasTier = Boolean(it.programme_tier);
     const hasPrice = it.unit_price > 0;
     const allowZero = Boolean(it.allowZeroPrice) && it.unit_price === 0;
     const lineNo = i + 1;
+    const hasSubject = hasDog || hasLitter || hasTier;
 
-    if (!desc && !hasPrice && !hasDog && !allowZero) continue;
+    if (!isMeaningful(it)) continue;
 
-    if (!desc && (hasPrice || hasDog || allowZero)) {
+    const subjectErr = subjectSaveError(it);
+    if (subjectErr) {
+      return { ok: false, error: `Line ${lineNo}: ${subjectErr}` };
+    }
+
+    if (!desc && (hasPrice || hasSubject || allowZero)) {
       kept.push({
         ...it,
         description: defaultDescriptionForType(it.item_type),
@@ -51,7 +78,7 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
       continue;
     }
 
-    if (desc && !hasPrice && !hasDog && !allowZero) {
+    if (desc && !hasPrice && !hasSubject && !allowZero) {
       return {
         ok: false,
         error: `Line ${lineNo} has a description but no price. Add an amount, or remove the line.`,

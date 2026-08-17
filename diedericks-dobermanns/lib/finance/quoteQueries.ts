@@ -1,6 +1,7 @@
 import type { LineItemInput } from '@/lib/finance/mutations';
 import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { resolveQuoteBuyer } from '@/lib/finance/resolveQuoteBuyer';
+import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
@@ -14,7 +15,7 @@ const QUOTE_SELECT =
   'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
   'delivery_decision, delivery_note, ' +
   'client:users(id, full_name, phone, email), ' +
-  'items:quote_items(id, item_type, dog_id, description, quantity, unit_price, line_total, sort_order, catalogue_code)';
+  'items:quote_items(id, item_type, dog_id, litter_id, subject_kind, description, quantity, unit_price, line_total, sort_order, catalogue_code)';
 
 export interface QuoteHeaderInput {
   client_id: string | null;
@@ -41,7 +42,7 @@ export interface QuoteHeaderInput {
 function priceItems(items: LineItemInput[]) {
   const rows = items.map((it, i) => ({
     item_type: it.item_type,
-    dog_id: it.dog_id ?? null,
+    ...subjectColumnsForSave(it),
     description: it.description.trim(),
     quantity: it.quantity,
     unit_price: round2(it.unit_price),
@@ -273,5 +274,8 @@ export async function convertQuoteToInvoice(quoteId: string): Promise<string> {
   const supabase = requireSupabase();
   const { data, error } = await supabase.rpc('convert_quote_to_invoice', { p_quote_id: quoteId });
   if (error) throw new Error(error.message);
+  const { reserveDogsFromQuote } = await import('@/lib/finance/reserveQuotedDogs');
+  const reserved = await reserveDogsFromQuote(supabase, quoteId);
+  if (reserved.error) console.error('[convertQuoteToInvoice] reserve:', reserved.error);
   return data as string;
 }

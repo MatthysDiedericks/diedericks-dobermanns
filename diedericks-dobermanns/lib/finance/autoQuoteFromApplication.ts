@@ -33,7 +33,9 @@ export async function createDraftQuoteFromApplication(
       [
         {
           item_type: 'dog',
-          dog_id: prefill.dogId,
+          dog_id: prefill.subjectKind === 'dog' ? prefill.dogId : null,
+          litter_id: prefill.subjectKind === 'litter' ? prefill.litterInterestId : null,
+          subject_kind: prefill.subjectKind,
           description: prefill.description,
           quantity: 1,
           unit_price: prefill.unitPrice ?? 0,

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View, type TextInput } from 'react-native';
 
 import { LastChargedHint } from '@/components/finance/LastChargedHint';
+import { QuoteLineSubject } from '@/components/finance/QuoteLineSubject';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
@@ -14,6 +15,7 @@ import {
   lineNeedsDescription,
   lineNeedsPrice,
 } from '@/lib/finance/quoteOutstanding';
+import type { QuoteLitterOption, QuotePuppyOption, QuoteSubjectTier } from '@/lib/finance/quoteSubject';
 import type { LineItemType } from '@/types/app.types';
 
 const ITEM_TYPES: LineItemType[] = [
@@ -39,6 +41,10 @@ export function LineItemRow({
   onRemove,
   bindDescription,
   bindPrice,
+  puppies,
+  litters,
+  tiers,
+  applicationTier,
 }: {
   item: DraftLineItem;
   index: number;
@@ -47,6 +53,10 @@ export function LineItemRow({
   onRemove: (key: string) => void;
   bindDescription?: (key: string, el: TextInput | null) => void;
   bindPrice?: (key: string, el: TextInput | null) => void;
+  puppies: QuotePuppyOption[];
+  litters: QuoteLitterOption[];
+  tiers: QuoteSubjectTier[];
+  applicationTier?: string | null;
 }) {
   const missingDesc = lineNeedsDescription(item);
   const missingPrice = lineNeedsPrice(item);
@@ -62,6 +72,15 @@ export function LineItemRow({
         ) : null}
       </View>
 
+      <QuoteLineSubject
+        item={item}
+        puppies={puppies}
+        litters={litters}
+        tiers={tiers}
+        applicationTier={applicationTier}
+        onUpdate={onUpdate}
+      />
+
       <Typography variant="label" className="mb-2">
         Type
       </Typography>
@@ -71,7 +90,14 @@ export function LineItemRow({
           return (
             <Pressable
               key={t}
-              onPress={() => onUpdate(item.key, { item_type: t })}
+              onPress={() =>
+                onUpdate(item.key, {
+                  item_type: t,
+                  ...(t !== 'dog'
+                    ? { dog_id: null, litter_id: null, subject_kind: 'unallocated' as const }
+                    : {}),
+                })
+              }
               className={`min-w-[5.5rem] rounded-lg border px-2.5 py-1.5 ${
                 active ? 'border-gold bg-gold/15' : 'border-gold/20 bg-surface'
               }`}

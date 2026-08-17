@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { DocumentList } from '@/components/documents/DocumentList';
@@ -11,6 +11,8 @@ import { LitterHealthTab } from '@/components/litters/LitterHealthTab';
 import { LitterNotesTab } from '@/components/litters/LitterNotesTab';
 import { LitterPhotosTab } from '@/components/litters/LitterPhotosTab';
 import { LitterPuppiesTab } from '@/components/litters/LitterPuppiesTab';
+import { LitterQuoteHolders } from '@/components/litters/LitterQuoteHolders';
+import { fetchLitterQuoteHolders, type LitterQuoteHolder } from '@/lib/finance/litterQuoteHolders';
 import { LitterReportsTab } from '@/components/litters/LitterReportsTab';
 import { LitterSharingTab } from '@/components/litters/LitterSharingTab';
 import { LitterTodosTab } from '@/components/litters/LitterTodosTab';
@@ -62,7 +64,13 @@ export default function LitterDetailScreen() {
   const { litter, puppies, loading, error } = useLitterDetail(litterId);
   const { puppies: weightPuppies } = useLitterWeights(litterId, litter?.actual_date);
   const [tab, setTab] = useState<TabId>('puppies');
+  const [holders, setHolders] = useState<LitterQuoteHolder[]>([]);
   const puppyIds = puppies.map((p) => p.id);
+
+  useEffect(() => {
+    if (!litterId) return;
+    void fetchLitterQuoteHolders(litterId).then(setHolders).catch(() => setHolders([]));
+  }, [litterId]);
 
   const detail = litter as typeof litter & {
     litter_letter?: string | null;
@@ -132,6 +140,18 @@ export default function LitterDetailScreen() {
             <LitterBulkTierAction
               litterId={litterId}
               currentTier={(detail as { default_programme_tier?: string | null }).default_programme_tier}
+            />
+            <LitterQuoteHolders
+              holders={holders}
+              puppies={puppies.map((p) => ({
+                id: p.id,
+                name: p.name,
+                status: p.status,
+                collar_colour: (p as { collar_colour?: string | null }).collar_colour ?? null,
+              }))}
+              onAllocated={() => {
+                void fetchLitterQuoteHolders(litterId).then(setHolders).catch(() => setHolders([]));
+              }}
             />
             <LitterPuppiesTab litterId={litterId} puppies={puppies} />
           </>
