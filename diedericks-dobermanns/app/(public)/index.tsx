@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Link, useRouter } from 'expo-router';
+import { type Href, Link, useRouter } from 'expo-router';
 import { Dimensions, FlatList, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,7 +28,7 @@ const TIERS = [
   {
     title: 'Elite Developed Puppies',
     desc: '6-month in-kennel programme with personal delivery and full handover.',
-    href: '/elite-developed' as const,
+    href: '/(public)/elite-developed' as Href,
   },
   {
     title: 'Elite Family Protection Dogs',

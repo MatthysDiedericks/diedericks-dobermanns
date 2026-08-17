@@ -5,7 +5,7 @@ import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fiel
 import { Typography } from '@/components/ui/Typography';
 import type { Control } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 
 interface StepProps {
   control: Control<ApplicationFormValues>;
@@ -25,7 +25,7 @@ export function Step4Preferences({ control }: StepProps) {
           { value: 'protection_dog', label: 'Fully Trained Protection Dog' },
         ]}
       />
-      <Pressable onPress={() => router.push('/elite-developed')} className="mb-4">
+      <Pressable onPress={() => router.push('/(public)/elite-developed' as Href)} className="mb-4">
         <Typography variant="caption" className="text-gold">
           Elite Developed — what six months includes →
         </Typography>

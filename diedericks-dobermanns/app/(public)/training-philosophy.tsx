@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { type Href, Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -78,7 +78,7 @@ export default function TrainingPhilosophyScreen() {
             <Typography variant="bodyMuted">{d.body}</Typography>
           </Collapsible>
         ))}
-        <Link href="/elite-developed" asChild>
+        <Link href={'/(public)/elite-developed' as Href} asChild>
           <Pressable className="mt-6">
             <Typography variant="label">The Elite Developed Puppy Programme →</Typography>
           </Pressable>

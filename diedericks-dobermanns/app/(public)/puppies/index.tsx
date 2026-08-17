@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { type Href, Link, useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { DogCard } from '@/components/dogs/DogCard';
@@ -35,7 +35,7 @@ export default function PuppiesScreen() {
       <PageHeader eyebrow="Next Generation" title="Puppies" back={false} />
 
       <View className="mb-6 px-6">
-        <Link href="/elite-developed" asChild>
+        <Link href={'/(public)/elite-developed' as Href} asChild>
           <Pressable>
             <Typography variant="label">The Elite Developed Puppy Programme →</Typography>
           </Pressable>

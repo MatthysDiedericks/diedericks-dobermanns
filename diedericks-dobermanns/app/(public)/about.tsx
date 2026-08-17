@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -23,7 +23,7 @@ const OFFERINGS = [
     icon: 'ribbon' as const,
     title: 'Elite Developed Puppies',
     body: 'We develop our Elite pups in-kennel until six months of age — an obedience foundation, an introduction to protection work, structured socialisation, and real-world environmental exposure most buyers could never replicate on their own. And we don\u2019t send a courier: we deliver personally and hand over formally, so you and your dog begin the right way.',
-    href: '/elite-developed' as const,
+    href: '/(public)/elite-developed' as Href,
   },
   {
     icon: 'shield-checkmark' as const,
