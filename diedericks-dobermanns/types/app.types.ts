@@ -736,6 +736,13 @@ export interface Quote {
   delivery_note?: string | null;
   // Joined / derived
   client?: AppUser;
+  contact?: {
+    full_name: string | null;
+    email?: string | null;
+    phone?: string | null;
+    merged_into_contact_id?: string | null;
+  } | null;
+  application?: { email?: string | null; phone?: string | null } | null;
   items?: LineItem[];
 }
 

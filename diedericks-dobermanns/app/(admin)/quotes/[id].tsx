@@ -15,18 +15,12 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useQuoteDetail } from '@/hooks/useQuotes';
 import { assertQuoteEditable, summariseQuoteChanges } from '@/lib/finance/quoteEditGuards';
-import {
-  buildQuoteMessage,
-  convertQuoteToInvoice,
-  quotePhone,
-  reopenQuote,
-  updateQuoteStatus,
-} from '@/lib/finance/quoteQueries';
+import { buildQuoteMessage, convertQuoteToInvoice, quotePhone, reopenQuote, updateQuoteStatus } from '@/lib/finance/quoteQueries';
 import { sendQuoteToRecipient } from '@/lib/finance/sendQuote';
-import { fetchQuoteRevisions } from '@/lib/finance/quoteRevisions';
-import type { QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
+import { fetchQuoteRevisions, type QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
+import { quoteBuyerDisplay } from '@/lib/finance/quoteBuyerDisplay';
 import { formatPrice, titleCase } from '@/lib/format';
-import { QUOTE_TONE, quoteClientLabel } from '@/app/(admin)/quotes/index';
+import { QUOTE_TONE } from '@/app/(admin)/quotes/index';
 import { requireSupabase } from '@/lib/supabase';
 import type { QuoteStatus } from '@/types/app.types';
 
@@ -58,12 +52,10 @@ export default function QuoteDetailScreen() {
   }
 
   const editGate = quote
-    ? assertQuoteEditable({
-        status: quote.status,
-        converted_invoice_id: quote.converted_invoice_id,
-      })
+    ? assertQuoteEditable({ status: quote.status, converted_invoice_id: quote.converted_invoice_id })
     : null;
   const previouslySent = Boolean(quote?.sent_at) || (quote?.revision ?? 1) > 1;
+  const buyer = quote ? quoteBuyerDisplay(quote) : null;
   const canConvert =
     !quote?.converted_invoice_id && (quote?.status === 'sent' || quote?.status === 'accepted');
   const canSend = quote?.status === 'draft' || quote?.status === 'sent';
@@ -187,9 +179,12 @@ export default function QuoteDetailScreen() {
         <View className="gap-4 px-6 pb-10">
           <Card>
             <View className="flex-row items-center justify-between">
-              <Typography variant="subtitle">{quoteClientLabel(quote)}</Typography>
+              <Typography variant="subtitle">{buyer?.name}</Typography>
               <Badge label={titleCase(quote.status)} tone={QUOTE_TONE[quote.status]} />
             </View>
+            {buyer?.showNoPortalMarker ? (
+              <Typography variant="caption" className="mt-1 text-gold">no portal account</Typography>
+            ) : null}
             {(quote.revision ?? 1) > 1 ? (
               <Typography variant="caption" className="mt-1 text-gold">
                 Revision {quote.revision}

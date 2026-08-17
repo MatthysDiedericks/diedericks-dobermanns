@@ -48,11 +48,11 @@ async function resolveRecipient(quote: Quote): Promise<QuoteSendRecipient> {
   if (contactId) {
     const { data, error } = await supabase
       .from('contacts')
-      .select('full_name, email, user_id')
+      .select('full_name, email, user_id, merged_into_contact_id')
       .eq('id', contactId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (data?.email) {
+    if (data?.email && !data.merged_into_contact_id) {
       return {
         email: data.email,
         fullName: data.full_name ?? 'there',

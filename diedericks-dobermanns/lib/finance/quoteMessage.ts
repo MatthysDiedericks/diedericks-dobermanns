@@ -1,4 +1,9 @@
 import type { Quote } from '@/types/app.types';
+import {
+  quoteBuyerEmail,
+  quoteBuyerName,
+  quoteBuyerPhone,
+} from '@/lib/finance/quoteBuyerDisplay';
 
 const EMAIL_RE = /\S+@\S+\.\S+/;
 
@@ -9,23 +14,26 @@ function extractWalkinContact(notes: string | null): string | null {
   return match ? match[1].trim() : null;
 }
 
-/** Best-available phone number for a quote's client, whether app-account or walk-in. */
+/** Best-available phone: portal user → active contact → application → walk-in notes. */
 export function quotePhone(quote: Quote): string | null {
-  if (quote.client?.phone) return quote.client.phone;
+  const fromBuyer = quoteBuyerPhone(quote);
+  if (fromBuyer) return fromBuyer;
   const contact = extractWalkinContact(quote.notes);
   return contact && !EMAIL_RE.test(contact) ? contact : null;
 }
 
-/** Best-available email for a quote's client, whether app-account or walk-in. */
+/** Best-available email: portal user → active contact → application → walk-in notes. */
 export function quoteEmail(quote: Quote): string | null {
-  if (quote.client?.email) return quote.client.email;
+  const fromBuyer = quoteBuyerEmail(quote);
+  if (fromBuyer) return fromBuyer;
   const contact = extractWalkinContact(quote.notes);
   return contact && EMAIL_RE.test(contact) ? contact : null;
 }
 
 /** Plain-text summary shared by the WhatsApp and email send actions. */
 export function buildQuoteMessage(quote: Quote, changeNote?: string | null): string {
-  const name = quote.client?.full_name ?? quote.historical_client_name ?? 'there';
+  const resolved = quoteBuyerName(quote);
+  const name = resolved === 'Unassigned' ? 'there' : resolved;
   const rev = quote.revision && quote.revision > 1 ? ` · Revision ${quote.revision}` : '';
   const lines = (quote.items ?? []).map((it) => `- ${it.description}: R${it.line_total.toFixed(2)}`);
   const validUntil = quote.valid_until

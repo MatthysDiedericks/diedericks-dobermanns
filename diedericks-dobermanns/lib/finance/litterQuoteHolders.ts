@@ -1,4 +1,5 @@
 import { allocateDogToClient } from '@/lib/dogs/allocation';
+import { quoteBuyerName } from '@/lib/finance/quoteBuyerDisplay';
 import { dogLineDescription, litterPairLabel } from '@/lib/finance/quoteSubject';
 import { requireSupabase } from '@/lib/supabase';
 
@@ -25,6 +26,7 @@ type QuoteJoin = {
   created_at: string;
   historical_client_name: string | null;
   client: { full_name: string | null } | null;
+  contact: { full_name: string | null; merged_into_contact_id?: string | null } | null;
   application: {
     full_name: string;
     preferred_sex: string | null;
@@ -40,7 +42,7 @@ export async function fetchLitterQuoteHolders(litterId: string): Promise<LitterQ
   const { data, error } = await supabase
     .from('quote_items')
     .select(
-      'id, quote_id, quote:quotes!quote_items_quote_id_fkey(id, quote_number, total, converted_invoice_id, created_at, historical_client_name, client:users!quotes_client_id_fkey(full_name), application:applications(full_name, preferred_sex, preferred_colour, tail_preference, dog_interest))',
+      'id, quote_id, quote:quotes!quote_items_quote_id_fkey(id, quote_number, total, converted_invoice_id, created_at, historical_client_name, client:users!quotes_client_id_fkey(full_name), contact:contacts!quotes_contact_id_fkey(full_name, email, merged_into_contact_id), application:applications(full_name, preferred_sex, preferred_colour, tail_preference, dog_interest))',
     )
     .eq('litter_id', litterId)
     .eq('subject_kind', 'litter');
@@ -59,7 +61,11 @@ export async function fetchLitterQuoteHolders(litterId: string): Promise<LitterQ
         quoteNumber: q.quote_number,
         total: Number(q.total),
         convertedInvoiceId: q.converted_invoice_id,
-        buyerName: q.client?.full_name ?? q.application?.full_name ?? q.historical_client_name ?? 'Buyer',
+        buyerName: quoteBuyerName({
+          client: q.client,
+          contact: q.contact,
+          historical_client_name: q.historical_client_name,
+        }),
         depositPaid: Boolean(q.converted_invoice_id),
         quotedAt: q.created_at,
         preferredSex: q.application?.preferred_sex ?? null,
