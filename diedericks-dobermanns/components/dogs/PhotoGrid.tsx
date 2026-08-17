@@ -17,6 +17,7 @@ import { PhotoCard } from '@/components/dogs/PhotoCard';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { GRID_PAGE_SIZE } from '@/lib/thumbs';
 import type { DogMedia } from '@/types/app.types';
 
 interface PhotoGridProps {
@@ -36,6 +37,7 @@ export function PhotoGrid({
 }: PhotoGridProps) {
   const [preview, setPreview] = useState<DogMedia | null>(null);
   const [captionEdit, setCaptionEdit] = useState<{ id: string; text: string } | null>(null);
+  const [shown, setShown] = useState(GRID_PAGE_SIZE);
   const width = Dimensions.get('window').width;
   const cellSize = Math.floor(width / 3);
 
@@ -127,7 +129,7 @@ export function PhotoGrid({
   return (
     <>
       <FlatList
-        data={ordered}
+        data={ordered.slice(0, shown)}
         keyExtractor={(item) => item.id}
         numColumns={3}
         scrollEnabled={false}
@@ -147,6 +149,19 @@ export function PhotoGrid({
               No photos yet. Tap Add Photos to upload.
             </Typography>
           </View>
+        }
+        ListFooterComponent={
+          shown < ordered.length ? (
+            <Pressable
+              onPress={() => setShown((n) => n + GRID_PAGE_SIZE)}
+              className="items-center py-4"
+            >
+              <Typography variant="caption" className="text-gold">
+                Load more ({Math.min(GRID_PAGE_SIZE, ordered.length - shown)} of{' '}
+                {ordered.length - shown})
+              </Typography>
+            </Pressable>
+          ) : null
         }
       />
 

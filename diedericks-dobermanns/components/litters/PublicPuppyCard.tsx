@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
 import { View } from 'react-native';
 
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { Typography } from '@/components/ui/Typography';
 import { titleCase } from '@/lib/format';
 import { CollarDot } from '@/lib/litters/collarColours';
@@ -30,11 +30,7 @@ export function PublicPuppyCard({
     <View className="w-[48%] overflow-hidden rounded-2xl border border-gold/15 bg-black-rich">
       <View className="h-32 w-full items-center justify-center bg-surface">
         {photoUrl ? (
-          <Image
-            source={{ uri: photoUrl }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-          />
+          <ThumbImage uri={photoUrl} />
         ) : (
           <CollarDot colour={collarColour} size={24} />
         )}

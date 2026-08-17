@@ -1,10 +1,10 @@
-import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { PhotoPicker } from '@/components/forms/PhotoPicker';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -102,7 +102,7 @@ export default function AddPhotosScreen() {
             <View className="mt-6 flex-row flex-wrap gap-3">
               {myUploads.map((m) => (
                 <View key={m.id} className="h-24 w-24 overflow-hidden rounded-xl border border-gold/20 bg-surface">
-                  <Image source={{ uri: m.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  <ThumbImage uri={m.url} size="avatar" />
                   {!m.is_public ? (
                     <View className="absolute inset-x-0 bottom-0 items-center bg-black/70 py-1">
                       <Badge label="Awaiting kennel review" tone="gold" />

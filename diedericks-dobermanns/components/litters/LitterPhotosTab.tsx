@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { useLitterMedia } from '@/hooks/useLitterMedia';
@@ -57,7 +57,7 @@ export function LitterPhotosTab({
               ])
             }
           >
-            <Image source={{ uri: p.public_url }} style={{ width: 80, height: 80, borderRadius: 8, marginRight: 8 }} />
+            <ThumbImage uri={p.public_url} size="avatar" style={{ width: 80, height: 80, borderRadius: 8, marginRight: 8 }} />
           </Pressable>
         ))}
       </ScrollView>
@@ -76,9 +76,10 @@ export function LitterPhotosTab({
           </Typography>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="max-w-[180px]">
             {(puppyPhotos.get(p.id) ?? []).map((photo) => (
-              <Image
+              <ThumbImage
                 key={photo.id}
-                source={{ uri: photo.public_url }}
+                uri={photo.public_url}
+                size="avatar"
                 style={{ width: 40, height: 40, borderRadius: 6, marginRight: 4 }}
               />
             ))}

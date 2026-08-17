@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Dimensions, ScrollView, View } from 'react-native';
 
+import { ThumbImage } from '@/components/media/ThumbImage';
 import type { DogMedia } from '@/types/app.types';
 
 const { width } = Dimensions.get('window');
@@ -31,12 +31,11 @@ export function DogGallery({ media, height = 360 }: DogGalleryProps) {
         }
       >
         {photos.map((m) => (
-          <Image
+          <ThumbImage
             key={m.id}
-            source={{ uri: m.url }}
+            uri={m.url}
+            size="hero"
             style={{ width, height }}
-            contentFit="cover"
-            transition={300}
           />
         ))}
       </ScrollView>

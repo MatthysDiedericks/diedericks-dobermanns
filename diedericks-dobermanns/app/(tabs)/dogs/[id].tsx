@@ -1,10 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image } from 'expo-image';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { DogGalleryVideoItem } from '@/components/dogs/DogGalleryVideoItem';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -49,7 +49,7 @@ export default function DogProfileScreen() {
       <PageHeader title={dog.name} back />
       <ScrollView className="px-6 pb-12">
         {photo ? (
-          <Image source={{ uri: photo }} style={{ width: '100%', height: 220, borderRadius: 12 }} contentFit="cover" />
+          <ThumbImage uri={photo} size="hero" style={{ width: '100%', height: 220, borderRadius: 12 }} />
         ) : null}
         <View className="mt-3 flex-row flex-wrap gap-2">
           {TABS.map((t) => (
@@ -101,7 +101,7 @@ export default function DogProfileScreen() {
           <View className="mt-4">
             <View className="flex-row flex-wrap gap-2">
               {photos.map((m) => (
-                <Image key={m.id} source={{ uri: m.url }} style={{ width: 100, height: 100, borderRadius: 8 }} />
+                <ThumbImage key={m.id} uri={m.url} size="avatar" style={{ width: 100, height: 100, borderRadius: 8 }} />
               ))}
               {photos.length === 0 && videos.length === 0 ? (
                 <Typography variant="caption" className="text-subtle">No media yet.</Typography>

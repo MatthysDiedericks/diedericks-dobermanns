@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Animated, Pressable, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { ExpectingDogEntry, KennelDog } from '@/hooks/useKennelDogs';
@@ -63,7 +63,7 @@ function DogPhoto({ dog, muted }: { dog: KennelDog; muted?: boolean }) {
       className={`h-16 w-16 overflow-hidden rounded-xl bg-black-rich ${muted ? 'opacity-60' : ''}`}
     >
       {photo ? (
-        <Image source={{ uri: photo }} style={{ width: 64, height: 64 }} contentFit="cover" />
+        <ThumbImage uri={photo} size="avatar" style={{ width: 64, height: 64 }} />
       ) : (
         <View className="flex-1 items-center justify-center">
           <Ionicons name="paw" size={22} color={Colors.gold} />

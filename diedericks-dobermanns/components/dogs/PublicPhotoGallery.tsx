@@ -18,6 +18,7 @@ import Animated, {
 
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import type { DogMedia } from '@/types/app.types';
 
 const HERO_HEIGHT = 280;
@@ -95,11 +96,10 @@ export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
   return (
     <>
       <Pressable onPress={() => primary && setViewer(primary)}>
-        <Image
-          source={{ uri: primary?.url }}
+        <ThumbImage
+          uri={primary?.url}
+          size="hero"
           style={{ width: '100%', height: HERO_HEIGHT }}
-          contentFit="cover"
-          transition={300}
         />
       </Pressable>
 
@@ -111,7 +111,6 @@ export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
           renderItem={({ item }) => {
-            const uri = item.thumbnail_url ?? item.url;
             const selected = item.id === primary?.id;
             return (
               <Pressable onPress={() => setViewer(item)}>
@@ -120,10 +119,10 @@ export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
                     selected ? 'border-gold' : 'border-transparent'
                   }`}
                 >
-                  <Image
-                    source={{ uri }}
+                  <ThumbImage
+                    uri={item.thumbnail_url ?? item.url}
+                    size="avatar"
                     style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
-                    contentFit="cover"
                   />
                 </View>
               </Pressable>

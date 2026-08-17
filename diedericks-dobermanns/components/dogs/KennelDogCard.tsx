@@ -1,8 +1,8 @@
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Alert, Pressable, View } from 'react-native';
 
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { Typography } from '@/components/ui/Typography';
 import type { Dog } from '@/types/app.types';
 import { formatDogAge } from '@/lib/kennel/formatters';
@@ -36,7 +36,7 @@ export function KennelDogCard({
     >
       <View className="h-28 rounded-lg bg-black-rich overflow-hidden mb-2">
         {photo ? (
-          <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+          <ThumbImage uri={photo} />
         ) : null}
       </View>
       <Typography variant="subtitle" className="text-gold" numberOfLines={1}>{dog.name}</Typography>

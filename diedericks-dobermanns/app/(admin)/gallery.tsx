@@ -1,5 +1,4 @@
-import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AddDogMediaCard } from '@/components/admin/AddDogMediaCard';
@@ -11,12 +10,16 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useAdminGallery, useDogsForMediaPicker } from '@/hooks/useAdmin';
 import { setGalleryFeatured } from '@/hooks/useMutations';
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { titleCase } from '@/lib/format';
+import { GRID_PAGE_SIZE } from '@/lib/thumbs';
 
 export default function AdminGalleryScreen() {
   const { data: items, loading, refetch } = useAdminGallery();
   const { data: dogs } = useDogsForMediaPicker();
   const [busy, setBusy] = useState<string | null>(null);
+  const [shown, setShown] = useState(GRID_PAGE_SIZE);
+  const visible = useMemo(() => items.slice(0, shown), [items, shown]);
 
   async function toggle(id: string, next: boolean) {
     setBusy(id);
@@ -35,15 +38,11 @@ export default function AdminGalleryScreen() {
         {!loading && items.length === 0 ? (
           <EmptyState title="No gallery items yet" />
         ) : (
-          items.map((item) => (
+          visible.map((item) => (
             <Card key={item.id} className="flex-row items-center">
               <View className="h-16 w-16 overflow-hidden rounded-xl bg-surface">
                 {item.image_url ? (
-                  <Image
-                    source={{ uri: item.image_url }}
-                    style={{ width: '100%', height: '100%' }}
-                    contentFit="cover"
-                  />
+                  <ThumbImage uri={item.image_url} size="avatar" />
                 ) : null}
               </View>
               <View className="ml-4 flex-1">
@@ -67,6 +66,16 @@ export default function AdminGalleryScreen() {
             </Card>
           ))
         )}
+        {shown < items.length ? (
+          <Pressable
+            onPress={() => setShown((n) => n + GRID_PAGE_SIZE)}
+            className="items-center rounded-xl border border-gold/40 py-3"
+          >
+            <Typography variant="caption" className="text-gold">
+              Load more ({Math.min(GRID_PAGE_SIZE, items.length - shown)} of {items.length - shown})
+            </Typography>
+          </Pressable>
+        ) : null}
       </View>
     </ScreenContainer>
   );

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
 
+import { ThumbImage } from '@/components/media/ThumbImage';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { DogMedia } from '@/types/app.types';
@@ -24,7 +24,7 @@ export function PhotoCard({ item, index, size, onPress, onLongPress }: PhotoCard
       style={{ width: size, height: size, padding: 4 }}
     >
       <View className="relative h-full w-full overflow-hidden rounded-lg bg-surface">
-        <Image source={{ uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+        <ThumbImage uri={uri} />
         {item.is_primary ? (
           <View className="absolute left-1 top-1 rounded-full bg-black/70 px-1.5 py-0.5">
             <Ionicons name="star" size={12} color={Colors.gold} />
