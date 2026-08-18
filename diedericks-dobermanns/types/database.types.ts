@@ -5185,6 +5185,45 @@ export type Database = {
           },
         ]
       }
+      rate_limit_buckets: {
+        Row: {
+          action: string
+          blocked_until: string | null
+          hit_count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          blocked_until?: string | null
+          hit_count?: number
+          key: string
+          window_start?: string
+        }
+        Update: {
+          action?: string
+          blocked_until?: string | null
+          hit_count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_secrets: {
+        Row: {
+          id: boolean
+          salt: string
+        }
+        Insert: {
+          id?: boolean
+          salt: string
+        }
+        Update: {
+          id?: boolean
+          salt?: string
+        }
+        Relationships: []
+      }
       reservations: {
         Row: {
           actual_pickup_date: string | null
@@ -7104,8 +7143,8 @@ export type Database = {
     Functions: {
       accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
       apply_marketing_opt_out: {
-        Args: { p_contact_id: string }
-        Returns: undefined
+        Args: { p_allow_expired?: boolean; p_token: string }
+        Returns: string
       }
       audit_record_id: {
         Args: { p_row: Json; p_table: string }
@@ -7144,6 +7183,16 @@ export type Database = {
           occurrence: number
           severity: string
         }[]
+      }
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_hit?: boolean
+          p_key: string
+          p_max: number
+          p_window_seconds: number
+        }
+        Returns: boolean
       }
       claim_my_records: {
         Args: never
@@ -7197,6 +7246,7 @@ export type Database = {
           path: string
         }[]
       }
+      get_app_secret: { Args: { p_name: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
       marketing_audience_counts: {
@@ -7229,6 +7279,8 @@ export type Database = {
       pause_audit: { Args: { p_reason: string }; Returns: string }
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
+      rate_limit_blocked_message: { Args: never; Returns: string }
+      rate_limit_request_key: { Args: { p_action: string }; Returns: string }
       record_marketing_consent: {
         Args: {
           p_email: string
@@ -7260,6 +7312,10 @@ export type Database = {
         Returns: number
       }
       resume_audit: { Args: never; Returns: string }
+      set_app_secret: {
+        Args: { p_name: string; p_value: string }
+        Returns: undefined
+      }
       set_audit_change_note: { Args: { p_note: string }; Returns: undefined }
       set_my_marketing_opt_in: {
         Args: { p_opt_in: boolean }
@@ -7410,4 +7466,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
