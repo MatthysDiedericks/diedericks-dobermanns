@@ -96,22 +96,20 @@ export function categoriesForEntity(entityType: DocumentEntityType): readonly st
 export function fileTypeFromName(filename: string): DocumentFileType {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   if (ext === 'pdf') return 'pdf';
-  if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
   if (ext === 'png') return 'png';
-  if (ext === 'docx') return 'docx';
-  if (ext === 'xlsx') return 'xlsx';
-  return 'pdf';
+  return 'jpg';
 }
 
 export const ACCEPTED_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
   'image/png',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/webp',
+  'image/heic',
+  'image/heif',
 ];
 
-export const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
+export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
 /** Sentinel UUID for kennel-wide documents on the master screen */
 export const KENNEL_DOCUMENT_ENTITY_ID = '00000000-0000-0000-0000-000000000001';

@@ -10,6 +10,7 @@ import { Step3Experience } from '@/components/forms/ApplicationForm/Step3Experie
 import { Step4Preferences } from '@/components/forms/ApplicationForm/Step4Preferences';
 import { Step5Legal } from '@/components/forms/ApplicationForm/Step5Legal';
 import { Step6Review } from '@/components/forms/ApplicationForm/Step6Review';
+import { ApplicationFilesPicker } from '@/components/forms/ApplicationForm/ApplicationFilesPicker';
 import {
   applicationSchema,
   defaultApplicationValues,
@@ -17,9 +18,14 @@ import {
   STEP_TITLES,
   type ApplicationFormValues,
 } from '@/components/forms/ApplicationForm/schema';
+import { CompanyUrlField, useFormOpenedAt } from '@/components/forms/CompanyUrlField';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { useSubmitApplication } from '@/hooks/useApplications';
+import { APPLICATION_MIN_MS, isTooFast, trapFilled } from '@/lib/security/botDefence';
+import { ERROR_CODES } from '@/lib/errors/codes';
+import { logSecurity } from '@/lib/security/logSecurity';
+import type { PickedApplicationFile } from '@/lib/uploads/applicationFiles';
 
 interface ApplicationFormProps {
   onSubmitted: (referenceId: string) => void;
@@ -54,7 +60,11 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
   const [step, setStep] = useState(0);
   const { submit, submitting } = useSubmitApplication();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [files, setFiles] = useState<PickedApplicationFile[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [showChildSafetyNotice, setShowChildSafetyNotice] = useState(false);
+  const [companyUrl, setCompanyUrl] = useState('');
+  const openedAt = useFormOpenedAt();
 
   const { control, handleSubmit, trigger, getValues } = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationSchema),
@@ -110,16 +120,52 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
 
   async function onValid(values: ApplicationFormValues) {
     setSubmitError(null);
-    const { referenceId, error } = await submit(buildApplicationDraft(values), values.marketing_opt_in);
+    if (trapFilled(companyUrl)) {
+      logSecurity({
+        code: ERROR_CODES.SECURITY_HONEYPOT,
+        message: 'Public form trap field was filled',
+        detail: { action: 'application' },
+        route: '/apply',
+        actorRole: 'anon',
+      });
+      onSubmitted(`DD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`);
+      return;
+    }
+    if (isTooFast(openedAt, APPLICATION_MIN_MS)) {
+      logSecurity({
+        code: ERROR_CODES.SECURITY_HONEYPOT,
+        message: 'Public form completed faster than a person can',
+        detail: { action: 'application', min_ms: APPLICATION_MIN_MS },
+        route: '/apply',
+        actorRole: 'anon',
+      });
+      setSubmitError('Please take a moment to complete the form, then submit again.');
+      return;
+    }
+    const { referenceId, error } = await submit(
+      buildApplicationDraft(values),
+      values.marketing_opt_in,
+      files,
+    );
     if (error) setSubmitError(error);
     else if (referenceId) onSubmitted(referenceId);
   }
 
   return (
     <View>
+      <CompanyUrlField value={companyUrl} onChange={setCompanyUrl} />
       <ProgressBar step={step} total={STEP_FIELDS.length} />
 
       {StepBody ? <StepBody control={control} /> : <Step6Review getValues={getValues} control={control} />}
+
+      {step === lastStep ? (
+        <ApplicationFilesPicker
+          files={files}
+          onChange={setFiles}
+          error={fileError}
+          onError={setFileError}
+        />
+      ) : null}
 
       {submitError ? (
         <Typography variant="caption" className="mb-3 text-danger">

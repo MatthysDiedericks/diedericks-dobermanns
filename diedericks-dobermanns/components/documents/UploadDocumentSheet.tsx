@@ -142,7 +142,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
       if ((asset.size ?? 0) > MAX_DOCUMENT_BYTES) {
-        Alert.alert('File too large', 'Maximum file size is 20MB.');
+        Alert.alert('File too large', 'That file is over 10 MB — please send a smaller copy, or WhatsApp us.');
         return;
       }
       const picked: PickedDocumentFile = {

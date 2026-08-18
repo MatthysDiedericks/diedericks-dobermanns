@@ -172,7 +172,13 @@ export async function captureWithCamera(opts: PickOptions): Promise<PickedMedia[
 
 /** Opens the document picker (PDF + images by default). */
 export async function pickDocument(
-  types: string[] = ['application/pdf', 'image/*'],
+  types: string[] = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+  ],
 ): Promise<PickedMedia[]> {
   const result = await DocumentPicker.getDocumentAsync({
     type: types,

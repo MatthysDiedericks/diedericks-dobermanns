@@ -38,8 +38,12 @@ export default function AddPhotosScreen() {
   async function submit() {
     setError(null);
     if (!dogId || photos.length === 0) return;
+    if (!profile?.id) {
+      setError('You must be signed in to add photos.');
+      return;
+    }
 
-    const urls = await resolvePhotoUrls(photos, `dogs/${dogId}`);
+    const urls = await resolvePhotoUrls(photos, profile?.id ?? '');
     for (const url of urls) {
       const { error: err } = await run(() =>
         addDogMedia({
