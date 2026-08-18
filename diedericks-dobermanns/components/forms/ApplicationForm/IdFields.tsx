@@ -6,7 +6,9 @@ import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/s
 import { DateField } from '@/components/ui/DateField';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
+import { dobMismatchSentence } from '@/lib/identity/dob';
 import {
+  checkIdNumber,
   defaultIdType,
   ID_TYPE_LABELS,
   ID_TYPES,
@@ -21,6 +23,9 @@ export function IdFields({ control }: { control: Control<ApplicationFormValues> 
   const country = useWatch({ control, name: 'country' });
   const idNumber = useWatch({ control, name: 'id_number' });
   const idType = useWatch({ control, name: 'id_type' });
+  const dateOfBirth = useWatch({ control, name: 'date_of_birth' });
+  const idCheck = checkIdNumber({ type: idType, number: idNumber, country });
+  const dobMismatch = dobMismatchSentence(idCheck.parsed?.dobIso, dateOfBirth);
 
   return (
     <View>
@@ -69,6 +74,11 @@ export function IdFields({ control }: { control: Control<ApplicationFormValues> 
                   className={`-mt-2 mb-3 ${failed ? 'text-amber-400' : ''}`}
                 >
                   {hint}
+                </Typography>
+              ) : null}
+              {dobMismatch ? (
+                <Typography variant="caption" className="-mt-2 mb-3 text-amber-400">
+                  {dobMismatch}
                 </Typography>
               ) : null}
             </View>
