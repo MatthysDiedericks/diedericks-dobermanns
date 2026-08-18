@@ -1,10 +1,12 @@
 import { useState } from 'react';
 
 import { MARKETING_SOURCES } from '@/lib/marketing/sources';
+import { RateLimitError, assertRateLimit, blockedMessage } from '@/lib/security/rateLimit';
 import { supabase } from '@/lib/supabase';
 import { ensureWaitlistOnApplicationSubmitted } from '@/lib/waitlist/syncFromApplication';
 import type { Application } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
+import { postApplicationFiles, type PickedApplicationFile } from '@/lib/uploads/applicationFiles';
 
 export type ApplicationDraft = Omit<
   Application,
@@ -36,6 +38,11 @@ function newId(): string {
 
 async function logEnquiry(draft: ApplicationDraft, referenceId: string) {
   if (!supabase) return;
+  try {
+    await assertRateLimit('enquiry', 5, 3600);
+  } catch {
+    return;
+  }
   const { error } = await supabase.from('enquiries').insert({
     subject: `Application Received — ${referenceId}`,
     message: `A new puppy application has been submitted. Reference: ${referenceId}. Applicant: ${draft.full_name}, ${draft.email}, ${draft.phone}.`,
@@ -67,12 +74,21 @@ export function useSubmitApplication() {
   async function submit(
     draft: ApplicationDraft,
     marketingOptIn?: boolean,
+    files: PickedApplicationFile[] = [],
   ): Promise<SubmitResult> {
     setSubmitting(true);
     try {
       if (!supabase) {
         await new Promise((r) => setTimeout(r, 600));
         return { referenceId: `DD-${Date.now().toString().slice(-6)}`, error: null };
+      }
+
+      try {
+        await assertRateLimit('application', 3, 3600);
+        await assertRateLimit('application_day', 5, 86400);
+      } catch (e) {
+        const message = e instanceof RateLimitError ? e.message : await blockedMessage();
+        return { referenceId: null, error: message };
       }
 
       // Generate the reference client-side BEFORE inserting, and store it on the
@@ -95,6 +111,17 @@ export function useSubmitApplication() {
       if (error) {
         console.error('[useSubmitApplication] insert:', error);
         return { referenceId: null, error: error.message };
+      }
+
+      if (files.length > 0) {
+        const uploaded = await postApplicationFiles({
+          applicationId,
+          email: draft.email,
+          files,
+        });
+        if (uploaded.error) {
+          console.error('[useSubmitApplication] files:', uploaded.error);
+        }
       }
 
       if (marketingOptIn) {

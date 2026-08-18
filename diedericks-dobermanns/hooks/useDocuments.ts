@@ -9,6 +9,7 @@ import {
 } from '@/lib/documents/constants';
 import { PORTAL_CATEGORY_GROUPS, buildCategoryGroupMap } from '@/lib/documents/portalCategories';
 import type { DocumentRecord, DocumentUploadMetadata, PickedDocumentFile } from '@/lib/documents/types';
+import { RateLimitError, assertRateLimit, blockedMessage } from '@/lib/security/rateLimit';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
@@ -116,32 +117,35 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
 
   const upload = useCallback(
     async (file: PickedDocumentFile, metadata: Omit<DocumentUploadMetadata, 'entityType' | 'entityId'>) => {
-      if (file.size > MAX_DOCUMENT_BYTES) {
-        throw new Error('File exceeds 20MB limit');
-      }
-      setUploading(true);
-      try {
-        const supabase = requireSupabase();
-        const uid = await currentUserId();
-        const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const storagePath = `${entityType}/${entityId}/${timestamp}_${safeName}`;
+        if (file.size > MAX_DOCUMENT_BYTES) {
+          throw new Error('That file is over 10 MB — please send a smaller copy, or WhatsApp us.');
+        }
+        setUploading(true);
+        try {
+          const supabase = requireSupabase();
+          try {
+            await assertRateLimit('document_upload', 20, 3600);
+          } catch (e) {
+            throw new Error(e instanceof RateLimitError ? e.message : await blockedMessage());
+          }
+          const uid = await currentUserId();
+          const response = await fetch(file.uri);
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          const { prepareUpload } = await import('@/lib/uploads/prepare');
+          const prepared = prepareUpload(bytes, `${entityType}/${entityId}`);
 
-        const response = await fetch(file.uri);
-        const arrayBuffer = await response.arrayBuffer();
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET)
+            .upload(prepared.path, prepared.bytes, {
+              contentType: prepared.mime,
+              upsert: false,
+            });
+          if (uploadError) throw new Error(uploadError.message);
 
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET)
-          .upload(storagePath, arrayBuffer, {
-            contentType: file.mimeType,
-            upsert: false,
-          });
-        if (uploadError) throw new Error(uploadError.message);
-
-        const { data: exists } = await supabase.storage.from(BUCKET).list(
-          storagePath.split('/').slice(0, -1).join('/'),
-          { search: storagePath.split('/').pop() },
-        );
+          const { data: exists } = await supabase.storage.from(BUCKET).list(
+            prepared.path.split('/').slice(0, -1).join('/'),
+            { search: prepared.path.split('/').pop() },
+          );
         if (!exists?.length) {
           void import('@/lib/errors/logError').then(({ logError }) =>
             logError({
@@ -149,7 +153,7 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
               area: 'upload',
               severity: 'critical',
               message: 'Storage object missing after upload',
-              detail: { storage_path: storagePath, bucket: BUCKET },
+              detail: { storage_path: prepared.path, bucket: BUCKET },
               entityType: entityType,
               entityId: entityId,
               surface: 'app',
@@ -163,11 +167,11 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
           entity_type: entityType,
           entity_id: entityId,
           document_name: metadata.name,
-          original_filename: file.name,
-          storage_path: storagePath,
-          file_type: fileTypeFromName(file.name),
-          file_size_bytes: file.size,
-          mime_type: file.mimeType,
+          original_filename: prepared.path.split('/').pop() ?? 'file',
+          storage_path: prepared.path,
+          file_type: fileTypeFromName(prepared.path),
+          file_size_bytes: prepared.bytes.byteLength,
+          mime_type: prepared.mime,
           category: metadata.category,
           date_of_document: metadata.dateOfDocument ?? null,
           expiry_date: metadata.expiryDate ?? null,

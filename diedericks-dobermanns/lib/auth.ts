@@ -21,8 +21,22 @@ export async function signInWithEmail(
   password: string,
 ): Promise<AuthResult> {
   if (!supabase) return { error: DEMO_ERROR };
+  const { assertRateLimit, blockedMessage, checkRateLimit, RateLimitError } = await import(
+    '@/lib/security/rateLimit'
+  );
+  try {
+    await assertRateLimit('signin_failure', 10, 900);
+  } catch (e) {
+    return {
+      error: e instanceof RateLimitError ? e.message : await blockedMessage(),
+    };
+  }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  return { error: error?.message ?? null };
+  if (error) {
+    await checkRateLimit({ action: 'signin_failure', max: 10, windowSeconds: 900, hit: true });
+    return { error: error.message };
+  }
+  return { error: null };
 }
 
 export async function signUpWithEmail(
