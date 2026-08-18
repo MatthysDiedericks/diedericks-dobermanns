@@ -1,22 +1,22 @@
 /** Public copy for The Elite Developed Puppy Programme. Do not water down.
  *  Keep in lockstep with diedericksdobermann-web/src/content/elite-developed.ts */
 
-export const ELITE_DEVELOPED_TITLE = 'The Elite Developed Puppy Programme';
-export const ELITE_DEVELOPED_TAGLINE = 'Born With Purpose. Built With Discipline.';
+export const ELITE_DEVELOPED_TITLE = "The Elite Developed Puppy Programme";
+export const ELITE_DEVELOPED_TAGLINE = "Born With Purpose. Built With Discipline.";
 export const ELITE_DEVELOPED_FOOTER =
-  'Diedericks Dobermanns · Born With Purpose. Built With Discipline.';
+  "Diedericks Dobermanns · Born With Purpose. Built With Discipline.";
 
 export const ELITE_DEVELOPED_INTRO = [
-  'Our work begins on **day three** — long before most programmes consider a puppy ready for anything at all.',
-  'From that point until placement at six months, an Elite Developed Puppy is shaped continuously by the people who bred it. Those months cannot be recovered later. What is built into a dog in that window stays built in.',
+  "Our work begins on **day three** — long before most programmes consider a puppy ready for anything at all.",
+  "From that point until placement at six months, an Elite Developed Puppy is shaped continuously by the people who bred it. Those months cannot be recovered later. What is built into a dog in that window stays built in.",
 ] as const;
 
 export const ELITE_DEVELOPED_PACE = {
-  title: 'The dog sets the pace',
+  title: "The dog sets the pace",
   paragraphs: [
-    'We do not run puppies to a calendar.',
-    'Every dog moves to the next stage when *it* is ready, and not before. Some are ready early. Others need considerably longer, and are given it. Pushing a young Dobermann into work it is not prepared for produces conflict, and conflict at this age can take a year to undo — if it can be undone at all.',
-    '**This is the single most important thing to understand about how we work.** We will tell you plainly where your puppy is, and if it needed more time, we will say so.',
+    "We do not run puppies to a calendar.",
+    "Every dog moves to the next stage when *it* is ready, and not before. Some are ready early. Others need considerably longer, and are given it. Pushing a young Dobermann into work it is not prepared for produces conflict, and conflict at this age can take a year to undo — if it can be undone at all.",
+    "**This is the single most important thing to understand about how we work.** We will tell you plainly where your puppy is, and if it needed more time, we will say so.",
   ],
 } as const;
 
@@ -30,121 +30,121 @@ export type EliteSection = {
 
 export const ELITE_DEVELOPED_SECTIONS: EliteSection[] = [
   {
-    eyebrow: 'From day three',
-    title: 'Neurological foundation',
-    lead: ['We follow the **Puppy Culture** protocol from the first days of life.'],
+    eyebrow: "From day three",
+    title: "Neurological foundation",
+    lead: ["We follow the **Puppy Culture** protocol from the first days of life."],
     bullets: [
-      'Early Neurological Stimulation — brief, controlled handling that measurably improves stress tolerance and cardiovascular resilience',
-      'Early Scent Introduction',
-      'Novel surfaces, sounds and objects, introduced daily',
-      'Startle and recovery work — the puppy learns that surprises are survivable',
-      'Handling, restraint and body tolerance from the first week',
+      "Early Neurological Stimulation — brief, controlled handling that measurably improves stress tolerance and cardiovascular resilience",
+      "Early Scent Introduction",
+      "Novel surfaces, sounds and objects, introduced daily",
+      "Startle and recovery work — the puppy learns that surprises are survivable",
+      "Handling, restraint and body tolerance from the first week",
     ],
     after: [
-      '**This is the work nobody sees and everybody benefits from.** A puppy that has learned to recover from small stresses becomes a dog that recovers from large ones.',
+      "**This is the work nobody sees and everybody benefits from.** A puppy that has learned to recover from small stresses becomes a dog that recovers from large ones.",
     ],
   },
   {
-    title: 'Foundation',
-    lead: ['Before a dog can be trained, it must learn how to learn.'],
+    title: "Foundation",
+    lead: ["Before a dog can be trained, it must learn how to learn."],
     bullets: [
-      'Marker and reward conditioning',
-      'Engagement and voluntary attention on the handler',
-      'Drive development — food and toy — channelled and controlled',
-      'Early impulse control: waiting, settling, releasing on cue',
-      'Crate confidence and calm restraint',
+      "Marker and reward conditioning",
+      "Engagement and voluntary attention on the handler",
+      "Drive development — food and toy — channelled and controlled",
+      "Early impulse control: waiting, settling, releasing on cue",
+      "Crate confidence and calm restraint",
     ],
   },
   {
-    title: 'Home obedience',
+    title: "Home obedience",
     lead: [
-      'A working dog that cannot live in a house is not a family dog. Taught in a real home, not only on a training field.',
+      "A working dog that cannot live in a house is not a family dog. Taught in a real home, not only on a training field.",
     ],
     bullets: [
-      'House training and clean crate habits',
-      'Settling on place while the household moves around',
-      'Door manners, and calm greeting of visitors',
-      'Behaviour around food preparation and family meals',
-      'Tolerance of household noise and disruption',
+      "House training and clean crate habits",
+      "Settling on place while the household moves around",
+      "Door manners, and calm greeting of visitors",
+      "Behaviour around food preparation and family meals",
+      "Tolerance of household noise and disruption",
     ],
   },
   {
-    title: 'Obedience',
-    lead: ['Formal obedience, to a standard we are comfortable demonstrating in public.'],
+    title: "Obedience",
+    lead: ["Formal obedience, to a standard we are comfortable demonstrating in public."],
     bullets: [
-      'Heel, on lead and progressing off lead',
-      'Sit, down and stand',
-      'Stay — duration, then distance, then distraction, in that order',
-      'Recall under increasing distraction',
-      'Sustained handler focus',
+      "Heel, on lead and progressing off lead",
+      "Sit, down and stand",
+      "Stay — duration, then distance, then distraction, in that order",
+      "Recall under increasing distraction",
+      "Sustained handler focus",
     ],
     after: [
-      'We train with a **balanced methodology**: clear reward for correct behaviour, fair and consistent correction where the dog understands the exercise and chooses otherwise. A sensitive dog and a hard dog are not handled the same way.',
+      "We train with a **balanced methodology**: clear reward for correct behaviour, fair and consistent correction where the dog understands the exercise and chooses otherwise. A sensitive dog and a hard dog are not handled the same way.",
     ],
   },
   {
-    title: 'Socialisation',
+    title: "Socialisation",
     lead: [
-      'Exposure is putting a puppy somewhere. Socialisation is managing what it learns while it is there.',
+      "Exposure is putting a puppy somewhere. Socialisation is managing what it learns while it is there.",
     ],
     bullets: [
-      'Structured introductions to adults, children and the elderly',
-      'Stable, balanced adult dogs — never uncontrolled dog parks',
-      'Handling by strangers, including veterinary contexts',
+      "Structured introductions to adults, children and the elderly",
+      "Stable, balanced adult dogs — never uncontrolled dog parks",
+      "Handling by strangers, including veterinary contexts",
       "Neutrality: most people and dogs are simply not the dog's concern",
     ],
     after: [
-      'We work carefully around the recognised fear periods. During those windows we consolidate rather than push.',
+      "We work carefully around the recognised fear periods. During those windows we consolidate rather than push.",
       "**We are not producing a dog that loves everyone. We are producing a dog that is neutral** — confident, unbothered, reserving its attention for its family. Neutrality is the foundation of a sound protection dog.",
     ],
   },
   {
-    title: 'Environmental conditioning',
-    lead: ['A dog is only as reliable as the range of places it has proven itself.'],
+    title: "Environmental conditioning",
+    lead: ["A dog is only as reliable as the range of places it has proven itself."],
     bullets: [
-      'Varied surfaces, heights, stairs, enclosed and echoing spaces',
-      'Traffic, machinery and sudden noise — introduced at distance, closed gradually',
-      'Urban environments, crowds, low light',
-      'Travelling calmly, loading and unloading under control',
+      "Varied surfaces, heights, stairs, enclosed and echoing spaces",
+      "Traffic, machinery and sudden noise — introduced at distance, closed gradually",
+      "Urban environments, crowds, low light",
+      "Travelling calmly, loading and unloading under control",
     ],
     after: [
       "Every exposure is introduced below the puppy's threshold. **We are not testing the dog. We are proving to the dog that the world is manageable.**",
     ],
   },
   {
-    title: 'Protection foundation',
+    title: "Protection foundation",
     lead: [
-      'Not bite work as most people picture it. This is the careful building of the drives, confidence and clarity that genuine protection training later requires.',
+      "Not bite work as most people picture it. This is the careful building of the drives, confidence and clarity that genuine protection training later requires.",
     ],
     bullets: [
-      'Prey drive development through rag and tug work',
-      'Grip development — full, calm, confident mouth',
-      'Confidence against passive and mild pressure',
-      'Clean outs and control on equipment',
-      'A clear line between working and neutral',
+      "Prey drive development through rag and tug work",
+      "Grip development — full, calm, confident mouth",
+      "Confidence against passive and mild pressure",
+      "Clean outs and control on equipment",
+      "A clear line between working and neutral",
     ],
     after: [
-      '**Started only when the individual dog is ready.** Foundation determines ceiling: a dog with a poor foundation can be trained to perform, but it will never be truly reliable under pressure.',
+      "**Started only when the individual dog is ready.** Foundation determines ceiling: a dog with a poor foundation can be trained to perform, but it will never be truly reliable under pressure.",
     ],
   },
 ];
 
 export const ELITE_DEVELOPED_SIX_MONTHS = {
-  title: 'At six months',
-  lead: 'A confident, well-mannered young Dobermann with genuine obedience, broad environmental exposure, and a sound foundation for protection work.',
+  title: "At six months",
+  lead: "A confident, well-mannered young Dobermann with genuine obedience, broad environmental exposure, and a sound foundation for protection work.",
   paragraphs: [
-    '**It will not be a finished dog.** An Elite Developed Puppy is developed, not fully trained. Adolescence is still ahead, and a young dog will test what it has been taught — that is normal and temporary.',
-    '**What we build must be maintained.** We are direct about this because the owners who understand it are the ones whose dogs go on to be exceptional.',
+    "**It will not be a finished dog.** An Elite Developed Puppy is developed, not fully trained. Adolescence is still ahead, and a young dog will test what it has been taught — that is normal and temporary.",
+    "**What we build must be maintained.** We are direct about this because the owners who understand it are the ones whose dogs go on to be exceptional.",
   ],
 } as const;
 
 export const ELITE_DEVELOPED_HANDOVER = {
-  title: 'Delivery and handover',
+  title: "Delivery and handover",
   paragraphs: [
-    'Your dog is not couriered. We deliver personally and hand over in your home — every command and how it was taught, how the dog has been rewarded and corrected, its individual temperament, and your plan for the months ahead.',
-    'We remain available afterwards. A dog we bred and developed carries our name for its whole life.',
+    "Your dog is not couriered. We deliver personally and hand over in your home — every command and how it was taught, how the dog has been rewarded and corrected, its individual temperament, and your plan for the months ahead.",
+    "We remain available afterwards. A dog we bred and developed carries our name for its whole life.",
   ],
 } as const;
 
 export const ELITE_WHATSAPP_PREFILL =
-  'Hello Diedericks Dobermanns, I would like to ask about the Elite Developed Puppy Programme.';
+  "Hello Diedericks Dobermanns, I would like to ask about the Elite Developed Puppy Programme.";
