@@ -3,8 +3,9 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
-import { requireSupabase } from '@/lib/supabase';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { MARKETING_CONSENT_LABEL } from '@/lib/marketing/sources';
+import { requireSupabase } from '@/lib/supabase';
 
 export function MarketingConsentToggle({
   initial,
@@ -52,7 +53,7 @@ export function MarketingConsentToggle({
           ) : null}
         </View>
         <Typography variant="body" className="flex-1">
-          Send me news about upcoming litters and training
+          {MARKETING_CONSENT_LABEL}
         </Typography>
       </Pressable>
       <Button

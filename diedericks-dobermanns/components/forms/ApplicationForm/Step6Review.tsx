@@ -6,6 +6,7 @@ import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { Typography } from '@/components/ui/Typography';
 import { ID_TYPE_LABELS } from '@/lib/identity/idNumber';
+import { MARKETING_CONSENT_LABEL } from '@/lib/marketing/sources';
 
 interface StepProps {
   getValues: UseFormGetValues<ApplicationFormValues>;
@@ -110,7 +111,7 @@ export function Step6Review({ getValues, control }: StepProps) {
               </View>
               <View className="flex-1">
                 <Typography variant="body">
-                  Send me news about upcoming litters and training
+                  {MARKETING_CONSENT_LABEL}
                 </Typography>
                 <Typography variant="caption" className="mt-1">
                   Optional. Separate from the terms above. Never required to apply.

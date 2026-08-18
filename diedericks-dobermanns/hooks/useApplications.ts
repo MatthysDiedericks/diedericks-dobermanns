@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { MARKETING_SOURCES } from '@/lib/marketing/sources';
 import { supabase } from '@/lib/supabase';
 import { ensureWaitlistOnApplicationSubmitted } from '@/lib/waitlist/syncFromApplication';
 import type { Application } from '@/types/app.types';
@@ -100,7 +101,7 @@ export function useSubmitApplication() {
         const { error: consentErr } = await supabase.rpc('record_marketing_consent' as never, {
           p_email: draft.email,
           p_opt_in: true,
-          p_source: 'application_form',
+          p_source: MARKETING_SOURCES.applicationForm,
           p_full_name: draft.full_name,
           p_phone: draft.phone,
           p_user_id: draft.user_id,
