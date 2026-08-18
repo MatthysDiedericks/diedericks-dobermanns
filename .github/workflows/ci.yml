@@ -30,3 +30,33 @@ jobs:
           cache-dependency-path: diedericks-dobermanns/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz | tar -xz gitleaks
+      - name: Gitleaks
+        run: ./gitleaks detect --source . --verbose --redact --exit-code 1
+
+  audit:
+    name: npm audit (warning)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: diedericks-dobermanns
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: diedericks-dobermanns/package-lock.json
+      - run: npm ci
+      - run: npm audit --omit=dev

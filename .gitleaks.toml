@@ -1,0 +1,12 @@
+title = "Gitleaks"
+
+[extend]
+useDefault = true
+
+# The published anon JWT is designed to ship in the client. It is not a secret.
+# A service-role JWT would not match this allowlist and must still fail the build.
+[allowlist]
+description = "Public Supabase anon JWT for this project"
+regexes = [
+  '''eyJ[A-Za-z0-9_-]+\.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbXd4b2R2cXV3YmppbmhoYm1yIiwicm9sZSI6ImFub24i''',
+]
