@@ -86,6 +86,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            Security
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Recent blocks. Filtering and detail stay on the website.
+          </Typography>
+          <Button
+            label="Open security log"
+            variant="outline"
+            onPress={() => router.push('/(admin)/security' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Audit log
           </Typography>
           <Typography variant="bodyMuted" className="mt-2">

@@ -16,7 +16,10 @@ const IMMEDIATE = new Set([
   'AUTH_REGISTRATION_BLOCKED',
   'QUOTE_TOTAL_MISMATCH',
   'QUOTE_LINE_DROPPED',
+  'SECURITY_AUTH_LOCKOUT',
 ]);
+
+const RATE_LIMIT_ALERT_AFTER = 20;
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -87,16 +90,18 @@ Deno.serve(async (req) => {
     const code = payload.code ?? '';
     const severity = payload.severity ?? 'error';
     const area = payload.area ?? 'other';
-    const allowed =
-      IMMEDIATE.has(code) || (area === 'payment' && severity === 'critical');
-    if (!allowed) return json({ ok: true, skipped: 'not_immediate' });
-
     const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
     const { count } = await admin
       .from('error_events')
       .select('id', { count: 'exact', head: true })
       .eq('code', code)
       .gte('occurred_at', hourAgo);
+
+    const allowed =
+      IMMEDIATE.has(code) ||
+      (area === 'payment' && severity === 'critical') ||
+      (code === 'SECURITY_RATE_LIMIT' && (count ?? 0) > RATE_LIMIT_ALERT_AFTER);
+    if (!allowed) return json({ ok: true, skipped: 'not_immediate' });
 
     // Dedup: if we already emailed for this code in the last hour, skip.
     const { data: prior } = await admin
@@ -119,7 +124,7 @@ Deno.serve(async (req) => {
         <p>${payload.message ?? ''}</p>
         <p>Domain: ${payload.email_domain ?? '—'} · Route: ${payload.route ?? '—'} · Surface: ${payload.surface ?? '—'}</p>
         <p style="margin-top:24px;">
-          <a href="${SITE_URL}/admin/errors" style="color:#C4A35A;">Open system health →</a>
+          <a href="${SITE_URL}${code.startsWith('SECURITY_') ? '/admin/security' : '/admin/errors'}" style="color:#C4A35A;">Open ${code.startsWith('SECURITY_') ? 'security log' : 'system health'} →</a>
         </p>
       </div>
     `;

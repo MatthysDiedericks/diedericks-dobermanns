@@ -12,6 +12,7 @@ import { MarketingConsentToggle } from '@/components/portal/MarketingConsentTogg
 import { ProfileSection } from '@/components/portal/ProfileSection';
 import { DeleteAccountModal } from '@/components/account/DeleteAccountModal';
 import { ReportProblemLink } from '@/components/portal/ReportProblemLink';
+import { AccountSafetyCard } from '@/components/portal/AccountSafetyCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -250,6 +251,14 @@ export default function ProfileScreen() {
             <Typography variant="caption">Member since</Typography>
             <Typography variant="body">{formatKennelDate(profile?.created_at)}</Typography>
           </View>
+          {session?.user?.last_sign_in_at ? (
+            <View className="flex-row justify-between border-t border-gold/10 py-3">
+              <Typography variant="caption">Last signed in</Typography>
+              <Typography variant="body">
+                {new Date(session.user.last_sign_in_at).toLocaleString()}
+              </Typography>
+            </View>
+          ) : null}
           <Button label="Sign Out" variant="danger" onPress={() => void onLogout()} fullWidth className="mt-2" />
 
           {canDeleteAccount ? (
@@ -260,6 +269,8 @@ export default function ProfileScreen() {
             </Pressable>
           ) : null}
         </View>
+
+        <AccountSafetyCard email={email} />
 
         <ReportProblemLink />
         <Typography variant="caption" className="mb-6 text-center text-subtle">

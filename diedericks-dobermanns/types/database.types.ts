@@ -7225,6 +7225,7 @@ export type Database = {
       }
       dog_is_contactable: { Args: { p_dog_id: string }; Returns: boolean }
       enable_audit: { Args: { p_table: string }; Returns: undefined }
+      ensure_backup_restore_reminder: { Args: never; Returns: undefined }
       evaluate_pairing: {
         Args: { p_dam_id: string; p_sire_id: string }
         Returns: {
@@ -7249,6 +7250,17 @@ export type Database = {
       get_app_secret: { Args: { p_name: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
+      log_security_event: {
+        Args: {
+          p_area?: string
+          p_code: string
+          p_detail?: Json
+          p_fn?: string
+          p_message?: string
+          p_severity?: string
+        }
+        Returns: undefined
+      }
       marketing_audience_counts: {
         Args: never
         Returns: {
@@ -7312,6 +7324,7 @@ export type Database = {
         Returns: number
       }
       resume_audit: { Args: never; Returns: string }
+      security_require_admin: { Args: { p_fn: string }; Returns: undefined }
       set_app_secret: {
         Args: { p_name: string; p_value: string }
         Returns: undefined
