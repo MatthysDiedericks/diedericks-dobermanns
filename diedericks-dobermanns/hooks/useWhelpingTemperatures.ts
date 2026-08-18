@@ -1,13 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  WHELP_TEMP_DROP_C,
-  WHELP_TEMP_SELECT,
-  type WhelpTempRecord,
-} from '@/lib/heats/constants';
-import { showError, showSaved } from '@/lib/dogDetail/feedback';
-import { broadcastNotification } from '@/lib/notifications';
+import { WHELP_TEMP_DROP_C, WHELP_TEMP_SELECT, type WhelpTempRecord } from '@/lib/heats/constants';
+import { validateWhelpTempC, WHELP_TEMP_RANGE_MSG } from '@/lib/heats/whelpTempLogic';
+import { sendNotification } from '@/lib/notifications';
 import { requireSupabase } from '@/lib/supabase';
+
+const STAFF_ROLES = ['admin', 'super_admin', 'management'] as const;
+
+async function notifyStaffOfTempDrop(input: {
+  dogName: string;
+  tempC: number;
+  takenAt: string;
+}): Promise<void> {
+  const client = requireSupabase();
+  const { data, error } = await client.from('users').select('id').in('role', [...STAFF_ROLES]);
+  if (error) {
+    console.error('[whelpTemps] staff lookup:', error.message);
+    return;
+  }
+  const time = new Date(input.takenAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const subject = 'Whelping likely within 24 hours';
+  const body = `${input.dogName}: temperature dropped to ${input.tempC.toFixed(1)} °C at ${time}.`;
+  await Promise.all(
+    (data ?? []).map((row) =>
+      sendNotification({ recipientId: row.id, type: 'push', subject, body }),
+    ),
+  );
+}
 
 export function useWhelpingTemperatures(heatCycleId: string | null) {
   const [temps, setTemps] = useState<WhelpTempRecord[]>([]);
@@ -43,8 +65,16 @@ export function useWhelpingTemperatures(heatCycleId: string | null) {
   }, [refresh]);
 
   const addTemperature = useCallback(
-    async (input: { taken_at: string; temp_c: number; notes?: string | null; dogName?: string }) => {
-      if (!heatCycleId) throw new Error('No heat cycle');
+    async (input: {
+      taken_at: string;
+      temp_c: number;
+      notes?: string | null;
+      dogName?: string;
+    }): Promise<{ error?: string; dropAlert?: boolean }> => {
+      if (!heatCycleId) return { error: 'No heat cycle' };
+      const rangeError = validateWhelpTempC(input.temp_c);
+      if (rangeError) return { error: rangeError };
+
       const client = requireSupabase();
       const {
         data: { user },
@@ -57,25 +87,23 @@ export function useWhelpingTemperatures(heatCycleId: string | null) {
         created_by: user?.id ?? null,
       });
       if (err) {
-        showError(err.message);
-        throw new Error(err.message);
+        if (/temp_c|check|33|43/i.test(err.message)) {
+          return { error: WHELP_TEMP_RANGE_MSG };
+        }
+        return { error: err.message };
       }
-      showSaved();
 
-      if (input.temp_c < WHELP_TEMP_DROP_C) {
-        const time = new Date(input.taken_at).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        await broadcastNotification({
-          type: 'push',
-          subject: 'Whelping likely within 24 hours',
-          body: `${input.dogName ?? 'Dam'}: temperature dropped to ${input.temp_c.toFixed(1)} °C at ${time}.`,
+      const dropAlert = input.temp_c < WHELP_TEMP_DROP_C;
+      if (dropAlert) {
+        await notifyStaffOfTempDrop({
+          dogName: input.dogName ?? 'Dam',
+          tempC: input.temp_c,
+          takenAt: input.taken_at,
         });
       }
 
       await refresh();
-      return { dropAlert: input.temp_c < WHELP_TEMP_DROP_C };
+      return { dropAlert };
     },
     [heatCycleId, refresh],
   );

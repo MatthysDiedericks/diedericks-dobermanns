@@ -19,10 +19,21 @@ import { useHeatCyclesForDog } from '@/hooks/useHeatCycles';
 import { useMatings } from '@/hooks/useMatings';
 import { whelpWindow } from '@/lib/dogs/whelpDates';
 import { isActiveHeat } from '@/lib/heats/calculations';
+import type { HeatCycleRecord } from '@/lib/heats/constants';
 import { scheduleWhelpingTempReminders } from '@/lib/heats/whelpReminders';
 
 const TABS = ['current', 'matings', 'temps', 'history', 'predictions'] as const;
 type TabId = (typeof TABS)[number];
+
+/** Pregnant / mated dams — do not wait for the 7-day website gate; Hannah and Odessa need this now. */
+function showWhelpWatch(cycle: HeatCycleRecord | null): boolean {
+  if (!cycle) return false;
+  return (
+    cycle.status === 'mated' ||
+    cycle.status === 'confirmed_pregnant' ||
+    cycle.pregnancy_status === 'pregnant'
+  );
+}
 
 export default function DogHeatDetailScreen() {
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
@@ -125,6 +136,14 @@ export default function DogHeatDetailScreen() {
                   dogId={id}
                   onChanged={() => void refreshRef.current()}
                 />
+                {showWhelpWatch(cycle) ? (
+                  <View className="mt-6">
+                    <Typography variant="subtitle" className="mb-3 text-gold">
+                      Whelping watch
+                    </Typography>
+                    <TemperatureLogScreen cycle={cycle} dogName={dog?.name ?? 'Dam'} />
+                  </View>
+                ) : null}
               </>
             ) : null}
           </>
