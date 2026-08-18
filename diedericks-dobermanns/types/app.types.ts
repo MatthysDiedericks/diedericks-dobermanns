@@ -355,6 +355,8 @@ export interface DogMedia {
   is_public?: boolean;
   uploaded_by?: string | null;
   client_consent?: boolean;
+  approved_by?: string | null;
+  approved_at?: string | null;
 }
 
 export interface DogShow {

@@ -15,10 +15,19 @@ import { useAuthStore } from '@/stores/authStore';
  * of navigating into that dog's own profile first. Mirrors the web gallery
  * uploader's "A specific dog" destination.
  */
-export function AddDogMediaCard({ dogs }: { dogs: DogPickerOption[] }) {
+export function AddDogMediaCard({
+  dogs,
+  dogId,
+  onDogIdChange,
+  onUploaded,
+}: {
+  dogs: DogPickerOption[];
+  dogId: string | null;
+  onDogIdChange: (id: string | null) => void;
+  onUploaded?: () => void;
+}) {
   const profile = useAuthStore((s) => s.profile);
   const { submitting, run } = useSubmitting();
-  const [dogId, setDogId] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(true);
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +58,7 @@ export function AddDogMediaCard({ dogs }: { dogs: DogPickerOption[] }) {
         ? `Added ${urls.length} photo${urls.length === 1 ? '' : 's'} — now visible on the dog's public profile.`
         : `Added ${urls.length} photo${urls.length === 1 ? '' : 's'} — kept private, in the review queue.`,
     );
+    onUploaded?.();
   }
 
   return (
@@ -57,7 +67,13 @@ export function AddDogMediaCard({ dogs }: { dogs: DogPickerOption[] }) {
         Add Photo to a Dog
       </Typography>
 
-      <DogGroupPickerField label="Dog" value={dogId} onChange={setDogId} dogs={dogs} placeholder="Choose a dog…" />
+      <DogGroupPickerField
+        label="Dog — upload target and what you are looking at"
+        value={dogId}
+        onChange={onDogIdChange}
+        dogs={dogs}
+        placeholder="Choose a dog…"
+      />
 
       <View className="mb-4">
         <Checkbox checked={isPublic} onChange={setIsPublic} label="Also show on the public website" />

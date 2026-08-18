@@ -12,7 +12,7 @@ export type DogPickerOption = DogGroupable & { id: string; name: string };
 interface DogGroupPickerFieldProps {
   label: string;
   value: string | null;
-  onChange: (id: string) => void;
+  onChange: (id: string | null) => void;
   dogs: DogPickerOption[];
   placeholder: string;
 }
@@ -34,7 +34,7 @@ export function DogGroupPickerField({ label, value, onChange, dogs, placeholder 
     return groupDogs(pool).map((g) => ({ title: g.label, data: g.dogs }));
   }, [dogs, query]);
 
-  function pick(id: string) {
+  function pick(id: string | null) {
     onChange(id);
     setOpen(false);
     setQuery('');
@@ -67,6 +67,11 @@ export function DogGroupPickerField({ label, value, onChange, dogs, placeholder 
               onChangeText={setQuery}
               autoCapitalize="none"
             />
+            <Pressable onPress={() => pick(null)} className="mb-2 py-2">
+              <Typography variant="caption" className="text-muted">
+                Clear selection — show everything
+              </Typography>
+            </Pressable>
             <SectionList
               sections={sections}
               keyExtractor={(item) => item.id}

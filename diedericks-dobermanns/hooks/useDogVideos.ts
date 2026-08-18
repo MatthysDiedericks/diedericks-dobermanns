@@ -110,7 +110,6 @@ export function useDogVideos(dogId: string) {
         url: getPublicUrl('dog-media', videoPath),
         thumbnail_url: getPublicUrl('dog-media', thumbPath),
         is_primary: false,
-        sort_order: 0,
         caption: null,
       };
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AddDogMediaCard } from '@/components/admin/AddDogMediaCard';
+import { DogMediaManager } from '@/components/admin/DogMediaManager';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -17,9 +18,12 @@ import { GRID_PAGE_SIZE } from '@/lib/thumbs';
 export default function AdminGalleryScreen() {
   const { data: items, loading, refetch } = useAdminGallery();
   const { data: dogs } = useDogsForMediaPicker();
+  const [dogId, setDogId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [shown, setShown] = useState(GRID_PAGE_SIZE);
   const visible = useMemo(() => items.slice(0, shown), [items, shown]);
+  const dogName = dogs.find((d) => d.id === dogId)?.name;
 
   async function toggle(id: string, next: boolean) {
     setBusy(id);
@@ -32,8 +36,15 @@ export default function AdminGalleryScreen() {
     <ScreenContainer>
       <PageHeader eyebrow="Content" title="Gallery" />
       <View className="px-6">
-        <AddDogMediaCard dogs={dogs} />
+        <AddDogMediaCard
+          dogs={dogs}
+          dogId={dogId}
+          onDogIdChange={setDogId}
+          onUploaded={() => setRefreshKey((n) => n + 1)}
+        />
       </View>
+      <DogMediaManager key={`${dogId ?? 'all'}-${refreshKey}`} dogId={dogId} dogName={dogName} />
+      {dogId ? null : (
       <View className="gap-3 px-6">
         {!loading && items.length === 0 ? (
           <EmptyState title="No gallery items yet" />
@@ -77,6 +88,7 @@ export default function AdminGalleryScreen() {
           </Pressable>
         ) : null}
       </View>
+      )}
     </ScreenContainer>
   );
 }
