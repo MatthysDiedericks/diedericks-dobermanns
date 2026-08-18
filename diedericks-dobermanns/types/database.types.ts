@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -377,6 +377,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_litter_interest_id_fkey"
+            columns: ["litter_interest_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
           {
             foreignKeyName: "applications_reviewed_by_fkey"
@@ -775,6 +782,13 @@ export type Database = {
             referencedRelation: "litters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "calendar_events_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
         ]
       }
       campaign_recipients: {
@@ -1121,6 +1135,13 @@ export type Database = {
             referencedRelation: "litters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "client_group_members_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
         ]
       }
       client_groups: {
@@ -1174,6 +1195,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_groups_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
         ]
       }
@@ -1732,6 +1760,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contracts_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
             foreignKeyName: "contracts_parent_contract_id_fkey"
             columns: ["parent_contract_id"]
             isOneToOne: false
@@ -1960,6 +1995,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_related_invoice_id_fkey"
+            columns: ["related_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "documents_related_quote_id_fkey"
@@ -2521,6 +2563,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "dogs_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
             foreignKeyName: "dogs_mother_id_fkey"
             columns: ["mother_id"]
             isOneToOne: false
@@ -2839,6 +2888,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "expenses_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
             foreignKeyName: "expenses_payment_account_id_fkey"
             columns: ["payment_account_id"]
             isOneToOne: false
@@ -3137,6 +3193,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "heat_cycles_resulting_litter_id_fkey"
+            columns: ["resulting_litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
             foreignKeyName: "heat_cycles_sire_id_fkey"
             columns: ["sire_id"]
             isOneToOne: false
@@ -3258,6 +3321,13 @@ export type Database = {
             referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       invoice_payments: {
@@ -3301,6 +3371,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_payments_recorded_by_fkey"
@@ -3437,6 +3514,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
           {
             foreignKeyName: "invoices_quote_id_fkey"
@@ -3662,6 +3746,13 @@ export type Database = {
             referencedRelation: "litters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "litter_media_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
         ]
       }
       litter_todos: {
@@ -3715,6 +3806,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "litter_todos_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
         ]
       }
@@ -3822,6 +3920,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "litter_transactions_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
         ]
       }
@@ -4349,6 +4454,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pairings_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
             foreignKeyName: "pairings_sire_id_fkey"
             columns: ["sire_id"]
             isOneToOne: false
@@ -4489,6 +4601,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "payments_proof_document_id_fkey"
@@ -4745,6 +4864,13 @@ export type Database = {
             referencedRelation: "litters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "puppy_health_records_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
         ]
       }
       puppy_sharing: {
@@ -4836,6 +4962,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
           {
             foreignKeyName: "quote_items_quote_id_fkey"
@@ -5037,6 +5170,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quotes_converted_invoice_id_fkey"
+            columns: ["converted_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "quotes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -5122,6 +5262,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
         ]
       }
@@ -5352,6 +5499,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "litters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todo_items_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
           },
         ]
       }
@@ -6474,11 +6628,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "waiting_list_assigned_litter_id_fkey"
+            columns: ["assigned_litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
             foreignKeyName: "waiting_list_balance_invoice_id_fkey"
             columns: ["balance_invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_balance_invoice_id_fkey"
+            columns: ["balance_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "waiting_list_client_id_fkey"
@@ -6493,6 +6661,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiting_list_deposit_invoice_id_fkey"
+            columns: ["deposit_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "waiting_list_list_type_id_fkey"
@@ -6830,6 +7005,98 @@ export type Database = {
           viewed_on: string | null
           views: number | null
           visitors: number | null
+        }
+        Relationships: []
+      }
+      v_cash_expected_in: {
+        Row: {
+          amount: number | null
+          basis_label: string | null
+          buyer_name: string | null
+          client_id: string | null
+          date_basis: string | null
+          dog_id: string | null
+          dog_name: string | null
+          due_date: string | null
+          expected_date: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          litter_id: string | null
+          litter_label: string | null
+          quote_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_cash_receipts: {
+        Row: {
+          amount: number | null
+          buyer_name: string | null
+          client_id: string | null
+          dog_id: string | null
+          id: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          litter_id: string | null
+          method: string | null
+          received_on: string | null
+          source: string | null
+        }
+        Relationships: []
+      }
+      v_deposits_held: {
+        Row: {
+          amount_outstanding: number | null
+          amount_paid: number | null
+          buyer_name: string | null
+          dog_name: string | null
+          handover_date: string | null
+          handover_status: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+        }
+        Relationships: []
+      }
+      v_litter_go_home: {
+        Row: {
+          go_home_date: string | null
+          litter_id: string | null
+          pairing: string | null
         }
         Relationships: []
       }
