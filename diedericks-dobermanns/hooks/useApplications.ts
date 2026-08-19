@@ -1,7 +1,12 @@
 import { useState } from 'react';
 
 import { MARKETING_SOURCES } from '@/lib/marketing/sources';
-import { RateLimitError, assertRateLimit, blockedMessage } from '@/lib/security/rateLimit';
+import {
+  RateLimitError,
+  assertRateLimit,
+  blockedMessage,
+  messageFromDbError,
+} from '@/lib/security/rateLimit';
 import { supabase } from '@/lib/supabase';
 import { ensureWaitlistOnApplicationSubmitted } from '@/lib/waitlist/syncFromApplication';
 import type { Application } from '@/types/app.types';
@@ -52,7 +57,7 @@ async function logEnquiry(draft: ApplicationDraft, referenceId: string) {
     country: draft.country ?? null,
     status: 'new',
   });
-  if (error) console.error('[useSubmitApplication] enquiry:', error.message);
+  if (error) console.error('[useSubmitApplication] enquiry:', await messageFromDbError(error));
 }
 
 async function logClientNotification(userId: string, referenceId: string) {
@@ -110,7 +115,7 @@ export function useSubmitApplication() {
       const { error } = await supabase.from('applications').insert(insertRow);
       if (error) {
         console.error('[useSubmitApplication] insert:', error);
-        return { referenceId: null, error: error.message };
+        return { referenceId: null, error: await messageFromDbError(error) };
       }
 
       if (files.length > 0) {

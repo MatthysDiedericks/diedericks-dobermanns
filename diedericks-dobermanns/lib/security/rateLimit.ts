@@ -23,6 +23,21 @@ export async function blockedMessage(): Promise<string> {
   return RATE_LIMIT_FALLBACK;
 }
 
+/** Map a trigger refusal (P0001) to the WhatsApp fallback — never the Postgres text. */
+export function isRateLimitDbError(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code === 'P0001') return true;
+  const msg = error.message ?? '';
+  return /too many attempts/i.test(msg) || /record "new" has no field/i.test(msg);
+}
+
+export async function messageFromDbError(
+  error: { code?: string; message?: string } | null | undefined,
+): Promise<string> {
+  if (isRateLimitDbError(error)) return blockedMessage();
+  return error?.message?.trim() || 'Could not submit.';
+}
+
 /**
  * Empty p_key: the database hashes request headers with its own salt.
  * Peek (hit=false) before an insert so the trigger is the one that counts.
