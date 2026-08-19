@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, View, Linking } from 'react-native';
 
 import { buildApplicationDraft } from '@/components/forms/ApplicationForm/buildDraft';
 import { Step1Personal } from '@/components/forms/ApplicationForm/Step1Personal';
@@ -22,9 +22,8 @@ import { CompanyUrlField, useFormOpenedAt } from '@/components/forms/CompanyUrlF
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { useSubmitApplication } from '@/hooks/useApplications';
+import { APPLY_WHATSAPP, APPLY_WHATSAPP_HREF, applyCouldNot, elapsedSecondsFromOpened, ERROR_CODES, logApplyFailure } from '@/lib/applications/applyErrors';
 import { APPLICATION_MIN_MS, isTooFast, trapFilled } from '@/lib/security/botDefence';
-import { ERROR_CODES } from '@/lib/errors/codes';
-import { logSecurity } from '@/lib/security/logSecurity';
 import type { PickedApplicationFile } from '@/lib/uploads/applicationFiles';
 
 interface ApplicationFormProps {
@@ -87,11 +86,20 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
     const first = Object.values(errors).find((e) => e?.message);
     setSubmitError(
       first?.message
-        ? String(first.message)
-        : 'Please complete all required fields before submitting.',
+        ? `${String(first.message)}\nFix it and try again, or WhatsApp us on +27 78 215 0832 and we will take it down for you.`
+        : applyCouldNot('some required fields were not accepted'),
     );
     const errorStep = firstErrorStep(errors);
     if (errorStep < step) setStep(errorStep);
+    void logApplyFailure({
+      code: ERROR_CODES.APPLY_VALIDATION_FAILED,
+      message: 'App apply validation failed',
+      extra: {
+        step_reached: 'validation',
+        field: Object.keys(errors)[0] ?? null,
+      },
+      severity: 'warning',
+    });
   }
 
   function advance() {
@@ -121,25 +129,25 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
   async function onValid(values: ApplicationFormValues) {
     setSubmitError(null);
     if (trapFilled(companyUrl)) {
-      logSecurity({
-        code: ERROR_CODES.SECURITY_HONEYPOT,
-        message: 'Public form trap field was filled',
-        detail: { action: 'application' },
-        route: '/apply',
-        actorRole: 'anon',
+      void logApplyFailure({
+        code: ERROR_CODES.APPLY_HONEYPOT,
+        message: 'App apply honeypot filled',
+        extra: { step_reached: 'honeypot' },
+        severity: 'warning',
       });
       onSubmitted(`DD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`);
       return;
     }
     if (isTooFast(openedAt, APPLICATION_MIN_MS)) {
-      logSecurity({
-        code: ERROR_CODES.SECURITY_HONEYPOT,
-        message: 'Public form completed faster than a person can',
-        detail: { action: 'application', min_ms: APPLICATION_MIN_MS },
-        route: '/apply',
-        actorRole: 'anon',
+      const elapsed = elapsedSecondsFromOpened(openedAt);
+      void logApplyFailure({
+        code: ERROR_CODES.APPLY_TOO_FAST,
+        message: 'App apply submitted too fast',
+        extra: { step_reached: 'too_fast', elapsed_seconds: elapsed, min_ms: APPLICATION_MIN_MS },
+        severity: 'warning',
+        elapsedSeconds: elapsed,
       });
-      setSubmitError('Please take a moment to complete the form, then submit again.');
+      setSubmitError(applyCouldNot('it was submitted too quickly. Please wait a moment'));
       return;
     }
     const { referenceId, error } = await submit(
@@ -168,9 +176,16 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
       ) : null}
 
       {submitError ? (
-        <Typography variant="caption" className="mb-3 text-danger">
-          {submitError}
-        </Typography>
+        <View className="mb-3">
+          <Typography variant="caption" className="text-danger">
+            {submitError}
+          </Typography>
+          <Pressable onPress={() => void Linking.openURL(APPLY_WHATSAPP_HREF)} className="mt-2">
+            <Typography variant="caption" className="text-gold">
+              WhatsApp {APPLY_WHATSAPP}
+            </Typography>
+          </Pressable>
+        </View>
       ) : null}
 
       <View className="mt-4 flex-row gap-3">

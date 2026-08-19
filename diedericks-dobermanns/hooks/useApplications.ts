@@ -1,11 +1,15 @@
 import { useState } from 'react';
 
+import { applyCouldNot, ERROR_CODES, logApplyFailure, safeDbReason, stackFrom } from '@/lib/applications/applyErrors';
 import { MARKETING_SOURCES } from '@/lib/marketing/sources';
 import {
+  APPLICATION_RATE_DAY,
+  APPLICATION_RATE_HOUR,
+  ENQUIRY_RATE_HOUR,
   RateLimitError,
   assertRateLimit,
   blockedMessage,
-  messageFromDbError,
+  isRateLimitDbError,
 } from '@/lib/security/rateLimit';
 import { supabase } from '@/lib/supabase';
 import { ensureWaitlistOnApplicationSubmitted } from '@/lib/waitlist/syncFromApplication';
@@ -44,7 +48,7 @@ function newId(): string {
 async function logEnquiry(draft: ApplicationDraft, referenceId: string) {
   if (!supabase) return;
   try {
-    await assertRateLimit('enquiry', 5, 3600);
+    await assertRateLimit('enquiry', ENQUIRY_RATE_HOUR, 3600);
   } catch {
     return;
   }
@@ -57,7 +61,7 @@ async function logEnquiry(draft: ApplicationDraft, referenceId: string) {
     country: draft.country ?? null,
     status: 'new',
   });
-  if (error) console.error('[useSubmitApplication] enquiry:', await messageFromDbError(error));
+  if (error) console.error('[useSubmitApplication] enquiry:', error.message);
 }
 
 async function logClientNotification(userId: string, referenceId: string) {
@@ -89,10 +93,17 @@ export function useSubmitApplication() {
       }
 
       try {
-        await assertRateLimit('application', 3, 3600);
-        await assertRateLimit('application_day', 5, 86400);
+        await assertRateLimit('application', APPLICATION_RATE_HOUR, 3600);
+        await assertRateLimit('application_day', APPLICATION_RATE_DAY, 86400);
       } catch (e) {
         const message = e instanceof RateLimitError ? e.message : await blockedMessage();
+        await logApplyFailure({
+          code: ERROR_CODES.APPLY_RATE_LIMITED,
+          message: 'App apply rate limited',
+          body: draft,
+          extra: { step_reached: 'rate_limit', sqlstate: 'P0001' },
+          severity: 'warning',
+        });
         return { referenceId: null, error: message };
       }
 
@@ -115,7 +126,18 @@ export function useSubmitApplication() {
       const { error } = await supabase.from('applications').insert(insertRow);
       if (error) {
         console.error('[useSubmitApplication] insert:', error);
-        return { referenceId: null, error: await messageFromDbError(error) };
+        const limited = isRateLimitDbError(error);
+        await logApplyFailure({
+          code: limited ? ERROR_CODES.APPLY_RATE_LIMITED : ERROR_CODES.APPLY_DB_ERROR,
+          message: 'App apply insert failed',
+          body: draft,
+          extra: { step_reached: 'insert', sqlstate: error.code ?? null },
+          severity: limited ? 'warning' : 'error',
+        });
+        return {
+          referenceId: null,
+          error: limited ? await blockedMessage() : applyCouldNot(safeDbReason(error)),
+        };
       }
 
       if (files.length > 0) {
@@ -126,6 +148,13 @@ export function useSubmitApplication() {
         });
         if (uploaded.error) {
           console.error('[useSubmitApplication] files:', uploaded.error);
+          await logApplyFailure({
+            code: ERROR_CODES.APPLY_UPLOAD_FAILED,
+            message: 'App apply file upload failed after insert',
+            body: draft,
+            extra: { step_reached: 'file_store', reason: uploaded.error, reference_present: true },
+            severity: 'warning',
+          });
         }
       }
 
@@ -174,9 +203,12 @@ export function useSubmitApplication() {
       // Previously uncaught — any thrown error here (network failure, etc.)
       // vanished silently: the spinner stopped but nothing else happened.
       console.error('[useSubmitApplication] submit threw:', e);
-      const message =
-        e instanceof Error && e.message ? e.message : 'Could not submit — check your connection and try again.';
-      return { referenceId: null, error: message };
+      await logApplyFailure({
+        code: ERROR_CODES.APPLY_UNHANDLED,
+        message: 'App apply unhandled exception',
+        extra: { step_reached: 'unhandled', stack: stackFrom(e) },
+      });
+      return { referenceId: null, error: applyCouldNot('something went wrong on our side') };
     } finally {
       setSubmitting(false);
     }
