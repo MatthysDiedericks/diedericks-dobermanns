@@ -10,20 +10,25 @@ import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { fetchInvoicePayments } from '@/lib/finance/clientPayments';
 import { fetchInvoiceById } from '@/lib/finance/queries';
 import { exportInvoicePDF } from '@/lib/finance/generatePDF';
 import { formatAmount, formatDate, humanizeItemType } from '@/lib/finance/formatters';
-import type { InvoiceWithDetails } from '@/types/finance';
+import type { InvoicePayment, InvoiceWithDetails } from '@/types/finance';
 
 export default function ClientInvoiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [invoice, setInvoice] = useState<InvoiceWithDetails | null>(null);
+  const [payments, setPayments] = useState<InvoicePayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
-    fetchInvoiceById(id)
-      .then(setInvoice)
+    Promise.all([fetchInvoiceById(id), fetchInvoicePayments(id)])
+      .then(([inv, pays]) => {
+        setInvoice(inv);
+        setPayments(pays);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -96,6 +101,24 @@ export default function ClientInvoiceDetailScreen() {
             <Typography variant="caption" className="mt-4 text-subtle">{invoice.notes}</Typography>
           ) : null}
         </Card>
+
+        {payments.length > 0 ? (
+          <Card className="mt-3">
+            <Typography variant="label" className="text-gold">
+              Payments
+            </Typography>
+            {payments.map((p) => (
+              <View key={p.id} className="mt-2 flex-row justify-between">
+                <Typography variant="caption">
+                  {formatDate(p.payment_date)} · {p.payment_method ?? 'payment'}
+                </Typography>
+                <Typography variant="caption" className="text-success">
+                  −{formatAmount(p.amount)}
+                </Typography>
+              </View>
+            ))}
+          </Card>
+        ) : null}
       </ScrollView>
     </ScreenContainer>
   );

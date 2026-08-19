@@ -6,6 +6,8 @@ import { Colors } from '@/constants/colors';
 interface FinanceActionChipsProps {
   exporting: boolean;
   onCashflow: () => void;
+  onDebtors: () => void;
+  onProofs: () => void;
   onBudget: () => void;
   onRecurring: () => void;
   onImport: () => void;
@@ -16,6 +18,8 @@ interface FinanceActionChipsProps {
 export function FinanceActionChips({
   exporting,
   onCashflow,
+  onDebtors,
+  onProofs,
   onBudget,
   onRecurring,
   onImport,
@@ -26,6 +30,12 @@ export function FinanceActionChips({
     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-6">
       <Pressable onPress={onCashflow} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
         <Typography variant="caption">Cashflow</Typography>
+      </Pressable>
+      <Pressable onPress={onDebtors} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
+        <Typography variant="caption">Debtors</Typography>
+      </Pressable>
+      <Pressable onPress={onProofs} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
+        <Typography variant="caption">Proofs</Typography>
       </Pressable>
       <Pressable onPress={onBudget} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
         <Typography variant="caption">Budget</Typography>

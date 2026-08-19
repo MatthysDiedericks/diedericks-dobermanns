@@ -137,7 +137,7 @@ function normalizePaymentMethod(method?: string | null): PaymentMethod {
   return (PAYMENT_METHODS as readonly string[]).includes(v) ? (v as PaymentMethod) : 'other';
 }
 
-/** Insert into `payments` only — never write invoice paid/outstanding/status columns. */
+/** Insert into `invoice_payments` only — the trigger recomputes paid/outstanding. */
 export async function recordInvoicePayment(
   invoiceId: string,
   amount: number,
@@ -156,12 +156,11 @@ export async function recordInvoicePayment(
     .single();
   if (invErr) throw new Error(invErr.message);
 
-  const { error } = await supabase.from('payments').insert({
+  const { error } = await supabase.from('invoice_payments').insert({
     invoice_id: invoiceId,
-    client_id: inv.client_id,
     amount,
-    paid_at: paymentDate,
-    method: normalizePaymentMethod(method),
+    payment_date: paymentDate,
+    payment_method: normalizePaymentMethod(method),
     reference: reference?.trim() || null,
     proof_document_id: opts?.proof_document_id ?? null,
     notes: opts?.notes ?? null,

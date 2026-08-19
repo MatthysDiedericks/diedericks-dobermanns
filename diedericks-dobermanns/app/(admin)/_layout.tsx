@@ -53,6 +53,7 @@ export default function AdminLayout() {
           }}
         />
         <Tabs.Screen name="finance/cashflow" options={{ href: null }} />
+        <Tabs.Screen name="finance/proofs" options={{ href: null }} />
 
         {/* Hidden routes — reached via in-app navigation, not the tab bar. */}
         <Tabs.Screen name="dogs/new" options={{ href: null }} />

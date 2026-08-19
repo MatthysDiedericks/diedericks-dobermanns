@@ -70,11 +70,22 @@ export async function resolveQuoteBuyer(input: {
   }
 
   if (input.kind === 'user' && input.id) {
-    return { clientId: input.id, contactId: null, historicalName: null };
+    const { data: user } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', input.id)
+      .maybeSingle();
+    const contactId = user?.email ? await findActiveContactIdByEmail(user.email) : null;
+    return { clientId: input.id, contactId, historicalName: null };
   }
 
   if (input.kind === 'contact' && input.id) {
-    return { clientId: null, contactId: input.id, historicalName: null };
+    const { data: contact } = await supabase
+      .from('contacts')
+      .select('user_id')
+      .eq('id', input.id)
+      .maybeSingle();
+    return { clientId: contact?.user_id ?? null, contactId: input.id, historicalName: null };
   }
 
   const applicationId =
@@ -108,8 +119,6 @@ export async function resolveQuoteBuyer(input: {
     }
   }
 
-  if (clientId) return { clientId, contactId: null, historicalName: null };
-
   const contactId = await findOrCreateContactFromApplication(applicationId);
-  return { clientId: null, contactId, historicalName: null };
+  return { clientId, contactId, historicalName: null };
 }

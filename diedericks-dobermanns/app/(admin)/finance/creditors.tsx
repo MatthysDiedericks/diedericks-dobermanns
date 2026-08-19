@@ -48,6 +48,8 @@ export default function CreditorsDebtorsScreen() {
           <DebtorsTab
             debtors={debtorsState.debtors}
             totalOutstanding={debtorsState.totalOutstanding}
+            depositsHeld={debtorsState.depositsHeld}
+            awaitingReview={debtorsState.awaitingReview}
             overdueCount={debtorsState.overdueCount}
           />
         ) : (

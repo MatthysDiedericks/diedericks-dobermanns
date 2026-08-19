@@ -139,6 +139,8 @@ export default function FinanceDashboardScreen() {
       <FinanceActionChips
         exporting={exporting}
         onCashflow={() => router.push('/(admin)/finance/cashflow' as never)}
+        onDebtors={() => router.push('/(admin)/finance/creditors' as never)}
+        onProofs={() => router.push('/(admin)/finance/proofs' as never)}
         onBudget={() => router.push('/(admin)/finance/budget' as never)}
         onRecurring={() => router.push('/(admin)/finance/expenses/recurring' as never)}
         onImport={() => router.push('/(admin)/finance/import' as never)}

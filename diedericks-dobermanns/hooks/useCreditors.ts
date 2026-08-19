@@ -40,6 +40,8 @@ function daysOverdue(dueDate: string | null): number {
 export function useDebtors() {
   const [debtors, setDebtors] = useState<DebtorGroup[]>([]);
   const [totalOutstanding, setTotalOutstanding] = useState(0);
+  const [depositsHeld, setDepositsHeld] = useState(0);
+  const [awaitingReview, setAwaitingReview] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,13 +51,22 @@ export function useDebtors() {
     setError(null);
     try {
       const supabase = requireSupabase();
-      const { data, error: qErr } = await supabase
-        .from('invoices')
-        .select('*, client:users!invoices_client_id_fkey(full_name, email)')
-        .gt('amount_outstanding', 0)
-        .neq('status', 'void')
-        .neq('status', 'cancelled')
-        .order('due_date', { ascending: true, nullsFirst: false });
+      const [{ data, error: qErr }, depositsRes, pendingRes] = await Promise.all([
+        supabase
+          .from('invoices')
+          .select('*, client:users!invoices_client_id_fkey(full_name, email)')
+          .gt('amount_outstanding', 0)
+          .neq('status', 'void')
+          .neq('status', 'cancelled')
+          .neq('status', 'draft')
+          .order('due_date', { ascending: true, nullsFirst: false }),
+        supabase.from('v_deposits_held').select('amount_paid'),
+        supabase
+          .from('documents')
+          .select('id', { count: 'exact', head: true })
+          .eq('category', 'proof_of_payment')
+          .eq('review_status', 'pending'),
+      ]);
 
       if (qErr) throw new Error(qErr.message);
 
@@ -102,6 +113,10 @@ export function useDebtors() {
       setDebtors(grouped);
       setTotalOutstanding(total);
       setOverdueCount(overdue);
+      setDepositsHeld(
+        (depositsRes.data ?? []).reduce((s, r) => s + Number(r.amount_paid ?? 0), 0),
+      );
+      setAwaitingReview(pendingRes.count ?? 0);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load debtors');
     } finally {
@@ -113,7 +128,7 @@ export function useDebtors() {
     void refresh();
   }, [refresh]);
 
-  return { debtors, totalOutstanding, overdueCount, loading, error, refresh };
+  return { debtors, totalOutstanding, depositsHeld, awaitingReview, overdueCount, loading, error, refresh };
 }
 
 export function useCreditors() {

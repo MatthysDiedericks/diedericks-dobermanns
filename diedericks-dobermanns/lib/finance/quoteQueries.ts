@@ -274,6 +274,14 @@ export async function updateQuoteStatus(id: string, status: QuoteStatus): Promis
  */
 export async function convertQuoteToInvoice(quoteId: string): Promise<string> {
   const supabase = requireSupabase();
+  const { data: quote } = await supabase
+    .from('quotes')
+    .select('contact_id, client_id')
+    .eq('id', quoteId)
+    .maybeSingle();
+  if (quote && !quote.contact_id && !quote.client_id) {
+    throw new Error('Link a buyer before converting this quote to an invoice.');
+  }
   const { data, error } = await supabase.rpc('convert_quote_to_invoice', { p_quote_id: quoteId });
   if (error) throw new Error(error.message);
   const { reserveDogsFromQuote } = await import('@/lib/finance/reserveQuotedDogs');

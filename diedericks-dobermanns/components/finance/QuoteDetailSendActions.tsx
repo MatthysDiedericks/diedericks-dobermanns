@@ -20,6 +20,9 @@ export function quoteSendLock(quote: Quote): {
     sendBlockedReason(outstanding) ??
     (!quote.total || Number(quote.total) <= 0
       ? 'Send is blocked until this quote has a price.'
+      : null) ??
+    (!quote.contact_id
+      ? 'Link a contact before sending. Drafts can wait; a quote cannot go out to nobody.'
       : null);
   return { outstanding, sendWhy, sendLocked: Boolean(sendWhy) };
 }

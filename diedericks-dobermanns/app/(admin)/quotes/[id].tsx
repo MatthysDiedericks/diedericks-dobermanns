@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
 
+import { QuoteConvertActions } from '@/components/finance/QuoteConvertActions';
 import { QuoteReopenCard } from '@/components/finance/QuoteReopenCard';
 import { QuoteResendNote } from '@/components/finance/QuoteResendNote';
 import { QuoteRevisionList } from '@/components/finance/QuoteRevisionList';
@@ -15,11 +16,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useQuoteDetail } from '@/hooks/useQuotes';
 import { assertQuoteEditable, summariseQuoteChanges } from '@/lib/finance/quoteEditGuards';
-import { buildQuoteMessage, convertQuoteToInvoice, quotePhone, reopenQuote, updateQuoteStatus } from '@/lib/finance/quoteQueries';
+import { buildQuoteMessage, quotePhone, reopenQuote, updateQuoteStatus } from '@/lib/finance/quoteQueries';
 import { sendQuoteToRecipient } from '@/lib/finance/sendQuote';
 import { fetchQuoteRevisions, type QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
 import { quoteBuyerDisplay } from '@/lib/finance/quoteBuyerDisplay';
-import { formatPrice, titleCase } from '@/lib/format';
+import { titleCase } from '@/lib/format';
 import { QUOTE_TONE } from '@/app/(admin)/quotes/index';
 import { requireSupabase } from '@/lib/supabase';
 import type { QuoteStatus } from '@/types/app.types';
@@ -56,8 +57,6 @@ export default function QuoteDetailScreen() {
     : null;
   const previouslySent = Boolean(quote?.sent_at) || (quote?.revision ?? 1) > 1;
   const buyer = quote ? quoteBuyerDisplay(quote) : null;
-  const canConvert =
-    !quote?.converted_invoice_id && (quote?.status === 'sent' || quote?.status === 'accepted');
   const canSend = quote?.status === 'draft' || quote?.status === 'sent';
   const phone = quote ? quotePhone(quote) : null;
   const sendLock = quote
@@ -259,28 +258,13 @@ export default function QuoteDetailScreen() {
             />
           ) : null}
 
-          <Button
-            label={
-              quote.converted_invoice_id
-                ? 'Already converted to invoice'
-                : `Convert to Invoice · ${formatPrice(quote.total)}`
-            }
-            onPress={() => {
-              void (async () => {
-                setBusy(true);
-                try {
-                  const invoiceId = await convertQuoteToInvoice(quote.id);
-                  router.replace({ pathname: '/(admin)/finance/invoices/[id]', params: { id: invoiceId } });
-                } catch (e) {
-                  Alert.alert('Could not convert to invoice', e instanceof Error ? e.message : 'Please try again.');
-                } finally {
-                  setBusy(false);
-                }
-              })();
+          <QuoteConvertActions
+            quote={quote}
+            busy={busy}
+            setBusy={setBusy}
+            onLinked={async () => {
+              await refresh();
             }}
-            loading={busy}
-            disabled={!canConvert}
-            fullWidth
           />
 
           {editGate?.ok ? (

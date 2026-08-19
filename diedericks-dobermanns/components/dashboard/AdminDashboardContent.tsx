@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from '
 
 import { ErrorHealthStrip } from '@/components/admin/ErrorHealthStrip';
 import { SurfaceCard } from '@/components/admin/SurfaceCard';
+import { AwaitingProofsWidget } from '@/components/dashboard/AwaitingProofsWidget';
 import { ExpiringDocumentsWidget } from '@/components/dashboard/ExpiringDocumentsWidget';
 import { LittersByYearWidget } from '@/components/dashboard/LittersByYearWidget';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -59,6 +60,8 @@ export function AdminDashboardContent() {
     >
       {/* Widget — Expiring Documents */}
       <ExpiringDocumentsWidget />
+
+      <AwaitingProofsWidget />
 
       <ErrorHealthStrip />
 

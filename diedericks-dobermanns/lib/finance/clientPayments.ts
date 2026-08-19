@@ -11,14 +11,13 @@ export type ClientPaymentRow = {
   invoice_number: string;
 };
 
-/** Map a `payments` row to the InvoicePayment UI shape. */
-export function mapPaymentRow(p: Record<string, unknown>): InvoicePayment {
+export function mapInvoicePaymentRow(p: Record<string, unknown>): InvoicePayment {
   return {
     id: p.id as string,
     invoice_id: p.invoice_id as string,
     amount: Number(p.amount),
-    payment_date: String(p.paid_at).slice(0, 10),
-    payment_method: (p.method as string | null) ?? null,
+    payment_date: String(p.payment_date).slice(0, 10),
+    payment_method: (p.payment_method as string | null) ?? null,
     reference: (p.reference as string | null) ?? null,
     notes: (p.notes as string | null) ?? null,
     recorded_by: (p.recorded_by as string | null) ?? null,
@@ -30,38 +29,42 @@ export function mapPaymentRow(p: Record<string, unknown>): InvoicePayment {
 export async function fetchInvoicePayments(invoiceId: string): Promise<InvoicePayment[]> {
   const supabase = requireSupabase();
   const { data, error } = await supabase
-    .from('payments')
+    .from('invoice_payments')
     .select(
-      'id, invoice_id, amount, paid_at, method, reference, notes, recorded_by, created_at, proof_document_id',
+      'id, invoice_id, amount, payment_date, payment_method, reference, notes, recorded_by, created_at, proof_document_id',
     )
     .eq('invoice_id', invoiceId)
-    .order('paid_at', { ascending: false });
+    .order('payment_date', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((p) => mapPaymentRow(p as Record<string, unknown>));
+  return (data ?? []).map((p) => mapInvoicePaymentRow(p as Record<string, unknown>));
 }
 
-/** Client payment ledger rows from live `payments` (not invoice_payments). */
+/** Same receipts ledger the website statement reads. */
 export async function fetchClientPayments(clientId: string): Promise<ClientPaymentRow[]> {
   const supabase = requireSupabase();
-  const { data, error } = await supabase
-    .from('payments')
-    .select('id, invoice_id, amount, paid_at, method, reference, invoices(invoice_number)')
-    .eq('client_id', clientId)
-    .order('paid_at', { ascending: true });
+  const { data: invoices, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, invoice_number')
+    .eq('client_id', clientId);
+  if (invErr) throw new Error(invErr.message);
+  const ids = (invoices ?? []).map((i) => i.id);
+  if (!ids.length) return [];
+  const numbers = new Map((invoices ?? []).map((i) => [i.id, i.invoice_number]));
 
+  const { data, error } = await supabase
+    .from('invoice_payments')
+    .select('id, invoice_id, amount, payment_date, payment_method, reference')
+    .in('invoice_id', ids)
+    .order('payment_date', { ascending: true });
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => {
-    const r = row as Record<string, unknown>;
-    const inv = r.invoices as { invoice_number: string } | null;
-    return {
-      id: r.id as string,
-      invoice_id: r.invoice_id as string,
-      amount: Number(r.amount),
-      payment_date: String(r.paid_at).slice(0, 10),
-      method: (r.method as string | null) ?? null,
-      reference: (r.reference as string | null) ?? null,
-      invoice_number: inv?.invoice_number ?? '',
-    };
-  });
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    invoice_id: row.invoice_id,
+    amount: Number(row.amount),
+    payment_date: String(row.payment_date).slice(0, 10),
+    method: row.payment_method,
+    reference: row.reference,
+    invoice_number: numbers.get(row.invoice_id) ?? '',
+  }));
 }

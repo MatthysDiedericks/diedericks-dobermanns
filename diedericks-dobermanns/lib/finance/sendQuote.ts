@@ -106,6 +106,9 @@ export async function sendQuoteToRecipient(
   if (!quote.total || Number(quote.total) <= 0) {
     throw new Error('This quote totals R0. Set the amount before sending.');
   }
+  if (!quote.contact_id) {
+    throw new Error('Link a contact before sending. Drafts can wait; a quote cannot go out to nobody.');
+  }
 
   const recipient = await resolveRecipient(quote);
   const supabase = requireSupabase();

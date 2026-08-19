@@ -3339,6 +3339,7 @@ export type Database = {
           notes: string | null
           payment_date: string
           payment_method: string | null
+          proof_document_id: string | null
           recorded_by: string | null
           reference: string | null
         }
@@ -3350,6 +3351,7 @@ export type Database = {
           notes?: string | null
           payment_date?: string
           payment_method?: string | null
+          proof_document_id?: string | null
           recorded_by?: string | null
           reference?: string | null
         }
@@ -3361,6 +3363,7 @@ export type Database = {
           notes?: string | null
           payment_date?: string
           payment_method?: string | null
+          proof_document_id?: string | null
           recorded_by?: string | null
           reference?: string | null
         }
@@ -3378,6 +3381,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_cash_expected_in"
             referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_proof_document_id_fkey"
+            columns: ["proof_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "invoice_payments_recorded_by_fkey"
@@ -7344,6 +7354,17 @@ export type Database = {
         Returns: undefined
       }
       sweep_error_consistency: { Args: never; Returns: number }
+      verify_payment_proof: {
+        Args: {
+          p_amount: number
+          p_document_id: string
+          p_invoice_id: string
+          p_method: string
+          p_payment_date: string
+          p_reference?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
