@@ -1,9 +1,14 @@
+import { applyCouldNot, safeDbReason } from '@/lib/applications/applyErrors';
 import { ERROR_CODES } from '@/lib/errors/codes';
 import { logSecurity } from '@/lib/security/logSecurity';
 import { supabase } from '@/lib/supabase';
 
 export const RATE_LIMIT_FALLBACK =
-  'Too many attempts — try again in 12 minutes, or WhatsApp us on the number at diedericksdobermanns.com';
+  'Too many attempts — try again in 12 minutes, or WhatsApp us on +27 78 215 0832 and we will take it down for you.';
+/** Live 19 Aug ceilings. App inserts go to PostgREST as the device, so the trigger keys on the phone's IP — not a shared server bucket. Do not tighten. */
+export const APPLICATION_RATE_HOUR = 50;
+export const APPLICATION_RATE_DAY = 200;
+export const ENQUIRY_RATE_HOUR = 100;
 
 export class RateLimitError extends Error {
   constructor(message = RATE_LIMIT_FALLBACK) {
@@ -35,7 +40,7 @@ export async function messageFromDbError(
   error: { code?: string; message?: string } | null | undefined,
 ): Promise<string> {
   if (isRateLimitDbError(error)) return blockedMessage();
-  return error?.message?.trim() || 'Could not submit.';
+  return applyCouldNot(safeDbReason(error ?? null));
 }
 
 /**
@@ -49,18 +54,23 @@ export async function checkRateLimit(opts: {
   hit?: boolean;
 }): Promise<boolean> {
   if (!supabase) return true;
-  const { data, error } = await supabase.rpc('check_rate_limit' as never, {
-    p_action: opts.action,
-    p_key: '',
-    p_max: opts.max,
-    p_window_seconds: opts.windowSeconds,
-    p_hit: opts.hit ?? false,
-  } as never);
-  if (error) {
-    console.error('[checkRateLimit]', error.message);
-    return false;
+  try {
+    const { data, error } = await supabase.rpc('check_rate_limit' as never, {
+      p_action: opts.action,
+      p_key: '',
+      p_max: opts.max,
+      p_window_seconds: opts.windowSeconds,
+      p_hit: opts.hit ?? false,
+    } as never);
+    if (error) {
+      console.error('[checkRateLimit]', error.message);
+      return true;
+    }
+    return data === true;
+  } catch (e) {
+    console.error('[checkRateLimit]', e);
+    return true;
   }
-  return data === true;
 }
 
 export async function assertRateLimit(

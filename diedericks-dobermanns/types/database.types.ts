@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -7302,6 +7302,10 @@ export type Database = {
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
       rate_limit_blocked_message: { Args: never; Returns: string }
+      rate_limit_client_key: {
+        Args: { p_action: string; p_client_ip: string; p_user_agent: string }
+        Returns: string
+      }
       rate_limit_request_key: { Args: { p_action: string }; Returns: string }
       record_marketing_consent: {
         Args: {
