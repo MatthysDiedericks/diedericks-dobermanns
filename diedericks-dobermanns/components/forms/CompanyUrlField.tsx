@@ -4,7 +4,9 @@ import { View } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import { OPENED_FIELD, TRAP_FIELD } from '@/lib/security/botDefence';
 
-/** Off-screen field. Real visitors never see it; a bot that fills every input does. */
+let sessionOpenedAt: number | null = null;
+
+/** Off-screen field. Hidden from VoiceOver / TalkBack. Not an autofill target. */
 export function CompanyUrlField({
   value,
   onChange,
@@ -16,15 +18,27 @@ export function CompanyUrlField({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
+      accessibilityLabel=""
       style={{ position: 'absolute', left: -10000, height: 1, width: 1, overflow: 'hidden', opacity: 0 }}
+      pointerEvents="none"
     >
-      <Input label="Company website" value={value} onChangeText={onChange} autoComplete="off" />
+      <Input
+        label="Company website"
+        value={value}
+        onChangeText={onChange}
+        autoComplete="off"
+        importantForAutofill="no"
+        textContentType="none"
+      />
     </View>
   );
 }
 
+/** Clock starts on first mount of this JS session, not on the last step. */
 export function useFormOpenedAt(): number {
-  return useRef(Date.now()).current;
+  const openedAt = useRef(sessionOpenedAt ?? Date.now()).current;
+  sessionOpenedAt = openedAt;
+  return openedAt;
 }
 
 export { OPENED_FIELD, TRAP_FIELD };

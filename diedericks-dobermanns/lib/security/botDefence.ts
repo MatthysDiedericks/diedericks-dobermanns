@@ -8,7 +8,10 @@ export function trapFilled(value: string | null | undefined): boolean {
   return Boolean(value && value.trim());
 }
 
+/** Clock is first mount of this JS session, not the last step. Clock skew is not a block. */
 export function isTooFast(openedAtMs: number | null | undefined, minMs = APPLICATION_MIN_MS): boolean {
   if (openedAtMs == null || !Number.isFinite(openedAtMs)) return false;
-  return Date.now() - openedAtMs < minMs;
+  const elapsed = Date.now() - openedAtMs;
+  if (elapsed < 0) return false;
+  return elapsed < minMs;
 }
