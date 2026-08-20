@@ -2,12 +2,20 @@ import type { DraftLineItem } from '@/components/finance/LineItemRow';
 import { assertQuoteLineCount, assertQuoteTotalsMatch } from '@/lib/errors/assertQuote';
 import type { LineItemInput } from '@/lib/finance/mutations';
 import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
-import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
+import { prepareQuoteLinesForSave, quoteDraftHasContent } from '@/lib/finance/prepareQuoteLines';
 import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
 import type { DeliveryDecision } from '@/lib/finance/catalogue';
 import { syncDeliveryLine } from '@/lib/finance/quoteDelivery';
+import {
+  ERROR_CODES,
+  logQuoteFailure,
+  QuoteDbError,
+  quoteUnhandled,
+} from '@/lib/finance/quoteErrors';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote } from '@/types/app.types';
+
+export { quoteDraftHasContent };
 
 export async function saveAppQuote(input: {
   initial?: Quote | null;
@@ -25,10 +33,32 @@ export async function saveAppQuote(input: {
   changeNote: string;
   waitlistId?: string;
   total: number;
+  mode?: 'strict' | 'draft';
+  quoteId?: string | null;
 }): Promise<{ quoteId: string; toWaitlist?: string }> {
+  const existingId = input.quoteId ?? input.initial?.id ?? null;
+  const ctx = {
+    step: 'save',
+    lineCount: input.items.length,
+    quoteId: existingId,
+    contactAttached: Boolean(input.buyerId || input.walkinName.trim()),
+    populated: {
+      buyerKind: Boolean(input.buyerKind),
+      buyerId: Boolean(input.buyerId),
+      walkinName: Boolean(input.walkinName.trim()),
+      changeNote: Boolean(input.changeNote.trim()),
+    },
+  };
+
   const synced = syncDeliveryLine(input.items, input.deliveryDecision, [], () => 'delivery-sync');
-  const prepared = prepareQuoteLinesForSave(synced);
-  if (!prepared.ok) throw new Error(prepared.error);
+  const prepared = prepareQuoteLinesForSave(synced, input.mode ?? 'strict');
+  if (!prepared.ok) {
+    await logQuoteFailure(ERROR_CODES.QUOTE_VALIDATION_FAILED, prepared.error, {
+      ...ctx,
+      field: 'lines',
+    });
+    throw new Error(prepared.error);
+  }
 
   const cleanItems: LineItemInput[] = prepared.lines.map((it) => ({
     item_type: it.item_type as LineItemInput['item_type'],
@@ -54,21 +84,35 @@ export async function saveAppQuote(input: {
       intendedCount: intendedMeaningful.length,
       writtenCount: cleanItems.length,
       droppedDescriptions: intendedMeaningful.slice(cleanItems.length).map((it) => it.description),
-      quoteId: input.initial?.id ?? null,
+      quoteId: existingId,
     });
-    if (dropErr) throw new Error(dropErr);
+    if (dropErr) {
+      await logQuoteFailure(ERROR_CODES.QUOTE_VALIDATION_FAILED, dropErr, {
+        ...ctx,
+        field: 'line_count',
+      });
+      throw new Error(dropErr);
+    }
   }
 
-  const totalErr = await assertQuoteTotalsMatch({
-    displayedTotal: Math.max(
-      cleanItems.reduce((s, it) => s + it.quantity * it.unit_price, 0) - input.discountNum,
-      0,
-    ),
-    lines: cleanItems,
-    discount: input.discountNum,
-    quoteId: input.initial?.id ?? null,
-  });
-  if (totalErr) throw new Error(totalErr);
+  if (input.mode !== 'draft') {
+    const totalErr = await assertQuoteTotalsMatch({
+      displayedTotal: Math.max(
+        cleanItems.reduce((s, it) => s + it.quantity * it.unit_price, 0) - input.discountNum,
+        0,
+      ),
+      lines: cleanItems,
+      discount: input.discountNum,
+      quoteId: existingId,
+    });
+    if (totalErr) {
+      await logQuoteFailure(ERROR_CODES.QUOTE_VALIDATION_FAILED, totalErr, {
+        ...ctx,
+        field: 'total',
+      });
+      throw new Error(totalErr);
+    }
+  }
 
   const combinedNotes = [
     input.notes.trim(),
@@ -92,22 +136,35 @@ export async function saveAppQuote(input: {
     delivery_note: input.deliveryNote.trim() || null,
   };
 
-  let quoteId: string;
-  if (input.initial) {
-    await updateQuote(input.initial.id, header, cleanItems, {
-      changeNote: input.changeNote.trim() || null,
-    });
-    quoteId = input.initial.id;
-  } else {
-    quoteId = await createQuote(header, cleanItems);
-  }
+  try {
+    let quoteId: string;
+    if (existingId) {
+      await updateQuote(existingId, header, cleanItems, {
+        changeNote: input.changeNote.trim() || null,
+      });
+      quoteId = existingId;
+    } else {
+      quoteId = await createQuote(header, cleanItems);
+    }
 
-  if (!input.initial && input.waitlistId) {
-    await requireSupabase()
-      .from('waiting_list')
-      .update({ quote_id: quoteId, quoted_price: input.total, status: 'active' })
-      .eq('id', input.waitlistId);
-    return { quoteId, toWaitlist: input.waitlistId };
+    if (!existingId && input.waitlistId) {
+      await requireSupabase()
+        .from('waiting_list')
+        .update({ quote_id: quoteId, quoted_price: input.total, status: 'active' })
+        .eq('id', input.waitlistId);
+      return { quoteId, toWaitlist: input.waitlistId };
+    }
+    return { quoteId };
+  } catch (e) {
+    if (e instanceof QuoteDbError) {
+      await logQuoteFailure(ERROR_CODES.QUOTE_SAVE_FAILED, e.message, {
+        ...ctx,
+        step: e.step,
+        sqlstate: e.sqlstate,
+      });
+    } else {
+      await quoteUnhandled(e, ctx);
+    }
+    throw e instanceof Error ? e : new Error('Could not save this quote.');
   }
-  return { quoteId };
 }

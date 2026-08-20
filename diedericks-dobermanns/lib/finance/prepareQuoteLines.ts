@@ -1,4 +1,3 @@
-/** Default description when the admin picks a type and amount but leaves the text blank. */
 import { subjectSaveError } from '@/lib/finance/quoteSubjectSave';
 import type { QuoteSubjectKind } from '@/lib/finance/quoteSubject';
 import { DELIVERY_LINE_NO_AMOUNT_MESSAGE } from '@/lib/finance/catalogue';
@@ -41,17 +40,20 @@ function isMeaningful(it: DraftishLine): boolean {
   );
 }
 
+export function quoteDraftHasContent(items: DraftishLine[]): boolean {
+  return items.some(isMeaningful);
+}
+
 /**
- * Prepare quote lines for save:
- * - drop genuinely empty lines
- * - default description from item type when a priced/subject line lacks one
- * - block when a dog line has no tier or an inconsistent subject
- * - allow R0 when allowZeroPrice (included delivery)
+ * Prepare quote lines for save.
+ * Draft mode keeps incomplete lines so autosave cannot drop work.
  */
 export function prepareQuoteLinesForSave<T extends DraftishLine>(
   items: T[],
+  mode: 'strict' | 'draft' = 'strict',
 ): { ok: true; lines: T[] } | { ok: false; error: string } {
   const kept: T[] = [];
+  const draft = mode === 'draft';
 
   for (let i = 0; i < items.length; i++) {
     const it = items[i]!;
@@ -67,19 +69,24 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
     if (!isMeaningful(it)) continue;
 
     const subjectErr = subjectSaveError(it);
-    if (subjectErr) {
+    if (subjectErr && !draft) {
       return { ok: false, error: `Line ${lineNo}: ${subjectErr}` };
     }
 
-    if (!desc && (hasPrice || hasSubject || allowZero)) {
+    if (!desc && (hasPrice || hasSubject || allowZero || draft)) {
       kept.push({
         ...it,
-        description: defaultDescriptionForType(it.item_type),
+        description: desc || defaultDescriptionForType(it.item_type),
+        allowZeroPrice: it.allowZeroPrice || (draft && !hasPrice),
       });
       continue;
     }
 
     if (desc && !hasPrice && !hasSubject && !allowZero) {
+      if (draft) {
+        kept.push({ ...it, description: desc, allowZeroPrice: true });
+        continue;
+      }
       return {
         ok: false,
         error:
@@ -90,6 +97,10 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
     }
 
     if (!desc) {
+      if (draft) {
+        kept.push({ ...it, description: defaultDescriptionForType(it.item_type) });
+        continue;
+      }
       return {
         ok: false,
         error: `Line ${lineNo} has an amount but no description. Add one, or remove the line.`,

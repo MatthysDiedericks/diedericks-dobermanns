@@ -77,6 +77,32 @@ export function seedAppQuoteItems(
   ];
 }
 
+export function formFromQuote(quote: Quote) {
+  return {
+    quoteId: quote.id,
+    items: seedAppQuoteItems(quote),
+    discount: String(quote.discount ?? ''),
+    notes: quote.notes ?? '',
+    validUntil: quote.valid_until ?? '',
+    deliveryDecision: quote.delivery_decision ?? null,
+    deliveryNote: quote.delivery_note ?? '',
+    walkinName: quote.historical_client_name ?? '',
+  };
+}
+
+export function blankOtherLine(): DraftLineItem {
+  return {
+    key: nextQuoteLineKey(),
+    item_type: 'other',
+    dog_id: null,
+    litter_id: null,
+    subject_kind: 'unallocated',
+    description: '',
+    quantity: 1,
+    unit_price: 0,
+  };
+}
+
 export function initialBuyerKey(initial?: Quote | null, prefill?: QuotePrefill): string {
   if (initial?.client_id) return buyerKey('user', initial.client_id);
   if (initial?.contact_id) return buyerKey('contact', initial.contact_id);
