@@ -132,13 +132,20 @@ export function defaultDeliveryDecision(
   if (tier === 'elite_developed' || tier === 'protection_dog') {
     return {
       decision: 'charged',
-      reason: 'Elite / protection tiers do not include delivery — an amount is required before send.',
+      reason:
+        'Elite and protection dogs do not include delivery — charge it, or switch to Collection if the buyer is collecting.',
       suggestExport: intl,
     };
   }
 
   return { decision: null, reason: null, suggestExport: intl };
 }
+
+export const CHARGED_DELIVERY_NO_AMOUNT_MESSAGE =
+  'Delivery is marked "charged" but has no amount. Either enter the delivery amount, or change the delivery decision to Collection or Not applicable if the buyer is collecting or delivery is being agreed separately.';
+
+export const DELIVERY_LINE_NO_AMOUNT_MESSAGE =
+  'The delivery line has no amount. Either enter the delivery amount, or change the delivery decision to Collection or Not applicable if the buyer is collecting or delivery is being agreed separately.';
 
 export function assertDeliveryReadyToSend(input: {
   deliveryDecision: DeliveryDecision | null | undefined;
@@ -148,7 +155,7 @@ export function assertDeliveryReadyToSend(input: {
     return 'Choose a delivery decision before sending — collection, included, charged, to be confirmed, or not applicable.';
   }
   if (input.deliveryDecision === 'charged' && !(Number(input.deliveryLineAmount) > 0)) {
-    return 'Delivery is marked charged / to be confirmed — enter an amount on the delivery line before sending.';
+    return CHARGED_DELIVERY_NO_AMOUNT_MESSAGE;
   }
   return null;
 }

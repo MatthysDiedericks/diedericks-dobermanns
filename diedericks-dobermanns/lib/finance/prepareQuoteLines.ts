@@ -1,6 +1,7 @@
 /** Default description when the admin picks a type and amount but leaves the text blank. */
 import { subjectSaveError } from '@/lib/finance/quoteSubjectSave';
 import type { QuoteSubjectKind } from '@/lib/finance/quoteSubject';
+import { DELIVERY_LINE_NO_AMOUNT_MESSAGE } from '@/lib/finance/catalogue';
 
 export const DEFAULT_LINE_DESCRIPTIONS: Record<string, string> = {
   dog: 'Dog',
@@ -81,7 +82,10 @@ export function prepareQuoteLinesForSave<T extends DraftishLine>(
     if (desc && !hasPrice && !hasSubject && !allowZero) {
       return {
         ok: false,
-        error: `Line ${lineNo} has a description but no price. Add an amount, or remove the line.`,
+        error:
+          it.item_type === 'delivery'
+            ? `Line ${lineNo}: ${DELIVERY_LINE_NO_AMOUNT_MESSAGE}`
+            : `Line ${lineNo} has a description but no price. Add an amount, or remove the line.`,
       };
     }
 

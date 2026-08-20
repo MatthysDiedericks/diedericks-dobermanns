@@ -94,15 +94,15 @@ export function AppQuoteBuilder({
   );
 
   useEffect(() => {
-    if (autoApplied.current) return;
     if (!dogTier.some(Boolean)) return;
     const def = computeDeliveryDefaults(dogTier, null);
+    setDeliveryReason(def.reason);
+    if (def.suggestExport) setExportPrompt(EXPORT_PROMPT);
+    if (autoApplied.current) return;
     if (def.decision) {
       setDeliveryDecision(def.decision);
       setItems((prev) => syncDeliveryLine(prev, def.decision, catalogue, nextQuoteLineKey));
     }
-    setDeliveryReason(def.reason);
-    if (def.suggestExport) setExportPrompt(EXPORT_PROMPT);
     autoApplied.current = true;
   }, [dogTier, catalogue]);
 

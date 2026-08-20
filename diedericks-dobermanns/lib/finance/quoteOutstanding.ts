@@ -27,6 +27,8 @@ export const HINT_ADD_DESCRIPTION = 'Add a description';
 export const HINT_SET_PRICE = 'Set a price';
 export const HINT_SET_TIER = TIER_REQUIRED_MESSAGE;
 export const HINT_DELIVERY = 'Undecided — required before send';
+export const HINT_DELIVERY_AMOUNT =
+  'Enter the delivery amount, or switch to Collection / Not applicable';
 
 export function quoteFieldId(
   target: QuoteOutstandingTarget,
@@ -64,10 +66,13 @@ export function collectQuoteOutstanding(
       });
     }
     if (lineNeedsPrice(line)) {
+      const delivery = line.item_type === 'delivery';
       out.push({
         id: `${key}-price`,
-        phrase: `a price on line ${lineNo}`,
-        hint: HINT_SET_PRICE,
+        phrase: delivery
+          ? 'an amount on the delivery line — or change the decision to Collection or Not applicable'
+          : `a price on line ${lineNo}`,
+        hint: delivery ? HINT_DELIVERY_AMOUNT : HINT_SET_PRICE,
         target: 'price',
         lineKey: line.key,
         lineIndex: i,

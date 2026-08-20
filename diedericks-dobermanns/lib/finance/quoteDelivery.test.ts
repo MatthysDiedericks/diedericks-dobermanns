@@ -6,7 +6,8 @@ import {
   syncDeliveryLine,
   type DraftishCatalogueLine,
 } from './quoteDelivery';
-import { assertDeliveryReadyToSend, DELIVERY_TBC_DESCRIPTION } from './catalogue';
+import { assertDeliveryReadyToSend, DELIVERY_TBC_DESCRIPTION, CHARGED_DELIVERY_NO_AMOUNT_MESSAGE, defaultDeliveryDecision } from './catalogue';
+import { prepareQuoteLinesForSave } from './prepareQuoteLines';
 import { outstandingForSavedQuote } from './quoteOutstanding';
 
 /** Run: npx tsx lib/finance/quoteDelivery.test.ts */
@@ -85,8 +86,21 @@ function main() {
     deliveryDecision: 'charged',
     deliveryLineAmount: 0,
   });
-  assert.ok(chargedBlock);
-  assert.match(chargedBlock, /charged/);
+  assert.equal(chargedBlock, CHARGED_DELIVERY_NO_AMOUNT_MESSAGE);
+
+  const deliverySave = prepareQuoteLinesForSave([
+    {
+      description: 'Delivery / travel',
+      quantity: 1,
+      unit_price: 0,
+      item_type: 'delivery',
+    },
+  ]);
+  assert.equal(deliverySave.ok, false);
+  if (!deliverySave.ok) {
+    assert.match(deliverySave.error, /delivery line/i);
+    assert.doesNotMatch(deliverySave.error, /Description and amount are required/);
+  }
 
   const tbcOutstanding = outstandingForSavedQuote({
     items: [
@@ -96,6 +110,12 @@ function main() {
     delivery_decision: 'to_be_confirmed',
   });
   assert.equal(tbcOutstanding.some((it) => it.target === 'price'), false);
+
+  const eliteDefault = defaultDeliveryDecision(['elite_developed'], null);
+  assert.equal(eliteDefault.decision, 'charged');
+  assert.match(eliteDefault.reason ?? '', /Elite and protection dogs do not include delivery/);
+  const puppyDefault = defaultDeliveryDecision(['puppy'], 'South Africa');
+  assert.equal(puppyDefault.decision, 'included');
 
   console.log('quoteDelivery.test.ts: ok');
 }

@@ -67,7 +67,7 @@ export function DeliveryDecisionCard({
         })}
       </View>
       {reason ? (
-        <Typography variant="caption" className="text-amber-200">
+        <Typography variant="caption" className="text-ink-muted">
           {reason}
         </Typography>
       ) : null}
