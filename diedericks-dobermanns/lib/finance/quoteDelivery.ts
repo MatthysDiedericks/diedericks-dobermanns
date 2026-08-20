@@ -8,6 +8,7 @@ export type DraftishCatalogueLine = {
   dog_id?: string | null;
   litter_id?: string | null;
   subject_kind?: 'dog' | 'litter' | 'unallocated' | null;
+  programme_tier?: string | null;
   description: string;
   quantity: number;
   unit_price: number;
