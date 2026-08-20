@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -7156,6 +7156,20 @@ export type Database = {
         Args: { p_allow_expired?: boolean; p_token: string }
         Returns: string
       }
+      assigned_litter_for: {
+        Args: { p_user_id: string }
+        Returns: {
+          actual_date: string
+          expected_date: string
+          father_id: string
+          go_home_date: string
+          go_home_earliest: string
+          go_home_latest: string
+          go_home_weeks: number
+          litter_id: string
+          mother_id: string
+        }[]
+      }
       audit_record_id: {
         Args: { p_row: Json; p_table: string }
         Returns: string
@@ -7223,6 +7237,10 @@ export type Database = {
         Args: { p_quote_id: string; p_reason?: string }
         Returns: undefined
       }
+      document_ids_visible_to: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
       dog_cycle_forecast: {
         Args: { p_dog_id: string }
         Returns: {
@@ -7233,7 +7251,15 @@ export type Database = {
           min_days: number
         }[]
       }
+      dog_ids_for: { Args: { p_user_id: string }; Returns: string[] }
       dog_is_contactable: { Args: { p_dog_id: string }; Returns: boolean }
+      dog_lineage_for: {
+        Args: { p_dog_id: string; p_user_id: string }
+        Returns: {
+          parent_id: string
+          role: string
+        }[]
+      }
       enable_audit: { Args: { p_table: string }; Returns: undefined }
       ensure_backup_restore_reminder: { Args: never; Returns: undefined }
       evaluate_pairing: {
@@ -7260,6 +7286,7 @@ export type Database = {
       get_app_secret: { Args: { p_name: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
+      log_portal_preview: { Args: { p_client_id: string }; Returns: undefined }
       log_security_event: {
         Args: {
           p_area?: string
@@ -7289,6 +7316,20 @@ export type Database = {
         Args: { p_actor_id?: string; p_loser_id: string; p_survivor_id: string }
         Returns: undefined
       }
+      my_assigned_litter: {
+        Args: never
+        Returns: {
+          actual_date: string
+          expected_date: string
+          father_id: string
+          go_home_date: string
+          go_home_earliest: string
+          go_home_latest: string
+          go_home_weeks: number
+          litter_id: string
+          mother_id: string
+        }[]
+      }
       my_dog_ids: { Args: never; Returns: string[] }
       my_dog_lineage: {
         Args: { target_dog_id: string }
@@ -7298,6 +7339,23 @@ export type Database = {
         }[]
       }
       my_dog_parent_ids: { Args: never; Returns: string[] }
+      my_parent_links: {
+        Args: never
+        Returns: {
+          parent_id: string
+          role: string
+          source: string
+        }[]
+      }
+      parent_ids_for: { Args: { p_user_id: string }; Returns: string[] }
+      parent_links_for: {
+        Args: { p_user_id: string }
+        Returns: {
+          parent_id: string
+          role: string
+          source: string
+        }[]
+      }
       pause_audit: { Args: { p_reason: string }; Returns: string }
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
