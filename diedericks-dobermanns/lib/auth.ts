@@ -7,6 +7,9 @@ import type { AppUser } from '@/types/app.types';
 /**
  * Auth helpers wrapping Supabase Auth. All functions are safe to call in demo
  * mode — they resolve with a clear, user-facing error instead of crashing.
+ *
+ * Portal invites sign in on the website (`/portal/auth/confirm` + verifyOtp
+ * token_hash). Do not add a second magic-link path in the app.
  */
 
 export interface AuthResult {

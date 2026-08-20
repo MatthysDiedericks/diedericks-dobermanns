@@ -51,6 +51,9 @@ export function AccountSafetyCard({ email }: { email: string }) {
         PASSWORD & EMAIL
       </Typography>
       <Input label="Current password" value={current} onChangeText={setCurrent} secureTextEntry />
+      <Typography variant="caption" className="mt-1 text-subtle">
+        Leave blank if you sign in with a link and have not set a password yet.
+      </Typography>
       <Input
         label="New password"
         value={nextPassword}

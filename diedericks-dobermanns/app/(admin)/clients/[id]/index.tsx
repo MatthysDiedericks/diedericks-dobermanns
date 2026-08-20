@@ -2,6 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
+import { InviteToPortalButton } from '@/components/admin/InviteToPortalButton';
+import { InviteStateChip } from '@/components/admin/InviteStateChip';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { RecordPaymentEntry } from '@/components/finance/RecordPaymentEntry';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -13,6 +15,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useClients } from '@/hooks/useAdmin';
 import { exportClientStatement } from '@/lib/finance/generatePDF';
+import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
 import { titleCase } from '@/lib/format';
 import { requireSupabase } from '@/lib/supabase';
 
@@ -36,6 +39,7 @@ export default function ClientDetailScreen() {
   const [tab, setTab] = useState<'profile' | 'documents'>('profile');
   const [exportingStatement, setExportingStatement] = useState(false);
   const [saleInvoiceId, setSaleInvoiceId] = useState<string | null | undefined>(undefined);
+  const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -52,6 +56,13 @@ export default function ClientDetailScreen() {
         setSaleInvoiceId(open?.id ?? rows[0]?.id ?? null);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!client?.email) return;
+    void fetchInviteStates([client.email]).then((map) =>
+      setInviteState(map.get(client.email!.toLowerCase()) ?? null),
+    );
+  }, [client?.email]);
 
   if (loading) {
     return (
@@ -91,6 +102,7 @@ export default function ClientDetailScreen() {
           <>
             <View className="mb-4 flex-row flex-wrap items-center gap-3">
               <Badge label={titleCase(client.role)} tone="gold" />
+              <InviteStateChip state={inviteState} />
               <Button
                 label="Generate Statement"
                 variant="outline"
@@ -110,6 +122,16 @@ export default function ClientDetailScreen() {
               <Field label="Country" value={client.country} />
               <Field label="Member since" value={new Date(client.created_at).toLocaleDateString()} />
             </Card>
+            <View className="mt-4">
+              <InviteToPortalButton
+                email={client.email}
+                fullName={client.full_name ?? 'there'}
+                phone={client.phone}
+                source="client"
+                sourceId={client.id}
+                initialState={inviteState}
+              />
+            </View>
             {saleInvoiceId !== undefined ? (
               <View className="mt-4">
                 <RecordPaymentEntry invoiceId={saleInvoiceId} />

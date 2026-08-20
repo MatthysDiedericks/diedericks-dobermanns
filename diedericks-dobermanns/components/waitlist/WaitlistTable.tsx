@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, Share, View } from 'react-native';
 
+import { InviteStateChip } from '@/components/admin/InviteStateChip';
 import { PreferenceBadges } from '@/components/waitlist/PreferenceBadges';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +11,7 @@ import { Colors } from '@/constants/colors';
 import { daysWaiting, isFollowUpOverdue, stageLabel } from '@/lib/waitlist/constants';
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from '@/lib/waitlist/helpers';
 import { reorderWaitlistPosition } from '@/lib/waitlist/mutations';
+import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
 import { formatPrice } from '@/lib/format';
 import type { WaitingListEntry } from '@/types/app.types';
 
@@ -20,6 +23,12 @@ interface Props {
 }
 
 export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Props) {
+  const [inviteMap, setInviteMap] = useState<Map<string, InviteStateRow>>(new Map());
+
+  useEffect(() => {
+    const emails = entries.map((e) => entryEmail(e) ?? '').filter(Boolean);
+    void fetchInviteStates(emails).then(setInviteMap);
+  }, [entries]);
   async function shiftPosition(entry: WaitingListEntry, dir: -1 | 1) {
     const idx = entries.findIndex((e) => e.id === entry.id);
     const swap = entries[idx + dir];
@@ -72,6 +81,9 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Pro
                 <View className="mt-2 flex-row flex-wrap gap-2">
                   <Badge label={stageLabel(effectiveStage(entry))} tone="gold" />
                   <Badge label={paid ? 'Paid' : 'Unpaid'} tone={paid ? 'success' : 'muted'} />
+                  <InviteStateChip
+                    state={entryEmail(entry) ? inviteMap.get(entryEmail(entry)!.toLowerCase()) : null}
+                  />
                   {entry.deposit_amount ? (
                     <Typography variant="caption" className="text-success">
                       {formatPrice(entry.deposit_amount)} ✓

@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       achievements: {
@@ -4695,6 +4670,47 @@ export type Database = {
           },
         ]
       }
+      portal_invites: {
+        Row: {
+          email: string
+          id: string
+          invited_at: string
+          invited_by: string
+          opened_at: string | null
+          source: string
+          source_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          invited_at?: string
+          invited_by: string
+          opened_at?: string | null
+          source: string
+          source_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          opened_at?: string | null
+          source?: string
+          source_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_tiers: {
         Row: {
           created_at: string
@@ -7236,6 +7252,7 @@ export type Database = {
         Args: { p_quote_id: string }
         Returns: string
       }
+      count_unopened_portal_invites: { Args: never; Returns: number }
       decline_quote: {
         Args: { p_quote_id: string; p_reason?: string }
         Returns: undefined
@@ -7289,7 +7306,6 @@ export type Database = {
       get_app_secret: { Args: { p_name: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
-      log_portal_preview: { Args: { p_client_id: string }; Returns: undefined }
       log_security_event: {
         Args: {
           p_area?: string
@@ -7301,6 +7317,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_portal_invite_opened: { Args: never; Returns: undefined }
       marketing_audience_counts: {
         Args: never
         Returns: {
@@ -7360,6 +7377,15 @@ export type Database = {
         }[]
       }
       pause_audit: { Args: { p_reason: string }; Returns: string }
+      portal_invite_states: {
+        Args: { p_emails: string[] }
+        Returns: {
+          email: string
+          has_account: boolean
+          invited_at: string
+          last_sign_in_at: string
+        }[]
+      }
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
       rate_limit_blocked_message: { Args: never; Returns: string }
@@ -7558,9 +7584,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

@@ -13,8 +13,10 @@ export async function changePasswordWithCurrent(
   const { data: sessionData } = await supabase.auth.getSession();
   const email = sessionData.session?.user?.email;
   if (!email) return { error: 'Not signed in.' };
-  const { error: authErr } = await supabase.auth.signInWithPassword({ email, password: current });
-  if (authErr) return { error: 'Current password is incorrect.' };
+  if (current.trim()) {
+    const { error: authErr } = await supabase.auth.signInWithPassword({ email, password: current });
+    if (authErr) return { error: 'Current password is incorrect.' };
+  }
   const { error } = await supabase.auth.updateUser({ password: next });
   if (error) return { error: error.message };
   await supabase.auth.signOut({ scope: 'others' });

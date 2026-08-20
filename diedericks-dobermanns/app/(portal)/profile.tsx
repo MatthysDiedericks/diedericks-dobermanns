@@ -13,6 +13,7 @@ import { ProfileSection } from '@/components/portal/ProfileSection';
 import { DeleteAccountModal } from '@/components/account/DeleteAccountModal';
 import { ReportProblemLink } from '@/components/portal/ReportProblemLink';
 import { AccountSafetyCard } from '@/components/portal/AccountSafetyCard';
+import { OptionalPasswordHint } from '@/components/portal/OptionalPasswordHint';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -270,6 +271,7 @@ export default function ProfileScreen() {
           ) : null}
         </View>
 
+        <OptionalPasswordHint />
         <AccountSafetyCard email={email} />
 
         <ReportProblemLink />

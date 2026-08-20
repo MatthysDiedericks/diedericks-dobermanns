@@ -1,4 +1,6 @@
-﻿import { PreferenceBadges } from "@/components/waitlist/PreferenceBadges";
+﻿import { InviteToPortalButton } from "@/components/admin/InviteToPortalButton";
+import { InviteStateChip } from "@/components/admin/InviteStateChip";
+import { PreferenceBadges } from "@/components/waitlist/PreferenceBadges";
 import { PipelineBreadcrumb } from "@/components/waitlist/PipelineBreadcrumb";
 import { StageSelector } from "@/components/waitlist/StageSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -15,6 +17,7 @@ import { WAITLIST_HISTORY_SELECT } from "@/lib/waitlist/queries";
 import { daysWaiting, stageLabel } from "@/lib/waitlist/constants";
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from "@/lib/waitlist/helpers";
 import { supabase } from "@/lib/supabase";
+import { fetchInviteStates, type InviteStateRow } from "@/lib/portal/invite";
 import { formatPrice } from "@/lib/format";
 import type { WaitingListHistoryRow } from "@/types/app.types";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,12 +37,19 @@ export default function WaitlistEntryDetailScreen() {
   const [adminNotes, setAdminNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [history, setHistory] = useState<WaitingListHistoryRow[]>([]);
+  const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
 
   useEffect(() => {
     if (entry) {
       setAdminNotes(entry.admin_notes ?? "");
       setFollowUp(entry.follow_up_date ?? "");
     }
+  }, [entry]);
+
+  useEffect(() => {
+    const email = entry ? entryEmail(entry) : null;
+    if (!email) return;
+    void fetchInviteStates([email]).then((map) => setInviteState(map.get(email.toLowerCase()) ?? null));
   }, [entry]);
 
   useEffect(() => {
@@ -96,6 +106,7 @@ export default function WaitlistEntryDetailScreen() {
       <View className="mb-3 flex-row flex-wrap gap-2 px-4">
         <Badge label={stageLabel(effectiveStage(entry))} tone="gold" />
         <Badge label={entry.priority} tone="muted" />
+        <InviteStateChip state={inviteState} />
         <Typography variant="subtitle" className={days >= 180 ? "text-danger" : days >= 90 ? "text-warning" : "text-gold"}>
           {days}d waiting
         </Typography>
@@ -108,6 +119,16 @@ export default function WaitlistEntryDetailScreen() {
           <Button label="Email" size="sm" variant="outline" onPress={() => Linking.openURL(`mailto:${entryEmail(entry)}`)} />
         ) : null}
         <Button label="Move stage" size="sm" onPress={() => setStageOpen(true)} />
+      </View>
+      <View className="mb-4 px-4">
+        <InviteToPortalButton
+          email={entryEmail(entry)}
+          fullName={entryDisplayName(entry)}
+          phone={entryPhone(entry)}
+          source="waiting_list"
+          sourceId={entry.id}
+          initialState={inviteState}
+        />
       </View>
 
       <ScrollView horizontal className="mb-4 px-4">

@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
+import { InviteToPortalButton } from '@/components/admin/InviteToPortalButton';
+import { InviteStateChip } from '@/components/admin/InviteStateChip';
 import { ApprovalQuoteStatus } from '@/components/applications/ApprovalQuoteStatus';
 import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
 import { IdCheckBlock } from '@/components/applications/IdCheckBlock';
@@ -20,6 +22,7 @@ import { useApplicationDetail } from '@/hooks/useAdmin';
 import { useLinkedQuote, type LinkedQuote } from '@/hooks/useLinkedQuote';
 import { createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
+import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
 import { titleCase } from '@/lib/format';
 import type { Application, ApplicationStatus } from '@/types/app.types';
 
@@ -69,7 +72,15 @@ export default function ApplicationDetailScreen() {
   const [notes, setNotes] = useState('');
   const [done, setDone] = useState<ApplicationStatus | null>(null);
   const [addingWl, setAddingWl] = useState(false);
+  const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
   const { linkedQuote, quotePending, quoteFailed, pollAfterApproval } = useLinkedQuote(id);
+
+  useEffect(() => {
+    if (!app?.email) return;
+    void fetchInviteStates([app.email]).then((map) =>
+      setInviteState(map.get(app.email.toLowerCase()) ?? null),
+    );
+  }, [app?.email]);
 
   function openQuote(quote: LinkedQuote) {
     router.push({ pathname: '/(admin)/quotes/[id]', params: { id: quote.id } });
@@ -125,6 +136,9 @@ export default function ApplicationDetailScreen() {
       <View className="px-6">
         <View className="mb-4 flex-row flex-wrap gap-2">
           <Badge label={titleCase(done ?? app.status)} tone="gold" />
+          {app.status === 'approved' || done === 'approved' ? (
+            <InviteStateChip state={inviteState} />
+          ) : null}
           {needsFollowUp(app) ? (
             <Badge label="Follow-up needed" tone="danger" />
           ) : null}
@@ -247,14 +261,11 @@ export default function ApplicationDetailScreen() {
         </View>
 
         <View className="mt-2 gap-3 pb-8">
-          {(app.status === 'approved' || done === 'approved') ? (
-            <Button
-              label="Add to Waiting List"
-              variant="outline"
-              onPress={() => void addToWaitlist()}
-              loading={addingWl}
-              fullWidth
-            />
+          {app.status === 'approved' || done === 'approved' ? (
+            <>
+              <InviteToPortalButton email={app.email} fullName={app.full_name} phone={app.phone} source="application" sourceId={app.id} initialState={inviteState} />
+              <Button label="Add to Waiting List" variant="outline" onPress={() => void addToWaitlist()} loading={addingWl} fullWidth />
+            </>
           ) : null}
           {ACTIONS.map((a) => (
             <Button
