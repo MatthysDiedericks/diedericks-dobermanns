@@ -6,6 +6,8 @@ import {
   syncDeliveryLine,
   type DraftishCatalogueLine,
 } from './quoteDelivery';
+import { assertDeliveryReadyToSend, DELIVERY_TBC_DESCRIPTION } from './catalogue';
+import { outstandingForSavedQuote } from './quoteOutstanding';
 
 /** Run: npx tsx lib/finance/quoteDelivery.test.ts */
 
@@ -71,6 +73,29 @@ function main() {
     ]),
     ['drop'],
   );
+
+  const tbc = syncDeliveryLine([dogLine()], 'to_be_confirmed', [], nextKey);
+  const tbcLine = tbc.find((it) => it.item_type === 'delivery');
+  assert.equal(tbcLine?.description, DELIVERY_TBC_DESCRIPTION);
+  assert.equal(
+    assertDeliveryReadyToSend({ deliveryDecision: 'to_be_confirmed', deliveryLineAmount: 0 }),
+    null,
+  );
+  const chargedBlock = assertDeliveryReadyToSend({
+    deliveryDecision: 'charged',
+    deliveryLineAmount: 0,
+  });
+  assert.ok(chargedBlock);
+  assert.match(chargedBlock, /charged/);
+
+  const tbcOutstanding = outstandingForSavedQuote({
+    items: [
+      { id: '1', description: 'Elite', unit_price: 60000, item_type: 'dog' },
+      { id: '2', description: DELIVERY_TBC_DESCRIPTION, unit_price: 0, item_type: 'delivery' },
+    ],
+    delivery_decision: 'to_be_confirmed',
+  });
+  assert.equal(tbcOutstanding.some((it) => it.target === 'price'), false);
 
   console.log('quoteDelivery.test.ts: ok');
 }

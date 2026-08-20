@@ -57,6 +57,9 @@ export const CATALOGUE_CATEGORIES: CatalogueCategory[] = [
 
 export const DELIVERY_CATALOGUE_CODE = 'delivery_travel';
 
+export const DELIVERY_TBC_DESCRIPTION =
+  'Delivery / travel — to be confirmed, quoted separately.';
+
 const LOCAL_COUNTRIES = new Set([
   'south africa',
   'sa',
@@ -144,10 +147,7 @@ export function assertDeliveryReadyToSend(input: {
   if (!input.deliveryDecision) {
     return 'Choose a delivery decision before sending — collection, included, charged, to be confirmed, or not applicable.';
   }
-  if (
-    (input.deliveryDecision === 'charged' || input.deliveryDecision === 'to_be_confirmed') &&
-    !(Number(input.deliveryLineAmount) > 0)
-  ) {
+  if (input.deliveryDecision === 'charged' && !(Number(input.deliveryLineAmount) > 0)) {
     return 'Delivery is marked charged / to be confirmed — enter an amount on the delivery line before sending.';
   }
   return null;

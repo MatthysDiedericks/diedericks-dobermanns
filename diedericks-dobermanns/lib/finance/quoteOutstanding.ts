@@ -135,7 +135,10 @@ export function outstandingForSavedQuote(quote: {
       allowZeroPrice:
         it.item_type === 'delivery' &&
         Number(it.unit_price) === 0 &&
-        quote.delivery_decision === 'included',
+        (quote.delivery_decision === 'included' ||
+          quote.delivery_decision === 'to_be_confirmed' ||
+          quote.delivery_decision === 'collection' ||
+          quote.delivery_decision === 'not_applicable'),
     })),
     quote.delivery_decision,
   );

@@ -1,5 +1,5 @@
 import type { CatalogueItem, DeliveryDecision } from '@/lib/finance/catalogue';
-import { DELIVERY_CATALOGUE_CODE, defaultDeliveryDecision } from '@/lib/finance/catalogue';
+import { DELIVERY_CATALOGUE_CODE, DELIVERY_TBC_DESCRIPTION, defaultDeliveryDecision } from '@/lib/finance/catalogue';
 import type { LineItemType } from '@/types/app.types';
 
 export type DraftishCatalogueLine = {
@@ -161,7 +161,37 @@ export function syncDeliveryLine(
     ];
   }
 
-  if (decision === 'charged' || decision === 'to_be_confirmed') {
+  if (decision === 'to_be_confirmed') {
+    const tbcPatch = (it: DraftishCatalogueLine): DraftishCatalogueLine => ({
+      ...it,
+      item_type: 'delivery',
+      catalogue_code: it.catalogue_code ?? DELIVERY_CATALOGUE_CODE,
+      allowZeroPrice: true,
+      description: isHandTypedDeliveryDescription(it.description, template)
+        ? it.description
+        : DELIVERY_TBC_DESCRIPTION,
+    });
+    if (deliveryIdx >= 0) {
+      return items.map((it, i) => (i === deliveryIdx ? tbcPatch(it) : it));
+    }
+    return [
+      ...items,
+      tbcPatch({
+        key: nextKey(),
+        item_type: 'delivery',
+        dog_id: null,
+        litter_id: null,
+        subject_kind: 'unallocated',
+        description: DELIVERY_TBC_DESCRIPTION,
+        quantity: 1,
+        unit_price: 0,
+        catalogue_code: DELIVERY_CATALOGUE_CODE,
+        allowZeroPrice: true,
+      }),
+    ];
+  }
+
+  if (decision === 'charged') {
     if (deliveryIdx >= 0) {
       return items.map((it, i) =>
         i === deliveryIdx
@@ -170,6 +200,9 @@ export function syncDeliveryLine(
               item_type: 'delivery' as const,
               catalogue_code: it.catalogue_code ?? DELIVERY_CATALOGUE_CODE,
               allowZeroPrice: true,
+              description: isHandTypedDeliveryDescription(it.description, template)
+                ? it.description
+                : template.description_template || template.label,
             }
           : it,
       );
