@@ -54,7 +54,14 @@ export function AppQuoteBuilder({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedBuyer, setSelectedBuyer] = useState(() => initialBuyerKey(initial, prefill));
   const [walkinName, setWalkinName] = useState(prefill?.walkinName ?? initial?.historical_client_name ?? '');
-  const [items, setItems] = useState<DraftLineItem[]>(() => seedAppQuoteItems(initial, prefill?.application));
+  const [items, setItems] = useState<DraftLineItem[]>(() => {
+    const seeded = seedAppQuoteItems(initial, prefill?.application);
+    const decision = initial?.delivery_decision ?? null;
+    if (decision === 'collection' || decision === 'not_applicable') {
+      return syncDeliveryLine(seeded, decision, [], nextQuoteLineKey);
+    }
+    return seeded;
+  });
   const [discount, setDiscount] = useState(initial ? String(initial.discount) : '');
   const [notes, setNotes] = useState(initial?.notes ?? prefill?.application?.notes ?? '');
   const [changeNote, setChangeNote] = useState('');

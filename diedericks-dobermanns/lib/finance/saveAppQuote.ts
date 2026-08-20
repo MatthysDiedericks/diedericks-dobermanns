@@ -5,6 +5,7 @@ import { createQuote, updateQuote } from '@/lib/finance/quoteQueries';
 import { prepareQuoteLinesForSave } from '@/lib/finance/prepareQuoteLines';
 import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
 import type { DeliveryDecision } from '@/lib/finance/catalogue';
+import { syncDeliveryLine } from '@/lib/finance/quoteDelivery';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote } from '@/types/app.types';
 
@@ -25,7 +26,8 @@ export async function saveAppQuote(input: {
   waitlistId?: string;
   total: number;
 }): Promise<{ quoteId: string; toWaitlist?: string }> {
-  const prepared = prepareQuoteLinesForSave(input.items);
+  const synced = syncDeliveryLine(input.items, input.deliveryDecision, [], () => 'delivery-sync');
+  const prepared = prepareQuoteLinesForSave(synced);
   if (!prepared.ok) throw new Error(prepared.error);
 
   const cleanItems: LineItemInput[] = prepared.lines.map((it) => ({
@@ -38,7 +40,7 @@ export async function saveAppQuote(input: {
     allowZeroPrice: it.allowZeroPrice,
   }));
 
-  const intendedMeaningful = input.items.filter(
+  const intendedMeaningful = synced.filter(
     (it) =>
       Boolean(it.dog_id) ||
       Boolean(it.litter_id) ||

@@ -15,6 +15,87 @@ export type DraftishCatalogueLine = {
   allowZeroPrice?: boolean;
 };
 
+const STOCK_DELIVERY_DESCRIPTIONS = [
+  'delivery / travel',
+  'delivery/travel',
+  'delivery / travel — to be confirmed, quoted separately.',
+];
+
+function normalizeDeliveryDescription(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** True when Matt clearly wrote the delivery wording himself — never delete that. */
+export function isHandTypedDeliveryDescription(
+  description: string,
+  template?: { description_template?: string | null; label?: string | null },
+): boolean {
+  const normalized = normalizeDeliveryDescription(description);
+  if (!normalized) return false;
+  const stock = new Set(STOCK_DELIVERY_DESCRIPTIONS);
+  if (template?.description_template) {
+    stock.add(normalizeDeliveryDescription(template.description_template));
+  }
+  if (template?.label) stock.add(normalizeDeliveryDescription(template.label));
+  return !stock.has(normalized);
+}
+
+export function isDeliveryLine(line: {
+  item_type?: string | null;
+  catalogue_code?: string | null;
+}): boolean {
+  return line.catalogue_code === DELIVERY_CATALOGUE_CODE || line.item_type === 'delivery';
+}
+
+function deliveryTemplate(catalogue: CatalogueItem[]): CatalogueItem {
+  return (
+    catalogue.find((c) => c.code === DELIVERY_CATALOGUE_CODE) ??
+    ({
+      code: DELIVERY_CATALOGUE_CODE,
+      label: 'Delivery / travel',
+      item_type: 'delivery',
+      description_template: 'Delivery / travel',
+      price_varies: true,
+      default_price: null,
+    } as CatalogueItem)
+  );
+}
+
+function dropOrKeepHandTypedDelivery(
+  items: DraftishCatalogueLine[],
+  deliveryIdx: number,
+  template: CatalogueItem,
+): DraftishCatalogueLine[] {
+  const line = items[deliveryIdx]!;
+  if (isHandTypedDeliveryDescription(line.description, template)) {
+    return items.map((it, i) =>
+      i === deliveryIdx
+        ? {
+            ...it,
+            item_type: 'delivery' as const,
+            catalogue_code: it.catalogue_code ?? DELIVERY_CATALOGUE_CODE,
+            allowZeroPrice: true,
+          }
+        : it,
+    );
+  }
+  return items.filter((_, i) => i !== deliveryIdx);
+}
+
+export function stockDeliveryLineIdsToDrop<
+  T extends {
+    id: string;
+    description: string;
+    item_type?: string | null;
+    catalogue_code?: string | null;
+  },
+>(decision: string | null | undefined, rows: T[]): string[] {
+  if (decision !== 'collection' && decision !== 'not_applicable') return [];
+  return rows
+    .filter((row) => isDeliveryLine(row) && !isHandTypedDeliveryDescription(row.description))
+    .map((row) => row.id);
+}
+
 export function lineFromCatalogue(
   item: CatalogueItem,
   nextKey: () => string,
@@ -39,19 +120,13 @@ export function syncDeliveryLine(
   catalogue: CatalogueItem[],
   nextKey: () => string,
 ): DraftishCatalogueLine[] {
-  const deliveryIdx = items.findIndex(
-    (it) => it.catalogue_code === DELIVERY_CATALOGUE_CODE || it.item_type === 'delivery',
-  );
-  const template =
-    catalogue.find((c) => c.code === DELIVERY_CATALOGUE_CODE) ??
-    ({
-      code: DELIVERY_CATALOGUE_CODE,
-      label: 'Delivery / travel',
-      item_type: 'delivery',
-      description_template: 'Delivery / travel',
-      price_varies: true,
-      default_price: null,
-    } as CatalogueItem);
+  const deliveryIdx = items.findIndex((it) => isDeliveryLine(it));
+  const template = deliveryTemplate(catalogue);
+
+  if (decision === 'collection' || decision === 'not_applicable') {
+    if (deliveryIdx < 0) return items;
+    return dropOrKeepHandTypedDelivery(items, deliveryIdx, template);
+  }
 
   if (decision === 'included') {
     if (deliveryIdx >= 0) {
@@ -120,9 +195,7 @@ export function syncDeliveryLine(
 }
 
 export function deliveryLineAmount(items: DraftishCatalogueLine[]): number | null {
-  const line = items.find(
-    (it) => it.catalogue_code === DELIVERY_CATALOGUE_CODE || it.item_type === 'delivery',
-  );
+  const line = items.find((it) => isDeliveryLine(it));
   return line ? line.unit_price : null;
 }
 

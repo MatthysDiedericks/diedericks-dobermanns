@@ -1,4 +1,5 @@
 import { assertDeliveryReadyToSend } from '@/lib/finance/catalogue';
+import { isDeliveryLine, stockDeliveryLineIdsToDrop } from '@/lib/finance/quoteDelivery';
 import { requireSupabase } from '@/lib/supabase';
 import { markWaitlistQuoteSent } from '@/lib/waitlist/stageAdvance';
 
@@ -90,6 +91,17 @@ export async function recordQuoteSendRevision(input: {
       | null;
   };
 
+  const { data: storedLines, error: storedErr } = await supabase
+    .from('quote_items')
+    .select('id, description, item_type, catalogue_code')
+    .eq('quote_id', input.quoteId);
+  if (storedErr) throw new Error(storedErr.message);
+  const dropIds = stockDeliveryLineIdsToDrop(header.delivery_decision, storedLines ?? []);
+  if (dropIds.length) {
+    const { error: dropErr } = await supabase.from('quote_items').delete().in('id', dropIds);
+    if (dropErr) throw new Error(dropErr.message);
+  }
+
   const { data: items, error: itemsErr } = await supabase
     .from('quote_items')
     .select(
@@ -99,11 +111,7 @@ export async function recordQuoteSendRevision(input: {
     .order('sort_order');
   if (itemsErr) throw new Error(itemsErr.message);
 
-  const deliveryLine = (items ?? []).find(
-    (it) =>
-      (it as { catalogue_code?: string | null }).catalogue_code === 'delivery_travel' ||
-      it.item_type === 'delivery',
-  );
+  const deliveryLine = (items ?? []).find((it) => isDeliveryLine(it));
   const deliveryErr = assertDeliveryReadyToSend({
     deliveryDecision: header.delivery_decision,
     deliveryLineAmount: deliveryLine ? Number(deliveryLine.unit_price) : null,
