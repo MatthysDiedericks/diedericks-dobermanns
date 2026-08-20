@@ -2,6 +2,7 @@ import * as Print from 'expo-print';
 
 import { buildClientQuoteHtml } from '@/lib/finance/clientQuotePdf';
 import { recordQuoteSendRevision } from '@/lib/finance/quoteRevisions';
+import { quoteSendFail, quoteUnhandled } from '@/lib/finance/quoteErrors';
 import { requireSupabase } from '@/lib/supabase';
 import type { ClientQuoteDetail } from '@/lib/portal/clientQuotes';
 import type { Quote } from '@/types/app.types';
@@ -103,15 +104,34 @@ export async function sendQuoteToRecipient(
   quote: Quote,
   opts?: { changeNote?: string | null; actorId?: string | null },
 ): Promise<{ sentTo: string; revision: number }> {
-  if (!quote.total || Number(quote.total) <= 0) {
-    throw new Error('This quote totals R0. Set the amount before sending.');
-  }
-  if (!quote.contact_id) {
-    throw new Error('Link a contact before sending. Drafts can wait; a quote cannot go out to nobody.');
-  }
+  const ctx = {
+    step: 'send',
+    quoteId: quote.id,
+    quoteNumber: quote.quote_number ?? null,
+    lineCount: quote.items?.length ?? 0,
+    contactAttached: Boolean(quote.contact_id),
+  };
+  try {
+    if (!quote.total || Number(quote.total) <= 0) {
+      const error = 'This quote totals R0. Set the amount before sending.';
+      await quoteSendFail(error, { ...ctx, reason: 'zero_total' });
+      throw Object.assign(new Error(error), { logged: true });
+    }
+    if (!quote.contact_id) {
+      const error = 'Link a contact before sending. Drafts can wait; a quote cannot go out to nobody.';
+      await quoteSendFail(error, { ...ctx, reason: 'no_contact' });
+      throw Object.assign(new Error(error), { logged: true });
+    }
 
-  const recipient = await resolveRecipient(quote);
-  const supabase = requireSupabase();
+    let recipient: QuoteSendRecipient;
+    try {
+      recipient = await resolveRecipient(quote);
+    } catch (e) {
+      const error = e instanceof Error ? e.message : 'No recipient.';
+      await quoteSendFail(error, { ...ctx, reason: 'recipient' });
+      throw Object.assign(new Error(error), { logged: true });
+    }
+    const supabase = requireSupabase();
   const detail: ClientQuoteDetail = {
     id: quote.id,
     quote_number: quote.quote_number ?? '',
@@ -141,7 +161,10 @@ export async function sendQuoteToRecipient(
   const html = buildClientQuoteHtml(detail);
   const printed = await Print.printToFileAsync({ html, base64: true });
   const pdf = printed.base64;
-  if (!pdf) throw new Error('Could not build the quotation PDF.');
+  if (!pdf) {
+    await quoteSendFail('Could not build the quotation PDF.', { ...ctx, reason: 'pdf' });
+    throw Object.assign(new Error('Could not build the quotation PDF.'), { logged: true });
+  }
 
   const subject = opts?.changeNote
     ? `Revised quote ${quote.quote_number ?? ''}`
@@ -161,9 +184,10 @@ export async function sendQuoteToRecipient(
       ],
     },
   });
-  if (error) throw new Error(error.message);
-  const failed = data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error;
-  if (failed) throw new Error(String(failed));
+  if (error || (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error)) {
+    await quoteSendFail('Could not send the quote by email.', { ...ctx, reason: 'email_failed' });
+    throw Object.assign(new Error('Could not send the quote by email.'), { logged: true });
+  }
 
   const { revision } = await recordQuoteSendRevision({
     quoteId: quote.id,
@@ -172,4 +196,10 @@ export async function sendQuoteToRecipient(
     actorId: opts?.actorId ?? null,
   });
   return { sentTo: recipient.email, revision };
+  } catch (err) {
+    if (!(err as { logged?: boolean }).logged) {
+      await quoteUnhandled(err, ctx);
+    }
+    throw err instanceof Error ? err : new Error('Could not send this quote.');
+  }
 }

@@ -2,6 +2,7 @@ import type { LineItemInput } from '@/lib/finance/mutations';
 import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { resolveQuoteBuyer } from '@/lib/finance/resolveQuoteBuyer';
 import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
+import { throwQuoteDb } from '@/lib/finance/quoteErrors';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
@@ -128,13 +129,13 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
     })
     .select('id')
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throwQuoteDb('insert_quote', error);
   const quoteId = (data as { id: string }).id;
 
   if (rows.length) {
     const itemRows = rows.map((it) => ({ ...it, quote_id: quoteId }));
     const { error: itemErr } = await supabase.from('quote_items').insert(itemRows);
-    if (itemErr) throw new Error(itemErr.message);
+    if (itemErr) throwQuoteDb('insert_items', itemErr);
   }
   return quoteId;
 }
@@ -153,7 +154,7 @@ export async function updateQuote(
     .select('id, status, converted_invoice_id')
     .eq('id', id)
     .maybeSingle();
-  if (loadErr) throw new Error(loadErr.message);
+  if (loadErr) throwQuoteDb('load', loadErr);
   if (!existing) throw new Error('Quote not found.');
 
   const gate = assertQuoteEditable({
@@ -205,14 +206,14 @@ export async function updateQuote(
       updated_at: new Date().toISOString(),
     } as never)
     .eq('id', id);
-  if (error) throw new Error(error.message);
+  if (error) throwQuoteDb('update_quote', error);
 
   const { error: delErr } = await supabase.from('quote_items').delete().eq('quote_id', id);
-  if (delErr) throw new Error(delErr.message);
+  if (delErr) throwQuoteDb('replace_items', delErr);
   if (rows.length) {
     const itemRows = rows.map((it) => ({ ...it, quote_id: id }));
     const { error: itemErr } = await supabase.from('quote_items').insert(itemRows);
-    if (itemErr) throw new Error(itemErr.message);
+    if (itemErr) throwQuoteDb('insert_items', itemErr);
   }
 }
 
