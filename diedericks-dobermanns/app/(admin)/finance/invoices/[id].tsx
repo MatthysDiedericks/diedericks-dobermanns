@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
+import { PaymentHistoryList } from '@/components/finance/PaymentHistoryList';
+import { RecordPaymentForm } from '@/components/finance/RecordPaymentForm';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
-import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import {
-  recordInvoicePayment,
   updateInvoiceStatus,
   useInvoiceDetail,
 } from '@/hooks/useInvoices';
@@ -25,26 +25,7 @@ export default function FinanceInvoiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { invoice, loading, refresh } = useInvoiceDetail(id ?? '');
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [payAmount, setPayAmount] = useState('');
-  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
-  const [payMethod, setPayMethod] = useState('');
-  const [payRef, setPayRef] = useState('');
   const [busy, setBusy] = useState(false);
-
-  const handlePayment = async () => {
-    if (!invoice) return;
-    const amount = Number(payAmount);
-    if (!amount || amount <= 0) return;
-    setBusy(true);
-    try {
-      await recordInvoicePayment(invoice.id, amount, payDate, payMethod, payRef);
-      setPaymentOpen(false);
-      setPayAmount('');
-      await refresh();
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleVoid = async () => {
     if (!invoice) return;
@@ -155,29 +136,13 @@ export default function FinanceInvoiceDetailScreen() {
           ) : null}
         </Card>
 
-        {invoice.payments.length > 0 ? (
-          <View className="mt-6">
-            <Typography variant="label" className="mb-2">Payment history</Typography>
-            {invoice.payments.map((p) => (
-              <Card key={p.id} className="mb-2 flex-row justify-between">
-                <Typography variant="body">{formatDate(p.payment_date)}</Typography>
-                <Typography variant="label" className="text-success">
-                  {formatAmount(p.amount)}
-                </Typography>
-              </Card>
-            ))}
-          </View>
-        ) : null}
+        <PaymentHistoryList payments={invoice.payments} onChanged={() => void refresh()} />
 
         <View className="mt-6 gap-3">
           {invoice.amount_outstanding > 0 ? (
             <Button
               label="Record payment"
-              onPress={() => {
-                setPayAmount(String(invoice.amount_outstanding ?? ''));
-                setPayMethod('eft');
-                setPaymentOpen(true);
-              }}
+              onPress={() => setPaymentOpen(true)}
               loading={busy}
               fullWidth
             />
@@ -204,34 +169,15 @@ export default function FinanceInvoiceDetailScreen() {
       </ScrollView>
 
       <Modal visible={paymentOpen} onClose={() => setPaymentOpen(false)} title="Record payment">
-        <Input
-          value={payAmount}
-          onChangeText={setPayAmount}
-          placeholder="Amount"
-          keyboardType="numeric"
-          className="mb-3"
+        <RecordPaymentForm
+          invoiceId={invoice.id}
+          clientId={invoice.client_id}
+          invoiceNumber={invoice.invoice_number}
+          outstanding={invoice.amount_outstanding}
+            onSaved={() => {
+              void refresh();
+            }}
         />
-        <Input value={payDate} onChangeText={setPayDate} placeholder="Date YYYY-MM-DD" className="mb-3" />
-        <Typography variant="caption" className="mb-2 text-subtle">
-          Method
-        </Typography>
-        <View className="mb-3 flex-row flex-wrap gap-2">
-          {(['eft', 'cash', 'card', 'other'] as const).map((m) => (
-            <Pressable
-              key={m}
-              onPress={() => setPayMethod(m)}
-              className={`rounded-lg border px-3 py-2 ${
-                payMethod === m ? 'border-gold bg-gold/20' : 'border-gold/20'
-              }`}
-            >
-              <Typography variant="caption" className="uppercase">
-                {m}
-              </Typography>
-            </Pressable>
-          ))}
-        </View>
-        <Input value={payRef} onChangeText={setPayRef} placeholder="Reference" className="mb-4" />
-        <Button label="Save payment" onPress={handlePayment} loading={busy} fullWidth />
       </Modal>
     </ScreenContainer>
   );

@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { DocumentList } from '@/components/documents/DocumentList';
+import { RecordPaymentEntry } from '@/components/finance/RecordPaymentEntry';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +14,7 @@ import { Colors } from '@/constants/colors';
 import { useClients } from '@/hooks/useAdmin';
 import { exportClientStatement } from '@/lib/finance/generatePDF';
 import { titleCase } from '@/lib/format';
+import { requireSupabase } from '@/lib/supabase';
 
 function Field({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
@@ -33,6 +35,23 @@ export default function ClientDetailScreen() {
   const client = clients.find((c) => c.id === id);
   const [tab, setTab] = useState<'profile' | 'documents'>('profile');
   const [exportingStatement, setExportingStatement] = useState(false);
+  const [saleInvoiceId, setSaleInvoiceId] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!id) return;
+    void requireSupabase()
+      .from('invoices')
+      .select('id, amount_outstanding')
+      .eq('client_id', id)
+      .neq('status', 'void')
+      .neq('status', 'cancelled')
+      .order('issue_date', { ascending: false })
+      .then(({ data }) => {
+        const rows = data ?? [];
+        const open = rows.find((r) => Number(r.amount_outstanding ?? 0) > 0);
+        setSaleInvoiceId(open?.id ?? rows[0]?.id ?? null);
+      });
+  }, [id]);
 
   if (loading) {
     return (
@@ -70,7 +89,7 @@ export default function ClientDetailScreen() {
           <DocumentList entityType="client" entityId={id ?? ''} />
         ) : (
           <>
-            <View className="mb-4 flex-row items-center gap-3">
+            <View className="mb-4 flex-row flex-wrap items-center gap-3">
               <Badge label={titleCase(client.role)} tone="gold" />
               <Button
                 label="Generate Statement"
@@ -91,6 +110,11 @@ export default function ClientDetailScreen() {
               <Field label="Country" value={client.country} />
               <Field label="Member since" value={new Date(client.created_at).toLocaleDateString()} />
             </Card>
+            {saleInvoiceId !== undefined ? (
+              <View className="mt-4">
+                <RecordPaymentEntry invoiceId={saleInvoiceId} />
+              </View>
+            ) : null}
           </>
         )}
       </View>

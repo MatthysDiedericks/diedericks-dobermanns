@@ -1,3 +1,4 @@
+import { proofSourceFromDocument } from '@/lib/finance/proofSource';
 import { requireSupabase } from '@/lib/supabase';
 import type { InvoicePayment } from '@/types/finance';
 
@@ -23,6 +24,7 @@ export function mapInvoicePaymentRow(p: Record<string, unknown>): InvoicePayment
     recorded_by: (p.recorded_by as string | null) ?? null,
     created_at: (p.created_at as string) ?? '',
     proof_document_id: (p.proof_document_id as string | null) ?? null,
+    proof_provided_by: null,
   };
 }
 
@@ -36,7 +38,31 @@ export async function fetchInvoicePayments(invoiceId: string): Promise<InvoicePa
     .eq('invoice_id', invoiceId)
     .order('payment_date', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((p) => mapInvoicePaymentRow(p as Record<string, unknown>));
+  const rows = (data ?? []).map((p) => mapInvoicePaymentRow(p as Record<string, unknown>));
+  const proofIds = rows
+    .map((p) => p.proof_document_id)
+    .filter((id): id is string => Boolean(id));
+  if (proofIds.length) {
+    const { data: docs } = await supabase
+      .from('documents' as never)
+      .select('id, provided_by, uploaded_by, entity_id')
+      .in('id' as never, proofIds);
+    const source = new Map<string, 'client' | 'staff'>();
+    for (const d of (docs ?? []) as unknown as Array<{
+      id: string;
+      provided_by?: string | null;
+      uploaded_by: string | null;
+      entity_id: string;
+    }>) {
+      source.set(d.id, proofSourceFromDocument(d));
+    }
+    for (const row of rows) {
+      if (row.proof_document_id) {
+        row.proof_provided_by = source.get(row.proof_document_id) ?? 'client';
+      }
+    }
+  }
+  return rows;
 }
 
 /** Same receipts ledger the website statement reads. */

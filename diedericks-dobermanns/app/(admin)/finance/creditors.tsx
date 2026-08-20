@@ -51,6 +51,7 @@ export default function CreditorsDebtorsScreen() {
             depositsHeld={debtorsState.depositsHeld}
             awaitingReview={debtorsState.awaitingReview}
             overdueCount={debtorsState.overdueCount}
+            onPaymentSaved={debtorsState.refresh}
           />
         ) : (
           <CreditorsTab

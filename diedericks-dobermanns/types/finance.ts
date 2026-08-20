@@ -70,6 +70,7 @@ export interface InvoicePayment {
   recorded_by: string | null;
   created_at: string;
   proof_document_id?: string | null;
+  proof_provided_by?: 'client' | 'staff' | null;
 }
 
 export interface Expense {

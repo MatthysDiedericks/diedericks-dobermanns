@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Alert, View } from 'react-native';
 
+import { RecordPaymentEntry } from '@/components/finance/RecordPaymentEntry';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { linkQuoteContactFromApplication } from '@/lib/finance/linkQuoteContact';
@@ -79,6 +80,7 @@ export function QuoteConvertActions({
         disabled={!canConvert}
         fullWidth
       />
+      <RecordPaymentEntry invoiceId={quote.converted_invoice_id} onSaved={onLinked} />
     </View>
   );
 }

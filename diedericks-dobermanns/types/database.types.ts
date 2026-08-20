@@ -1917,6 +1917,7 @@ export type Database = {
           issued_by: string | null
           mime_type: string | null
           original_filename: string
+          provided_by: string | null
           related_invoice_id: string | null
           related_quote_id: string | null
           requires_auth: boolean
@@ -1947,6 +1948,7 @@ export type Database = {
           issued_by?: string | null
           mime_type?: string | null
           original_filename: string
+          provided_by?: string | null
           related_invoice_id?: string | null
           related_quote_id?: string | null
           requires_auth?: boolean
@@ -1977,6 +1979,7 @@ export type Database = {
           issued_by?: string | null
           mime_type?: string | null
           original_filename?: string
+          provided_by?: string | null
           related_invoice_id?: string | null
           related_quote_id?: string | null
           requires_auth?: boolean

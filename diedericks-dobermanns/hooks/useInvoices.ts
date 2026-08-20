@@ -146,6 +146,7 @@ export async function recordInvoicePayment(
   reference?: string,
   opts?: { notes?: string | null; proof_document_id?: string | null },
 ) {
+  if (!paymentDate) throw new Error('Date paid is required.');
   const supabase = requireSupabase();
   const profileId = useAuthStore.getState().profile?.id;
 
@@ -167,6 +168,48 @@ export async function recordInvoicePayment(
     recorded_by: profileId ?? null,
   });
 
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteInvoicePayment(
+  paymentId: string,
+  opts?: { reason?: string },
+) {
+  const supabase = requireSupabase();
+  const profileId = useAuthStore.getState().profile?.id;
+  const { data: existing, error: readErr } = await supabase
+    .from('invoice_payments')
+    .select('id, amount, payment_date, proof_document_id')
+    .eq('id', paymentId)
+    .maybeSingle();
+  if (readErr) throw new Error(readErr.message);
+  if (!existing) throw new Error('Payment not found.');
+  const trimmed = opts?.reason?.trim() ?? '';
+  if (existing.proof_document_id && !trimmed) {
+    throw new Error(
+      'Type a reason to delete a payment that has a proof attached. The document is kept.',
+    );
+  }
+  const note = trimmed || `Deleted payment of ${existing.amount}`;
+  await supabase.rpc('set_audit_change_note' as never, { p_note: note } as never);
+  const { error: auditErr } = await supabase.from('audit_log').insert({
+    table_name: 'invoice_payments',
+    record_id: paymentId,
+    action: 'delete',
+    actor_id: profileId ?? null,
+    actor_role: 'admin',
+    changed_fields: existing.proof_document_id
+      ? ['amount', 'delete_reason', 'proof_document_id']
+      : ['amount'],
+    old_values: {
+      amount: existing.amount,
+      payment_date: existing.payment_date,
+      proof_document_id: existing.proof_document_id,
+    },
+    new_values: { reason: note, proof_kept: Boolean(existing.proof_document_id) },
+  });
+  if (auditErr) throw new Error(auditErr.message);
+  const { error } = await supabase.from('invoice_payments').delete().eq('id', paymentId);
   if (error) throw new Error(error.message);
 }
 

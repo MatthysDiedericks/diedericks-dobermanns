@@ -1,7 +1,10 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { RecordPaymentForm } from '@/components/finance/RecordPaymentForm';
 import { Card } from '@/components/ui/Card';
+import { Modal } from '@/components/ui/Modal';
 import { Typography } from '@/components/ui/Typography';
 import type { DebtorGroup } from '@/hooks/useCreditors';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
@@ -27,6 +30,7 @@ interface Props {
   depositsHeld: number;
   awaitingReview: number;
   overdueCount: number;
+  onPaymentSaved?: () => void;
 }
 
 export function DebtorsTab({
@@ -35,8 +39,15 @@ export function DebtorsTab({
   depositsHeld,
   awaitingReview,
   overdueCount,
+  onPaymentSaved,
 }: Props) {
   const router = useRouter();
+  const [record, setRecord] = useState<{
+    id: string;
+    clientId: string | null;
+    invoiceNumber: string;
+    outstanding: number;
+  } | null>(null);
   const today = new Date().toISOString().slice(0, 10);
   const invoices = debtors.flatMap((g) =>
     g.invoices.map((inv) => ({
@@ -124,6 +135,21 @@ export function DebtorsTab({
                         </Typography>
                         <Pressable
                           onPress={() =>
+                            setRecord({
+                              id: inv.id,
+                              clientId: inv.client_id,
+                              invoiceNumber: inv.invoice_number,
+                              outstanding: inv.amount_outstanding,
+                            })
+                          }
+                          className="mt-1 rounded-full border border-gold/40 px-3 py-1.5"
+                        >
+                          <Typography variant="caption" className="text-gold">
+                            Record payment
+                          </Typography>
+                        </Pressable>
+                        <Pressable
+                          onPress={() =>
                             router.push({
                               pathname: '/(admin)/finance/invoices/[id]',
                               params: { id: inv.id },
@@ -144,6 +170,24 @@ export function DebtorsTab({
           );
         })
       )}
+      <Modal
+        visible={Boolean(record)}
+        onClose={() => setRecord(null)}
+        title="Record payment"
+      >
+        {record ? (
+          <RecordPaymentForm
+            invoiceId={record.id}
+            clientId={record.clientId}
+            invoiceNumber={record.invoiceNumber}
+            outstanding={record.outstanding}
+            onSaved={() => {
+              setRecord(null);
+              onPaymentSaved?.();
+            }}
+          />
+        ) : null}
+      </Modal>
     </View>
   );
 }

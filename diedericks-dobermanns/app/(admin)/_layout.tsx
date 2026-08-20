@@ -66,7 +66,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="applications/index" options={{ href: null }} />
         <Tabs.Screen name="applications/[id]" options={{ href: null }} />
         <Tabs.Screen name="clients/index" options={{ href: null }} />
-        <Tabs.Screen name="clients/[id]" options={{ href: null }} />
+        <Tabs.Screen name="clients/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="litters/new" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/register-pups" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/litter-history" options={{ href: null }} />
