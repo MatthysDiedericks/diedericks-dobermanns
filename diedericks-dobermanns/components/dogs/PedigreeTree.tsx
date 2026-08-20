@@ -28,6 +28,13 @@ interface PedigreeTreeProps {
   displayName?: string;
   /** Route prefix for own-kennel ancestor taps, e.g. `/(admin)/dogs/` */
   profileRoutePrefix?: string;
+  /** When set, skip the dog's own pedigree_ancestors fetch and render these. */
+  ancestors?: PedigreeAncestor[];
+  registeredName?: string | null;
+  wrightsCoi?: number | null;
+  emptyLabel?: string;
+  /** Portal charts must not deep-link into admin dog profiles. */
+  disableAncestorLinks?: boolean;
 }
 
 function ColumnNodes({
@@ -39,7 +46,7 @@ function ColumnNodes({
   generation: number;
   maxGen: number;
   ancestors: PedigreeAncestor[];
-  onOwnDogPress: (id: string) => void;
+  onOwnDogPress?: (id: string) => void;
 }) {
   const rowSpan = pedigreeRowSpan(generation, maxGen);
   const cellHeight = PEDIGREE_NODE_MIN_HEIGHT * rowSpan;
@@ -69,7 +76,11 @@ function ColumnNodes({
               dateOfBirth={a.dateOfBirth}
               wrightsCoi={a.wrightsCoi}
               sireSide={ancestorIsSireSide(a.position)}
-              onPress={a.ownAncestorId ? () => onOwnDogPress(a.ownAncestorId!) : undefined}
+              onPress={
+                a.ownAncestorId && onOwnDogPress
+                  ? () => onOwnDogPress(a.ownAncestorId!)
+                  : undefined
+              }
             />
           </View>
         );
@@ -82,9 +93,19 @@ export function PedigreeTree({
   dogId,
   displayName = 'This dog',
   profileRoutePrefix = '/(admin)/dogs/',
+  ancestors: ancestorsProp,
+  registeredName: registeredNameProp,
+  wrightsCoi: wrightsCoiProp,
+  emptyLabel,
+  disableAncestorLinks,
 }: PedigreeTreeProps) {
   const router = useRouter();
-  const { ancestors, registeredName, wrightsCoi, loading, error } = useDogPedigree(dogId);
+  const fetched = useDogPedigree(ancestorsProp ? '' : dogId);
+  const ancestors = ancestorsProp ?? fetched.ancestors;
+  const registeredName = registeredNameProp ?? fetched.registeredName;
+  const wrightsCoi = wrightsCoiProp ?? fetched.wrightsCoi;
+  const loading = ancestorsProp ? false : fetched.loading;
+  const error = ancestorsProp ? null : fetched.error;
 
   if (loading) return <CardListSkeleton count={2} />;
   if (error) {
@@ -94,7 +115,11 @@ export function PedigreeTree({
       </Typography>
     );
   }
-  if (!hasPedigreeAncestors(ancestors)) return null;
+  if (!hasPedigreeAncestors(ancestors)) {
+    return emptyLabel ? (
+      <Typography variant="bodyMuted">{emptyLabel}</Typography>
+    ) : null;
+  }
 
   const positions = ancestors.map((a) => a.position);
   const maxGen = maxPedigreeGeneration(positions);
@@ -132,7 +157,7 @@ export function PedigreeTree({
               generation={gen}
               maxGen={maxGen}
               ancestors={ancestors}
-              onOwnDogPress={openProfile}
+              onOwnDogPress={disableAncestorLinks ? undefined : openProfile}
             />
           ))}
         </View>

@@ -11,6 +11,7 @@ import { useClientPortalDocuments } from '@/hooks/useDocuments';
 import { usePortalDogs } from '@/hooks/usePortal';
 import { portalCategoryLabel } from '@/lib/portal/documentLabels';
 import { requireSupabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 import type { DocumentRecord } from '@/lib/documents/types';
 
 type ParentInfo = { id: string; name: string; role: string };
@@ -28,35 +29,31 @@ export default function DocumentsScreen() {
   const [parents, setParents] = useState<ParentInfo[]>([]);
   const [viewerDoc, setViewerDoc] = useState<DocumentRecord | null>(null);
 
+  const userId = useAuthStore((s) => s.session?.user.id);
+
   const loadParents = useCallback(async () => {
-    if (dogs.length === 0) {
+    if (!userId) {
       setParents([]);
       return;
     }
     try {
       const supabase = requireSupabase();
-      const results = await Promise.all(
-        dogs.map(async (d) => {
-          const { data } = await supabase.rpc('my_dog_lineage', { target_dog_id: d.id });
-          return (data ?? []) as { parent_id: string; role: string }[];
-        }),
-      );
+      const { data: links } = await supabase.rpc('parent_links_for', { p_user_id: userId });
+      const rows = (links ?? []) as { parent_id: string; role: string }[];
       const byId = new Map<string, ParentInfo>();
-      for (const links of results) {
-        for (const link of links) {
-          if (byId.has(link.parent_id)) continue;
-          const { data: dog } = await supabase
-            .from('dogs')
-            .select('id, name')
-            .eq('id', link.parent_id)
-            .maybeSingle();
-          if (dog) {
-            byId.set(dog.id, {
-              id: dog.id,
-              name: dog.name,
-              role: link.role === 'sire' ? 'Sire' : 'Dam',
-            });
-          }
+      for (const link of rows) {
+        if (byId.has(link.parent_id)) continue;
+        const { data: dog } = await supabase
+          .from('dogs')
+          .select('id, name')
+          .eq('id', link.parent_id)
+          .maybeSingle();
+        if (dog) {
+          byId.set(dog.id, {
+            id: dog.id,
+            name: dog.name,
+            role: link.role === 'sire' ? 'Sire' : 'Dam',
+          });
         }
       }
       setParents([...byId.values()]);
@@ -64,7 +61,7 @@ export default function DocumentsScreen() {
       console.error('[DocumentsScreen] lineage', e);
       setParents([]);
     }
-  }, [dogs]);
+  }, [userId]);
 
   useEffect(() => {
     void loadParents();

@@ -38,8 +38,9 @@ export function useMyApplications(userId?: string): ListResult<Application> {
 const PORTAL_DOG_SELECT =
   'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media(url, is_primary)';
 
-export function usePortalDogs() {
-  const userId = useAuthStore((s) => s.session?.user.id);
+export function usePortalDogs(forUserId?: string) {
+  const sessionId = useAuthStore((s) => s.session?.user.id);
+  const userId = forUserId ?? sessionId;
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +55,19 @@ export function usePortalDogs() {
     setError(null);
     try {
       const supabase = requireSupabase();
+      const { data: ids, error: idsErr } = await supabase.rpc('dog_ids_for', {
+        p_user_id: userId,
+      });
+      if (idsErr) throw new Error(idsErr.message);
+      const dogIds = (ids ?? []) as string[];
+      if (dogIds.length === 0) {
+        setDogs([]);
+        return;
+      }
       const { data, error: err } = await supabase
         .from('dogs')
         .select(PORTAL_DOG_SELECT)
-        .eq('owner_id', userId);
+        .in('id', dogIds);
       if (err) throw new Error(err.message);
       const mapped = (data ?? []).map((row) => {
         const r = row as Record<string, unknown>;

@@ -1,21 +1,21 @@
-import { PreferenceBadges } from '@/components/waitlist/PreferenceBadges';
-import { PipelineBreadcrumb } from '@/components/waitlist/PipelineBreadcrumb';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
+import {
+  CommittedLitterPanel,
+  WaitingListPlainMessage,
+} from '@/components/portal/CommittedLitterPanel';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useCommittedBreeding } from '@/hooks/useCommittedBreeding';
 import { usePortalWaitlistEntry } from '@/hooks/usePortal';
-import { stageLabel } from '@/lib/waitlist/constants';
-import { effectiveStage } from '@/lib/waitlist/helpers';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function PortalWaitlistScreen() {
-  const { entry, loading, error } = usePortalWaitlistEntry();
+  const { entry, loading: entryLoading, error } = usePortalWaitlistEntry();
+  const { parents, litter, hasPuppy, loading: breedingLoading } = useCommittedBreeding();
 
-  if (loading) {
+  if (entryLoading || breedingLoading) {
     return (
       <ScreenContainer scroll={false} className="items-center justify-center">
         <ActivityIndicator color={Colors.gold} />
@@ -46,41 +46,22 @@ export default function PortalWaitlistScreen() {
     );
   }
 
-  const stage = effectiveStage(entry);
-  const reachedAt =
-    entry.stage_updated_at && entry.pipeline_stage
-      ? { [entry.pipeline_stage]: entry.stage_updated_at }
-      : undefined;
+  const showParents = parents.length > 0 && Boolean(litter) && !hasPuppy;
 
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="Your journey" title={entry.list_type?.name ?? 'Waiting List'} />
-      <View className="px-6">
-        <Badge label={stageLabel(stage)} tone="gold" />
-        <View className="mt-4">
-          <PipelineBreadcrumb currentStage={stage} reachedAt={reachedAt} />
-        </View>
-        <Card className="mt-4 p-4">
-          <Typography variant="label" className="text-gold">
-            Your preferences
+      <PageHeader eyebrow="Your journey" title="Waiting List" />
+      <View className="px-6 pb-10">
+        {showParents ? (
+          <CommittedLitterPanel litter={litter} parents={parents} />
+        ) : hasPuppy ? (
+          <Typography variant="bodyMuted">
+            A puppy has been allocated to you. Open Your Dogs to see her parents, pedigree and
+            progress.
           </Typography>
-          <View className="mt-2">
-            <PreferenceBadges entry={entry} />
-          </View>
-        </Card>
-        {entry.client_visible_note || entry.admin_notes ? (
-          <Card className="mt-4 p-4">
-            <Typography variant="label" className="text-gold">
-              Message from your breeder
-            </Typography>
-            <Typography variant="body" className="mt-2">
-              {entry.client_visible_note ?? entry.admin_notes}
-            </Typography>
-          </Card>
-        ) : null}
-        <Typography variant="caption" className="mt-4 text-silver">
-          Payment: {entry.payment_status.replace(/_/g, ' ')}
-        </Typography>
+        ) : (
+          <WaitingListPlainMessage />
+        )}
       </View>
     </ScreenContainer>
   );

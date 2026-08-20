@@ -445,14 +445,15 @@ export function useExpiringDogDocuments(withinDays = 90) {
   return { items, loading, refresh };
 }
 
-export function useClientPortalDocuments() {
+export function useClientPortalDocuments(forUserId?: string) {
   const profile = useAuthStore((s) => s.profile);
+  const userId = forUserId ?? profile?.id;
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!profile?.id) {
+    if (!userId) {
       setDocuments([]);
       setLoading(false);
       return;
@@ -461,10 +462,19 @@ export function useClientPortalDocuments() {
     setError(null);
     try {
       const supabase = requireSupabase();
+      const { data: ids, error: idsErr } = await supabase.rpc('document_ids_visible_to', {
+        p_user_id: userId,
+      });
+      if (idsErr) throw new Error(idsErr.message);
+      const visible = (ids ?? []) as string[];
+      if (visible.length === 0) {
+        setDocuments([]);
+        return;
+      }
       const { data, error: err } = await supabase
         .from('documents')
         .select(DOCUMENT_SELECT)
-        .or(`client_visible.eq.true,allowed_user_ids.cs.{${profile.id}}`)
+        .in('id', visible)
         .order('uploaded_at', { ascending: false });
       if (err) throw new Error(err.message);
       setDocuments((data ?? []).map((r) => mapRow(r as Record<string, unknown>)));
@@ -474,7 +484,7 @@ export function useClientPortalDocuments() {
     } finally {
       setLoading(false);
     }
-  }, [profile?.id]);
+  }, [userId]);
 
   useEffect(() => {
     refresh();
@@ -492,8 +502,8 @@ export interface GroupedDocuments {
   count: number;
 }
 
-export function useClientPortalDocumentsByCategory() {
-  const { documents, loading, error, refresh } = useClientPortalDocuments();
+export function useClientPortalDocumentsByCategory(forUserId?: string) {
+  const { documents, loading, error, refresh } = useClientPortalDocuments(forUserId);
 
   const grouped = useMemo(() => {
     if (documents.length === 0) return [];

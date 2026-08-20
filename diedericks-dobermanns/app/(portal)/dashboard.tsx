@@ -6,6 +6,10 @@ import { Pressable, View } from 'react-native';
 import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
 import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
+import {
+  CommittedLitterPanel,
+  WaitingListPlainMessage,
+} from '@/components/portal/CommittedLitterPanel';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -15,6 +19,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
+import { useCommittedBreeding } from '@/hooks/useCommittedBreeding';
 import { useMyApplications, usePortalDogs } from '@/hooks/usePortal';
 import { ageFromDob, birthdayAgeWords, isBirthdayToday } from '@/lib/format';
 import { useAuthStore } from '@/stores/authStore';
@@ -43,6 +48,7 @@ export default function PortalDashboard() {
   const { dogs, loading, error } = usePortalDogs();
   const { data: applications } = useMyApplications(profile?.id);
   const { currentStep } = useBuyerJourney();
+  const { parents, litter, onWaitlist } = useCommittedBreeding();
   const isApproved = applications.some((a) => a.status === 'approved');
   const quickLinks = [...BASE_QUICK_LINKS, isApproved ? PROFILE_LINK : APPLICATION_LINK];
   const primaryDog = dogs[0];
@@ -81,12 +87,18 @@ export default function PortalDashboard() {
           </Typography>
         ) : null}
         {!loading && dogs.length === 0 ? (
-          <EmptyState
-            title="No dogs linked"
-            message="No dogs linked to your account yet. WhatsApp us and we will help."
-          >
-            <WhatsAppHelpLink className="mt-3" />
-          </EmptyState>
+          parents.length > 0 && litter ? (
+            <CommittedLitterPanel litter={litter} parents={parents} />
+          ) : onWaitlist ? (
+            <WaitingListPlainMessage />
+          ) : (
+            <EmptyState
+              title="No dogs linked"
+              message="No dogs linked to your account yet. WhatsApp us and we will help."
+            >
+              <WhatsAppHelpLink className="mt-3" />
+            </EmptyState>
+          )
         ) : null}
         {primaryDog ? (
           <>

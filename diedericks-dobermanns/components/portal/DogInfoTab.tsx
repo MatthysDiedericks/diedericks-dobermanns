@@ -53,15 +53,27 @@ export function DogInfoTab({ dog, notes, saving, onSave }: DogInfoTabProps) {
 
   useEffect(() => {
     void (async () => {
-      const ids = [dog.father_id, dog.mother_id].filter(Boolean) as string[];
-      if (!ids.length) return;
-      const { data } = await requireSupabase().from('dogs').select('id, name').in('id', ids);
-      for (const row of data ?? []) {
-        if (row.id === dog.father_id) setSireName(row.name);
-        if (row.id === dog.mother_id) setDamName(row.name);
+      try {
+        const supabase = requireSupabase();
+        const { data: links } = await supabase.rpc('my_dog_lineage', { target_dog_id: dog.id });
+        const rows = (links ?? []) as { parent_id: string; role: string }[];
+        if (rows.length === 0) return;
+        const ids = rows.map((r) => r.parent_id);
+        const { data } = await supabase.from('dogs').select('id, name, call_name, registered_name').in('id', ids);
+        for (const row of data ?? []) {
+          const link = rows.find((r) => r.parent_id === row.id);
+          const call = row.call_name?.trim() || row.name;
+          const registered = row.registered_name?.trim();
+          const label =
+            registered && registered !== call ? `${call} · ${registered}` : call;
+          if (link?.role === 'sire') setSireName(label);
+          if (link?.role === 'dam') setDamName(label);
+        }
+      } catch (e) {
+        console.error('[DogInfoTab] lineage', e);
       }
     })();
-  }, [dog.father_id, dog.mother_id]);
+  }, [dog.id]);
 
   return (
     <View className="px-6 pb-8">
