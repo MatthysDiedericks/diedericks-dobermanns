@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
 import {
@@ -7,9 +7,13 @@ import {
   updateExpense,
   type AllocationType,
 } from '@/hooks/useExpenses';
-
-const VAT_RATE = 15;
-export const OTHER_ACCOUNT = '__other__';
+import type { ReceiptIntent } from '@/components/finance/ExpenseReceiptControl';
+import { buildExpensePayload, validateExpenseForm } from '@/lib/finance/expenseFormPayload';
+import {
+  defaultVatAmount,
+  expenseLoggedLabel,
+  vatLooksOffRate,
+} from '@/lib/finance/expenseGross';
 
 export function useExpenseForm() {
   const params = useLocalSearchParams<{
@@ -30,7 +34,8 @@ export function useExpenseForm() {
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [priceExclVat, setPriceExclVat] = useState('');
-  const [vatApplicable, setVatApplicable] = useState(false);
+  const [vatAmountText, setVatAmountText] = useState('');
+  const [vatTouched, setVatTouched] = useState(false);
   const [expenseDate, setExpenseDate] = useState(today);
   const [supplier, setSupplier] = useState('');
   const [invoiceRef, setInvoiceRef] = useState('');
@@ -51,14 +56,30 @@ export function useExpenseForm() {
   const [notes, setNotes] = useState('');
   const [receiptPath, setReceiptPath] = useState<string | null>(null);
   const [receiptName, setReceiptName] = useState<string | null>(null);
+  const [originalReceiptPath, setOriginalReceiptPath] = useState<string | null>(null);
+  const [receiptIntent, setReceiptIntent] = useState<ReceiptIntent>('keep');
+  const [loggedLabel, setLoggedLabel] = useState<string | null>(null);
   const [loadingExpense, setLoadingExpense] = useState(Boolean(editingId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const priceNum = parseFloat(priceExclVat) || 0;
-  const vatAmount = vatApplicable ? Number((priceNum * VAT_RATE / 100).toFixed(2)) : 0;
-  const totalAmount = priceNum + vatAmount;
+  const vatNum = parseFloat(vatAmountText) || 0;
+  const totalAmount = priceNum + vatNum;
+  const vatHint = vatTouched && vatLooksOffRate(priceNum, vatNum);
+
+  const setAmountAndMaybeVat = (next: string) => {
+    setPriceExclVat(next);
+    if (!editingId && !vatTouched) {
+      setVatAmountText(String(defaultVatAmount(parseFloat(next) || 0) || ''));
+    }
+  };
+
+  const setVatTyped = (next: string) => {
+    setVatTouched(true);
+    setVatAmountText(next);
+  };
 
   useEffect(() => {
     if (lockedDog) {
@@ -82,7 +103,8 @@ export function useExpenseForm() {
         setCategoryId(exp.category_id);
         setDescription(exp.description);
         setPriceExclVat(String(exp.price_excl_vat ?? exp.amount));
-        setVatApplicable(exp.vat_applicable ?? false);
+        setVatAmountText(exp.vat_amount ? String(exp.vat_amount) : '');
+        setVatTouched(true);
         setExpenseDate(exp.expense_date);
         setSupplier(exp.supplier_name ?? '');
         setInvoiceRef(exp.invoice_reference ?? '');
@@ -98,9 +120,12 @@ export function useExpenseForm() {
         setPayableDueDate(exp.payable_due_date ?? '');
         setCreditorName(exp.creditor_name ?? '');
         setNotes(exp.notes ?? '');
+        setLoggedLabel(expenseLoggedLabel(exp.created_at, exp.recordedByName));
         if (exp.receipt_url) {
           setReceiptPath(exp.receipt_url);
+          setOriginalReceiptPath(exp.receipt_url);
           setReceiptName(exp.receipt_url.split('/').pop() ?? 'Receipt attached');
+          setReceiptIntent('keep');
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not load expense');
@@ -110,60 +135,46 @@ export function useExpenseForm() {
     })();
   }, [editingId]);
 
-  const lockLabel = useMemo(() => {
-    if (lockedDog) return `Dog: ${selectedDogName || params.dogName || lockedDog}`;
-    if (lockedLitter) return `Litter: ${selectedLitterName || params.litterName || lockedLitter}`;
-    return undefined;
-  }, [lockedDog, lockedLitter, selectedDogName, selectedLitterName, params.dogName, params.litterName]);
+  const lockLabel = lockedDog
+    ? `Dog: ${selectedDogName || params.dogName || lockedDog}`
+    : lockedLitter
+      ? `Litter: ${selectedLitterName || params.litterName || lockedLitter}`
+      : undefined;
 
-  const buildPayload = () => {
-    const resolvedPaymentName =
-      paymentAccountId === OTHER_ACCOUNT ? customAccount.trim() : paymentAccountName || null;
-    const resolvedPaymentId = paymentAccountId === OTHER_ACCOUNT ? null : paymentAccountId;
-    return {
-      category_id: categoryId,
-      description: description.trim(),
-      price_excl_vat: priceNum,
-      vat_applicable: vatApplicable,
-      vat_rate: vatApplicable ? VAT_RATE : 0,
-      vat_amount: vatAmount,
-      amount: totalAmount,
-      expense_date: expenseDate,
-      supplier_name: supplier || undefined,
-      invoice_reference: invoiceRef || undefined,
-      allocation_type: allocationType,
-      dog_id: allocationType === 'dog' ? selectedDogId : null,
-      litter_id: allocationType === 'litter' ? selectedLitterId : null,
-      payment_account_id: resolvedPaymentId,
-      payment_account_name: resolvedPaymentName,
-      receipt_url: receiptPath,
-      is_recurring: isRecurring,
-      recurrence_interval: isRecurring ? interval : null,
-      recurrence_end_date: isRecurring && recurringEnd ? recurringEnd : null,
-      notes: notes || undefined,
-      is_payable: isPayable,
-      payable_due_date: isPayable && payableDueDate ? payableDueDate : null,
-      creditor_name: isPayable && creditorName ? creditorName : null,
-    };
-  };
+  const buildPayload = () =>
+    buildExpensePayload({
+      categoryId, description, priceNum, vatNum, expenseDate, supplier, invoiceRef,
+      allocationType, selectedDogId, selectedLitterId, paymentAccountId,
+      paymentAccountName, customAccount, isRecurring, interval, recurringEnd,
+      notes, isPayable, payableDueDate, creditorName,
+      receiptUrl: !editingId
+        ? receiptPath
+        : receiptIntent === 'remove'
+          ? null
+          : receiptIntent === 'replace'
+            ? receiptPath ?? originalReceiptPath
+            : originalReceiptPath,
+    });
 
-  const validate = (): string | null => {
-    if (!categoryId || !description.trim() || !priceExclVat) {
-      return 'Category, description and price are required.';
-    }
-    if (allocationType === 'dog' && !selectedDogId) return 'Select a dog for this allocation.';
-    if (allocationType === 'litter' && !selectedLitterId) return 'Select a litter for this allocation.';
-    return null;
-  };
+  const validate = () =>
+    validateExpenseForm({
+      categoryId, description, amount: priceExclVat, allocationType,
+      selectedDogId, selectedLitterId, editingId, receiptIntent, receiptPath,
+      originalReceiptPath,
+    });
 
   const resetAfterSave = () => {
     setDescription('');
     setPriceExclVat('');
+    setVatAmountText('');
+    setVatTouched(false);
     setSupplier('');
     setInvoiceRef('');
     setNotes('');
     setReceiptPath(null);
     setReceiptName(null);
+    setOriginalReceiptPath(null);
+    setReceiptIntent('keep');
     if (!lockedDog && !lockedLitter) {
       setAllocationType('general');
       setSelectedDogId(null);
@@ -198,7 +209,7 @@ export function useExpenseForm() {
       }
       await createExpense(payload);
       if (andReset) resetAfterSave();
-      return andReset ? 'reset' as const : 'back' as const;
+      return andReset ? ('reset' as const) : ('back' as const);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save expense');
       return false;
@@ -209,6 +220,7 @@ export function useExpenseForm() {
 
   return {
     editingId,
+    loggedLabel,
     lockedDog,
     lockedLitter,
     lockLabel,
@@ -217,10 +229,10 @@ export function useExpenseForm() {
     description,
     setDescription,
     priceExclVat,
-    setPriceExclVat,
-    vatApplicable,
-    setVatApplicable,
-    vatAmount,
+    setPriceExclVat: setAmountAndMaybeVat,
+    vatAmountText,
+    setVatAmountText: setVatTyped,
+    vatHint,
     totalAmount,
     expenseDate,
     setExpenseDate,
@@ -260,8 +272,11 @@ export function useExpenseForm() {
     setNotes,
     receiptPath,
     receiptName,
+    receiptIntent,
+    setReceiptIntent,
     setReceiptPath,
     setReceiptName,
+    originalReceiptPath,
     loadingExpense,
     saving,
     error,

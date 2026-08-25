@@ -21,12 +21,13 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
-import { useExpenseAllocationBreakdown, useVatExpenseSummary } from '@/hooks/useExpenses';
+import { useExpenseAllocationBreakdown } from '@/hooks/useExpenses';
 import { useFinanceReport } from '@/hooks/useFinanceReport';
 import { buildFinanceReport, yearMonthRange } from '@/lib/finance/queries';
 import { exportFinanceExcel } from '@/lib/finance/generateExcel';
 import { exportFinancePDF } from '@/lib/finance/generatePDF';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
+import { expenseGross } from '@/lib/finance/expenseGross';
 import { financeYearRange } from '@/lib/finance/years';
 
 const MONTHS = ['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -59,7 +60,6 @@ export default function FinanceDashboardScreen() {
   } = useFinanceReport(from, to);
 
   const { summary: budgetSummary } = useBudgetSummary(selectedYear);
-  const { totalVat } = useVatExpenseSummary(from, to);
   const { breakdown: allocationBreakdown } = useExpenseAllocationBreakdown(from, to);
 
   const chartWidth = Dimensions.get('window').width - 48;
@@ -157,8 +157,7 @@ export default function FinanceDashboardScreen() {
               Income and expenses failed to load
             </Typography>
             <Typography variant="caption" className="mt-1 text-subtle">
-              {error} · Tap to retry. VAT and allocation figures below are unaffected — they load
-              separately.
+              {error} · Tap to retry.
             </Typography>
           </Card>
         </Pressable>
@@ -190,12 +189,6 @@ export default function FinanceDashboardScreen() {
           delta={null}
           subtext="Of income"
           valueClass={profitMargin >= 0 ? 'text-gold' : 'text-danger'}
-        />
-        <FinanceKpiCard
-          label="VAT Paid"
-          value={formatAmount(totalVat)}
-          delta={null}
-          subtext="Input tax — for VAT returns"
         />
       </ScrollView>
 
@@ -280,17 +273,27 @@ export default function FinanceDashboardScreen() {
       <View className="mb-24 px-6">
         <SectionHeader title="Recent expenses" />
         {recentExpenses.map((exp) => (
-          <Card key={exp.id} className="mb-2 flex-row items-center justify-between">
-            <View className="flex-1">
-              <Typography variant="body" numberOfLines={1}>
-                {exp.description}
+          <Pressable
+            key={exp.id}
+            onPress={() =>
+              router.push({
+                pathname: '/(admin)/finance/expenses/new',
+                params: { expenseId: exp.id },
+              })
+            }
+          >
+            <Card className="mb-2 flex-row items-center justify-between">
+              <View className="flex-1">
+                <Typography variant="body" numberOfLines={1}>
+                  {exp.description}
+                </Typography>
+                <Typography variant="caption">{exp.categoryName}</Typography>
+              </View>
+              <Typography variant="label" className="text-gold">
+                {formatAmount(expenseGross(exp))}
               </Typography>
-              <Typography variant="caption">{exp.categoryName}</Typography>
-            </View>
-            <Typography variant="label" className="text-gold">
-              {formatAmount(exp.amount)}
-            </Typography>
-          </Card>
+            </Card>
+          </Pressable>
         ))}
         <Pressable onPress={() => router.push('/(admin)/finance/expenses/index' as never)}>
           <Typography variant="label" className="text-gold">

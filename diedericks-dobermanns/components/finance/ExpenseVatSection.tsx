@@ -1,24 +1,24 @@
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { formatAmount } from '@/lib/finance/formatters';
 
 interface Props {
-  priceExclVat: string;
-  onPriceChange: (v: string) => void;
-  vatApplicable: boolean;
-  onVatChange: (v: boolean) => void;
-  vatAmount: number;
+  amount: string;
+  onAmountChange: (v: string) => void;
+  vatAmount: string;
+  onVatChange: (v: string) => void;
+  vatHint: boolean;
   totalAmount: number;
 }
 
 export function ExpenseVatSection({
-  priceExclVat,
-  onPriceChange,
-  vatApplicable,
-  onVatChange,
+  amount,
+  onAmountChange,
   vatAmount,
+  onVatChange,
+  vatHint,
   totalAmount,
 }: Props) {
   return (
@@ -27,37 +27,30 @@ export function ExpenseVatSection({
         Amount
       </Typography>
       <Input
-        value={priceExclVat}
-        onChangeText={onPriceChange}
-        placeholder="Price (excl VAT)"
+        value={amount}
+        onChangeText={onAmountChange}
+        placeholder="Amount"
         keyboardType="decimal-pad"
         className="mb-3"
       />
-      <View className="mb-3 flex-row items-center justify-between">
-        <Typography variant="body">VAT (15%)</Typography>
-        <Switch value={vatApplicable} onValueChange={onVatChange} />
+      <Input
+        value={vatAmount}
+        onChangeText={onVatChange}
+        placeholder="VAT"
+        keyboardType="decimal-pad"
+        className="mb-2"
+      />
+      {vatHint ? (
+        <Typography variant="caption" className="mb-2 text-subtle">
+          Doesn&apos;t look like 15% of the amount — left as you typed it.
+        </Typography>
+      ) : null}
+      <View className="flex-row justify-between border-t border-gold/20 pt-2">
+        <Typography variant="subtitle">Total</Typography>
+        <Typography variant="label" className="text-gold">
+          {formatAmount(totalAmount)}
+        </Typography>
       </View>
-      {vatApplicable ? (
-        <>
-          <View className="mb-2 flex-row justify-between">
-            <Typography variant="caption">VAT amount</Typography>
-            <Typography variant="label">{formatAmount(vatAmount)}</Typography>
-          </View>
-          <View className="flex-row justify-between border-t border-gold/20 pt-2">
-            <Typography variant="subtitle">Total</Typography>
-            <Typography variant="label" className="text-gold">
-              {formatAmount(totalAmount)}
-            </Typography>
-          </View>
-        </>
-      ) : (
-        <View className="flex-row justify-between">
-          <Typography variant="subtitle">Total</Typography>
-          <Typography variant="label" className="text-gold">
-            {formatAmount(totalAmount)}
-          </Typography>
-        </View>
-      )}
     </View>
   );
 }

@@ -1,11 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
 
 import { ExpenseAllocationSection } from '@/components/finance/ExpenseAllocationSection';
 import { ExpensePaymentSection } from '@/components/finance/ExpensePaymentSection';
+import { ExpenseReceiptControl } from '@/components/finance/ExpenseReceiptControl';
 import { ExpenseVatSection } from '@/components/finance/ExpenseVatSection';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { DateField } from '@/components/ui/DateField';
 import { Input } from '@/components/ui/Input';
@@ -13,7 +13,6 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useExpenseForm } from '@/hooks/useExpenseForm';
 import { useExpenseCategories } from '@/hooks/useExpenses';
-import { pickAndUploadReceipt } from '@/lib/finance/receiptUpload';
 import { useAuthStore } from '@/stores/authStore';
 
 const INTERVALS = ['monthly', 'quarterly', 'annual'] as const;
@@ -23,21 +22,6 @@ export function ExpenseLogForm() {
   const userId = useAuthStore((s) => s.session?.user?.id);
   const { categories } = useExpenseCategories();
   const form = useExpenseForm();
-  const [uploadingReceipt, setUploadingReceipt] = useState(false);
-
-  const handlePickReceipt = async () => {
-    if (!userId) return;
-    setUploadingReceipt(true);
-    try {
-      const result = await pickAndUploadReceipt(userId);
-      if (result) {
-        form.setReceiptPath(result.path);
-        form.setReceiptName(result.fileName);
-      }
-    } finally {
-      setUploadingReceipt(false);
-    }
-  };
 
   const handleSave = async (andReset: boolean) => {
     const result = await form.save(andReset);
@@ -48,8 +32,17 @@ export function ExpenseLogForm() {
     return <ActivityIndicator color={Colors.gold} className="mt-8" />;
   }
 
+  const title =
+    form.editingId && form.loggedLabel
+      ? `Edit expense · ${form.loggedLabel}`
+      : form.editingId
+        ? 'Edit expense'
+        : 'Log expense';
+
   return (
-    <ScrollView className="px-6 pb-12" keyboardShouldPersistTaps="handled">
+    <>
+      <PageHeader eyebrow="Finance" title={title} />
+      <ScrollView className="px-6 pb-12" keyboardShouldPersistTaps="handled">
       {form.successMsg ? (
         <View className="mb-3 rounded-xl border border-success/40 bg-success/10 px-4 py-2">
           <Typography variant="label" className="text-success">
@@ -79,11 +72,11 @@ export function ExpenseLogForm() {
       <Input value={form.description} onChangeText={form.setDescription} placeholder="Description" className="mb-3" />
 
       <ExpenseVatSection
-        priceExclVat={form.priceExclVat}
-        onPriceChange={form.setPriceExclVat}
-        vatApplicable={form.vatApplicable}
-        onVatChange={form.setVatApplicable}
-        vatAmount={form.vatAmount}
+        amount={form.priceExclVat}
+        onAmountChange={form.setPriceExclVat}
+        vatAmount={form.vatAmountText}
+        onVatChange={form.setVatAmountText}
+        vatHint={form.vatHint}
         totalAmount={form.totalAmount}
       />
 
@@ -176,20 +169,17 @@ export function ExpenseLogForm() {
         </>
       ) : null}
 
-      <Typography variant="label" className="mb-2">
-        Receipt
-      </Typography>
-      <Pressable
-        onPress={() => void handlePickReceipt()}
-        className="mb-4 flex-row items-center gap-2 rounded-xl border border-gold/30 bg-surface px-4 py-3"
-      >
-        {uploadingReceipt ? (
-          <ActivityIndicator size="small" color={Colors.gold} />
-        ) : (
-          <Ionicons name="document-attach-outline" size={20} color={Colors.gold} />
-        )}
-        <Typography variant="body">{form.receiptName ?? 'Pick PDF or image receipt'}</Typography>
-      </Pressable>
+      <ExpenseReceiptControl
+        userId={userId}
+        existingPath={form.originalReceiptPath}
+        receiptName={form.receiptName}
+        intent={form.receiptIntent}
+        onIntent={form.setReceiptIntent}
+        onUploaded={(path, fileName) => {
+          form.setReceiptPath(path);
+          form.setReceiptName(fileName);
+        }}
+      />
 
       <Input value={form.notes} onChangeText={form.setNotes} placeholder="Notes" className="mb-4" />
 
@@ -200,7 +190,10 @@ export function ExpenseLogForm() {
       ) : null}
 
       {form.editingId ? (
-        <Button label="Update expense" onPress={() => void handleSave(false)} loading={form.saving} fullWidth />
+        <View className="mb-8 gap-3">
+          <Button label="Update expense" onPress={() => void handleSave(false)} loading={form.saving} fullWidth />
+          <Button label="Cancel" variant="outline" onPress={() => router.back()} fullWidth />
+        </View>
       ) : (
         <View className="mb-8 flex-row gap-3">
           <Button
@@ -219,5 +212,6 @@ export function ExpenseLogForm() {
         </View>
       )}
     </ScrollView>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import { Typography } from '@/components/ui/Typography';
 import { useRecurringExpenses } from '@/hooks/useRecurringExpenses';
 import { formatNextDue, monthlyEquivalent } from '@/lib/finance/recurringUtils';
 import { formatAmount } from '@/lib/finance/formatters';
+import { expenseGross } from '@/lib/finance/expenseGross';
 
 const SECTIONS: { key: string; label: string }[] = [
   { key: 'monthly', label: 'MONTHLY' },
@@ -82,9 +83,9 @@ export default function RecurringExpensesScreen() {
                       </Typography>
                     </View>
                     <Typography variant="label" className="mb-1 text-gold">
-                      {formatAmount(exp.amount)} / {exp.recurrence_interval ?? 'period'}
+                      {formatAmount(expenseGross(exp))} / {exp.recurrence_interval ?? 'period'}
                       {' · '}
-                      {formatAmount(monthlyEquivalent(Number(exp.amount), exp.recurrence_interval))}/mo eq.
+                      {formatAmount(monthlyEquivalent(expenseGross(exp), exp.recurrence_interval))}/mo eq.
                     </Typography>
                     {exp.supplier_name ? (
                       <Typography variant="caption" className="text-subtle">

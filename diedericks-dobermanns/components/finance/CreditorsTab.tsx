@@ -76,7 +76,15 @@ export function CreditorsTab({ creditors, totalPayable, overdueCount, onMarkPaid
               className={`mb-3 ${row.isOverdue ? 'border-l-4 border-l-danger' : ''}`}
             >
               <View className="flex-row items-start justify-between">
-                <View className="flex-1 pr-2">
+                <Pressable
+                  className="flex-1 pr-2"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(admin)/finance/expenses/new',
+                      params: { expenseId: row.id },
+                    })
+                  }
+                >
                   <Typography variant="subtitle">{name}</Typography>
                   <Typography variant="caption">
                     {row.categoryName} · Due {formatDate(row.payable_due_date)}
@@ -89,7 +97,7 @@ export function CreditorsTab({ creditors, totalPayable, overdueCount, onMarkPaid
                       OVERDUE
                     </Typography>
                   ) : null}
-                </View>
+                </Pressable>
                 <Pressable
                   onPress={() => handleMarkPaid(row)}
                   className="rounded-full border border-gold/40 px-3 py-1.5"

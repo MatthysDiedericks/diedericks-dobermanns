@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useExpensesByDog } from '@/hooks/useExpenses';
+import { expenseGross, expenseVatNote } from '@/lib/finance/expenseGross';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
 import type { Dog } from '@/types/app.types';
 
@@ -47,20 +48,35 @@ export function DogExpensesTab({ dogId, dog }: { dogId: string; dog: Dog }) {
         </Typography>
       ) : (
         data.map((exp) => (
-          <Card key={exp.id} className="mb-3">
+          <Pressable
+            key={exp.id}
+            onPress={() =>
+              router.push({
+                pathname: '/(admin)/finance/expenses/new',
+                params: { expenseId: exp.id },
+              } as never)
+            }
+          >
+          <Card className="mb-3">
             <View className="mb-1 flex-row items-center gap-2">
               <View className="h-2 w-2 rounded-full" style={{ backgroundColor: exp.categoryColour }} />
               <Typography variant="label">{exp.categoryName}</Typography>
             </View>
             <Typography variant="body">{exp.description}</Typography>
             <Typography variant="label" className="mt-1 text-gold">
-              {formatAmount(exp.amount)}
+              {formatAmount(expenseGross(exp))}
             </Typography>
+            {expenseVatNote(exp.vat_amount) ? (
+              <Typography variant="caption" className="text-subtle">
+                {expenseVatNote(exp.vat_amount)}
+              </Typography>
+            ) : null}
             <Typography variant="caption" className="text-silver">
               {formatDate(exp.expense_date)}
               {exp.supplier_name ? ` · ${exp.supplier_name}` : ''}
             </Typography>
           </Card>
+          </Pressable>
         ))
       )}
 
