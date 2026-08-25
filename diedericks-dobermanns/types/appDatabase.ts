@@ -37,6 +37,28 @@ export type AppDatabase = {
         Args: { p_quote_id: string };
         Returns: string;
       };
+      client_owns_a_dog: { Args: Record<string, never>; Returns: boolean };
+      client_can_watch_training_video: {
+        Args: { p_video_id: string };
+        Returns: boolean;
+      };
+      client_has_bundle_access: {
+        Args: { p_bundle_id: string };
+        Returns: boolean;
+      };
+      training_owner_client_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      log_training_tier_change: {
+        Args: {
+          p_video_ids: string[];
+          p_from: string;
+          p_to: string;
+          p_category_id?: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: Database['public']['Enums'];
     CompositeTypes: Database['public']['CompositeTypes'];
