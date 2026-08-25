@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { resolveLitterTab } from '@/lib/litters/tabFromParams';
 import { useLitterWeights } from '@/hooks/useLitterWeights';
 import { useLitterDetail } from '@/hooks/useDogs';
 
@@ -58,14 +59,18 @@ const TAB_LABELS: Record<TabId, string> = {
 };
 
 export default function LitterDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const router = useRouter();
   const litterId = id ?? '';
   const { litter, puppies, loading, error } = useLitterDetail(litterId);
   const { puppies: weightPuppies } = useLitterWeights(litterId, litter?.actual_date);
-  const [tab, setTab] = useState<TabId>('puppies');
+  const tab = resolveLitterTab(TABS, tabParam, 'puppies');
   const [holders, setHolders] = useState<LitterQuoteHolder[]>([]);
   const puppyIds = puppies.map((p) => p.id);
+
+  function selectTab(next: TabId) {
+    router.setParams({ tab: next });
+  }
 
   useEffect(() => {
     if (!litterId) return;
@@ -125,7 +130,7 @@ export default function LitterDetailScreen() {
         {TABS.map((t) => (
           <Pressable
             key={t}
-            onPress={() => setTab(t)}
+            onPress={() => selectTab(t)}
             className={`rounded-full border px-4 py-2 ${tab === t ? 'border-gold bg-gold/15' : 'border-gold/25'}`}
           >
             <Typography variant="caption">{TAB_LABELS[t].toUpperCase()}</Typography>

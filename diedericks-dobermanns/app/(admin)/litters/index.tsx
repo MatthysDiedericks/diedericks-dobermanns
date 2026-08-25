@@ -2,11 +2,10 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
-import { LitterListFilters } from '@/components/litters/LitterListFilters';
 import { LitterHistoryTable } from '@/components/litters/LitterRow';
-import { PuppyCard } from '@/components/litters/PuppyCard';
+import { LitterListCard } from '@/components/litters/LitterListCard';
+import { LitterListFilters } from '@/components/litters/LitterListFilters';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,9 +13,10 @@ import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
-import { isActiveLitter, useFemaleLitterHistory, useLittersIndex } from '@/hooks/useLittersIndex';
+import { deriveLitterCount } from '@/lib/litters/derivedCounts';
+import { useLitterPuppySearch } from '@/hooks/useLitterPuppySearch';
+import { useFemaleLitterHistory, useLittersIndex } from '@/hooks/useLittersIndex';
 import { useLitterListPrefs } from '@/hooks/useLitterListPrefs';
-import { formatKennelDate, formatPuppyAge } from '@/lib/kennel/formatters';
 import {
   buildDamOptions,
   buildYearOptions,
@@ -25,13 +25,6 @@ import {
 } from '@/lib/litters/listPrefs';
 
 type ViewMode = 'all' | 'female';
-type LitterRow = ReturnType<typeof useLittersIndex>['litters'][0];
-type PuppyRow = LitterRow['puppies'][0];
-
-function puppyMatches(puppy: PuppyRow, query: string): boolean {
-  if (puppy.name.toLowerCase().includes(query.toLowerCase())) return true;
-  return !!puppy.microchip_number && puppy.microchip_number.includes(query);
-}
 
 export default function AdminLittersScreen() {
   const router = useRouter();
@@ -39,24 +32,21 @@ export default function AdminLittersScreen() {
   const [femaleId, setFemaleId] = useState<string | undefined>();
   const [search, setSearch] = useState('');
   const { prefs, patch, clearFilters } = useLitterListPrefs();
-  const { litters, loading, error, refresh } = useLittersIndex();
+  const { litters, countsByLitterId, loading, error, refresh } = useLittersIndex();
   const femaleHistory = useFemaleLitterHistory(view === 'female' ? femaleId : undefined);
+  const query = search.trim();
+  const searchLitterIds = useLitterPuppySearch(query);
 
   const dams = useMemo(() => buildDamOptions(litters), [litters]);
   const years = useMemo(() => buildYearOptions(litters), [litters]);
-  const query = search.trim();
-
-  const searchResults = useMemo(() => {
-    if (!query) return [];
-    return litters.filter((l) => l.puppies.some((p) => puppyMatches(p, query)));
-  }, [litters, query]);
-
   const filtered = useMemo(() => filterAndSortLitters(litters, prefs), [litters, prefs]);
 
   const listData = useMemo(() => {
-    if (query) return searchResults;
-    return filtered;
-  }, [query, searchResults, filtered]);
+    if (!query) return filtered;
+    if (!searchLitterIds) return [];
+    const allow = new Set(searchLitterIds);
+    return litters.filter((l) => allow.has(l.id));
+  }, [query, searchLitterIds, filtered, litters]);
 
   const emptyMessage = query
     ? 'No puppy matches that name or microchip number.'
@@ -102,15 +92,19 @@ export default function AdminLittersScreen() {
             />
           ) : null}
 
-          {error ? <Typography variant="body" className="mb-2 px-6 text-danger">{error}</Typography> : null}
+          {error ? (
+            <Typography variant="body" className="mb-2 px-6 text-danger">
+              {error}
+            </Typography>
+          ) : null}
           {!query ? (
             <Typography variant="caption" className="mb-2 px-6 text-subtle">
               Showing {filtered.length} of {litters.length}
             </Typography>
           ) : null}
-          {query && searchResults.length > 0 ? (
+          {query && listData.length > 0 ? (
             <Typography variant="caption" className="mb-3 px-6 text-subtle">
-              {searchResults.length} litter{searchResults.length === 1 ? '' : 's'} match &quot;{query}&quot;
+              {listData.length} litter{listData.length === 1 ? '' : 's'} match &quot;{query}&quot;
             </Typography>
           ) : null}
 
@@ -132,7 +126,18 @@ export default function AdminLittersScreen() {
                 <RefreshControl refreshing={loading} onRefresh={() => void refresh()} tintColor={Colors.gold} />
               }
               renderItem={({ item }) => (
-                <LitterGroup litter={item} active={isActiveLitter(item.status)} highlightQuery={query || undefined} />
+                <LitterListCard
+                  litter={item}
+                  count={
+                    countsByLitterId[item.id] ??
+                    deriveLitterCount(undefined, {
+                      available_count: item.available_count,
+                      puppy_count: item.puppy_count,
+                    })
+                  }
+                  highlightQuery={query || undefined}
+                  autoExpand={Boolean(query)}
+                />
               )}
             />
           )}
@@ -163,54 +168,5 @@ export default function AdminLittersScreen() {
         </ScrollView>
       )}
     </ScreenContainer>
-  );
-}
-
-function LitterGroup({
-  litter,
-  active = false,
-  highlightQuery,
-}: {
-  litter: LitterRow;
-  active?: boolean;
-  highlightQuery?: string;
-}) {
-  const router = useRouter();
-  const letter = litter.litter_letter ? `Litter ${litter.litter_letter}` : litter.name ?? 'Litter';
-  const dateLabel = litter.actual_date ?? litter.expected_date;
-  return (
-    <View className="mb-8">
-      <View className="mb-2 flex-row items-start justify-between">
-        <View className="flex-1 pr-2">
-          <Typography variant="subtitle">
-            {formatKennelDate(dateLabel)}
-            {litter.go_home_date
-              ? ` (${formatPuppyAge(litter.actual_date)} · home ${formatKennelDate(litter.go_home_date)})`
-              : ''}
-          </Typography>
-          <Typography variant="bodyMuted">
-            {letter} · Dam: {litter.mother?.name ?? '—'} · Sire: {litter.father?.name ?? '—'}
-          </Typography>
-        </View>
-        <View className="items-end gap-2">
-          {active ? <Badge label="ACTIVE" tone="gold" /> : null}
-          {!active && litter.status === 'expected' ? <Badge label="EXPECTED" tone="muted" /> : null}
-          <Pressable onPress={() => router.push(`/(admin)/litters/${litter.id}` as never)}>
-            <Typography variant="label" className="text-gold">
-              Go To Litter →
-            </Typography>
-          </Pressable>
-        </View>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-        {(litter.puppies ?? []).map((p) => (
-          <PuppyCard
-            key={p.id}
-            {...p}
-            highlighted={!!highlightQuery && puppyMatches(p, highlightQuery)}
-          />
-        ))}
-      </ScrollView>
-    </View>
   );
 }

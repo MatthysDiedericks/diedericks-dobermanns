@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import {
+  buildDerivedCountsByLitter,
+  type DerivedLitterCount,
+  type PuppyCountSlice,
+} from '@/lib/litters/derivedCounts';
 import { requireSupabase, supabase } from '@/lib/supabase';
 
 export interface LitterIndexRow {
@@ -13,30 +18,22 @@ export interface LitterIndexRow {
   male_count: number | null;
   female_count: number | null;
   deceased_count: number | null;
+  puppy_count: number | null;
+  available_count: number | null;
   mother_id: string | null;
   mother: { id: string; name: string } | null;
   father: { id: string; name: string } | null;
-  puppies: {
-    id: string;
-    name: string;
-    sex: string | null;
-    colour: string | null;
-    collar_colour: string | null;
-    date_of_birth: string | null;
-    status: string | null;
-    microchip_number: string | null;
-  }[];
 }
 
 const LITTER_INDEX_SELECT = `
   id, name, litter_letter, status, actual_date, expected_date, go_home_date, mother_id,
-  male_count, female_count, deceased_count,
+  male_count, female_count, deceased_count, puppy_count, available_count,
   mother:dogs!litters_mother_id_fkey(id, name),
-  father:dogs!litters_father_id_fkey(id, name),
-  puppies:dogs!dogs_litter_id_fkey(
-    id, name, sex, colour, collar_colour, date_of_birth, status, microchip_number
-  )
+  father:dogs!litters_father_id_fkey(id, name)
 `;
+
+const PUPPY_SLICE_SELECT =
+  'litter_id, status, owner_id, reserved_for_name, new_owner_name';
 
 const ACTIVE_STATUSES = new Set(['whelped', 'born', 'nursing', 'active']);
 
@@ -46,6 +43,9 @@ export function isActiveLitter(status: string): boolean {
 
 export function useLittersIndex() {
   const [litters, setLitters] = useState<LitterIndexRow[]>([]);
+  const [countsByLitterId, setCountsByLitterId] = useState<
+    Record<string, DerivedLitterCount>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,18 +54,28 @@ export function useLittersIndex() {
     setError(null);
     if (!supabase) {
       setLitters([]);
+      setCountsByLitterId({});
       setLoading(false);
       return;
     }
     try {
-      const { data, error: err } = await requireSupabase()
-        .from('litters')
-        .select(LITTER_INDEX_SELECT);
+      const client = requireSupabase();
+      const [{ data, error: err }, { data: slices, error: sliceErr }] =
+        await Promise.all([
+          client.from('litters').select(LITTER_INDEX_SELECT),
+          client.from('dogs').select(PUPPY_SLICE_SELECT).not('litter_id', 'is', null),
+        ]);
       if (err) throw new Error(err.message);
-      setLitters((data ?? []) as unknown as LitterIndexRow[]);
+      if (sliceErr) throw new Error(sliceErr.message);
+      const rows = (data ?? []) as unknown as LitterIndexRow[];
+      setLitters(rows);
+      setCountsByLitterId(
+        buildDerivedCountsByLitter((slices ?? []) as PuppyCountSlice[], rows),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load litters');
       setLitters([]);
+      setCountsByLitterId({});
     } finally {
       setLoading(false);
     }
@@ -78,7 +88,7 @@ export function useLittersIndex() {
   const active = litters.filter((l) => isActiveLitter(l.status));
   const completed = litters.filter((l) => !isActiveLitter(l.status));
 
-  return { litters, active, completed, loading, error, refresh };
+  return { litters, countsByLitterId, active, completed, loading, error, refresh };
 }
 
 export interface FemaleLitterHistoryRow {
