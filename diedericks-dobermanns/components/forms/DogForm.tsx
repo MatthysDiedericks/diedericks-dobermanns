@@ -6,7 +6,9 @@ import { replaceDogMedia, saveDog, useSubmitting } from '@/hooks/useMutations';
 import type { Dog, DogCategory } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
 import { DogFormExtendedFields } from '@/components/forms/DogFormExtendedFields';
-import { MediaUploader, type UploaderValue } from '@/components/forms/MediaUploader';
+import { DogFormMedia } from '@/components/forms/DogFormMedia';
+import { DogLitterParentage } from '@/components/forms/DogLitterParentage';
+import type { UploaderValue } from '@/components/forms/MediaUploader';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,24 +32,11 @@ const dogSchema = z.object({
   wrights_coi: z.string(),
   category: z.enum(['puppy', 'adult', 'breeding_stock', 'training_dog']),
   status: z.enum([
-    'available',
-    'reserved',
-    'sold',
-    'donated',
-    'gifted',
-    'keep',
-    'stud',
-    'in_training',
-    'breeding_stock',
-    'deceased',
-    'retired',
-    'puppy',
+    'available', 'reserved', 'sold', 'donated', 'gifted', 'keep', 'stud',
+    'in_training', 'breeding_stock', 'deceased', 'retired', 'puppy',
   ]),
   sex: z.union([z.literal(''), z.enum(['male', 'female'])]),
-  colour: z.union([
-    z.literal(''),
-    z.enum(['black_tan', 'brown_tan']),
-  ]),
+  colour: z.union([z.literal(''), z.enum(['black_tan', 'brown_tan'])]),
   tail_type: z.union([z.literal(''), z.enum(['docked', 'natural'])]),
   bloodline: z.union([
     z.literal(''),
@@ -64,6 +53,10 @@ const dogSchema = z.object({
   health_tested: z.boolean(),
   is_featured: z.boolean(),
   is_public: z.boolean(),
+  litter_id: z.string(),
+  father_id: z.string(),
+  mother_id: z.string(),
+  override_parentage: z.boolean(),
 });
 
 type DogFormValues = z.infer<typeof dogSchema>;
@@ -103,6 +96,10 @@ function toDefaults(dog?: Dog, defaultCategory?: DogCategory): DogFormValues {
     health_tested: dog?.health_tested ?? false,
     is_featured: dog?.is_featured ?? false,
     is_public: dog?.is_public ?? true,
+    litter_id: dog?.litter_id ?? '',
+    father_id: dog?.father_id ?? '',
+    mother_id: dog?.mother_id ?? '',
+    override_parentage: false,
   };
 }
 
@@ -112,7 +109,6 @@ interface DogFormProps {
   onSaved: () => void;
 }
 
-/** Builds the initial uploader values from a dog's existing media (cover first). */
 function initialMedia(dog: Dog | undefined, type: 'photo' | 'video'): UploaderValue[] {
   const media = (dog?.media ?? [])
     .filter((m) => m.type === type)
@@ -121,7 +117,7 @@ function initialMedia(dog: Dog | undefined, type: 'photo' | 'video'): UploaderVa
 }
 
 export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
-  const { control, handleSubmit } = useForm<DogFormValues>({
+  const { control, handleSubmit, setValue } = useForm<DogFormValues>({
     resolver: zodResolver(dogSchema),
     defaultValues: toDefaults(dog, defaultCategory),
   });
@@ -135,6 +131,7 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
     const priceNum = values.price.trim() ? Number(values.price) : null;
     const heightNum = values.height_cm.trim() ? Number(values.height_cm) : null;
     const coiNum = values.wrights_coi.trim() ? Number(values.wrights_coi) : null;
+    const inheritFromLitter = Boolean(values.litter_id) && !values.override_parentage;
     const payload: TablesInsert<'dogs'> = {
       name: values.name.trim(),
       call_name: blank(values.call_name),
@@ -167,12 +164,14 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
       health_tested: values.health_tested,
       is_featured: values.is_featured,
       is_public: values.is_public,
+      litter_id: values.litter_id || null,
+      father_id: inheritFromLitter ? null : values.father_id || null,
+      mother_id: inheritFromLitter ? null : values.mother_id || null,
     };
 
     const result = await run(() => saveDog(payload, dog?.id));
     if (result.error) return;
     if (result.id) {
-      // Photos first so the cover (first photo) becomes the primary thumbnail.
       await replaceDogMedia(result.id, [...photos, ...videos]);
     }
     onSaved();
@@ -182,34 +181,14 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
     <View>
       <ControlledInput control={control} name="name" label="Name" autoCapitalize="words" />
       <DogFormExtendedFields control={control} />
-
-      <Typography variant="label" className="mb-2 mt-2">
-        Photos (up to 20 · first is the cover)
-      </Typography>
-      <View className="mb-4">
-        <MediaUploader
-          value={photos}
-          onChange={setPhotos}
-          bucket="dog-media"
-          folder={dog?.id ?? 'new'}
-          kinds={['image']}
-          max={20}
-        />
-      </View>
-
-      <Typography variant="label" className="mb-2 mt-2">
-        Videos (up to 10)
-      </Typography>
-      <View className="mb-4">
-        <MediaUploader
-          value={videos}
-          onChange={setVideos}
-          bucket="dog-media"
-          folder={dog?.id ?? 'new'}
-          kinds={['video']}
-          max={10}
-        />
-      </View>
+      <DogFormMedia
+        folder={dog?.id ?? 'new'}
+        photos={photos}
+        videos={videos}
+        onPhotos={setPhotos}
+        onVideos={setVideos}
+      />
+      <DogLitterParentage control={control} setValue={setValue} dog={dog} />
 
       <OptionGroup
         control={control}
@@ -269,9 +248,7 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
       <ControlledInput control={control} name="date_of_birth" label="Date of birth (YYYY-MM-DD)" placeholder="2025-01-01" autoCapitalize="none" />
       <ControlledInput control={control} name="price" label="Price (ZAR)" keyboardType="phone-pad" />
 
-      <Typography variant="label" className="mb-2 mt-2">
-        Health
-      </Typography>
+      <Typography variant="label" className="mb-2 mt-2">Health</Typography>
       <ToggleRow control={control} name="health_tested" label="Health tested" />
       <ControlledInput control={control} name="hip_score" label="Hip score (HD)" autoCapitalize="none" />
       <ControlledInput control={control} name="elbow_score" label="Elbow score (ED)" autoCapitalize="none" />

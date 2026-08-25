@@ -5,6 +5,7 @@ import { Alert, Pressable } from 'react-native';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { AdminDashboardContent } from '@/components/dashboard/AdminDashboardContent';
+import { ParentageHealthStrip } from '@/components/dashboard/ParentageHealthStrip';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -40,6 +41,7 @@ export default function AdminDashboard() {
           </Pressable>
         }
       />
+      <ParentageHealthStrip />
       <AdminDashboardContent />
     </ScreenContainer>
   );
