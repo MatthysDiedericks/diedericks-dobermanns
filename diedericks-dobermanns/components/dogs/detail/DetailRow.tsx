@@ -8,9 +8,9 @@ interface DetailRowProps {
   mono?: boolean;
 }
 
+/** Omit empty values — never render a dash. */
 export function DetailRow({ label, value, mono }: DetailRowProps) {
-  const display =
-    value === null || value === undefined || value === '' ? '—' : String(value);
+  if (value === null || value === undefined || value === '') return null;
   return (
     <View className="flex-row justify-between border-b border-gold/10 py-2">
       <Typography variant="caption" className="text-muted">
@@ -20,7 +20,7 @@ export function DetailRow({ label, value, mono }: DetailRowProps) {
         variant="body"
         className={`max-w-[58%] text-right ${mono ? 'font-mono text-sm' : ''}`}
       >
-        {display}
+        {String(value)}
       </Typography>
     </View>
   );

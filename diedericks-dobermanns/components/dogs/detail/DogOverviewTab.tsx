@@ -1,19 +1,30 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { DetailRow } from '@/components/dogs/detail/DetailRow';
 import { DogMeasurementsPanel } from '@/components/dogs/detail/DogMeasurementsPanel';
-import { DogStandardPanel } from '@/components/dogs/detail/DogStandardPanel';
-import { DogStatusPanel } from '@/components/dogs/detail/DogStatusPanel';
-import { DogWeightPanel } from '@/components/dogs/detail/DogWeightPanel';
+import { DogHealthWeightSection } from '@/components/dogs/detail/DogHealthWeightSection';
 import { HeatStatusCard } from '@/components/dogs/detail/HeatStatusCard';
 import { SectionCard } from '@/components/dogs/detail/SectionCard';
+import { DogProfileHeaderBlock } from '@/components/dogs/profile/DogProfileHeaderBlock';
+import { DogStatCardsBlock } from '@/components/dogs/profile/DogStatCardsBlock';
+import { HealthCalendarSection } from '@/components/dogs/profile/HealthCalendarSection';
 import { DogOwnerSection } from '@/components/followUps/DogOwnerSection';
+import { AdminWorkStrip } from '@/components/dogs/profile/AdminWorkStrip';
+import { ShareDogSection } from '@/components/dogs/profile/ShareDogSection';
 import { Button } from '@/components/ui/Button';
-import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
-import { formatDogAge } from '@/lib/kennel/formatters';
+import { Typography } from '@/components/ui/Typography';
+import { useDogHealthCalendar } from '@/hooks/useDogHealthCalendar';
+import { useWeightLogs } from '@/hooks/useDogDetail';
+import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
+import { contractStatusLabel } from '@/lib/dogs/contractStatus';
+import { formatCoiPercent } from '@/lib/dogs/formatCoi';
 import { titleCase } from '@/lib/format';
+import { formatWeight } from '@/lib/kennel/formatters';
+import { getAgeDays } from '@/lib/litters/weighingSchedule';
+import { requireSupabase } from '@/lib/supabase';
 import type { Dog } from '@/types/app.types';
 
 export function DogOverviewTab({
@@ -26,8 +37,95 @@ export function DogOverviewTab({
   canEdit: boolean;
 }) {
   const router = useRouter();
-  const photo =
-    dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url ?? null;
+  const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url ?? null;
+  const health = useDogHealthCalendar(dog.id);
+  const weights = useWeightLogs(dog.id);
+  const latestKg = weights.logs[0] ? Number(weights.logs[0].weight_kg) : null;
+  const [goHomeDate, setGoHomeDate] = useState<string | null>(
+    (dog as { handover_date?: string | null }).handover_date ?? null,
+  );
+  const [puppyCount, setPuppyCount] = useState(0);
+  const [contract, setContract] = useState<{
+    signed: boolean;
+    exists: boolean;
+    status: string | null;
+  }>({ signed: false, exists: false, status: null });
+  const [outstanding, setOutstanding] = useState(0);
+  const bench = useGrowthBenchmark(puppyCount);
+
+  useEffect(() => {
+    if (!dog.litter_id) return;
+    void requireSupabase()
+      .from('litters')
+      .select('go_home_date, puppy_count')
+      .eq('id', dog.litter_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!goHomeDate && data?.go_home_date) setGoHomeDate(data.go_home_date);
+        if (data?.puppy_count) setPuppyCount(data.puppy_count);
+      });
+  }, [dog.litter_id, goHomeDate]);
+
+  useEffect(() => {
+    void requireSupabase()
+      .from('contracts')
+      .select('signed_by_client, parent_contract_id, status')
+      .eq('dog_id', dog.id)
+      .then(({ data }) => {
+        const rows = (data ?? []).filter((c) => !c.parent_contract_id);
+        setContract({
+          exists: rows.length > 0,
+          signed: rows.some((c) => c.signed_by_client),
+          status: rows[0]?.status ?? null,
+        });
+      });
+    void requireSupabase()
+      .from('invoices')
+      .select('amount_outstanding, status')
+      .eq('dog_id', dog.id)
+      .gt('amount_outstanding', 0)
+      .then(({ data }) => {
+        const sum = (data ?? [])
+          .filter((i) => !['void', 'cancelled', 'draft'].includes(i.status))
+          .reduce((s, i) => s + Number(i.amount_outstanding ?? 0), 0);
+        setOutstanding(sum);
+      });
+  }, [dog.id]);
+
+  const ageDays = dog.date_of_birth ? getAgeDays(dog.date_of_birth) : 0;
+  const benchmarkLabel = useMemo(() => {
+    if (latestKg == null || bench.benchmarkCurve.length === 0) return null;
+    let best = bench.benchmarkCurve[0]!;
+    let bestDist = Math.abs(best.ageDays - ageDays);
+    for (const p of bench.benchmarkCurve) {
+      const dist = Math.abs(p.ageDays - ageDays);
+      if (dist < bestDist) {
+        best = p;
+        bestDist = dist;
+      }
+    }
+    return `Litter average at ${ageDays} days: ${formatWeight(best.avgGrams / 1000)}`;
+  }, [latestKg, bench.benchmarkCurve, ageDays]);
+
+  const hasIds = Boolean(
+    dog.registered_name || dog.call_name || dog.microchip_number || dog.registration_number,
+  );
+  const hasPhysical = Boolean(
+    dog.coat_type || dog.height_cm || dog.ear_type || dog.eye_colour,
+  );
+  const hasGenetics = Boolean(
+    formatCoiPercent(dog.wrights_coi) ||
+      dog.genetics_b_locus ||
+      dog.genetics_d_locus ||
+      dog.genetics_vwd_status ||
+      dog.genetics_dcm1_status ||
+      dog.genetics_dcm2_status ||
+      dog.genetics_notes,
+  );
+  const hasNotes = Boolean(dog.temperament_notes || dog.training_notes);
+  const contractLabel = contractStatusLabel(
+    contract.exists ? { status: contract.status, signedByClient: contract.signed } : null,
+  );
 
   return (
     <View className="pb-8">
@@ -39,92 +137,100 @@ export function DogOverviewTab({
         />
       ) : null}
 
-      <DogStatusPanel dog={dog} onStatusChanged={onRefresh} />
+      <DogProfileHeaderBlock dog={dog} goHomeDate={goHomeDate} />
+      <DogStatCardsBlock
+        latestKg={latestKg}
+        benchmarkLabel={benchmarkLabel}
+        vaccinationsCount={health.vaccinationsCount}
+        calendar={health.calendar}
+        microchip={dog.microchip_number}
+      />
+      <HealthCalendarSection
+        calendar={health.calendar}
+        vaccinationsCount={health.vaccinationsCount}
+        dewormingCount={health.dewormingCount}
+      />
+      <DogHealthWeightSection dogId={dog.id} dog={dog} />
 
-      <DogStandardPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
-      <HeatStatusCard dog={dog} onRefresh={onRefresh} />
-      <DogMeasurementsPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
-      <DogWeightPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
-
-      <SectionCard title="General">
-        <DetailRow label="Name" value={dog.name} />
-        <DetailRow label="Registered name" value={dog.registered_name} />
-        <DetailRow label="Call name" value={dog.call_name} />
-        <DetailRow label="Breed" value={dog.breed} />
-        <DetailRow label="Sex" value={dog.sex ? titleCase(dog.sex) : null} />
-        <DetailRow label="Date of birth" value={dog.date_of_birth} />
-        <DetailRow label="Age" value={formatDogAge(dog.date_of_birth)} />
-        <DetailRow label="Location" value={dog.location} />
+      <SectionCard title="Paperwork">
+        <DetailRow label="Contract" value={contractLabel} />
       </SectionCard>
 
-      <SectionCard title="Identifiers">
-        <DetailRow label="Microchip" value={dog.microchip_number} mono />
-        <DetailRow label="Tattoo" value={dog.tattoo_number} mono />
-        <DetailRow label="Passport" value={dog.passport_number} mono />
-        <DetailRow label="DNA" value={dog.dna_number} mono />
-        <DetailRow label="Insurance" value={dog.insurance_number} mono />
-        <DetailRow label="Registration" value={dog.registration_number} mono />
-        <DetailRow label="Reg. type" value={dog.registration_type} />
-      </SectionCard>
+      {canEdit ? <HeatStatusCard dog={dog} onRefresh={onRefresh} /> : null}
+      {canEdit ? (
+        <DogMeasurementsPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
+      ) : null}
 
-      <SectionCard title="Physical">
-        <DetailRow label="Colour" value={dog.colour ? titleCase(dog.colour) : null} />
-        <DetailRow label="Coat" value={dog.coat_type} />
-        <DetailRow label="Height (cm)" value={dog.height_cm} />
-        <DetailRow label="Ear type" value={dog.ear_type ? titleCase(dog.ear_type) : null} />
-        <DetailRow label="Eye colour" value={dog.eye_colour} />
-      </SectionCard>
+      {hasIds ? (
+        <SectionCard title="Identifiers">
+          <DetailRow label="Registered name" value={dog.registered_name} />
+          <DetailRow label="Call name" value={dog.call_name} />
+          <DetailRow label="Microchip" value={dog.microchip_number} mono />
+          <DetailRow label="Registration" value={dog.registration_number} mono />
+        </SectionCard>
+      ) : null}
 
-      <SectionCard title="Status">
-        <View className="mb-2">
-          <DogStatusBadge status={dog.status} />
-        </View>
-        <DetailRow label="Category" value={dog.category ? titleCase(dog.category) : null} />
-        <DetailRow label="Spayed / neutered" value={dog.is_spayed_neutered ? 'Yes' : 'No'} />
-        <DetailRow label="Public" value={dog.is_public ? 'Yes' : 'No'} />
-        <DetailRow label="Featured" value={dog.is_featured ? 'Yes' : 'No'} />
-      </SectionCard>
+      {hasPhysical ? (
+        <SectionCard title="Physical">
+          <DetailRow label="Coat" value={dog.coat_type} />
+          <DetailRow label="Height (cm)" value={dog.height_cm} />
+          <DetailRow label="Ear type" value={dog.ear_type ? titleCase(dog.ear_type) : null} />
+          <DetailRow label="Eye colour" value={dog.eye_colour} />
+        </SectionCard>
+      ) : null}
 
-      <DogOwnerSection dog={dog} contact={dog.owner_contact} />
+      {dog.is_spayed_neutered ? (
+        <SectionCard title="Status">
+          <DetailRow label="Spayed / neutered" value="Yes" />
+        </SectionCard>
+      ) : null}
 
-      <SectionCard title="Genetics">
-        <DetailRow label="Wright's COI" value={dog.wrights_coi != null ? `${dog.wrights_coi}%` : null} />
-        <DetailRow label="B locus" value={dog.genetics_b_locus} />
-        <DetailRow label="D locus" value={dog.genetics_d_locus} />
-        <DetailRow label="vWD" value={dog.genetics_vwd_status} />
-        <DetailRow label="DCM1" value={dog.genetics_dcm1_status} />
-        <DetailRow label="DCM2" value={dog.genetics_dcm2_status} />
-        <DetailRow label="Notes" value={dog.genetics_notes} />
-      </SectionCard>
+      {canEdit ? <DogOwnerSection dog={dog} contact={dog.owner_contact} onUpdated={onRefresh} /> : null}
 
-      <SectionCard title="Notes">
-        <DetailRow label="Temperament" value={dog.temperament_notes} />
-        <DetailRow label="Training" value={dog.training_notes} />
-      </SectionCard>
+      {canEdit ? <ShareDogSection dog={dog} onDone={onRefresh} /> : null}
+      {canEdit ? (
+        <AdminWorkStrip
+          dog={dog}
+          hasSignedContract={contract.signed}
+          hasAnyContract={contract.exists}
+          outstandingBalance={outstanding}
+          vaccinationsIncomplete={health.calendar.upcoming.some(
+            (u) => u.kind === 'vaccination' && u.daysUntil < 0,
+          )}
+        />
+      ) : null}
 
+      {hasGenetics && canEdit ? (
+        <SectionCard title="Genetics">
+          <DetailRow label="Wright's COI" value={formatCoiPercent(dog.wrights_coi)} />
+          <DetailRow label="B locus" value={dog.genetics_b_locus} />
+          <DetailRow label="D locus" value={dog.genetics_d_locus} />
+          <DetailRow label="vWD" value={dog.genetics_vwd_status} />
+          <DetailRow label="DCM1" value={dog.genetics_dcm1_status} />
+          <DetailRow label="DCM2" value={dog.genetics_dcm2_status} />
+          <DetailRow label="Notes" value={dog.genetics_notes} />
+        </SectionCard>
+      ) : null}
+
+      {hasNotes ? (
+        <SectionCard title="Notes">
+          <DetailRow label="Temperament" value={dog.temperament_notes} />
+          <DetailRow label="Training" value={dog.training_notes} />
+        </SectionCard>
+      ) : null}
+
+      <Typography variant="caption" className="mb-3 text-subtle">
+        Print pedigree is website-only.
+      </Typography>
+
+      {canEdit ? (
         <Button
           label="Edit Profile"
           onPress={() => router.push(`/(admin)/dogs/${dog.id}/edit` as never)}
           fullWidth
           className="mb-3"
         />
-        <Button
-          label="History"
-          variant="outline"
-          onPress={() =>
-            router.push(`/(admin)/audit?table=dogs&record=${dog.id}` as never)
-          }
-          fullWidth
-          className="mb-3"
-        />
-        {dog.sex === 'female' ? (
-          <Button
-            label="Litter History"
-            variant="outline"
-            onPress={() => router.push(`/(admin)/dogs/${dog.id}/litter-history` as never)}
-            fullWidth
-          />
-        ) : null}
+      ) : null}
     </View>
   );
 }

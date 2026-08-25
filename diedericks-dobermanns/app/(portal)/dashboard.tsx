@@ -100,35 +100,37 @@ export default function PortalDashboard() {
             </EmptyState>
           )
         ) : null}
-        {primaryDog ? (
-          <>
-            <Link href={`/(portal)/puppy-tracker/${primaryDog.id}`} asChild>
+        {dogs.map((dog) => (
+            <Link key={dog.id} href={`/(portal)/dogs/${dog.id}` as never} asChild>
               <Pressable>
-                <Card className="flex-row">
+                <Card className="mb-3 flex-row">
                   <View className="h-20 w-20 overflow-hidden rounded-xl bg-surface">
-                    {primaryDog.media?.[0] ? (
+                    {dog.media?.[0] ? (
                       <Image
-                        source={{ uri: primaryDog.media[0].url }}
+                        source={{ uri: dog.media[0].url }}
                         style={{ width: '100%', height: '100%' }}
                         contentFit="cover"
                       />
                     ) : null}
                   </View>
                   <View className="ml-4 flex-1">
-                    <Typography variant="title">{primaryDog.name}</Typography>
+                    <Typography variant="title">{dog.name}</Typography>
                     <View className="mt-1">
-                      <Badge label={primaryDog.status ?? 'active'} tone="gold" />
+                      <Badge label={dog.status ?? 'active'} tone="gold" />
                     </View>
                     <Typography variant="caption" className="mt-2">
-                      {[primaryDog.colour, primaryDog.sex, ageFromDob(primaryDog.date_of_birth)]
+                      {[dog.colour, dog.sex, ageFromDob(dog.date_of_birth)]
                         .filter(Boolean)
-                        .join(' ¬∑ ')}
+                        .join(' ù ')}
                     </Typography>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
                 </Card>
               </Pressable>
             </Link>
+          ))}
+          {primaryDog ? (
+          <>
             <Link href={'/(portal)/training/request' as never} asChild>
               <Pressable>
                 <Card className="mt-3 flex-row items-center">
@@ -182,7 +184,7 @@ export default function PortalDashboard() {
         <Link href={'/(portal)/expected-litters' as never} asChild>
           <Pressable className="mt-2">
             <Typography variant="caption" className="text-gold">
-              View all expected litters ‚Üí
+              View all expected litters ?
             </Typography>
           </Pressable>
         </Link>
@@ -197,7 +199,7 @@ export default function PortalDashboard() {
               <View className="ml-3 flex-1">
                 <Typography variant="subtitle">Request training</Typography>
                 <Typography variant="caption" className="mt-0.5">
-                  Tell us what you need ‚Äî not a booking
+                  Tell us what you need ó not a booking
                 </Typography>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Colors.silver} />

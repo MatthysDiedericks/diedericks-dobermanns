@@ -1,9 +1,12 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { useCheckInMutations } from '@/hooks/useOwnerFollowUps';
+import { realDogName } from '@/lib/dogs/placeholderName';
+import { isUnnamedBirthdayCheckIn } from '@/lib/followUps/birthdayDraft';
 import {
   KIND_LABELS,
   OWNERSHIP_LABELS,
@@ -20,6 +23,7 @@ export function FollowUpCard({
   onLog: () => void;
   onRefresh: () => void;
 }) {
+  const router = useRouter();
   const { markSent, skip, updateDraft } = useCheckInMutations();
   const [draft, setDraft] = useState(item.draft_message ?? '');
   const [busy, setBusy] = useState(false);
@@ -27,13 +31,20 @@ export function FollowUpCard({
   const [skipReason, setSkipReason] = useState('');
   const [doNotContact, setDoNotContact] = useState(false);
 
-  const dogName = item.dog?.call_name || item.dog?.name || 'Dog';
+  const unnamedBirthday = isUnnamedBirthdayCheckIn(
+    item.kind,
+    item.dog?.call_name,
+    item.dog?.name,
+  );
+  const dogName =
+    realDogName(item.dog?.call_name, item.dog?.name) ??
+    (unnamedBirthday ? 'Unnamed (no name recorded)' : item.dog?.name || 'Dog');
   const phone = item.contact?.whatsapp_number || item.contact?.phone || null;
   const status = item.dog?.ownership_status ?? 'unknown';
   const warn = status !== 'with_owner';
 
   async function onWhatsApp() {
-    if (!phone) return;
+    if (!phone || unnamedBirthday) return;
     setBusy(true);
     try {
       await updateDraft(item.id, draft);
@@ -59,15 +70,28 @@ export function FollowUpCard({
 
   return (
     <View className="mb-4 rounded-sm border border-gold/20 bg-surface p-4">
-      <Typography variant="subtitle" className="text-text">
-        {dogName}{' '}
-        <Typography variant="caption" className="text-gold">
-          {KIND_LABELS[item.kind]}
+      <Pressable onPress={() => router.push(`/(admin)/dogs/${item.dog_id}` as never)}>
+        <Typography variant="subtitle" className="text-gold">
+          {dogName}{' '}
+          <Typography variant="caption" className="text-gold">
+            {KIND_LABELS[item.kind]}
+          </Typography>
         </Typography>
-      </Typography>
+      </Pressable>
       <Typography variant="caption" className="text-muted">
         Due {item.due_date}
       </Typography>
+      {item.kind === 'birthday' ? (
+        <Typography variant="caption" className="mt-2 text-gold">
+          Task for you — you send any message to the owner. Nothing is sent automatically.
+        </Typography>
+      ) : null}
+      {unnamedBirthday ? (
+        <Typography variant="caption" className="mt-2 text-amber-300">
+          No name recorded. Do not WhatsApp a “Puppy N” birthday. Ask what they call this dog
+          first.
+        </Typography>
+      ) : null}
       {warn ? (
         <Typography variant="caption" className="mt-2 text-amber-300">
           Ownership: {OWNERSHIP_LABELS[status]} — confirm before messaging.
@@ -92,7 +116,7 @@ export function FollowUpCard({
         <Button
           label="WhatsApp"
           size="sm"
-          disabled={busy || !phone}
+          disabled={busy || !phone || unnamedBirthday}
           onPress={() => void onWhatsApp()}
         />
         <Button label="Log response" size="sm" variant="outline" onPress={onLog} />

@@ -5,7 +5,7 @@ import { LineageParentCard } from '@/components/portal/LineageParentCard';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import type { AssignedLitter, LineageParent } from '@/hooks/useCommittedBreeding';
-import { useInheritedPedigree } from '@/hooks/useInheritedPedigree';
+import { useInheritedPedigreeFromParents } from '@/hooks/useInheritedPedigree';
 import { formatGoHomeLabel } from '@/lib/fulfilment/goHome';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 
@@ -27,7 +27,7 @@ export function CommittedLitterPanel({
   parents: LineageParent[];
   showPreAllocationNote?: boolean;
 }) {
-  const pedigree = useInheritedPedigree(parents);
+  const pedigree = useInheritedPedigreeFromParents(parents);
   const dueSource = litter?.actualDate ?? litter?.expectedDate;
   const due = dueSource ? `Due ${formatKennelDate(dueSource)}` : null;
   const goHome = litter

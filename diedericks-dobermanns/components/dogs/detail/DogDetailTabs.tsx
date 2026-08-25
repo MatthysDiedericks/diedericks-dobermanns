@@ -1,51 +1,40 @@
 import { ScrollView, Pressable, View } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { DogPedigreeTab } from '@/components/dogs/detail/DogPedigreeTab';
 import { DogBreedingTab } from '@/components/dogs/detail/DogBreedingTab';
-import { DogExpensesTab } from '@/components/dogs/DogExpensesTab';
 import { DogHealthTab } from '@/components/dogs/detail/DogHealthTab';
 import { DogLinksTab } from '@/components/dogs/detail/DogLinksTab';
 import { DogTemperamentTab } from '@/components/dogs/detail/DogTemperamentTab';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { DogOverviewTab } from '@/components/dogs/detail/DogOverviewTab';
-import { DogShowsTab } from '@/components/dogs/detail/DogShowsTab';
 import { Typography } from '@/components/ui/Typography';
 import { useAuthStore } from '@/stores/authStore';
-import { hasPedigreeAncestors, useDogPedigree } from '@/hooks/useDogPedigree';
 import type { Dog } from '@/types/app.types';
 
 const BASE_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'health', label: 'Health' },
+  { id: 'pedigree', label: 'Pedigree' },
   { id: 'breeding', label: 'Breeding' },
   { id: 'temperament', label: 'Temperament' },
-  { id: 'shows', label: 'Shows' },
   { id: 'documents', label: 'Documents' },
-  { id: 'expenses', label: 'Expenses' },
   { id: 'gallery', label: 'Gallery' },
 ] as const;
 
-const PEDIGREE_TAB = { id: 'pedigree', label: 'Pedigree' } as const;
-
-type TabId = (typeof BASE_TABS)[number]['id'] | typeof PEDIGREE_TAB.id;
+type TabId = (typeof BASE_TABS)[number]['id'];
 
 interface DogDetailTabsProps {
   dogId: string;
   dog: Dog;
   onRefresh: () => void;
+  clientView?: boolean;
 }
 
-export function DogDetailTabs({ dogId, dog, onRefresh }: DogDetailTabsProps) {
+export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTabsProps) {
   const [active, setActive] = useState<TabId>('overview');
   const isAdmin = useAuthStore((s) => s.hasRole('admin'));
-  const { ancestors, loading: pedigreeLoading } = useDogPedigree(dogId);
-  const showPedigreeTab = pedigreeLoading || hasPedigreeAncestors(ancestors);
-  const tabs = showPedigreeTab ? [...BASE_TABS, PEDIGREE_TAB] : [...BASE_TABS];
-
-  useEffect(() => {
-    if (!showPedigreeTab && active === 'pedigree') setActive('overview');
-  }, [showPedigreeTab, active]);
+  const tabs = clientView ? BASE_TABS.filter((t) => t.id !== 'breeding') : BASE_TABS;
 
   return (
     <View className="flex-1">
@@ -72,20 +61,28 @@ export function DogDetailTabs({ dogId, dog, onRefresh }: DogDetailTabsProps) {
 
       <ScrollView className="px-4 pb-12" keyboardShouldPersistTaps="handled">
         {active === 'overview' ? (
-          <DogOverviewTab dog={dog} onRefresh={onRefresh} canEdit={isAdmin} />
+          <DogOverviewTab dog={dog} onRefresh={onRefresh} canEdit={isAdmin && !clientView} />
         ) : null}
         {active === 'health' ? <DogHealthTab dogId={dogId} dog={dog} /> : null}
-        {active === 'breeding' ? <DogBreedingTab dog={dog} /> : null}
+        {active === 'breeding' && !clientView ? <DogBreedingTab dog={dog} /> : null}
         {active === 'temperament' ? <DogTemperamentTab dog={dog} canEdit={isAdmin} /> : null}
-        {active === 'shows' ? <DogShowsTab dogId={dogId} /> : null}
-        {active === 'documents' ? <DocumentList entityType="dog" entityId={dogId} /> : null}
-        {active === 'expenses' ? <DogExpensesTab dogId={dogId} dog={dog} /> : null}
+        {active === 'documents' ? (
+          <DocumentList
+            entityType="dog"
+            entityId={dogId}
+            readOnly={clientView}
+            showUpload={!clientView}
+            clientVisibleOnly={clientView}
+          />
+        ) : null}
         {active === 'gallery' ? <DogLinksTab dogId={dogId} variant="gallery" /> : null}
         {active === 'pedigree' ? (
           <DogPedigreeTab
             dogId={dogId}
             displayName={dog.name}
             profileRoutePrefix="/(admin)/dogs/"
+            disableAncestorLinks={clientView}
+            showCoi={!clientView}
           />
         ) : null}
       </ScrollView>

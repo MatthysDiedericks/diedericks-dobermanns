@@ -58,7 +58,7 @@ export default function AdminBreedingStockScreen() {
           breeders.map((dog) => (
             <Pressable
               key={dog.id}
-              onPress={() => router.push(`/(admin)/dogs/${dog.id}/edit`)}
+              onPress={() => router.push(`/(admin)/dogs/${dog.id}` as never)}
             >
               <Card className="flex-row items-center">
                 <View className="h-14 w-14 overflow-hidden rounded-xl bg-surface">

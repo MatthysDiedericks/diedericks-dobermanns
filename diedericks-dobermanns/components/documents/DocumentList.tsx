@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDocumentsForEntity, useUpdateDocument } from '@/hooks/useDocuments';
+import { isClientVisibleCategory } from '@/lib/dogs/clientVisibleDocs';
 import type { DocumentEntityType } from '@/lib/documents/constants';
 import type { DocumentRecord } from '@/lib/documents/types';
 
@@ -74,6 +75,7 @@ interface DocumentListProps {
   readOnly?: boolean;
   showUpload?: boolean;
   compact?: boolean;
+  clientVisibleOnly?: boolean;
 }
 
 export function DocumentList({
@@ -82,6 +84,7 @@ export function DocumentList({
   readOnly = false,
   showUpload = true,
   compact = false,
+  clientVisibleOnly = false,
 }: DocumentListProps) {
   const { documents, loading, error, refresh } = useDocumentsForEntity(entityType, entityId);
   const { update } = useUpdateDocument();
@@ -91,10 +94,12 @@ export function DocumentList({
   const [sort, setSort] = useState<SortMode>('newest');
   const [viewerDoc, setViewerDoc] = useState<DocumentRecord | null>(null);
 
-  const filtered = useMemo(
-    () => sortDocuments(documents.filter((d) => matchesFilter(d, fileFilter)), sort),
-    [documents, fileFilter, sort],
-  );
+  const filtered = useMemo(() => {
+    const scoped = clientVisibleOnly
+      ? documents.filter((d) => d.client_visible && isClientVisibleCategory(d.category))
+      : documents;
+    return sortDocuments(scoped.filter((d) => matchesFilter(d, fileFilter)), sort);
+  }, [documents, fileFilter, sort, clientVisibleOnly]);
 
   function handleShare(doc: DocumentRecord) {
     Alert.alert('Share with client', 'Make this document visible in the client portal?', [
