@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { fetchBudgetsForYear, sumBudgetAmount } from '@/lib/finance/budgetQueries';
+import { expenseGross } from '@/lib/finance/expenseGross';
 import { fetchExpensesInRange, fetchInvoicesInRange, yearMonthRange } from '@/lib/finance/queries';
 import type { BudgetSummary } from '@/types/finance';
 
@@ -19,7 +20,7 @@ export function useBudgetSummary(year: number) {
       ]);
       const totalExpenseBudget = sumBudgetAmount(budgets, 'expense');
       const totalIncomeTarget = sumBudgetAmount(budgets, 'income');
-      const totalExpensesActual = expenses.reduce((s, e) => s + Number(e.amount), 0);
+      const totalExpensesActual = expenses.reduce((s, e) => s + expenseGross(e), 0);
       const totalIncomeActual = invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
       const budgetUsedPct =
         totalExpenseBudget > 0 ? (totalExpensesActual / totalExpenseBudget) * 100 : 0;

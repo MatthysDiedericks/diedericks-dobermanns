@@ -8,6 +8,7 @@ import {
   fetchExpensesInRange,
   buildMonthlySummary,
 } from '@/lib/finance/queries';
+import { expenseGross } from '@/lib/finance/expenseGross';
 import type { FinanceKpis, FinanceLine, FinanceReportData, MonthlySummary } from '@/types/finance';
 import type { InvoiceListRow } from '@/types/finance';
 import type { ExpenseWithCategory } from '@/types/finance';
@@ -73,13 +74,12 @@ export function useFinanceReport(from: string, to: string) {
     invoices,
     expenses,
     incomeByType,
-    // VAT-inclusive, to match totalExpenses (lib/finance/queries.ts) and DogBreederPro's
-    // headline expense figures — expenses.amount is stored ex-VAT.
+    // Gross spend — amount_gross (amount + VAT).
     expenseByCategory: expenses.reduce<FinanceLine[]>((acc, e) => {
-      const vatInclusive = Number(e.amount) + Number(e.vat_amount ?? 0);
+      const gross = expenseGross(e);
       const existing = acc.find((l) => l.label === e.categoryName);
-      if (existing) existing.amount += vatInclusive;
-      else acc.push({ label: e.categoryName, amount: vatInclusive });
+      if (existing) existing.amount += gross;
+      else acc.push({ label: e.categoryName, amount: gross });
       return acc;
     }, []),
     monthlySummary,

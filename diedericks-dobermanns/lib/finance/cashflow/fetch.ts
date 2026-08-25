@@ -1,5 +1,6 @@
 import { requireSupabase } from '@/lib/supabase';
 
+import { expenseGross } from '../expenseGross';
 import type { InvoiceLines } from './build';
 import type {
   BudgetMonthRow,
@@ -41,7 +42,7 @@ export async function fetchCashflowInputs(): Promise<CashflowInputs> {
     supabase
       .from('expenses')
       .select(
-        'id, expense_date, amount, description, category_id, payment_account_id, litter_id, is_payable, payable_due_date, payable_paid_date, is_recurring, recurrence_interval, recurrence_end_date, category:expense_categories(name)',
+        'id, expense_date, amount, amount_gross, vat_amount, description, category_id, payment_account_id, litter_id, is_payable, payable_due_date, payable_paid_date, is_recurring, recurrence_interval, recurrence_end_date, category:expense_categories(name)',
       )
       .order('expense_date', { ascending: false })
       .limit(5000),
@@ -89,7 +90,11 @@ export async function fetchCashflowInputs(): Promise<CashflowInputs> {
     return {
       id: String(row.id),
       expense_date: String(row.expense_date),
-      amount: num(row.amount),
+      amount: expenseGross({
+        amount: num(row.amount),
+        vat_amount: num(row.vat_amount),
+        amount_gross: row.amount_gross == null ? null : num(row.amount_gross),
+      }),
       description: String(row.description ?? ''),
       category_id: (row.category_id as string | null) ?? null,
       category_name: cat?.name ?? 'Other',

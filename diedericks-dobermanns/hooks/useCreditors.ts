@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { requireSupabase } from '@/lib/supabase';
+import { expenseGross } from '@/lib/finance/expenseGross';
 import type { InvoiceListRow } from '@/types/finance';
 
 export interface DebtorGroup {
@@ -160,7 +161,11 @@ export function useCreditors() {
         return {
           id: r.id as string,
           description: r.description as string,
-          amount: r.amount as number,
+          amount: expenseGross({
+            amount: Number(r.amount),
+            vat_amount: r.vat_amount as number | null,
+            amount_gross: r.amount_gross as number | null,
+          }),
           expense_date: r.expense_date as string,
           payable_due_date: due,
           creditor_name: (r.creditor_name as string | null) ?? null,

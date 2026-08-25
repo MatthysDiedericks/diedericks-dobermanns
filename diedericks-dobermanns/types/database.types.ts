@@ -2747,6 +2747,7 @@ export type Database = {
         Row: {
           allocation_type: string
           amount: number
+          amount_gross: number
           category_id: string | null
           created_at: string
           creditor_name: string | null

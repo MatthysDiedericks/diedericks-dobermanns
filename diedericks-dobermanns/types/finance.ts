@@ -77,7 +77,10 @@ export interface Expense {
   id: string;
   category_id: string;
   description: string;
+  /** Net of VAT — the figure on the invoice before VAT. */
   amount: number;
+  /** Generated: amount + VAT. What left the bank. */
+  amount_gross?: number | null;
   currency?: string | null;
   expense_date: string;
   supplier_name: string | null;
@@ -102,6 +105,7 @@ export interface Expense {
   payable_paid_date: string | null;
   creditor_name: string | null;
   recorded_by: string | null;
+  source?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +123,7 @@ export type ExpenseWithCategory = Expense & {
   categoryName: string;
   categoryColour: string;
   dogName?: string | null;
+  recordedByName?: string | null;
 };
 
 export type InvoiceListRow = Invoice & {

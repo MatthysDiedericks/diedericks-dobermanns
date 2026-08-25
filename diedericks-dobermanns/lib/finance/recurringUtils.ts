@@ -1,5 +1,6 @@
 import { addMonths, addQuarters, addYears, format, parseISO } from 'date-fns';
 
+import { expenseGross } from '@/lib/finance/expenseGross';
 import type { ExpenseWithCategory } from '@/types/finance';
 
 export type RecurringInterval = 'monthly' | 'quarterly' | 'annual';
@@ -68,7 +69,7 @@ export function groupRecurringByInterval(expenses: ExpenseWithCategory[]) {
 
 export function recurringSummaryTotals(expenses: ExpenseWithCategory[]) {
   const monthly = expenses.reduce(
-    (sum, e) => sum + monthlyEquivalent(Number(e.amount), e.recurrence_interval),
+    (sum, e) => sum + monthlyEquivalent(expenseGross(e), e.recurrence_interval),
     0,
   );
   return { monthly, annual: monthly * 12 };

@@ -254,7 +254,7 @@ export async function fetchFinanceSnapshot(): Promise<DashboardFinanceSnapshot> 
       .lte('issue_date', monthEnd),
     supabase
       .from('expenses')
-      .select('amount')
+      .select('amount, vat_amount, amount_gross')
       .gte('expense_date', monthStart)
       .lte('expense_date', monthEnd),
     supabase
@@ -264,18 +264,25 @@ export async function fetchFinanceSnapshot(): Promise<DashboardFinanceSnapshot> 
       .lte('issue_date', priorEnd),
     supabase
       .from('expenses')
-      .select('amount')
+      .select('amount, vat_amount, amount_gross')
       .gte('expense_date', priorStart)
       .lte('expense_date', priorEnd),
   ]);
 
-  const sum = (rows: { amount_paid?: number; amount?: number }[], field: 'amount_paid' | 'amount') =>
-    rows.reduce((s, r) => s + Number(r[field] ?? 0), 0);
+  const sumPaid = (rows: { amount_paid?: number }[]) =>
+    rows.reduce((s, r) => s + Number(r.amount_paid ?? 0), 0);
+  const sumGross = (
+    rows: { amount?: number; vat_amount?: number; amount_gross?: number }[],
+  ) =>
+    rows.reduce(
+      (s, r) => s + Number(r.amount_gross ?? Number(r.amount ?? 0) + Number(r.vat_amount ?? 0)),
+      0,
+    );
 
-  const income = sum(invCur.data ?? [], 'amount_paid');
-  const expenses = sum(expCur.data ?? [], 'amount');
-  const priorIncome = sum(invPrior.data ?? [], 'amount_paid');
-  const priorExpenses = sum(expPrior.data ?? [], 'amount');
+  const income = sumPaid(invCur.data ?? []);
+  const expenses = sumGross(expCur.data ?? []);
+  const priorIncome = sumPaid(invPrior.data ?? []);
+  const priorExpenses = sumGross(expPrior.data ?? []);
 
   return {
     income,

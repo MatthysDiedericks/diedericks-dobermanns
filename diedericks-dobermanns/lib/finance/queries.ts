@@ -9,6 +9,7 @@ import {
 } from 'date-fns';
 
 import { fetchInvoicePayments } from '@/lib/finance/clientPayments';
+import { expenseGross } from '@/lib/finance/expenseGross';
 import { deltaPct, periodLabel } from '@/lib/finance/formatters';
 import { EXPENSE_CATEGORY_COLUMNS, EXPENSE_WITH_CATEGORY } from '@/lib/finance/expenseColumns';
 import { requireSupabase } from '@/lib/supabase';
@@ -237,18 +238,12 @@ export async function computeKpis(from: string, to: string): Promise<FinanceKpis
   const priorExpenses = await fetchExpensesInRange(priorFrom, priorTo);
 
   const totalIncome = invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
-  // VAT-inclusive, to match DogBreederPro's headline "Expenses" total (expenses.amount is
-  // stored ex-VAT; vat_amount is the input tax on top — confirmed against DBP's live figures
-  // 2026-07-20: ex-VAT sum was short of DBP's displayed total by exactly the VAT sum).
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0), 0);
+  const totalExpenses = expenses.reduce((s, e) => s + expenseGross(e), 0);
   const netProfit = totalIncome - totalExpenses;
   const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
 
   const priorIncome = priorInvoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
-  const priorExpenseTotal = priorExpenses.reduce(
-    (s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0),
-    0,
-  );
+  const priorExpenseTotal = priorExpenses.reduce((s, e) => s + expenseGross(e), 0);
   const priorProfit = priorIncome - priorExpenseTotal;
 
   return {
@@ -271,7 +266,7 @@ export async function buildMonthlySummary(year: number): Promise<MonthlySummary[
     months.push({
       month: format(new Date(year, m, 1), 'MMM'),
       income: invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0),
-      expenses: expenses.reduce((s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0), 0),
+      expenses: expenses.reduce((s, e) => s + expenseGross(e), 0),
     });
   }
   return months;
@@ -285,7 +280,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
   const expenseByCategory = new Map<string, number>();
   expenses.forEach((e) => {
     const name = e.categoryName ?? 'Other';
-    const vatInclusive = Number(e.amount) + Number(e.vat_amount ?? 0);
+    const vatInclusive = expenseGross(e);
     expenseByCategory.set(name, (expenseByCategory.get(name) ?? 0) + vatInclusive);
   });
 
@@ -294,7 +289,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
     .sort((a, b) => b.amount - a.amount);
 
   const totalIncome = invoices.reduce((s, i) => s + Number(i.amount_paid ?? 0), 0);
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount ?? 0) + Number(e.vat_amount ?? 0), 0);
+  const totalExpenses = expenses.reduce((s, e) => s + expenseGross(e), 0);
   const netProfit = totalIncome - totalExpenses;
 
   const year = parseISO(from).getFullYear();
@@ -326,7 +321,7 @@ export async function buildFinanceReport(from: string, to: string): Promise<Fina
       categoryName: e.categoryName,
       description: e.description,
       supplier_name: e.supplier_name,
-      amount: Number(e.amount),
+      amount: expenseGross(e),
       dogName: e.dogName,
       is_recurring: e.is_recurring,
     })),
