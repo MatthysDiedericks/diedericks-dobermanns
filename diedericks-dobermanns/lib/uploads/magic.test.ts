@@ -18,6 +18,17 @@ function main() {
   const exe = new Uint8Array([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00]);
   assert(detectUploadKind(exe) === null, "exe renamed pdf must fail");
 
+  const fakeMp4 = new Uint8Array(12);
+  fakeMp4.set([0x4d, 0x5a], 0);
+  assert(detectUploadKind(fakeMp4) === null, "exe renamed mp4 must fail");
+
+  const mp4 = new Uint8Array(12);
+  mp4.set([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]);
+  assert(detectUploadKind(mp4) === "mp4", "mp4 ftyp isom");
+
+  const webm = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x00, 0x00, 0x00, 0x00]);
+  assert(detectUploadKind(webm) === "webm", "webm ebml");
+
   const withExif = buildJpegWithExif();
   assert(indexOf(withExif, "Exif") >= 0, "fixture has Exif");
   const stripped = stripJpegExif(withExif);

@@ -9,10 +9,8 @@ import {
   createVideo,
   useVideoBundles,
   useVideoCategories,
-  type CreateVideoInput,
 } from '@/hooks/useTrainingVideos';
-
-const ACCESS_TIERS = ['free', 'bundle', 'admin'] as const;
+import { ACCESS_TIERS, TIER_LABEL, type AccessTier } from '@/lib/training/access';
 
 interface Props {
   onCreated: () => void;
@@ -27,7 +25,7 @@ export function TrainingVideoAddForm({ onCreated, onCancel }: Props) {
   const [videoUrl, setVideoUrl] = useState('');
   const [weekLabel, setWeekLabel] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [accessTier, setAccessTier] = useState<CreateVideoInput['access_tier']>('free');
+  const [accessTier, setAccessTier] = useState<AccessTier>('owner');
   const [bundleId, setBundleId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -36,8 +34,8 @@ export function TrainingVideoAddForm({ onCreated, onCancel }: Props) {
       Alert.alert('Missing fields', 'Title and category are required.');
       return;
     }
-    if (accessTier === 'bundle' && !bundleId) {
-      Alert.alert('Missing bundle', 'Select a bundle for bundle-tier videos.');
+    if (accessTier === 'paid' && !bundleId) {
+      Alert.alert('Missing bundle', 'Select a bundle for paid-extra videos.');
       return;
     }
     setSaving(true);
@@ -47,7 +45,7 @@ export function TrainingVideoAddForm({ onCreated, onCancel }: Props) {
         title,
         description: description || null,
         access_tier: accessTier,
-        bundle_id: accessTier === 'bundle' ? bundleId : null,
+        bundle_id: accessTier === 'paid' ? bundleId : null,
         video_url: videoUrl || null,
         week_label: weekLabel || null,
       });
@@ -99,16 +97,16 @@ export function TrainingVideoAddForm({ onCreated, onCancel }: Props) {
             key={t}
             onPress={() => {
               setAccessTier(t);
-              if (t !== 'bundle') setBundleId(null);
+              if (t !== 'paid') setBundleId(null);
             }}
             className={`rounded-lg border px-3 py-2 ${accessTier === t ? 'border-gold bg-gold/10' : 'border-surface-border'}`}
           >
-            <Typography variant="caption">{t}</Typography>
+            <Typography variant="caption">{TIER_LABEL[t]}</Typography>
           </Pressable>
         ))}
       </View>
 
-      {accessTier === 'bundle' ? (
+      {accessTier === 'paid' ? (
         <>
           <Typography variant="caption" className="mb-1 text-silver">
             Bundle *

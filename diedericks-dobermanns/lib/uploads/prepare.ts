@@ -27,10 +27,14 @@ export function prepareUpload(
     throw new UploadValidationError(TOO_LARGE_MESSAGE);
   }
   const kind = detectUploadKind(bytes);
-  if (!kind) throw new UploadValidationError(BAD_TYPE_MESSAGE);
+  if (!kind || kind === "mp4" || kind === "mov" || kind === "m4v" || kind === "webm") {
+    throw new UploadValidationError(BAD_TYPE_MESSAGE);
+  }
   const ext = storedExt(kind);
   const stripped =
-    ext === "pdf" || ext === "heic" ? bytes : stripImageMetadata(ext, bytes);
+    ext === "pdf" || ext === "heic"
+      ? bytes
+      : stripImageMetadata(ext as "jpg" | "png" | "webp" | "heic", bytes);
   if (stripped.byteLength > maxBytes) {
     throw new UploadValidationError(TOO_LARGE_MESSAGE);
   }
