@@ -1,3 +1,4 @@
+import { reapproveApplicationChanges } from '@/lib/applications/amendments';
 import { createDraftQuoteFromApplication } from '@/lib/finance/autoQuoteFromApplication';
 import { callCreateVideoRoom, callNotify } from '@/lib/functions';
 import { formatDateTime } from '@/lib/format';
@@ -224,17 +225,21 @@ export async function reviewApplication(
 
   const { data: app, error: fetchErr } = await supabase
     .from('applications')
-    .select('user_id')
+    .select('user_id, status, reviewed_at')
     .eq('id', id)
     .single();
   if (fetchErr) return { error: fetchErr.message };
+
+  if (status === 'approved' && app.status === 'changes_pending') {
+    return reapproveApplicationChanges(id);
+  }
 
   const { error } = await supabase
     .from('applications')
     .update({
       status,
       admin_notes: adminNotes,
-      reviewed_at: new Date().toISOString(),
+      ...(app.reviewed_at ? {} : { reviewed_at: new Date().toISOString() }),
     })
     .eq('id', id);
   if (error) return { error: error.message };

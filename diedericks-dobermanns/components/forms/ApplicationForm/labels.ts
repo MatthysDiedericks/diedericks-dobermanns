@@ -108,3 +108,11 @@ export function labelFor<K extends keyof ApplicationFormValues>(
   if (map && typeof value === 'string') return map[value] ?? value;
   return String(value);
 }
+
+export function optionsFor<K extends keyof ApplicationFormValues>(
+  field: K,
+): { value: string; label: string }[] {
+  const map = LABELS[field];
+  if (!map) return [];
+  return Object.entries(map).map(([value, label]) => ({ value, label }));
+}

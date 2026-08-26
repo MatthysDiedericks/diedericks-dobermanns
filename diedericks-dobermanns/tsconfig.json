@@ -3,7 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@web-applications/*": ["../diedericksdobermann-web/src/lib/applications/*"]
     }
   },
   "include": [

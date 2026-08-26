@@ -127,6 +127,54 @@ export type Database = {
           },
         ]
       }
+      application_versions: {
+        Row: {
+          application_id: string
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          snapshot: Json
+          tier_touched: string
+          version_number: number
+        }
+        Insert: {
+          application_id: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          snapshot: Json
+          tier_touched: string
+          version_number: number
+        }
+        Update: {
+          application_id?: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          snapshot?: Json
+          tier_touched?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_versions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_versions_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           address: string | null
@@ -137,6 +185,7 @@ export type Database = {
           agreed_right_of_recall: boolean | null
           agreed_to_terms: boolean
           agreed_welfare_commitment: boolean | null
+          approved_version_number: number | null
           archived_at: string | null
           archived_by: string | null
           archived_reason: string | null
@@ -207,6 +256,7 @@ export type Database = {
           agreed_right_of_recall?: boolean | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
+          approved_version_number?: number | null
           archived_at?: string | null
           archived_by?: string | null
           archived_reason?: string | null
@@ -277,6 +327,7 @@ export type Database = {
           agreed_right_of_recall?: boolean | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
+          approved_version_number?: number | null
           archived_at?: string | null
           archived_by?: string | null
           archived_reason?: string | null
@@ -7201,6 +7252,7 @@ export type Database = {
     }
     Functions: {
       accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
+      application_field_tier: { Args: { p_field: string }; Returns: string }
       apply_marketing_opt_out: {
         Args: { p_allow_expired?: boolean; p_token: string }
         Returns: string
@@ -7490,6 +7542,10 @@ export type Database = {
         Returns: string
       }
       rate_limit_request_key: { Args: { p_action: string }; Returns: string }
+      reapprove_application_changes: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       record_marketing_consent: {
         Args: {
           p_email: string
@@ -7531,6 +7587,10 @@ export type Database = {
         Returns: number
       }
       resume_audit: { Args: never; Returns: string }
+      save_application_amendment: {
+        Args: { p_application_id: string; p_patch: Json }
+        Returns: Json
+      }
       security_require_admin: { Args: { p_fn: string }; Returns: undefined }
       set_app_secret: {
         Args: { p_name: string; p_value: string }

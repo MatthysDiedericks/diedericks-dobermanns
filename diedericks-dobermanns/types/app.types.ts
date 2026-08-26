@@ -278,6 +278,7 @@ export interface Dog {
   genetics_notes?: string | null;
   litter_id?: string | null;
   collar_colour?: string | null;
+  handover_date?: string | null;
   birth_weight_grams?: number | null;
   standard?: 'fci_kusa' | 'akc' | null;
   bloodline_type?: 'european' | 'american' | 'mixed' | null;
@@ -501,7 +502,9 @@ export interface TrainingLog {
 export type ApplicationStatus =
   | 'submitted'
   | 'under_review'
+  | 'info_requested'
   | 'approved'
+  | 'changes_pending'
   | 'rejected'
   | 'waitlisted';
 export type DogInterest = 'puppy' | 'elite_developed' | 'protection_dog';
@@ -673,7 +676,7 @@ export interface WaitingListEntry {
   updated_at?: string;
   client?: Pick<AppUser, 'id' | 'full_name' | 'phone' | 'email'> | null;
   list_type?: WaitingListType | null;
-  assigned_dog?: Pick<Dog, 'id' | 'name' | 'colour' | 'sex' | 'category' | 'price'> | null;
+  assigned_dog?: Pick<Dog, 'id' | 'name' | 'call_name' | 'colour' | 'sex' | 'category' | 'price'> | null;
   assigned_litter?: Pick<Litter, 'id' | 'name'> | null;
 }
 

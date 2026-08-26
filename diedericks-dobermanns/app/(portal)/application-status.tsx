@@ -3,25 +3,30 @@ import { View } from 'react-native';
 import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useMyApplications } from '@/hooks/usePortal';
-import { titleCase } from '@/lib/format';
+import { clientStatusLabel, SENT_TO_MATT } from '@/lib/applications/fieldTiers';
 import { useAuthStore } from '@/stores/authStore';
 import type { ApplicationStatus } from '@/types/app.types';
+import { useRouter } from 'expo-router';
 
 const TONE: Record<ApplicationStatus, BadgeTone> = {
   submitted: 'gold',
   under_review: 'neutral',
+  info_requested: 'neutral',
   approved: 'success',
+  changes_pending: 'gold',
   rejected: 'danger',
   waitlisted: 'muted',
 };
 
 export default function ApplicationStatusScreen() {
+  const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const { data: applications, loading } = useMyApplications(profile?.id);
   const { currentStep, quoteRevision, quoteRevisionNote } = useBuyerJourney();
@@ -51,7 +56,10 @@ export default function ApplicationStatusScreen() {
         <View className="px-6 pb-10">
           <View className="mb-4 flex-row items-center justify-between">
             <Typography variant="subtitle">{app.full_name}</Typography>
-            <Badge label={titleCase(app.status)} tone={TONE[app.status]} />
+            <Badge
+              label={clientStatusLabel(app.status)}
+              tone={TONE[app.status] ?? 'gold'}
+            />
           </View>
 
           <JourneyBreadcrumb currentStep={currentStep} />
@@ -72,7 +80,11 @@ export default function ApplicationStatusScreen() {
             </Card>
           ) : null}
 
-          {app.admin_notes ? (
+          {app.status === 'changes_pending' ? (
+            <Card className="mt-4">
+              <Typography variant="bodyMuted">{SENT_TO_MATT}</Typography>
+            </Card>
+          ) : app.admin_notes ? (
             <Card className="mt-4">
               <Typography variant="label" className="mb-1 text-gold">
                 NOTES FROM THE KENNEL
@@ -84,6 +96,13 @@ export default function ApplicationStatusScreen() {
           <Typography variant="caption" className="mt-4">
             Submitted {new Date(app.created_at).toLocaleDateString()}
           </Typography>
+          <View className="mt-6">
+            <Button
+              label="Update my details"
+              variant="outline"
+              onPress={() => router.push('/(portal)/application-edit')}
+            />
+          </View>
         </View>
       ) : null}
     </ScreenContainer>

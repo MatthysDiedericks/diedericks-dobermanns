@@ -70,6 +70,7 @@ export default function PortalLayout() {
         {/* Hidden routes — reached via in-app navigation, not the tab bar. */}
         <Tabs.Screen name="contracts" options={{ href: null }} />
         <Tabs.Screen name="application-status" options={{ href: null }} />
+        <Tabs.Screen name="application-edit" options={{ href: null }} />
         <Tabs.Screen name="training-updates/[dogId]" options={{ href: null }} />
         <Tabs.Screen name="puppy-tracker/[puppyId]" options={{ href: null }} />
         <Tabs.Screen name="add-photos/[dogId]" options={{ href: null }} />
@@ -90,6 +91,7 @@ export default function PortalLayout() {
         <Tabs.Screen name="waitlist" options={{ href: null }} />
         <Tabs.Screen name="groups/index" options={{ href: null }} />
         <Tabs.Screen name="contracts/[id]" options={{ href: null }} />
+        <Tabs.Screen name="dogs/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/milestones" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/health" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/waitlist" options={{ href: null }} />

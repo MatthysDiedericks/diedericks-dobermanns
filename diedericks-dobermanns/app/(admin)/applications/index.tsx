@@ -18,7 +18,9 @@ import type { ApplicationStatus } from '@/types/app.types';
 const STATUS_TONE: Record<ApplicationStatus, BadgeTone> = {
   submitted: 'gold',
   under_review: 'neutral',
+  info_requested: 'neutral',
   approved: 'success',
+  changes_pending: 'gold',
   rejected: 'danger',
   waitlisted: 'muted',
 };

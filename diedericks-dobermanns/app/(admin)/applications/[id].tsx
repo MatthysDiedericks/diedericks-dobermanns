@@ -6,6 +6,8 @@ import { InviteToPortalButton } from '@/components/admin/InviteToPortalButton';
 import { InviteStateChip } from '@/components/admin/InviteStateChip';
 import { ApprovalQuoteStatus } from '@/components/applications/ApprovalQuoteStatus';
 import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
+import { PendingChangesAdminBlock } from '@/components/applications/PendingChangesAdminBlock';
+import { ApplicationVersionsBlock } from '@/components/applications/ApplicationVersionsBlock';
 import { IdCheckBlock } from '@/components/applications/IdCheckBlock';
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
@@ -36,14 +38,8 @@ function Field({ label, value }: { label: string; value: string | null | undefin
   );
 }
 
-function EnumField<K extends keyof ApplicationFormValues>({
-  label,
-  field,
-  value,
-}: {
-  label: string;
-  field: K;
-  value: string | null | undefined;
+function EnumField<K extends keyof ApplicationFormValues>({ label, field, value }: {
+  label: string; field: K; value: string | null | undefined;
 }) {
   if (!value) return null;
   return <Field label={label} value={labelFor(field, value as ApplicationFormValues[K])} />;
@@ -143,6 +139,15 @@ export default function ApplicationDetailScreen() {
             <Badge label="Follow-up needed" tone="danger" />
           ) : null}
         </View>
+
+        {app.status === 'changes_pending' ? (
+          <PendingChangesAdminBlock
+            applicationId={app.id}
+            phone={app.phone}
+            fullName={app.full_name}
+            onDone={() => void refresh()}
+          />
+        ) : null}
 
         {linkedQuote && done !== 'approved' ? (
           <Typography
@@ -248,6 +253,8 @@ export default function ApplicationDetailScreen() {
 
         {id ? <DocumentSection entityType="application" entityId={id} /> : null}
 
+        {id ? <ApplicationVersionsBlock applicationId={id} /> : null}
+
         <View className="mt-6">
           <Input
             label="Admin notes"
@@ -267,7 +274,7 @@ export default function ApplicationDetailScreen() {
               <Button label="Add to Waiting List" variant="outline" onPress={() => void addToWaitlist()} loading={addingWl} fullWidth />
             </>
           ) : null}
-          {ACTIONS.map((a) => (
+          {ACTIONS.filter((a) => !(app.status === 'changes_pending' && a.status === 'approved')).map((a) => (
             <Button
               key={a.status}
               label={a.label}

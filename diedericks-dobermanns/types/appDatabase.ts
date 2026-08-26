@@ -50,6 +50,14 @@ export type AppDatabase = {
         Args: Record<string, never>;
         Returns: number;
       };
+      save_application_amendment: {
+        Args: { p_application_id: string; p_patch: Record<string, unknown> };
+        Returns: Record<string, unknown>;
+      };
+      reapprove_application_changes: {
+        Args: { p_application_id: string };
+        Returns: Record<string, unknown>;
+      };
       log_training_tier_change: {
         Args: {
           p_video_ids: string[];
