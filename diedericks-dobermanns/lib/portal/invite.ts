@@ -8,6 +8,8 @@ export type InviteStateRow = {
   invited_at: string | null;
   last_sign_in_at: string | null;
   email_confirmed_at?: string | null;
+  last_get_at?: string | null;
+  opened_at?: string | null;
 };
 
 export type IssueInviteResult = {
@@ -25,9 +27,38 @@ export const INVITE_TTL_DAYS = 7;
 
 function shortDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'Africa/Johannesburg',
+    });
   } catch {
     return iso.slice(0, 10);
+  }
+}
+
+function shortWhen(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const time = d.toLocaleString('en-ZA', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Africa/Johannesburg',
+    });
+    const day = d.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'Africa/Johannesburg',
+    });
+    const today = new Date().toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'Africa/Johannesburg',
+    });
+    return day === today ? time : `${day} ${time}`;
+  } catch {
+    return iso.slice(0, 16);
   }
 }
 
@@ -49,7 +80,8 @@ export function formatInviteExpiry(iso: string): string {
 
 export function formatInviteState(row: InviteStateRow | null | undefined): string {
   if (!row) return 'No account';
-  if (row.last_sign_in_at) return `Signed in ${shortDate(row.last_sign_in_at)}`;
+  if (row.last_sign_in_at) return `Signed in ${shortWhen(row.last_sign_in_at)}`;
+  if (row.last_get_at) return `Link opened ${shortWhen(row.last_get_at)} — not yet signed in`;
   if (row.email_confirmed_at) return 'Confirmed, never signed in';
   if (row.has_account && !row.last_sign_in_at) return 'Has account, never signed in';
   if (row.invited_at) return `Invited ${shortDate(row.invited_at)} (not opened)`;

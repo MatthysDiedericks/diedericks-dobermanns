@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       achievements: {
@@ -4676,11 +4701,18 @@ export type Database = {
       portal_invites: {
         Row: {
           code_hash: string | null
+          code_redeemed_at: string | null
           email: string
           expires_at: string
           id: string
           invited_at: string
           invited_by: string
+          last_get_at: string | null
+          last_get_ip: string | null
+          last_get_user_agent: string | null
+          last_post_at: string | null
+          last_post_ip: string | null
+          last_post_user_agent: string | null
           opened_at: string | null
           source: string
           source_id: string | null
@@ -4688,11 +4720,18 @@ export type Database = {
         }
         Insert: {
           code_hash?: string | null
+          code_redeemed_at?: string | null
           email: string
           expires_at?: string
           id?: string
           invited_at?: string
           invited_by: string
+          last_get_at?: string | null
+          last_get_ip?: string | null
+          last_get_user_agent?: string | null
+          last_post_at?: string | null
+          last_post_ip?: string | null
+          last_post_user_agent?: string | null
           opened_at?: string | null
           source: string
           source_id?: string | null
@@ -4700,11 +4739,18 @@ export type Database = {
         }
         Update: {
           code_hash?: string | null
+          code_redeemed_at?: string | null
           email?: string
           expires_at?: string
           id?: string
           invited_at?: string
           invited_by?: string
+          last_get_at?: string | null
+          last_get_ip?: string | null
+          last_get_user_agent?: string | null
+          last_post_at?: string | null
+          last_post_ip?: string | null
+          last_post_user_agent?: string | null
           opened_at?: string | null
           source?: string
           source_id?: string | null
@@ -7437,6 +7483,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      portal_invite_inspect: {
+        Args: { p_id: string }
+        Returns: {
+          code_redeemed_at: string
+          email: string
+          expires_at: string
+          invited_at: string
+          last_get_at: string
+          opened_at: string
+          user_id: string
+        }[]
+      }
       portal_invite_states: {
         Args: { p_emails: string[] }
         Returns: {
@@ -7444,7 +7502,9 @@ export type Database = {
           email_confirmed_at: string
           has_account: boolean
           invited_at: string
+          last_get_at: string
           last_sign_in_at: string
+          opened_at: string
         }[]
       }
       purge_old_audit_log: { Args: never; Returns: undefined }
@@ -7473,6 +7533,16 @@ export type Database = {
           p_path: string
           p_referrer_host?: string
           p_visitor_hash: string
+        }
+        Returns: undefined
+      }
+      record_portal_invite_hit: {
+        Args: {
+          p_email: string
+          p_id: string
+          p_ip: string
+          p_method: string
+          p_user_agent: string
         }
         Returns: undefined
       }
@@ -7649,8 +7719,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
-

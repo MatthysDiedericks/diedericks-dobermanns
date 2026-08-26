@@ -61,7 +61,7 @@ function whatsappMessage(fullName: string, email: string, link: string, code: st
     `Hi ${firstName(fullName)}, your Diedericks Dobermanns sign-in code is ${code}. ` +
     `It expires ${expiryLabel(expiresAt)} (${TTL_DAYS} days). ` +
     `Type it at ${verifyUrl(email)} — a mail scanner cannot use a code.\n\n` +
-    `Or tap this link and press Open your account:\n${link}`
+    `Or tap this link and press Sign in to your portal:\n${link}`
   );
 }
 
@@ -87,9 +87,9 @@ async function sendInviteMail(
         <p>Your sign-in code is:</p>
         <p style="font-size:28px;letter-spacing:0.24em;color:#C4A35A;">${code}</p>
         <p style="font-size:12px;color:#C4A35A99;">Expires ${expiryLabel(expiresAt)} (${TTL_DAYS} days). Type it at ${verifyUrl(to)}.</p>
-        <p>Or open the link and press Open your account — fetching the page does not sign anyone in.</p>
+        <p>Or open the link and press Sign in to your portal — fetching the page does not sign anyone in.</p>
         <p style="margin:28px 0;">
-          <a href="${link}" style="display:inline-block;background:#C4A35A;color:#111008;text-decoration:none;padding:14px 22px;letter-spacing:0.12em;text-transform:uppercase;font-size:13px;">Open your account</a>
+          <a href="${link}" style="display:inline-block;background:#C4A35A;color:#111008;text-decoration:none;padding:14px 22px;letter-spacing:0.12em;text-transform:uppercase;font-size:13px;">Sign in to your portal</a>
         </p>
         <p style="font-size:12px;word-break:break-all;color:#F5F0E8;">${link}</p>
       </div>

@@ -121,13 +121,24 @@ export function InviteToPortalButton({
         fullWidth
       />
       {issued ? (
-        <Button
-          label="Email the invite"
-          variant="outline"
-          onPress={() => void onEmail()}
-          disabled={busy}
-          fullWidth
-        />
+        <>
+          <Typography variant="caption" className="text-subtle">
+            Read this code out if they are stuck. Nothing fetches it.
+          </Typography>
+          <Typography className="text-center font-cinzel text-2xl tracking-[0.2em] text-gold">
+            {issued.code}
+          </Typography>
+          <Typography variant="caption" className="text-subtle">
+            {issued.link}
+          </Typography>
+          <Button
+            label="Email the invite"
+            variant="outline"
+            onPress={() => void onEmail()}
+            disabled={busy}
+            fullWidth
+          />
+        </>
       ) : null}
       {notice ? (
         <Typography variant="caption" className="text-gold">
