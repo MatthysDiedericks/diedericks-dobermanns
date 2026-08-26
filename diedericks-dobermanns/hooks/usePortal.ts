@@ -16,7 +16,7 @@ import type {
 /** Contracts belonging to the signed-in client (scoped by RLS server-side). */
 const PORTAL_CONTRACT_SELECT =
   'id, created_at, signed_at, signed_by_client, notes, dog_id, client_id, document_url, contract_title, status, ' +
-  'client_signed_at, client_signature_url, client_signature_device, client_ip_on_sign';
+  'client_signed_at, client_signature_url, client_signature_device, client_ip_on_sign, esign_token, body_html';
 
 export function useContracts(): ListResult<Contract> {
   return useRemoteList<Contract>(MOCK_CONTRACTS, (client) =>

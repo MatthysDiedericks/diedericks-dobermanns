@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { DetailRow } from '@/components/dogs/detail/DetailRow';
 import { DogMeasurementsPanel } from '@/components/dogs/detail/DogMeasurementsPanel';
@@ -19,12 +19,14 @@ import { Typography } from '@/components/ui/Typography';
 import { useDogHealthCalendar } from '@/hooks/useDogHealthCalendar';
 import { useWeightLogs } from '@/hooks/useDogDetail';
 import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
+import { createDraftContract } from '@/lib/contracts/createDraft';
 import { contractStatusLabel } from '@/lib/dogs/contractStatus';
 import { formatCoiPercent } from '@/lib/dogs/formatCoi';
 import { titleCase } from '@/lib/format';
 import { formatWeight } from '@/lib/kennel/formatters';
 import { getAgeDays } from '@/lib/litters/weighingSchedule';
 import { requireSupabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 import type { Dog } from '@/types/app.types';
 
 export function DogOverviewTab({
@@ -37,6 +39,8 @@ export function DogOverviewTab({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const actorId = useAuthStore((s) => s.session?.user.id);
+  const [creating, setCreating] = useState(false);
   const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url ?? null;
   const health = useDogHealthCalendar(dog.id);
   const weights = useWeightLogs(dog.id);
@@ -46,10 +50,11 @@ export function DogOverviewTab({
   );
   const [puppyCount, setPuppyCount] = useState(0);
   const [contract, setContract] = useState<{
+    id: string | null;
     signed: boolean;
     exists: boolean;
     status: string | null;
-  }>({ signed: false, exists: false, status: null });
+  }>({ id: null, signed: false, exists: false, status: null });
   const [outstanding, setOutstanding] = useState(0);
   const bench = useGrowthBenchmark(puppyCount);
 
@@ -69,11 +74,12 @@ export function DogOverviewTab({
   useEffect(() => {
     void requireSupabase()
       .from('contracts')
-      .select('signed_by_client, parent_contract_id, status')
+      .select('id, signed_by_client, parent_contract_id, status')
       .eq('dog_id', dog.id)
       .then(({ data }) => {
         const rows = (data ?? []).filter((c) => !c.parent_contract_id);
         setContract({
+          id: rows[0]?.id ?? null,
           exists: rows.length > 0,
           signed: rows.some((c) => c.signed_by_client),
           status: rows[0]?.status ?? null,
@@ -154,6 +160,46 @@ export function DogOverviewTab({
 
       <SectionCard title="Paperwork">
         <DetailRow label="Contract" value={contractLabel} />
+        {canEdit && !contract.exists ? (
+          <Button
+            label={creating ? 'Creating…' : 'Create contract'}
+            variant="secondary"
+            className="mt-3"
+            disabled={creating}
+            onPress={() => {
+              if (!actorId) {
+                Alert.alert('Not signed in');
+                return;
+              }
+              setCreating(true);
+              void createDraftContract({ dogId: dog.id, actorId })
+                .then((res) => {
+                  if (res.error) {
+                    Alert.alert('Could not create', res.error);
+                    return;
+                  }
+                  if (res.contractId) {
+                    router.push(`/(admin)/contracts/${res.contractId}` as never);
+                  }
+                })
+                .finally(() => setCreating(false));
+            }}
+          />
+        ) : null}
+        {canEdit && contract.exists ? (
+          <Button
+            label="Open contract"
+            variant="ghost"
+            className="mt-3"
+            onPress={() =>
+              router.push(
+                (contract.id
+                  ? `/(admin)/contracts/${contract.id}`
+                  : '/(admin)/contracts') as never,
+              )
+            }
+          />
+        ) : null}
       </SectionCard>
 
       {canEdit ? <HeatStatusCard dog={dog} onRefresh={onRefresh} /> : null}

@@ -12,7 +12,11 @@ export type ContractRow = {
   signed_at: string | null;
   client_signed_at: string | null;
   client_signature_url: string | null;
+  esign_token: string | null;
+  esign_expires_at: string | null;
+  body_html: string | null;
   client?: { full_name: string } | null;
+  contact?: { full_name: string } | null;
   dog?: { name: string; released_at: string | null } | null;
 };
 
@@ -35,8 +39,9 @@ export function useContracts() {
         supabase
           .from('contracts')
           .select(
-            'id, created_at, signed_at, client_signed_at, client_signature_url, signed_by_client, notes, dog_id, client_id, document_url, contract_title, status, ' +
+            'id, created_at, signed_at, client_signed_at, client_signature_url, signed_by_client, notes, dog_id, client_id, document_url, contract_title, status, esign_token, esign_expires_at, body_html, ' +
               'client:users!contracts_client_id_fkey(full_name), ' +
+              'contact:contacts!contracts_contact_id_fkey(full_name), ' +
               'dog:dogs!contracts_dog_id_fkey(name, released_at)',
           )
           .order('created_at', { ascending: false }),
@@ -57,19 +62,11 @@ export function useContracts() {
   }, [refresh]);
 
   const sendEsign = async (id: string) => {
-    const supabase = requireSupabase();
-    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-    const expires = new Date(Date.now() + 14 * 86_400_000).toISOString();
-    await supabase
-      .from('contracts')
-      .update({
-        status: 'sent',
-        esign_token: token,
-        esign_expires_at: expires,
-        esign_sent_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+    const { sendContractLink } = await import('@/lib/contracts/createDraft');
+    const res = await sendContractLink(id);
+    if (res.error) throw new Error(res.error);
     await refresh();
+    return res;
   };
 
   return { contracts, templates, loading, error, refresh, sendEsign };

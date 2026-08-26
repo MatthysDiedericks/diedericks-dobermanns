@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Config } from '@/constants/config';
+import { createDraftContract, sendContractLink } from '@/lib/contracts/createDraft';
 import { requireSupabase } from '@/lib/supabase';
-import type { TablesInsert } from '@/types/database.types';
+import { useAuthStore } from '@/stores/authStore';
 
 export type LitterContractRow = {
   id: string;
@@ -12,20 +12,28 @@ export type LitterContractRow = {
   signed_at: string | null;
   client_signed_at?: string | null;
   client_signature_url?: string | null;
+  esign_token?: string | null;
+  esign_expires_at?: string | null;
+  body_html?: string | null;
   created_at: string;
+  dog_id?: string | null;
+  parent_contract_id?: string | null;
   client?: { full_name: string | null; phone?: string | null } | null;
+  contact?: { full_name: string | null; phone?: string | null } | null;
   dog?: { name: string; colour: string | null } | null;
 };
 
 const CONTRACT_SELECT =
-  'id, status, contract_title, signed_by_client, signed_at, client_signed_at, client_signature_url, created_at, dog_id, ' +
+  'id, status, contract_title, signed_by_client, signed_at, client_signed_at, client_signature_url, esign_token, esign_expires_at, body_html, created_at, dog_id, parent_contract_id, ' +
   'client:users!contracts_client_id_fkey(full_name, phone), ' +
+  'contact:contacts!contracts_contact_id_fkey(full_name, phone), ' +
   'dog:dogs!contracts_dog_id_fkey(name, colour)';
 
 export function useLitterContracts(litterId: string, puppyIds: string[]) {
   const [contracts, setContracts] = useState<LitterContractRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const actorId = useAuthStore((s) => s.session?.user.id);
 
   const refresh = useCallback(async () => {
     if (!litterId) {
@@ -36,44 +44,18 @@ export function useLitterContracts(litterId: string, puppyIds: string[]) {
     setLoading(true);
     setError(null);
     try {
-      if (Config.isDemoMode) {
-        setContracts([]);
-        setLoading(false);
-        return;
-      }
       const supabase = requireSupabase();
-      const { data: byLitter, error: litterErr } = await (
-        supabase.from('contracts').select(CONTRACT_SELECT) as unknown as {
-          eq: (
-            column: string,
-            value: string,
-          ) => {
-            order: (
-              column: string,
-              options: { ascending: boolean },
-            ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
-          };
-        }
-      )
-        .eq('litter_id', litterId)
-        .order('created_at', { ascending: false });
-      if (!litterErr && Array.isArray(byLitter) && byLitter.length > 0) {
-        setContracts(byLitter as unknown as LitterContractRow[]);
-        setLoading(false);
-        return;
-      }
-
-      if (puppyIds.length === 0) {
-        setContracts([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data, error: err } = await supabase
-        .from('contracts')
-        .select(CONTRACT_SELECT)
-        .in('dog_id', puppyIds)
-        .order('created_at', { ascending: false });
+      const { data, error: err } = puppyIds.length
+        ? await supabase
+            .from('contracts')
+            .select(CONTRACT_SELECT)
+            .in('dog_id', puppyIds)
+            .order('created_at', { ascending: false })
+        : await supabase
+            .from('contracts')
+            .select(CONTRACT_SELECT)
+            .eq('litter_id', litterId)
+            .order('created_at', { ascending: false });
       if (err) throw new Error(err.message);
       setContracts((data ?? []) as unknown as LitterContractRow[]);
     } catch (e) {
@@ -89,43 +71,45 @@ export function useLitterContracts(litterId: string, puppyIds: string[]) {
   }, [refresh]);
 
   const createContract = useCallback(
-    async (dogId: string, clientId: string, title: string) => {
-      const supabase = requireSupabase();
-      const row: TablesInsert<'contracts'> & { litter_id?: string } = {
-        dog_id: dogId,
-        client_id: clientId,
-        litter_id: litterId,
-        contract_title: title,
-        status: 'draft',
-        document_url: null,
-        signed_by_client: false,
-      };
-      const { error: err } = await supabase.from('contracts').insert(row as TablesInsert<'contracts'>);
-      if (err) throw new Error(err.message);
+    async (dogId: string, contactId?: string) => {
+      if (!actorId) throw new Error('Not signed in.');
+      const res = await createDraftContract({
+        dogId,
+        litterId,
+        contactId,
+        actorId,
+      });
+      if (res.error) throw new Error(res.error);
       await refresh();
+      return res;
     },
-    [litterId, refresh],
+    [actorId, litterId, refresh],
   );
+
+  const bulkCreate = useCallback(async () => {
+    if (!actorId) throw new Error('Not signed in.');
+    let created = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+    for (const dogId of puppyIds) {
+      const res = await createDraftContract({ dogId, litterId, actorId });
+      if (res.skipped) skipped += 1;
+      else if (res.contractId) created += 1;
+      else errors.push(res.error ?? 'failed');
+    }
+    await refresh();
+    return { created, skipped, errors };
+  }, [actorId, litterId, puppyIds, refresh]);
 
   const sendEsign = useCallback(
     async (id: string) => {
-      const supabase = requireSupabase();
-      const token = `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-      const expires = new Date(Date.now() + 14 * 86_400_000).toISOString();
-      const { error: err } = await supabase
-        .from('contracts')
-        .update({
-          status: 'sent',
-          esign_token: token,
-          esign_expires_at: expires,
-          esign_sent_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-      if (err) throw new Error(err.message);
+      const res = await sendContractLink(id);
+      if (res.error) throw new Error(res.error);
       await refresh();
+      return res;
     },
     [refresh],
   );
 
-  return { contracts, loading, error, createContract, sendEsign, refresh };
+  return { contracts, loading, error, createContract, bulkCreate, sendEsign, refresh };
 }

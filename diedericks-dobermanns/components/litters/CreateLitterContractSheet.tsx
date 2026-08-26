@@ -20,7 +20,7 @@ type ClientOption = { id: string; full_name: string | null; phone: string | null
 
 interface CreateLitterContractSheetProps {
   puppies: Dog[];
-  onCreate: (dogId: string, clientId: string, title: string) => Promise<void>;
+  onCreate: (dogId: string, contactId?: string) => Promise<unknown>;
 }
 
 export const CreateLitterContractSheet = forwardRef<
@@ -42,26 +42,35 @@ export const CreateLitterContractSheet = forwardRef<
     }
     try {
       const supabase = requireSupabase();
-      const [reservations, dogsWithOwners] = await Promise.all([
-        supabase
-          .from('reservations')
-          .select('client_id, client:users!reservations_client_id_fkey(id, full_name, phone)')
-          .in('dog_id', puppyIds),
+      const [contactsOnDogs, dogsWithOwners] = await Promise.all([
         supabase
           .from('dogs')
-          .select('owner_id, owner:users!dogs_owner_id_fkey(id, full_name, phone)')
+          .select('owner_contact_id, contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone)')
           .in('id', puppyIds)
-          .not('owner_id', 'is', null),
+          .not('owner_contact_id', 'is', null),
+        supabase
+          .from('dogs')
+          .select('reserved_for_name')
+          .in('id', puppyIds),
       ]);
 
       const map = new Map<string, ClientOption>();
-      for (const row of reservations.data ?? []) {
-        const c = row.client as unknown as ClientOption | null;
+      for (const row of contactsOnDogs.data ?? []) {
+        const c = row.contact as unknown as ClientOption | null;
         if (c?.id) map.set(c.id, c);
       }
-      for (const row of dogsWithOwners.data ?? []) {
-        const c = row.owner as unknown as ClientOption | null;
-        if (c?.id) map.set(c.id, c);
+      const names = (dogsWithOwners.data ?? [])
+        .map((d) => d.reserved_for_name)
+        .filter((n): n is string => Boolean(n));
+      if (names.length) {
+        const { data: byName } = await supabase
+          .from('contacts')
+          .select('id, full_name, phone')
+          .in('full_name', names)
+          .is('merged_into_contact_id', null);
+        for (const c of byName ?? []) {
+          if (c.id) map.set(c.id, c);
+        }
       }
       setClients([...map.values()]);
     } catch {
@@ -92,15 +101,13 @@ export const CreateLitterContractSheet = forwardRef<
   }, [clientId, clients]);
 
   async function handleCreate() {
-    if (!dogId || !clientId) {
-      Alert.alert('Missing fields', 'Select a puppy and client.');
+    if (!dogId) {
+      Alert.alert('Missing fields', 'Select a puppy.');
       return;
     }
-    const dog = puppies.find((p) => p.id === dogId);
-    const title = `Purchase Agreement — ${dog?.name ?? 'Puppy'}`;
     setSaving(true);
     try {
-      await onCreate(dogId, clientId, title);
+      await onCreate(dogId, clientId || undefined);
       close();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Could not create contract');
@@ -140,11 +147,11 @@ export const CreateLitterContractSheet = forwardRef<
         </View>
 
         <Typography variant="caption" className="mb-2 text-silver">
-          Client
+          Buyer (contact — no portal account needed)
         </Typography>
         {clients.length === 0 ? (
           <Typography variant="bodyMuted" className="mb-4">
-            No clients linked to puppies in this litter yet.
+            No contacts linked to these puppies yet. Create from the dog profile after linking a buyer.
           </Typography>
         ) : (
           <View className="mb-4 gap-2">

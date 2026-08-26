@@ -1,34 +1,20 @@
 import { useRef, useState } from 'react';
-import { Alert, Image, Modal, Pressable, View } from 'react-native';
+import { Alert, Linking, Share, View } from 'react-native';
 
 import {
   CreateLitterContractSheet,
   type CreateLitterContractSheetHandle,
 } from '@/components/litters/CreateLitterContractSheet';
 import { LitterReleaseSection } from '@/components/litters/LitterReleaseSection';
-import { Badge, type BadgeTone } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Typography } from '@/components/ui/Typography';
-import { useLitterContracts, type LitterContractRow } from '@/hooks/useLitterContracts';
-import { getSignatureSignedUrl } from '@/lib/contracts/uploadSignature';
+import { useLitterContracts } from '@/hooks/useLitterContracts';
+import { contractStatusChip, signingUrl } from '@/lib/contracts/signingLink';
 import { titleCase } from '@/lib/format';
-import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { Dog } from '@/types/app.types';
-
-function contractStatus(contract: LitterContractRow): { label: string; tone: BadgeTone } {
-  if (contract.signed_by_client || contract.status === 'signed_client' || contract.status === 'signed_both') {
-    return { label: 'Signed', tone: 'success' };
-  }
-  if (contract.status === 'sent') return { label: 'Sent', tone: 'gold' };
-  if (contract.status === 'void') return { label: 'Void', tone: 'danger' };
-  return { label: 'Draft', tone: 'muted' };
-}
-
-function canSendEsign(contract: LitterContractRow): boolean {
-  return !contract.signed_by_client && contract.status !== 'signed_client' && contract.status !== 'signed_both';
-}
 
 export function LitterContractsTab({
   litterId,
@@ -39,87 +25,111 @@ export function LitterContractsTab({
 }) {
   const sheetRef = useRef<CreateLitterContractSheetHandle>(null);
   const puppyIds = puppies.map((p) => p.id);
-  const { contracts, loading, createContract, sendEsign, refresh } = useLitterContracts(litterId, puppyIds);
-  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const { contracts, loading, createContract, bulkCreate, sendEsign, refresh } = useLitterContracts(
+    litterId,
+    puppyIds,
+  );
+  const [busy, setBusy] = useState(false);
+
+  const byDog = new Map<string, (typeof contracts)[number]>();
+  for (const c of contracts) {
+    if (c.parent_contract_id) continue;
+    if (c.dog_id && !byDog.has(c.dog_id)) byDog.set(c.dog_id, c);
+  }
 
   async function handleSend(id: string) {
     try {
-      await sendEsign(id);
-      Alert.alert('Sent', 'E-sign link has been prepared for this contract.');
+      const res = await sendEsign(id);
+      const link = res.link;
+      if (link) {
+        Alert.alert('Link ready', link, [
+          { text: 'Share', onPress: () => void Share.share({ message: link }) },
+          {
+            text: 'WhatsApp',
+            onPress: () => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(link)}`),
+          },
+          { text: 'OK' },
+        ]);
+      }
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not send e-sign');
+      Alert.alert('Error', e instanceof Error ? e.message : 'Could not send');
     }
   }
 
-  async function viewSignature(storagePath: string) {
+  async function handleBulk() {
+    setBusy(true);
     try {
-      const url = await getSignatureSignedUrl(storagePath);
-      setSignaturePreview(url);
-    } catch {
-      Alert.alert('Could not load signature', 'Please try again.');
+      const res = await bulkCreate();
+      Alert.alert('Drafts', `Created ${res.created}, already had ${res.skipped}.`);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Bulk create failed');
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <View className="pb-8">
       <LitterReleaseSection puppies={puppies} onReleased={refresh} />
-
+      <Typography variant="caption" className="mb-3 text-silver">
+        Editing the body is website-only. From here you can create, read and send.
+      </Typography>
       <Button
-        label="+ Create Contract"
+        label={`Create drafts for ${puppies.length} puppies`}
+        onPress={() => void handleBulk()}
+        fullWidth
+        className="mb-3"
+        disabled={puppies.length === 0 || busy}
+      />
+      <Button
+        label="+ One puppy"
         onPress={() => sheetRef.current?.open()}
         fullWidth
+        variant="secondary"
         className="mb-4"
         disabled={puppies.length === 0}
       />
 
       {loading ? (
         <Typography variant="bodyMuted">Loading contracts…</Typography>
-      ) : contracts.length === 0 ? (
-        <EmptyState title="No contracts for this litter yet" message="Create a draft when a puppy is reserved or sold." />
+      ) : puppies.length === 0 ? (
+        <EmptyState title="No puppies" message="Register pups first." />
       ) : (
         <View className="gap-3">
-          {contracts.map((c) => {
-            const status = contractStatus(c);
-            const signedDate = c.client_signed_at ?? c.signed_at;
+          {puppies.map((p) => {
+            const c = byDog.get(p.id);
+            const chip = contractStatusChip({
+              status: c?.status ?? null,
+              signedByClient: Boolean(c?.signed_by_client),
+              clientSignedAt: c?.client_signed_at,
+            });
+            const buyer = c?.client?.full_name ?? c?.contact?.full_name ?? '—';
             return (
-              <Card key={c.id}>
+              <Card key={p.id}>
                 <View className="flex-row items-start justify-between">
                   <View className="flex-1 pr-2">
-                    <Typography variant="subtitle">{c.dog?.name ?? 'Puppy'}</Typography>
-                    {c.dog?.colour ? (
+                    <Typography variant="subtitle">{p.name}</Typography>
+                    {p.colour ? (
                       <Typography variant="caption" className="text-silver">
-                        {titleCase(c.dog.colour.replace('_', ' '))}
+                        {titleCase(String(p.colour).replace('_', ' '))}
                       </Typography>
                     ) : null}
                     <Typography variant="caption" className="mt-1">
-                      {c.client?.full_name ?? 'Client'}
+                      {buyer}
                     </Typography>
-                    {c.client?.phone ? (
-                      <Typography variant="caption" className="text-silver">
-                        {c.client.phone}
-                      </Typography>
-                    ) : null}
-                    <Typography variant="bodyMuted" className="mt-2">
-                      {c.contract_title ?? 'Purchase agreement'}
-                    </Typography>
-                    {signedDate ? (
-                      <Typography variant="caption" className="mt-1 text-success">
-                        Signed ✓ {formatKennelDate(signedDate)}
-                      </Typography>
-                    ) : null}
                   </View>
-                  <Badge label={status.label} tone={status.tone} />
+                  <Badge label={chip.label} tone={chip.tone} />
                 </View>
                 <View className="mt-3 flex-row gap-3">
-                  {canSendEsign(c) ? (
-                    <Button label="Send eSign" variant="secondary" size="sm" onPress={() => void handleSend(c.id)} />
+                  {c && !c.signed_by_client ? (
+                    <Button label="Send" variant="secondary" size="sm" onPress={() => void handleSend(c.id)} />
                   ) : null}
-                  {c.client_signature_url ? (
+                  {c?.esign_token ? (
                     <Button
-                      label="View signature"
+                      label="Open link"
                       variant="ghost"
                       size="sm"
-                      onPress={() => void viewSignature(c.client_signature_url!)}
+                      onPress={() => void Linking.openURL(signingUrl(c.esign_token!))}
                     />
                   ) : null}
                 </View>
@@ -130,19 +140,6 @@ export function LitterContractsTab({
       )}
 
       <CreateLitterContractSheet ref={sheetRef} puppies={puppies} onCreate={createContract} />
-
-      <Modal visible={!!signaturePreview} transparent animationType="fade" onRequestClose={() => setSignaturePreview(null)}>
-        <Pressable
-          className="flex-1 items-center justify-center bg-black/80"
-          onPress={() => setSignaturePreview(null)}
-        >
-          {signaturePreview ? (
-            <View className="rounded-2xl bg-white p-4">
-              <Image source={{ uri: signaturePreview }} style={{ width: 280, height: 120 }} resizeMode="contain" />
-            </View>
-          ) : null}
-        </Pressable>
-      </Modal>
     </View>
   );
 }

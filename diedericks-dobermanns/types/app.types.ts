@@ -778,6 +778,10 @@ export interface Contract {
   client_signature_url?: string | null;
   client_signature_device?: string | null;
   client_ip_on_sign?: string | null;
+  esign_token?: string | null;
+  esign_expires_at?: string | null;
+  body_html?: string | null;
+  contact_id?: string | null;
 }
 
 export type NotificationType =
