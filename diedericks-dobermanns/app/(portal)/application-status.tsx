@@ -11,7 +11,6 @@ import { Typography } from '@/components/ui/Typography';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useMyApplications } from '@/hooks/usePortal';
 import { clientStatusLabel, SENT_TO_MATT } from '@/lib/applications/fieldTiers';
-import { useAuthStore } from '@/stores/authStore';
 import type { ApplicationStatus } from '@/types/app.types';
 import { useRouter } from 'expo-router';
 
@@ -27,8 +26,7 @@ const TONE: Record<ApplicationStatus, BadgeTone> = {
 
 export default function ApplicationStatusScreen() {
   const router = useRouter();
-  const profile = useAuthStore((s) => s.profile);
-  const { data: applications, loading } = useMyApplications(profile?.id);
+  const { data: applications, loading } = useMyApplications();
   const { currentStep, quoteRevision, quoteRevisionNote } = useBuyerJourney();
   const app = applications[0];
 

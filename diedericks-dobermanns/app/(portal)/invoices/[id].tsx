@@ -6,37 +6,53 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { fetchInvoicePayments } from '@/lib/finance/clientPayments';
-import { fetchInvoiceById } from '@/lib/finance/queries';
+import { fetchMyClientInvoiceById } from '@/lib/portal/clientInvoices';
 import { exportInvoicePDF } from '@/lib/finance/generatePDF';
 import { formatAmount, formatDate, humanizeItemType } from '@/lib/finance/formatters';
+import { useAuthStore } from '@/stores/authStore';
 import type { InvoicePayment, InvoiceWithDetails } from '@/types/finance';
 
 export default function ClientInvoiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const clientId = useAuthStore((s) => s.profile?.id);
   const [invoice, setInvoice] = useState<InvoiceWithDetails | null>(null);
   const [payments, setPayments] = useState<InvoicePayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
-    Promise.all([fetchInvoiceById(id), fetchInvoicePayments(id)])
-      .then(([inv, pays]) => {
+    if (!id || !clientId) return;
+    fetchMyClientInvoiceById(id, clientId)
+      .then(async (inv) => {
         setInvoice(inv);
-        setPayments(pays);
+        if (inv) {
+          setPayments(await fetchInvoicePayments(id));
+        } else {
+          setPayments([]);
+        }
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, clientId]);
 
-  if (loading || !invoice) {
+  if (loading) {
     return (
       <ScreenContainer>
         <PageHeader eyebrow="Invoice" title="Detail" />
         <CardListSkeleton count={2} />
+      </ScreenContainer>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <ScreenContainer>
+        <PageHeader eyebrow="Invoice" title="Detail" />
+        <EmptyState title="Invoice not found" message="This invoice is not on your account." />
       </ScreenContainer>
     );
   }

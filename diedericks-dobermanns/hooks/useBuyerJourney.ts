@@ -32,18 +32,24 @@ export function useBuyerJourney() {
     setLoading(true);
     try {
       const supabase = requireSupabase();
-      const [appsRes, quotesRes, dogsRes] = await Promise.all([
-        supabase
-          .from('applications')
-          .select('id, status')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(1),
-        supabase
-          .from('quotes')
-          .select('id, status, revision, sent_at, last_sent_revision')
-          .neq('status', 'draft')
-          .order('created_at', { ascending: false }),
+      const appsRes = await supabase
+        .from('applications')
+        .select('id, status')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const appIds = (appsRes.data ?? []).map((a) => a.id);
+      let quotesQuery = supabase
+        .from('quotes')
+        .select('id, status, revision, sent_at, last_sent_revision')
+        .neq('status', 'draft')
+        .order('created_at', { ascending: false });
+      quotesQuery =
+        appIds.length > 0
+          ? quotesQuery.or(`client_id.eq.${userId},application_id.in.(${appIds.join(',')})`)
+          : quotesQuery.eq('client_id', userId);
+      const [quotesRes, dogsRes] = await Promise.all([
+        quotesQuery,
         supabase.from('dogs').select('id').eq('owner_id', userId).limit(1),
       ]);
 

@@ -47,7 +47,7 @@ export default function PortalDashboard() {
   const profile = useAuthStore((s) => s.profile);
   const name = profile?.full_name?.split(' ')[0] ?? 'there';
   const { dogs, loading, error } = usePortalDogs();
-  const { data: applications } = useMyApplications(profile?.id);
+  const { data: applications } = useMyApplications();
   const { currentStep } = useBuyerJourney();
   const { parents, litter, onWaitlist } = useCommittedBreeding();
   const isApproved = applications.some((a) => a.status === 'approved');

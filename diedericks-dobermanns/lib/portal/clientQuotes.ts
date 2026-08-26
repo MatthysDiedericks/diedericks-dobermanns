@@ -37,16 +37,23 @@ function one<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
 
-/** Non-draft quotes visible to the signed-in client (RLS). */
-export async function fetchMyClientQuotes(): Promise<ClientQuoteListRow[]> {
+/** Non-draft quotes visible to the signed-in client. Filter by userId — admin RLS would otherwise return every quote. */
+export async function fetchMyClientQuotes(userId: string): Promise<ClientQuoteListRow[]> {
   const supabase = requireSupabase();
-  const { data, error } = await supabase
+  const { data: apps } = await supabase.from('applications').select('id').eq('user_id', userId);
+  const appIds = (apps ?? []).map((a) => a.id);
+  let q = supabase
     .from('quotes')
     .select(
       'id, quote_number, status, total, currency, valid_until, sent_at, created_at, last_sent_revision, revision',
     )
     .neq('status', 'draft')
     .order('created_at', { ascending: false });
+  q =
+    appIds.length > 0
+      ? q.or(`client_id.eq.${userId},application_id.in.(${appIds.join(',')})`)
+      : q.eq('client_id', userId);
+  const { data, error } = await q;
   if (error) throw new Error(error.message);
   return ((data ?? []) as unknown as ClientQuoteListRow[]).map((q) => ({
     ...q,
@@ -54,17 +61,38 @@ export async function fetchMyClientQuotes(): Promise<ClientQuoteListRow[]> {
   }));
 }
 
-export async function fetchMyClientQuoteById(id: string): Promise<ClientQuoteDetail | null> {
+export async function fetchMyClientQuoteById(
+  id: string,
+  userId: string,
+): Promise<ClientQuoteDetail | null> {
   const supabase = requireSupabase();
   const { data: quote, error } = await supabase
     .from('quotes')
     .select(
-      'id, quote_number, status, total, currency, valid_until, sent_at, created_at, last_sent_revision, revision, notes, subtotal, discount',
+      'id, quote_number, status, total, currency, valid_until, sent_at, created_at, last_sent_revision, revision, notes, subtotal, discount, client_id, application_id',
     )
     .eq('id', id)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!quote) return null;
+
+  const row = quote as unknown as ClientQuoteDetail & {
+    client_id: string | null;
+    application_id: string | null;
+  };
+  if (row.client_id === userId) {
+    // owned
+  } else if (row.application_id) {
+    const { data: app } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('id', row.application_id)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (!app) return null;
+  } else {
+    return null;
+  }
 
   const { data: items, error: itemsErr } = await supabase
     .from('quote_items')

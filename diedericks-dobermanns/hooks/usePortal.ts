@@ -19,20 +19,26 @@ const PORTAL_CONTRACT_SELECT =
   'client_signed_at, client_signature_url, client_signature_device, client_ip_on_sign, esign_token, body_html';
 
 export function useContracts(): ListResult<Contract> {
+  const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
   return useRemoteList<Contract>(MOCK_CONTRACTS, (client) =>
-    client.from('contracts').select(PORTAL_CONTRACT_SELECT).order('created_at', { ascending: false }),
+    client
+      .from('contracts')
+      .select(PORTAL_CONTRACT_SELECT)
+      .eq('client_id', userId ?? '')
+      .order('created_at', { ascending: false }),
   );
 }
 
 /** The signed-in client's own applications. */
-export function useMyApplications(userId?: string): ListResult<Application> {
-  return useRemoteList<Application>(MOCK_APPLICATIONS, (client) => {
-    const base = client
+export function useMyApplications(): ListResult<Application> {
+  const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
+  return useRemoteList<Application>(MOCK_APPLICATIONS, (client) =>
+    client
       .from('applications')
       .select('id, full_name, email, phone, status, purpose, country, created_at, admin_notes')
-      .order('created_at', { ascending: false });
-    return userId ? base.eq('user_id', userId) : base;
-  });
+      .eq('user_id', userId ?? '')
+      .order('created_at', { ascending: false }),
+  );
 }
 
 const PORTAL_DOG_SELECT =

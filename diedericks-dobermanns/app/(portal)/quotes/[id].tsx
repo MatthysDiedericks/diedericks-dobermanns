@@ -14,9 +14,11 @@ import {
   fetchMyClientQuoteById,
   type ClientQuoteDetail,
 } from '@/lib/portal/clientQuotes';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ClientQuoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
   const [quote, setQuote] = useState<ClientQuoteDetail | null>(null);
   const [snapshot, setSnapshot] = useState<QuoteRevisionRow['snapshot'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,13 +26,13 @@ export default function ClientQuoteDetailScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !userId) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        const row = await fetchMyClientQuoteById(id);
+        const row = await fetchMyClientQuoteById(id, userId);
         if (cancelled) return;
         setQuote(row);
         if (row?.last_sent_revision) {
@@ -49,7 +51,7 @@ export default function ClientQuoteDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, userId]);
 
   const items = snapshot?.items ?? quote?.items ?? [];
   const total = Number(snapshot?.total ?? quote?.total ?? 0);

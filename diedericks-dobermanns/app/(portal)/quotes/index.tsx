@@ -14,21 +14,24 @@ import {
   fetchMyClientQuotes,
   type ClientQuoteListRow,
 } from '@/lib/portal/clientQuotes';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ClientQuotesScreen() {
   const router = useRouter();
+  const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
   const [quotes, setQuotes] = useState<ClientQuoteListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
       try {
         await claimMyRecords();
-        const rows = await fetchMyClientQuotes();
+        const rows = await fetchMyClientQuotes(userId);
         if (!cancelled) setQuotes(rows);
       } catch (e) {
         if (!cancelled) {
@@ -41,7 +44,7 @@ export default function ClientQuotesScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   return (
     <ScreenContainer>

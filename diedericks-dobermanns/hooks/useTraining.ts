@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import {
   MOCK_AVAILABILITY,
-  MOCK_DOGS,
   MOCK_SESSION_TYPES,
   MOCK_TRAINING_BOOKINGS,
 } from '@/lib/mockData';
@@ -44,10 +43,16 @@ export function useBookingById(id: string | undefined) {
     setError(null);
     try {
       const supabase = requireSupabase();
+      const userId = useAuthStore.getState().session?.user.id ?? useAuthStore.getState().profile?.id;
+      if (!userId) {
+        setBooking(null);
+        return;
+      }
       const { data, error: qErr } = await supabase
         .from('training_bookings')
         .select(BOOKING_SELECT)
         .eq('id', id)
+        .eq('client_id', userId)
         .maybeSingle();
       if (qErr) throw new Error(qErr.message);
       setBooking(data as TrainingBooking | null);
@@ -114,13 +119,50 @@ export function useAdminTrainingBookings(): ListResult<TrainingBooking> {
   );
 }
 
-/** Dogs the client can attach to a session (reserved / purchased / in training). */
+/** Dogs the client can attach to a session — owned or reserved, via dog_ids_for. */
 export function useMyDogs(): ListResult<Dog> {
-  return useRemoteList<Dog>(MOCK_DOGS.slice(0, 3), (c) =>
-    c
-      .from('dogs')
-      .select('id, name, colour, sex, status, date_of_birth, dog_media(url, is_primary)')
-      .in('status', ['reserved', 'sold', 'in_training'])
-      .order('name'),
-  );
+  const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
+  const [data, setData] = useState<Dog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(async () => {
+    if (!userId) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = requireSupabase();
+      const { data: ids, error: idsErr } = await supabase.rpc('dog_ids_for', {
+        p_user_id: userId,
+      });
+      if (idsErr) throw new Error(idsErr.message);
+      const dogIds = (ids ?? []) as string[];
+      if (dogIds.length === 0) {
+        setData([]);
+        return;
+      }
+      const { data: rows, error: err } = await supabase
+        .from('dogs')
+        .select('id, name, colour, sex, status, date_of_birth, dog_media(url, is_primary)')
+        .in('id', dogIds)
+        .order('name');
+      if (err) throw new Error(err.message);
+      setData((rows ?? []) as unknown as Dog[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load your dogs');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
+
+  return { data, loading, error, refetch };
 }
