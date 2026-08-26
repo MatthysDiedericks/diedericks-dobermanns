@@ -115,7 +115,7 @@ export function QuoteListCard({
           </View>
           {buyer.showNoPortalMarker ? (
             <Typography variant="caption" className="mt-0.5 text-gold">
-              no portal account
+              no account yet
             </Typography>
           ) : null}
           <Typography variant="caption" className="mt-0.5">

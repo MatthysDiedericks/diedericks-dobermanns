@@ -51,6 +51,10 @@ export function quoteBuyerPhone(quote: QuoteBuyerSource): string | null {
   return firstText(quote.client?.phone, contact?.phone, quote.application?.phone);
 }
 
+/**
+ * client_id is set when a portal account exists (at quote creation, not at
+ * first sign-in). The marker means no account exists — not "has not signed in".
+ */
 export function quoteBuyerDisplay(quote: QuoteBuyerSource) {
   const name = quoteBuyerName(quote);
   const hasPortalAccount = Boolean(quote.client_id);
