@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -1680,11 +1680,12 @@ export type Database = {
           body_html: string | null
           body_snapshot_at: string | null
           breeder_signed_at: string | null
-          client_id: string
+          client_id: string | null
           client_ip_on_sign: string | null
           client_signature_device: string | null
           client_signature_url: string | null
           client_signed_at: string | null
+          contact_id: string | null
           contract_number: string | null
           contract_title: string | null
           created_at: string
@@ -1694,9 +1695,11 @@ export type Database = {
           esign_sent_at: string | null
           esign_token: string | null
           id: string
+          invoice_id: string | null
           litter_id: string | null
           notes: string | null
           parent_contract_id: string | null
+          quote_id: string | null
           reservation_id: string | null
           signed_at: string | null
           signed_by_breeder: boolean
@@ -1709,11 +1712,12 @@ export type Database = {
           body_html?: string | null
           body_snapshot_at?: string | null
           breeder_signed_at?: string | null
-          client_id: string
+          client_id?: string | null
           client_ip_on_sign?: string | null
           client_signature_device?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contact_id?: string | null
           contract_number?: string | null
           contract_title?: string | null
           created_at?: string
@@ -1723,9 +1727,11 @@ export type Database = {
           esign_sent_at?: string | null
           esign_token?: string | null
           id?: string
+          invoice_id?: string | null
           litter_id?: string | null
           notes?: string | null
           parent_contract_id?: string | null
+          quote_id?: string | null
           reservation_id?: string | null
           signed_at?: string | null
           signed_by_breeder?: boolean
@@ -1738,11 +1744,12 @@ export type Database = {
           body_html?: string | null
           body_snapshot_at?: string | null
           breeder_signed_at?: string | null
-          client_id?: string
+          client_id?: string | null
           client_ip_on_sign?: string | null
           client_signature_device?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contact_id?: string | null
           contract_number?: string | null
           contract_title?: string | null
           created_at?: string
@@ -1752,9 +1759,11 @@ export type Database = {
           esign_sent_at?: string | null
           esign_token?: string | null
           id?: string
+          invoice_id?: string | null
           litter_id?: string | null
           notes?: string | null
           parent_contract_id?: string | null
+          quote_id?: string | null
           reservation_id?: string | null
           signed_at?: string | null
           signed_by_breeder?: boolean
@@ -1772,11 +1781,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contracts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contracts_dog_id_fkey"
             columns: ["dog_id"]
             isOneToOne: false
             referencedRelation: "dogs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "contracts_litter_id_fkey"
@@ -1797,6 +1834,13 @@ export type Database = {
             columns: ["parent_contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -7458,6 +7502,7 @@ export type Database = {
           mother_id: string
         }[]
       }
+      my_contact_ids: { Args: never; Returns: string[] }
       my_dog_ids: { Args: never; Returns: string[] }
       my_dog_lineage: {
         Args: { target_dog_id: string }
@@ -7605,7 +7650,7 @@ export type Database = {
         Args: {
           p_contract_id: string
           p_device: string
-          p_ip?: string
+          p_ip: string
           p_signature_url: string
         }
         Returns: undefined

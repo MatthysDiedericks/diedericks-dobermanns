@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -127,6 +127,54 @@ export type Database = {
           },
         ]
       }
+      application_versions: {
+        Row: {
+          application_id: string
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          snapshot: Json
+          tier_touched: string
+          version_number: number
+        }
+        Insert: {
+          application_id: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          snapshot: Json
+          tier_touched: string
+          version_number: number
+        }
+        Update: {
+          application_id?: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          snapshot?: Json
+          tier_touched?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_versions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_versions_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           address: string | null
@@ -137,6 +185,7 @@ export type Database = {
           agreed_right_of_recall: boolean | null
           agreed_to_terms: boolean
           agreed_welfare_commitment: boolean | null
+          approved_version_number: number | null
           archived_at: string | null
           archived_by: string | null
           archived_reason: string | null
@@ -207,6 +256,7 @@ export type Database = {
           agreed_right_of_recall?: boolean | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
+          approved_version_number?: number | null
           archived_at?: string | null
           archived_by?: string | null
           archived_reason?: string | null
@@ -277,6 +327,7 @@ export type Database = {
           agreed_right_of_recall?: boolean | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
+          approved_version_number?: number | null
           archived_at?: string | null
           archived_by?: string | null
           archived_reason?: string | null
@@ -1629,11 +1680,12 @@ export type Database = {
           body_html: string | null
           body_snapshot_at: string | null
           breeder_signed_at: string | null
-          client_id: string
+          client_id: string | null
           client_ip_on_sign: string | null
           client_signature_device: string | null
           client_signature_url: string | null
           client_signed_at: string | null
+          contact_id: string | null
           contract_number: string | null
           contract_title: string | null
           created_at: string
@@ -1643,9 +1695,11 @@ export type Database = {
           esign_sent_at: string | null
           esign_token: string | null
           id: string
+          invoice_id: string | null
           litter_id: string | null
           notes: string | null
           parent_contract_id: string | null
+          quote_id: string | null
           reservation_id: string | null
           signed_at: string | null
           signed_by_breeder: boolean
@@ -1658,11 +1712,12 @@ export type Database = {
           body_html?: string | null
           body_snapshot_at?: string | null
           breeder_signed_at?: string | null
-          client_id: string
+          client_id?: string | null
           client_ip_on_sign?: string | null
           client_signature_device?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contact_id?: string | null
           contract_number?: string | null
           contract_title?: string | null
           created_at?: string
@@ -1672,9 +1727,11 @@ export type Database = {
           esign_sent_at?: string | null
           esign_token?: string | null
           id?: string
+          invoice_id?: string | null
           litter_id?: string | null
           notes?: string | null
           parent_contract_id?: string | null
+          quote_id?: string | null
           reservation_id?: string | null
           signed_at?: string | null
           signed_by_breeder?: boolean
@@ -1687,11 +1744,12 @@ export type Database = {
           body_html?: string | null
           body_snapshot_at?: string | null
           breeder_signed_at?: string | null
-          client_id?: string
+          client_id?: string | null
           client_ip_on_sign?: string | null
           client_signature_device?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contact_id?: string | null
           contract_number?: string | null
           contract_title?: string | null
           created_at?: string
@@ -1701,9 +1759,11 @@ export type Database = {
           esign_sent_at?: string | null
           esign_token?: string | null
           id?: string
+          invoice_id?: string | null
           litter_id?: string | null
           notes?: string | null
           parent_contract_id?: string | null
+          quote_id?: string | null
           reservation_id?: string | null
           signed_at?: string | null
           signed_by_breeder?: boolean
@@ -1721,11 +1781,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contracts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contracts_dog_id_fkey"
             columns: ["dog_id"]
             isOneToOne: false
             referencedRelation: "dogs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "contracts_litter_id_fkey"
@@ -1746,6 +1834,13 @@ export type Database = {
             columns: ["parent_contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -7201,6 +7296,7 @@ export type Database = {
     }
     Functions: {
       accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
+      application_field_tier: { Args: { p_field: string }; Returns: string }
       apply_marketing_opt_out: {
         Args: { p_allow_expired?: boolean; p_token: string }
         Returns: string
@@ -7406,6 +7502,7 @@ export type Database = {
           mother_id: string
         }[]
       }
+      my_contact_ids: { Args: never; Returns: string[] }
       my_dog_ids: { Args: never; Returns: string[] }
       my_dog_lineage: {
         Args: { target_dog_id: string }
@@ -7490,6 +7587,10 @@ export type Database = {
         Returns: string
       }
       rate_limit_request_key: { Args: { p_action: string }; Returns: string }
+      reapprove_application_changes: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       record_marketing_consent: {
         Args: {
           p_email: string
@@ -7531,6 +7632,10 @@ export type Database = {
         Returns: number
       }
       resume_audit: { Args: never; Returns: string }
+      save_application_amendment: {
+        Args: { p_application_id: string; p_patch: Json }
+        Returns: Json
+      }
       security_require_admin: { Args: { p_fn: string }; Returns: undefined }
       set_app_secret: {
         Args: { p_name: string; p_value: string }
@@ -7545,7 +7650,7 @@ export type Database = {
         Args: {
           p_contract_id: string
           p_device: string
-          p_ip?: string
+          p_ip: string
           p_signature_url: string
         }
         Returns: undefined
