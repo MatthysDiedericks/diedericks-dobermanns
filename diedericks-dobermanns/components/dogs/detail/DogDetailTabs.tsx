@@ -7,6 +7,7 @@ import { DogHealthTab } from '@/components/dogs/detail/DogHealthTab';
 import { DogLinksTab } from '@/components/dogs/detail/DogLinksTab';
 import { DogTemperamentTab } from '@/components/dogs/detail/DogTemperamentTab';
 import { DocumentList } from '@/components/documents/DocumentList';
+import { MicrochipQuickAttach } from '@/components/documents/MicrochipQuickAttach';
 import { DogOverviewTab } from '@/components/dogs/detail/DogOverviewTab';
 import { Typography } from '@/components/ui/Typography';
 import { useAuthStore } from '@/stores/authStore';
@@ -67,13 +68,18 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
         {active === 'breeding' && !clientView ? <DogBreedingTab dog={dog} /> : null}
         {active === 'temperament' ? <DogTemperamentTab dog={dog} canEdit={isAdmin} /> : null}
         {active === 'documents' ? (
-          <DocumentList
-            entityType="dog"
-            entityId={dogId}
-            readOnly={clientView}
-            showUpload={!clientView}
-            clientVisibleOnly={clientView}
-          />
+          <>
+            {!clientView ? (
+              <MicrochipQuickAttach dogId={dogId} dogName={dog.name} onSaved={onRefresh} />
+            ) : null}
+            <DocumentList
+              entityType="dog"
+              entityId={dogId}
+              readOnly={clientView}
+              showUpload={!clientView}
+              clientVisibleOnly={clientView}
+            />
+          </>
         ) : null}
         {active === 'gallery' ? <DogLinksTab dogId={dogId} variant="gallery" /> : null}
         {active === 'pedigree' ? (

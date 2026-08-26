@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, ScrollVi
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
 import { ExpiringDogsPanel } from '@/components/documents/ExpiringDogsPanel';
+import { PendingClientDocsPanel } from '@/components/documents/PendingClientDocsPanel';
 import {
   UploadDocumentSheet,
   type UploadDocumentSheetHandle,
@@ -93,6 +94,9 @@ export default function KennelDocumentsScreen() {
         }
         onCountChange={setExpiringCount}
       />
+      <View className="px-6">
+        <PendingClientDocsPanel />
+      </View>
 
       <View className="px-6 mb-4">
         <Input value={search} onChangeText={setSearch} placeholder="Search documents or categories…" />

@@ -10,6 +10,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useMyApplications } from '@/hooks/usePortal';
+import { canApplyAgain } from '@/lib/applications/applyAgain';
 import { clientStatusLabel, SENT_TO_MATT } from '@/lib/applications/fieldTiers';
 import type { ApplicationStatus } from '@/types/app.types';
 import { useRouter } from 'expo-router';
@@ -98,9 +99,18 @@ export default function ApplicationStatusScreen() {
             <Button
               label="Update my details"
               variant="outline"
-              onPress={() => router.push('/(portal)/application-edit')}
+              onPress={() => router.push('/(portal)/application-edit' as never)}
             />
           </View>
+          {canApplyAgain(app.status) ? (
+            <View className="mt-3">
+              <Button
+                label="Apply for another dog"
+                variant="outline"
+                onPress={() => router.push('/(portal)/application-another' as never)}
+              />
+            </View>
+          ) : null}
         </View>
       ) : null}
     </ScreenContainer>

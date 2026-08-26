@@ -71,6 +71,7 @@ export default function PortalLayout() {
         <Tabs.Screen name="contracts" options={{ href: null }} />
         <Tabs.Screen name="application-status" options={{ href: null }} />
         <Tabs.Screen name="application-edit" options={{ href: null }} />
+        <Tabs.Screen name="application-another" options={{ href: null }} />
         <Tabs.Screen name="training-updates/[dogId]" options={{ href: null }} />
         <Tabs.Screen name="puppy-tracker/[puppyId]" options={{ href: null }} />
         <Tabs.Screen name="add-photos/[dogId]" options={{ href: null }} />

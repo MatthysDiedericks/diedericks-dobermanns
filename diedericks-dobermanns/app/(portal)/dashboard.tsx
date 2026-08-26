@@ -22,6 +22,7 @@ import { Colors } from '@/constants/colors';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useCommittedBreeding } from '@/hooks/useCommittedBreeding';
 import { useMyApplications, usePortalDogs } from '@/hooks/usePortal';
+import { canApplyAgain } from '@/lib/applications/applyAgain';
 import { ageFromDob, birthdayAgeWords, isBirthdayToday } from '@/lib/format';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -115,7 +116,7 @@ export default function PortalDashboard() {
                     <Typography variant="caption" className="mt-2">
                       {[dog.colour, dog.sex, ageFromDob(dog.date_of_birth)]
                         .filter(Boolean)
-                        .join(' ù ')}
+                        .join(' ? ')}
                     </Typography>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
@@ -193,7 +194,7 @@ export default function PortalDashboard() {
               <View className="ml-3 flex-1">
                 <Typography variant="subtitle">Request training</Typography>
                 <Typography variant="caption" className="mt-0.5">
-                  Tell us what you need ó not a booking
+                  Tell us what you need ? not a booking
                 </Typography>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
@@ -240,6 +241,18 @@ export default function PortalDashboard() {
 
       <View className="mt-8 px-6">
         <SectionHeader eyebrow="Shortcuts" title="Quick Links" />
+        {canApplyAgain(applications[0]?.status) ? (
+          <Link href={'/(portal)/application-another' as Href} asChild>
+            <Pressable>
+              <Card className="mb-3">
+                <Typography variant="subtitle">Apply for another dog</Typography>
+                <Typography variant="caption" className="mt-1 text-subtle">
+                  A new application. Your previous approval stays as it is.
+                </Typography>
+              </Card>
+            </Pressable>
+          </Link>
+        ) : null}
         <View className="flex-row gap-3">
           {quickLinks.map((link) => (
             <Link key={String(link.href)} href={link.href} asChild>

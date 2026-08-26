@@ -467,17 +467,29 @@ export function useClientPortalDocuments(forUserId?: string) {
       });
       if (idsErr) throw new Error(idsErr.message);
       const visible = (ids ?? []) as string[];
-      if (visible.length === 0) {
-        setDocuments([]);
-        return;
+      const [listed, ownHealth] = await Promise.all([
+        visible.length > 0
+          ? supabase.from('documents').select(DOCUMENT_SELECT).in('id', visible)
+          : Promise.resolve({ data: [] as never[], error: null }),
+        supabase
+          .from('documents')
+          .select(DOCUMENT_SELECT)
+          .eq('entity_type', 'health')
+          .eq('provided_by', 'client')
+          .eq('uploaded_by', userId),
+      ]);
+      if (listed.error) throw new Error(listed.error.message);
+      if (ownHealth.error) throw new Error(ownHealth.error.message);
+      const byId = new Map<string, DocumentRecord>();
+      for (const row of [...(listed.data ?? []), ...(ownHealth.data ?? [])]) {
+        const mapped = mapRow(row as Record<string, unknown>);
+        byId.set(mapped.id, mapped);
       }
-      const { data, error: err } = await supabase
-        .from('documents')
-        .select(DOCUMENT_SELECT)
-        .in('id', visible)
-        .order('uploaded_at', { ascending: false });
-      if (err) throw new Error(err.message);
-      setDocuments((data ?? []).map((r) => mapRow(r as Record<string, unknown>)));
+      setDocuments(
+        [...byId.values()].filter(
+          (doc) => !(doc.provided_by === 'client' && doc.uploaded_by && doc.uploaded_by !== userId),
+        ),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load documents');
       setDocuments([]);

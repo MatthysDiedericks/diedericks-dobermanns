@@ -48,30 +48,35 @@ export function useDogHealthSchedule() {
     setError(null);
     try {
       const client = requireSupabase();
-      const { data: dogs, error: dErr } = await client
-        .from('dogs')
-        .select('id, name')
-        .eq('owner_id', userId);
-      if (dErr) throw new Error(dErr.message);
-      const owned = dogs ?? [];
-      if (owned.length === 0) {
+      const { data: ids, error: idsErr } = await client.rpc('dog_ids_for', {
+        p_user_id: userId,
+      });
+      if (idsErr) throw new Error(idsErr.message);
+      const dogIds = (ids ?? []) as string[];
+      if (dogIds.length === 0) {
         setEntries([]);
         return;
       }
+      const { data: dogs, error: dErr } = await client
+        .from('dogs')
+        .select('id, name')
+        .in('id', dogIds);
+      if (dErr) throw new Error(dErr.message);
+      const owned = dogs ?? [];
 
-      const dogIds = owned.map((d) => d.id);
+      const ownedIds = owned.map((d) => d.id);
       const nameById = new Map(owned.map((d) => [d.id, d.name]));
 
       const [vRes, dewRes] = await Promise.all([
         client
           .from('vaccinations')
           .select(VAX_SELECT)
-          .in('dog_id', dogIds)
+          .in('dog_id', ownedIds)
           .order('date_administered', { ascending: false }),
         client
           .from('deworming_records')
           .select(WORM_SELECT)
-          .in('dog_id', dogIds)
+          .in('dog_id', ownedIds)
           .order('treatment_date', { ascending: false }),
       ]);
       if (vRes.error) throw new Error(vRes.error.message);

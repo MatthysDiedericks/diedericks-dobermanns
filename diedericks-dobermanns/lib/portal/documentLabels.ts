@@ -11,6 +11,16 @@ export const PORTAL_CATEGORY_LABELS: Record<string, string> = {
   export_permit: 'Export papers',
   other: 'Other document',
   proof_of_payment: 'Proof of payment',
+  puppy_birth_certificate: 'Birth certificate',
+  transfer_of_ownership: 'Transfer of ownership',
+  purchase_agreement: 'Purchase agreement',
+  puppy_guarantee: 'Puppy guarantee',
+  health_warranty: 'Health warranty',
+  training_certificate: 'Training certificate',
+  training_report: 'Training report',
+  psa_certificate: 'PSA certificate',
+  eye_test: 'Eye test',
+  heart_test: 'Heart test',
 };
 
 export function portalCategoryLabel(category: string | null | undefined): string {

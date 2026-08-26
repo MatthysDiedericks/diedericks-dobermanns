@@ -575,6 +575,7 @@ export interface Application {
   archived_at?: string | null;
   archived_by?: string | null;
   archived_reason?: string | null;
+  previous_application_id?: string | null;
   created_at: string;
   updated_at: string;
 }

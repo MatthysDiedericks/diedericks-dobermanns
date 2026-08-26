@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.17"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       achievements: {
@@ -226,6 +251,7 @@ export type Database = {
           preferred_colour: string | null
           preferred_sex: string | null
           preferred_timeline: string | null
+          previous_application_id: string | null
           previous_dog_fate: string | null
           province: string | null
           purpose: string | null
@@ -297,6 +323,7 @@ export type Database = {
           preferred_colour?: string | null
           preferred_sex?: string | null
           preferred_timeline?: string | null
+          previous_application_id?: string | null
           previous_dog_fate?: string | null
           province?: string | null
           purpose?: string | null
@@ -368,6 +395,7 @@ export type Database = {
           preferred_colour?: string | null
           preferred_sex?: string | null
           preferred_timeline?: string | null
+          previous_application_id?: string | null
           previous_dog_fate?: string | null
           province?: string | null
           purpose?: string | null
@@ -410,6 +438,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_litter_go_home"
             referencedColumns: ["litter_id"]
+          },
+          {
+            foreignKeyName: "applications_previous_application_id_fkey"
+            columns: ["previous_application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "applications_reviewed_by_fkey"
@@ -3090,6 +3125,70 @@ export type Database = {
           product_name?: string
         }
         Relationships: []
+      }
+      health_reminders: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          dog_id: string
+          done_at: string | null
+          due_date: string
+          id: string
+          is_done: boolean
+          kind: string
+          note: string | null
+          title: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by: string
+          dog_id: string
+          done_at?: string | null
+          due_date: string
+          id?: string
+          is_done?: boolean
+          kind: string
+          note?: string | null
+          title: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          dog_id?: string
+          done_at?: string | null
+          due_date?: string
+          id?: string
+          is_done?: boolean
+          kind?: string
+          note?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_reminders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_reminders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_reminders_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       health_tests: {
         Row: {
@@ -7799,6 +7898,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

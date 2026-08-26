@@ -13,7 +13,7 @@ export type DocumentEntityType =
 export type DocumentFileType = 'pdf' | 'jpg' | 'png' | 'docx' | 'xlsx';
 
 export const DOCUMENT_SELECT =
-  'id, entity_type, entity_id, document_name, original_filename, storage_path, file_type, category, date_of_document, expiry_date, issued_by, document_number, description, client_visible, allowed_user_ids, is_public, uploaded_by, uploaded_at, file_size_bytes, mime_type';
+  'id, entity_type, entity_id, document_name, original_filename, storage_path, file_type, category, date_of_document, expiry_date, issued_by, document_number, description, client_visible, allowed_user_ids, is_public, uploaded_by, uploaded_at, file_size_bytes, mime_type, provided_by, review_status, review_note';
 
 export const DOG_CATEGORIES = [
   'Pedigree',
@@ -111,5 +111,5 @@ export const ACCEPTED_MIME_TYPES = [
 
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
-/** Sentinel UUID for kennel-wide documents on the master screen */
+/** Sentinel UUID for kennel-wide documents (`documents.entity_type = 'kennel'`). */
 export const KENNEL_DOCUMENT_ENTITY_ID = '00000000-0000-0000-0000-000000000001';

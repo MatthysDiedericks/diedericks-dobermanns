@@ -8,6 +8,7 @@ import { ApprovalQuoteStatus } from '@/components/applications/ApprovalQuoteStat
 import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
 import { PendingChangesAdminBlock } from '@/components/applications/PendingChangesAdminBlock';
 import { ApplicationVersionsBlock } from '@/components/applications/ApplicationVersionsBlock';
+import { ReturningBuyerCard } from '@/components/applications/ReturningBuyerCard';
 import { IdCheckBlock } from '@/components/applications/IdCheckBlock';
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
@@ -139,6 +140,10 @@ export default function ApplicationDetailScreen() {
             <Badge label="Follow-up needed" tone="danger" />
           ) : null}
         </View>
+
+        {app.previous_application_id ? (
+          <ReturningBuyerCard previousId={app.previous_application_id} />
+        ) : null}
 
         {app.status === 'changes_pending' ? (
           <PendingChangesAdminBlock

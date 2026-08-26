@@ -21,6 +21,9 @@ export interface DocumentRecord {
   uploaded_at: string;
   file_size_bytes: number | null;
   mime_type: string | null;
+  provided_by?: string | null;
+  review_status?: string | null;
+  review_note?: string | null;
 }
 
 export interface DocumentUploadMetadata {
