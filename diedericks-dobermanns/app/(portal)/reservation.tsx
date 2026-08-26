@@ -11,6 +11,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { usePortalReservation } from '@/hooks/usePortal';
 import { formatPrice } from '@/lib/format';
+import { supabaseThumbUrl } from '@/lib/thumbs';
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -24,6 +25,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export default function ReservationScreen() {
   const { reservation, loading, error } = usePortalReservation();
   const dog = reservation?.dog;
+  const photoUrl = dog?.media?.[0]?.url;
+  const thumb = photoUrl ? supabaseThumbUrl(photoUrl, 'hero') : null;
 
   return (
     <ScreenContainer>
@@ -37,16 +40,7 @@ export default function ReservationScreen() {
         {dog && reservation ? (
           <>
             <Card>
-              <View className="h-44 w-full overflow-hidden rounded-xl bg-surface">
-                {dog.media?.[0] ? (
-                  <Image
-                    source={{ uri: dog.media[0].url }}
-                    style={{ width: '100%', height: '100%' }}
-                    contentFit="cover"
-                  />
-                ) : null}
-              </View>
-              <View className="mt-4 flex-row items-center justify-between">
+              <View className="flex-row items-center justify-between">
                 <Typography variant="title">{dog.name}</Typography>
                 <DogStatusBadge status={dog.status} />
               </View>
@@ -65,6 +59,17 @@ export default function ReservationScreen() {
                 }
               />
             </Card>
+
+            {thumb ? (
+              <View className="mt-4 w-full overflow-hidden rounded-xl bg-surface" style={{ maxHeight: 420 }}>
+                <Image
+                  source={{ uri: thumb }}
+                  style={{ width: '100%', height: 280 }}
+                  contentFit="cover"
+                  contentPosition={{ top: '30%', left: '50%' }}
+                />
+              </View>
+            ) : null}
           </>
         ) : null}
       </View>
