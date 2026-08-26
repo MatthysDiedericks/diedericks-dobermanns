@@ -48,19 +48,43 @@ serve(async (req) => {
   if (error || !row?.email) {
     const { data: flags } = await admin.rpc('auth_invite_flags', { p_email: email });
     const f = Array.isArray(flags) ? flags[0] : flags;
-    const scanner = Boolean(f?.email_confirmed_at && !f?.last_sign_in_at);
+    const { data: prior } = await admin
+      .from('portal_invites')
+      .select('expires_at, code_redeemed_at, opened_at')
+      .eq('email', email)
+      .eq('code_hash', codeHash)
+      .order('invited_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const used = Boolean(
+      prior?.code_redeemed_at || prior?.opened_at || f?.last_sign_in_at,
+    );
+    const scanner = used && Boolean(f?.email_confirmed_at && !f?.last_sign_in_at);
+    const expired =
+      !used &&
+      Boolean(prior?.expires_at && new Date(prior.expires_at as string).getTime() <= Date.now());
     await admin.from('error_events').insert({
-      code: scanner ? 'INVITE_SCANNER_CONSUMED' : 'INVITE_EXPIRED_USED',
+      code: scanner ? 'INVITE_SCANNER_CONSUMED' : used ? 'INVITE_USED' : 'INVITE_EXPIRED',
       area: 'auth',
       severity: 'error',
-      message: scanner
-        ? 'Invite code failed after email was confirmed without a sign-in'
-        : 'Invite code missing or expired',
+      message: used
+        ? 'Invite code already used'
+        : scanner
+          ? 'Invite failed after email confirmed with no sign-in (scanner-shaped)'
+          : 'Invite code missing or expired',
+      detail: { reason: scanner ? 'scanner' : used ? 'used' : expired ? 'expired' : 'missing' },
       actor_role: 'anon',
       surface: 'app',
       route: '/redeem-portal-invite',
     });
-    return json({ error: 'That code is not right, or it has expired.' }, 400);
+    return json(
+      {
+        error: used
+          ? 'This code has already been used — ask Matt for a new one.'
+          : 'That code is not right, or it has expired. Ask Matt for a new one.',
+      },
+      400,
+    );
   }
 
   const generated = await admin.auth.admin.generateLink({
@@ -80,6 +104,12 @@ serve(async (req) => {
     })();
   if (!tokenHash) {
     return json({ error: 'Could not open the account. Ask Matt for a new code.' }, 500);
+  }
+  if (row.id) {
+    await admin
+      .from('portal_invites')
+      .update({ code_redeemed_at: new Date().toISOString() })
+      .eq('id', row.id);
   }
   return json({ tokenHash });
 });

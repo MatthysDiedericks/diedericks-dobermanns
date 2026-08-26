@@ -15,10 +15,15 @@ import { useAuth } from '@/hooks/useAuth';
 const RESEND_COOLDOWN_SECS = 60;
 const WRONG_CODE_MESSAGE = "That code isn't right — check your email and try again.";
 
-/** Surfaces Supabase's own error for an expired code, but replaces a generic
- * "invalid token" message with clearer, friendlier copy for a plain typo. */
 function friendlyVerifyError(message: string): string {
-  return message.toLowerCase().includes('expired') ? message : WRONG_CODE_MESSAGE;
+  const m = message.toLowerCase();
+  if (m.includes('already been used') || (m.includes('used') && !m.includes('expired'))) {
+    return 'This link has already been used — ask Matt for a new one.';
+  }
+  if (m.includes('expired')) {
+    return 'This link has expired. Ask Matt for a new one.';
+  }
+  return WRONG_CODE_MESSAGE;
 }
 
 export default function VerifyCodeScreen() {
@@ -108,7 +113,8 @@ export default function VerifyCodeScreen() {
             We sent a verification code to {email}. Enter it below to confirm your account.
           </Typography>
           <Typography variant="caption" className="mb-8 text-subtle">
-            It can take a minute or two to arrive and stays valid for 10 minutes, so there&apos;s no rush. Check your spam folder before requesting a new one.
+            Stuck after a WhatsApp link? Enter the 6-digit code Matt sent. Opened from
+            WhatsApp? Tap ⋯ and choose Open in browser.
           </Typography>
 
           <Input
