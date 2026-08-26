@@ -36,7 +36,7 @@ export function useMyApplications(userId?: string): ListResult<Application> {
 }
 
 const PORTAL_DOG_SELECT =
-  'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media(url, is_primary)';
+  'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media(url, thumbnail_url, is_primary)';
 
 export function usePortalDogs(forUserId?: string) {
   const sessionId = useAuthStore((s) => s.session?.user.id);

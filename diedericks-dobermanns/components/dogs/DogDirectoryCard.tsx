@@ -56,8 +56,8 @@ function SexColourRow({ sex, colour }: { sex: KennelDog['sex']; colour: KennelDo
 }
 
 function DogPhoto({ dog, muted }: { dog: KennelDog; muted?: boolean }) {
-  const photo =
-    dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url ?? null;
+  const picked = dog.media?.find((m) => m.is_primary) ?? dog.media?.[0];
+  const photo = picked?.thumbnail_url || picked?.url || null;
 
   return (
     <View
