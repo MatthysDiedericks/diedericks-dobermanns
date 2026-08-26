@@ -11,8 +11,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useDogHealthSchedule } from '@/hooks/useDogHealthSchedule';
 import { useHealthReminders, markHealthReminderDone } from '@/hooks/useHealthReminders';
+import { useClientHealthUploads } from '@/hooks/useClientHealthUpload';
 import { usePortalDogs } from '@/hooks/usePortal';
 import { dueWording } from '@/lib/dogs/healthCalendar';
+import { portalCategoryLabel } from '@/lib/portal/documentLabels';
+import { clientUploadStatusLine } from '@/lib/portal/healthUploads';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -21,6 +24,7 @@ export default function HealthScheduleScreen() {
   const { dogs } = usePortalDogs();
   const { upcoming, loading, error, refresh } = useDogHealthSchedule();
   const { reminders, refresh: refreshReminders } = useHealthReminders(userId ?? '');
+  const { uploads, refresh: refreshUploads } = useClientHealthUploads();
   const ownerOpen = reminders.filter((r) => !r.is_done);
 
   return (
@@ -69,7 +73,7 @@ export default function HealthScheduleScreen() {
         {ownerOpen.map((r) => (
           <Card key={r.id} className="mb-2 border border-dashed border-gold/40">
             <Typography variant="caption" className="text-gold">
-              SET BY THE OWNER
+              SET BY YOU
             </Typography>
             <Typography variant="subtitle" className="mt-1">
               {r.title}
@@ -94,8 +98,19 @@ export default function HealthScheduleScreen() {
 
         <VetPaperworkCard
           dogs={dogs.map((d) => ({ id: d.id, name: d.name }))}
-          onSaved={() => void refresh()}
+          onSaved={() => {
+            void refresh();
+            void refreshUploads();
+          }}
         />
+        {uploads.map((u) => (
+          <Card key={u.id} className="mb-2">
+            <Typography variant="body">{u.document_name}</Typography>
+            <Typography variant="caption" className="mt-1 text-subtle">
+              {portalCategoryLabel(u.category)} · {clientUploadStatusLine(u)}
+            </Typography>
+          </Card>
+        ))}
       </View>
     </ScreenContainer>
   );
