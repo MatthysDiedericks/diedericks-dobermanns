@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { updateEnquiryStatus } from '@/hooks/useMutations';
+import { attachAliases, type ContactListItem, type MergedContactAlias } from '@/lib/contacts/search';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type {
@@ -31,25 +32,38 @@ function mapContact(row: Record<string, unknown>): ContactRow {
   return row as unknown as ContactRow;
 }
 
-function applySearch(rows: ContactRow[], search: string): ContactRow[] {
-  const q = search.trim().toLowerCase();
-  if (!q) return rows;
-  return rows.filter(
-    (c) =>
-      c.full_name.toLowerCase().includes(q) ||
-      (c.email?.toLowerCase().includes(q) ?? false) ||
-      (c.phone?.includes(q) ?? false) ||
-      (c.company?.toLowerCase().includes(q) ?? false),
-  );
+async function fetchMergedAliases(): Promise<MergedContactAlias[]> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('id, full_name, email, phone, whatsapp_number, merged_into_contact_id')
+    .not('merged_into_contact_id', 'is', null);
+  if (error) {
+    console.error('[fetchMergedAliases]', error.message);
+    return [];
+  }
+  return ((data ?? []) as {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    whatsapp_number: string | null;
+    merged_into_contact_id: string | null;
+  }[])
+    .filter((r) => r.merged_into_contact_id)
+    .map((r) => ({
+      id: r.id,
+      name: r.full_name ?? '',
+      email: r.email,
+      phone: r.phone,
+      whatsapp_number: r.whatsapp_number,
+      merged_into_contact_id: r.merged_into_contact_id as string,
+    }));
 }
 
-export function useContacts(
-  tag?: string,
-  search = '',
-  contactType: ContactSegment = 'all',
-) {
+export function useContacts(tag?: string, contactType: ContactSegment = 'all') {
   const role = useAuthStore((s) => s.profile?.role);
-  const [data, setData] = useState<ContactRow[]>([]);
+  const [data, setData] = useState<ContactListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,21 +82,21 @@ export function useContacts(
       else if (contactType === 'prospect') q = q.eq('contact_type', 'prospect');
       else if (contactType === 'other') q = q.in('contact_type', [...OTHER_TYPES]);
 
-      const { data: rows, error: err } = await q;
+      const [{ data: rows, error: err }, aliases] = await Promise.all([q, fetchMergedAliases()]);
       if (err) throw new Error(err.message);
 
       let filtered = (rows ?? []).map((r) => mapContact(r as Record<string, unknown>));
       if (role !== 'super_admin') {
         filtered = filtered.filter((c) => !c.is_do_not_sell);
       }
-      setData(applySearch(filtered, search));
+      setData(attachAliases(filtered, aliases));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load contacts');
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [tag, search, contactType, role]);
+  }, [tag, contactType, role]);
 
   useEffect(() => {
     void load();

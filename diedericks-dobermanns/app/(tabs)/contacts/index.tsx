@@ -1,18 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FlatList, Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { AddContactSheet, type AddContactSheetHandle } from '@/components/contacts/AddContactSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Input } from '@/components/ui/Input';
+import { ListSearch, noMatchLine } from '@/components/ui/ListSearch';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { CONTACT_TAGS, useContactSummary, useContacts } from '@/hooks/useContacts';
+import { contactMatches, matchedAliasName } from '@/lib/contacts/search';
 import { openWhatsApp } from '@/lib/social';
 import { useAuthStore } from '@/stores/authStore';
 import type { ContactRow, ContactSegment } from '@/types/phase10';
@@ -42,10 +43,13 @@ export default function ContactsScreen() {
 
   const { data, loading, refresh } = useContacts(
     tag === 'all' ? undefined : tag,
-    search,
     segment,
   );
   const { summary } = useContactSummary();
+  const rows = useMemo(
+    () => data.filter((c) => contactMatches(c, search)),
+    [data, search],
+  );
 
   return (
     <ScreenContainer scroll={false}>
@@ -68,7 +72,13 @@ export default function ContactsScreen() {
       </ScrollView>
 
       <View className="px-6 mb-3">
-        <Input value={search} onChangeText={setSearch} placeholder="Search contacts" />
+        <ListSearch
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by name, email, phone or WhatsApp"
+          shown={rows.length}
+          total={data.length}
+        />
         <View className="mt-3 flex-row flex-wrap gap-2">
           {['all', ...CONTACT_TAGS].map((t) => (
             <Pressable
@@ -88,17 +98,21 @@ export default function ContactsScreen() {
         </View>
       ) : null}
 
-      {!loading && data.length === 0 ? (
-        <EmptyState title="No contacts" message="Add a contact or adjust your filters." />
+      {!loading && rows.length === 0 ? (
+        <EmptyState
+          title={search.trim() ? noMatchLine('contact', search) : 'No contacts'}
+          message={search.trim() ? undefined : 'Add a contact or adjust your filters.'}
+        />
       ) : (
         <FlatList
-          data={data}
+          data={rows}
           keyExtractor={(item) => item.id}
           contentContainerClassName="px-6 pb-24 gap-3"
           refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={Colors.gold} />}
           renderItem={({ item }) => {
             const badge = typeBadge(item);
             const wa = item.whatsapp_number ?? item.phone;
+            const aka = matchedAliasName(item, search);
             return (
               <Pressable onPress={() => router.push(`/(tabs)/contacts/${item.id}` as never)}>
                 <Card>
@@ -112,6 +126,11 @@ export default function ContactsScreen() {
                       </Typography>
                     ) : null}
                   </View>
+                  {aka ? (
+                    <Typography variant="caption" className="mt-1 text-subtle">
+                      also known as {aka}
+                    </Typography>
+                  ) : null}
                   <View className="mt-2 flex-row flex-wrap items-center gap-2">
                     <View className={`rounded-full px-2 py-0.5 ${badge.className.split(' ')[1]}`}>
                       <Typography variant="caption" className={badge.className.split(' ')[0]}>

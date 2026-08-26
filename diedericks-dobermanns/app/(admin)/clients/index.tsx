@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ListSearch, noMatchLine } from '@/components/ui/ListSearch';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useClients } from '@/hooks/useAdmin';
+import { rowMatches } from '@/lib/search/match';
 import { openWhatsApp } from '@/lib/social';
 
 function initials(name: string | null): string {
@@ -25,15 +28,37 @@ function initials(name: string | null): string {
 export default function AdminClientsScreen() {
   const router = useRouter();
   const { data: clients, loading } = useClients();
+  const [search, setSearch] = useState('');
+  const rows = useMemo(
+    () =>
+      clients.filter((c) =>
+        rowMatches(search, {
+          text: [c.full_name, c.email],
+          phones: [c.phone],
+        }),
+      ),
+    [clients, search],
+  );
 
   return (
     <ScreenContainer>
       <PageHeader eyebrow="People" title="Clients" back={false} />
+      <View className="px-6 mb-3">
+        <ListSearch
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by name, email or phone"
+          shown={rows.length}
+          total={clients.length}
+        />
+      </View>
       <View className="gap-3 px-6">
-        {!loading && clients.length === 0 ? (
-          <EmptyState title="No clients yet" />
+        {!loading && rows.length === 0 ? (
+          <EmptyState
+            title={search.trim() ? noMatchLine('client', search) : 'No clients yet'}
+          />
         ) : (
-          clients.map((client) => (
+          rows.map((client) => (
             <Pressable key={client.id} onPress={() => router.push(`/(admin)/clients/${client.id}`)}>
               <Card className="flex-row items-center">
                 <View className="h-12 w-12 items-center justify-center rounded-full bg-gold/15">
