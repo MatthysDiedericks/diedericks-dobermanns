@@ -2,7 +2,8 @@ import { View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
 import { handoverBlockers } from '@/lib/dogs/handoverBlockers';
-import { formatPrice, titleCase } from '@/lib/format';
+import { programmeTierLabel } from '@/lib/dogs/programmeTier';
+import { formatPrice } from '@/lib/format';
 import type { Dog } from '@/types/app.types';
 
 export function AdminWorkStrip({
@@ -26,7 +27,7 @@ export function AdminWorkStrip({
     vaccinationsIncomplete,
   });
   const buyer = dog.owner_contact?.full_name || dog.new_owner_name;
-  const tier = dog.programme_tier ? titleCase(dog.programme_tier) : null;
+  const tier = programmeTierLabel(dog.programme_tier, null);
   const price = dog.price != null ? formatPrice(dog.price) : null;
 
   return (

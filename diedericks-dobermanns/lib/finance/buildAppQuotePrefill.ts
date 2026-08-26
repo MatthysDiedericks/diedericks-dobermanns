@@ -90,26 +90,22 @@ export async function buildAppQuotePrefill(
   if (app.specific_dog_id) {
     const { data: dog } = await supabase
       .from('dogs')
-      .select('price, programme_tier, litter:litters(default_programme_tier)')
+      .select('price, programme_tier')
       .eq('id', app.specific_dog_id)
       .maybeSingle();
     if (dog) {
       dogPrice = dog.price;
       dogTier = dog.programme_tier;
-      const litterRaw = dog.litter;
-      const litter = Array.isArray(litterRaw) ? litterRaw[0] : litterRaw;
-      litterDefaultTier = litter?.default_programme_tier ?? null;
     }
   } else if (app.litter_interest_id) {
     const { data: litter } = await supabase
       .from('litters')
       .select(
-        'id, status, expected_date, default_programme_tier, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
+        'id, status, expected_date, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
       )
       .eq('id', app.litter_interest_id)
       .maybeSingle();
     if (litter) {
-      litterDefaultTier = litter.default_programme_tier ?? null;
       const mother = Array.isArray(litter.mother) ? litter.mother[0] : litter.mother;
       const father = Array.isArray(litter.father) ? litter.father[0] : litter.father;
       litterOpt = {
@@ -118,7 +114,7 @@ export async function buildAppQuotePrefill(
         father_name: (father as { name?: string | null } | null)?.name ?? '',
         expected_date: litter.expected_date,
         status: litter.status,
-        default_programme_tier: litterDefaultTier,
+        default_programme_tier: null,
       };
     }
   }

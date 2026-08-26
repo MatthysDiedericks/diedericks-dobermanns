@@ -12,10 +12,11 @@ export type InlineLitterPuppy = {
   new_owner_name: string | null;
   birth_order: number | null;
   deceased_at: string | null;
+  programme_tier: string | null;
 };
 
 const INLINE_SELECT =
-  'id, name, sex, status, collar_colour, reserved_for_name, new_owner_name, birth_order, deceased_at';
+  'id, name, sex, status, collar_colour, reserved_for_name, new_owner_name, birth_order, deceased_at, programme_tier';
 
 /** Fetch puppies for one litter only when that row is expanded. */
 export function useLitterInlinePuppies(litterId: string, enabled: boolean) {

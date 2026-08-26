@@ -9,7 +9,6 @@ export type QuoteDogOption = QuotePuppyOption;
 
 type Named = { name: string | null };
 type LitterJoin = {
-  default_programme_tier?: string | null;
   mother?: Named | Named[] | null;
   father?: Named | Named[] | null;
 };
@@ -32,7 +31,7 @@ export function useQuoteBuilderData(applicationId?: string | null) {
       supabase
         .from('dogs')
         .select(
-          'id, name, price, programme_tier, litter_id, status, sex, colour, collar_colour, tail_type, birth_order, litter:litters(default_programme_tier, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name))',
+          'id, name, price, programme_tier, litter_id, status, sex, colour, collar_colour, tail_type, birth_order, litter:litters(mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name))',
         )
         .neq('status', 'sold')
         .neq('status', 'deceased')
@@ -40,7 +39,7 @@ export function useQuoteBuilderData(applicationId?: string | null) {
       supabase
         .from('litters')
         .select(
-          'id, status, expected_date, default_programme_tier, mother_id, father_id, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
+          'id, status, expected_date, mother_id, father_id, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
         )
         .in('status', ['planned', 'expected'])
         .not('mother_id', 'is', null)
@@ -95,7 +94,7 @@ export function useQuoteBuilderData(applicationId?: string | null) {
             price: d.price,
             programme_tier: d.programme_tier,
             litter_id: d.litter_id,
-            litter_default_tier: litter?.default_programme_tier ?? null,
+            litter_default_tier: null,
               litter_label: litter
               ? litterPairLabel({
                   mother_name: one(litter.mother as Named | Named[] | null)?.name,
@@ -118,7 +117,7 @@ export function useQuoteBuilderData(applicationId?: string | null) {
           father_name: one(l.father as unknown as Named | Named[] | null)?.name ?? '',
           expected_date: l.expected_date,
           status: l.status,
-          default_programme_tier: (l as { default_programme_tier?: string | null }).default_programme_tier ?? null,
+          default_programme_tier: null,
         })),
       );
       setTiers(pricing);

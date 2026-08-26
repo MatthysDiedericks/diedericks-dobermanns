@@ -25,6 +25,10 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useKennelDogs } from '@/hooks/useKennelDogs';
 import { isAdminPlus } from '@/lib/auth/routes';
+import {
+  matchesProgrammeFilter,
+  PROGRAMME_TIER_SELECT_OPTIONS,
+} from '@/lib/dogs/programmeTier';
 import type { DogFilterTab } from '@/types/phase10';
 
 const FILTERS: { key: DogFilterTab; label: string }[] = [
@@ -50,6 +54,7 @@ export function DogsDirectoryScreen({
   const router = useRouter();
   const [filter, setFilter] = useState<DogFilterTab>('breeding');
   const [search, setSearch] = useState('');
+  const [tierFilter, setTierFilter] = useState('all');
   const {
     breedingStock,
     expecting,
@@ -62,6 +67,13 @@ export function DogsDirectoryScreen({
     role,
   } = useKennelDogs(filter, search);
   const canAdd = showAddButton && (isAdminPlus(role) || role === 'trainer');
+  const studs = breedingStock.studs.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
+  const females = breedingStock.females.filter((d) =>
+    matchesProgrammeFilter(d.programme_tier, tierFilter),
+  );
+  const expectingRows = expecting.filter((e) => matchesProgrammeFilter(e.dog.programme_tier, tierFilter));
+  const deceasedRows = deceased.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
+  const alumniRows = alumni.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
 
   const emptyMessages: Record<DogFilterTab, { title: string; message: string }> = {
     breeding: {
@@ -110,6 +122,35 @@ export function DogsDirectoryScreen({
             </Pressable>
           ))}
         </ScrollView>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mt-2 max-h-12"
+          contentContainerStyle={{ gap: 8 }}
+        >
+          <Pressable
+            onPress={() => setTierFilter('all')}
+            className={`rounded-full border px-4 py-2 ${
+              tierFilter === 'all' ? 'border-gold bg-gold/15' : 'border-gold/25'
+            }`}
+          >
+            <Typography variant="caption">All tiers</Typography>
+          </Pressable>
+          {PROGRAMME_TIER_SELECT_OPTIONS.map((opt) => {
+            const key = opt.value || 'unset';
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setTierFilter(key)}
+                className={`rounded-full border px-4 py-2 ${
+                  tierFilter === key ? 'border-gold bg-gold/15' : 'border-gold/25'
+                }`}
+              >
+                <Typography variant="caption">{opt.label}</Typography>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {error ? (
@@ -130,12 +171,8 @@ export function DogsDirectoryScreen({
       ) : filter === 'breeding' ? (
         <SectionList
           sections={[
-            ...(breedingStock.studs.length
-              ? [{ title: 'Studs', data: breedingStock.studs }]
-              : []),
-            ...(breedingStock.females.length
-              ? [{ title: 'Breeding Females', data: breedingStock.females }]
-              : []),
+            ...(studs.length ? [{ title: 'Studs', data: studs }] : []),
+            ...(females.length ? [{ title: 'Breeding Females', data: females }] : []),
           ]}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: canAdd ? 96 : 48 }}
@@ -153,7 +190,7 @@ export function DogsDirectoryScreen({
         />
       ) : filter === 'expecting' ? (
         <FlatList
-          data={expecting}
+          data={expectingRows}
           keyExtractor={(item) => item.heatCycleId}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: canAdd ? 96 : 48 }}
           refreshControl={
@@ -169,7 +206,7 @@ export function DogsDirectoryScreen({
         />
       ) : filter === 'deceased' ? (
         <FlatList
-          data={deceased}
+          data={deceasedRows}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: canAdd ? 96 : 48 }}
           refreshControl={
@@ -181,7 +218,7 @@ export function DogsDirectoryScreen({
         />
       ) : (
         <FlatList
-          data={alumni}
+          data={alumniRows}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: canAdd ? 96 : 48 }}
           refreshControl={

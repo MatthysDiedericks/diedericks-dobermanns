@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { DocumentList } from '@/components/documents/DocumentList';
-import { LitterBulkTierAction } from '@/components/litters/LitterBulkTierAction';
 import { LitterCalendarTab } from '@/components/litters/LitterCalendarTab';
 import { LitterContractsTab } from '@/components/litters/LitterContractsTab';
 import { LitterFinancialsTab } from '@/components/litters/LitterFinancialsTab';
@@ -62,7 +61,7 @@ export default function LitterDetailScreen() {
   const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const router = useRouter();
   const litterId = id ?? '';
-  const { litter, puppies, loading, error } = useLitterDetail(litterId);
+  const { litter, puppies, loading, error, refresh } = useLitterDetail(litterId);
   const { puppies: weightPuppies } = useLitterWeights(litterId, litter?.actual_date);
   const tab = resolveLitterTab(TABS, tabParam, 'puppies');
   const [holders, setHolders] = useState<LitterQuoteHolder[]>([]);
@@ -142,10 +141,6 @@ export default function LitterDetailScreen() {
       <ScrollView className="px-6 pb-12">
         {tab === 'puppies' ? (
           <>
-            <LitterBulkTierAction
-              litterId={litterId}
-              currentTier={(detail as { default_programme_tier?: string | null }).default_programme_tier}
-            />
             <LitterQuoteHolders
               holders={holders}
               puppies={puppies.map((p) => ({
@@ -158,7 +153,7 @@ export default function LitterDetailScreen() {
                 void fetchLitterQuoteHolders(litterId).then(setHolders).catch(() => setHolders([]));
               }}
             />
-            <LitterPuppiesTab litterId={litterId} puppies={puppies} />
+            <LitterPuppiesTab litterId={litterId} puppies={puppies} onChanged={refresh} />
           </>
         ) : null}
         {tab === 'calendar' ? (

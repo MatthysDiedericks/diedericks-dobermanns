@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { Typography } from '@/components/ui/Typography';
 import { useLitterInlinePuppies, type InlineLitterPuppy } from '@/hooks/useLitterInlinePuppies';
 import { titleCase } from '@/lib/format';
+import { programmeTierLabel } from '@/lib/dogs/programmeTier';
 import { CollarDot } from '@/lib/litters/collarColours';
 import { isDeceasedStatus } from '@/lib/litters/derivedCounts';
 
@@ -101,7 +102,7 @@ function InlinePuppyRow({
         </Typography>
         <Typography variant="caption" className="text-subtle">
           {sexLabel(puppy.sex)} · {titleCase(puppy.status)}
-          {buyer ? ` · ${buyer}` : ''}
+          {buyer ? ` · ${buyer}` : ''} · {programmeTierLabel(puppy.programme_tier)}
         </Typography>
       </View>
     </Pressable>

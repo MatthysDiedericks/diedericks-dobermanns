@@ -1,6 +1,7 @@
 import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fields';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
+import { PROGRAMME_TIER_SELECT_OPTIONS } from '@/lib/dogs/programmeTier';
 import { DOG_COLOUR_OPTIONS } from '@/lib/colours/dogColours';
 import { replaceDogMedia, saveDog, useSubmitting } from '@/hooks/useMutations';
 import type { Dog, DogCategory } from '@/types/app.types';
@@ -57,6 +58,7 @@ const dogSchema = z.object({
   father_id: z.string(),
   mother_id: z.string(),
   override_parentage: z.boolean(),
+  programme_tier: z.string(),
 });
 
 type DogFormValues = z.infer<typeof dogSchema>;
@@ -100,6 +102,7 @@ function toDefaults(dog?: Dog, defaultCategory?: DogCategory): DogFormValues {
     father_id: dog?.father_id ?? '',
     mother_id: dog?.mother_id ?? '',
     override_parentage: false,
+    programme_tier: dog?.programme_tier ?? '',
   };
 }
 
@@ -167,6 +170,7 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
       litter_id: values.litter_id || null,
       father_id: inheritFromLitter ? null : values.father_id || null,
       mother_id: inheritFromLitter ? null : values.mother_id || null,
+      programme_tier: values.programme_tier.trim() || null,
     };
 
     const result = await run(() => saveDog(payload, dog?.id));
@@ -216,6 +220,12 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
           { value: 'available', label: 'Available' },
           { value: 'reserved', label: 'Reserved' },
         ]}
+      />
+      <OptionGroup
+        control={control}
+        name="programme_tier"
+        label="Programme tier"
+        options={PROGRAMME_TIER_SELECT_OPTIONS}
       />
       <OptionGroup
         control={control}

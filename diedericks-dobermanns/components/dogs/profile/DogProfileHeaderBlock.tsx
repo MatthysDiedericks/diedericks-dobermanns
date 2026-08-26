@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { collectionCountdown } from '@/lib/dogs/collectionCountdown';
+import { programmeTierLabel } from '@/lib/dogs/programmeTier';
 import { ageFromDob, titleCase } from '@/lib/format';
 import type { Dog } from '@/types/app.types';
 
@@ -44,6 +45,9 @@ export function DogProfileHeaderBlock({
           {facts.join(' · ')}
         </Typography>
       ) : null}
+      <Typography variant="caption" className="mt-1 text-muted">
+        Programme {programmeTierLabel(dog.programme_tier)}
+      </Typography>
       {countdown ? (
         <Typography variant="subtitle" className="mt-3 text-gold">
           {countdown}

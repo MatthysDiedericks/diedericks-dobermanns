@@ -1,16 +1,18 @@
+import {
+  isProgrammeTierKey,
+  PROGRAMME_TIER_KEYS,
+  type ProgrammeTierKey,
+} from '@/lib/dogs/programmeTier';
+
+export type { ProgrammeTierKey };
+export { isProgrammeTierKey, PROGRAMME_TIER_KEYS };
+
 export type QuotePriceTier = {
   tier_key: string;
   display_label: string;
   price: number;
   price_on_request?: boolean | null;
 };
-
-export const PROGRAMME_TIER_KEYS = ['puppy', 'elite_developed', 'protection_dog'] as const;
-export type ProgrammeTierKey = (typeof PROGRAMME_TIER_KEYS)[number];
-
-export function isProgrammeTierKey(value: string | null | undefined): value is ProgrammeTierKey {
-  return Boolean(value && (PROGRAMME_TIER_KEYS as readonly string[]).includes(value));
-}
 
 export function formatZarWhole(value: number): string {
   return `R${Math.round(value).toLocaleString('en-ZA')}`;
@@ -19,6 +21,7 @@ export function formatZarWhole(value: number): string {
 export type QuotePriceInput = {
   dogPrice?: number | null;
   dogTier?: string | null;
+  /** Ignored. A litter is not sold at one tier. */
   litterDefaultTier?: string | null;
   applicationTier?: string | null;
 };
@@ -53,7 +56,7 @@ function priced(tier: QuotePriceTier | undefined): QuotePriceResult | null {
   return null;
 }
 
-/** Order: this puppy's price → dog tier → litter default → application interest. */
+/** Order: this puppy's price → this puppy's tier → application interest. */
 export function resolveQuotePrice(input: QuotePriceInput, tiers: QuotePriceTier[]): QuotePriceResult {
   if (input.dogPrice != null && input.dogPrice > 0) {
     return {
@@ -72,18 +75,6 @@ export function resolveQuotePrice(input: QuotePriceInput, tiers: QuotePriceTier[
     return {
       ...fromDog,
       sourceLabel: `${formatZarWhole(fromDog.unitPrice!)} (${label}, this puppy's tier)`,
-    };
-  }
-
-  const fromLitter = priced(tierOf(input.litterDefaultTier, tiers));
-  if (fromLitter) {
-    const label = tierOf(input.litterDefaultTier, tiers)?.display_label;
-    if (fromLitter.priceOnRequest) {
-      return { ...fromLitter, sourceLabel: `Set a price (${label}, from litter default, on request)` };
-    }
-    return {
-      ...fromLitter,
-      sourceLabel: `${formatZarWhole(fromLitter.unitPrice!)} (${label}, from litter default)`,
     };
   }
 

@@ -8,6 +8,7 @@ import { ThumbImage } from '@/components/media/ThumbImage';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { ExpectingDogEntry, KennelDog } from '@/hooks/useKennelDogs';
+import { programmeTierLabel } from '@/lib/dogs/programmeTier';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { DogColour } from '@/types/app.types';
 import { COLOUR_HEX as SHARED_COLOUR_HEX } from '@/lib/colours/dogColours';
@@ -110,6 +111,9 @@ export function DogDirectoryCard({
           {displayName(dog)}
         </Typography>
         <SexColourRow sex={dog.sex} colour={dog.colour} />
+        <Typography variant="caption" className="mt-1 text-muted">
+          {programmeTierLabel(dog.programme_tier)}
+        </Typography>
 
         {variant === 'breeding' && dog.inHeat ? (
           <View className="mt-2 flex-row items-center gap-2">

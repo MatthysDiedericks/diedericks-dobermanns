@@ -133,7 +133,11 @@ export async function allocatePuppyToLitterQuote(
 
   const { error: updErr } = await supabase
     .from('quote_items')
-    .update({ subject_kind: 'dog', dog_id: dogId, description } as never)
+    .update({
+      subject_kind: 'dog',
+      dog_id: dogId,
+      description,
+    } as never)
     .eq('id', quoteItemId)
     .eq('quote_id', item.quote_id);
   if (updErr) return { error: updErr.message };

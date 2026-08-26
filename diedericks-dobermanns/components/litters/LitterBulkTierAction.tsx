@@ -2,74 +2,64 @@ import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
-import { applyLitterDefaultTier } from '@/lib/litters/applyLitterDefaultTier';
 import {
-  PROGRAMME_TIER_KEYS,
+  isProgrammeTierKey,
+  PROGRAMME_TIER_SELECT_OPTIONS,
   type ProgrammeTierKey,
-} from '@/lib/finance/quotePrice';
-
-const LABELS: Record<ProgrammeTierKey, string> = {
-  puppy: 'Standard Puppy',
-  elite_developed: 'Elite Developed',
-  protection_dog: 'Protection Dog',
-};
+} from '@/lib/dogs/programmeTier';
+import { setProgrammeTierForDogs } from '@/lib/litters/setPuppyProgrammeTiers';
 
 export function LitterBulkTierAction({
   litterId,
-  currentTier,
+  selectedIds,
   onApplied,
 }: {
   litterId: string;
-  currentTier?: string | null;
+  selectedIds: string[];
   onApplied?: () => void;
 }) {
-  const [tier, setTier] = useState<ProgrammeTierKey>(
-    (PROGRAMME_TIER_KEYS as readonly string[]).includes(currentTier ?? '')
-      ? (currentTier as ProgrammeTierKey)
-      : 'puppy',
-  );
+  const [tier, setTier] = useState<string>('puppy');
   const [busy, setBusy] = useState(false);
+  const count = selectedIds.length;
+  const label = PROGRAMME_TIER_SELECT_OPTIONS.find((o) => o.value === tier)?.label ?? 'Not set';
 
   return (
-    <Card className="mb-4">
-      <Typography variant="subtitle">Set tier for all puppies in this litter</Typography>
+    <View className="mb-4">
+      <Typography variant="subtitle">Set tier for selected</Typography>
       <Typography variant="caption" className="mt-1 text-ink-muted">
-        Applies to puppies with no own tier or price. Existing prices and tiers are left alone.
+        Tick puppies, choose a tier, apply. Unselected puppies are left alone.
       </Typography>
       <View className="mt-3 flex-row flex-wrap gap-2">
-        {PROGRAMME_TIER_KEYS.map((k) => (
+        {PROGRAMME_TIER_SELECT_OPTIONS.map((opt) => (
           <Pressable
-            key={k}
-            onPress={() => setTier(k)}
+            key={opt.value || 'unset'}
+            onPress={() => setTier(opt.value)}
             className={`rounded-lg border px-3 py-2 ${
-              tier === k ? 'border-gold bg-gold/15' : 'border-gold/20 bg-surface'
+              tier === opt.value ? 'border-gold bg-gold/15' : 'border-gold/20 bg-surface'
             }`}
           >
-            <Typography variant="caption">{LABELS[k]}</Typography>
+            <Typography variant="caption">{opt.label}</Typography>
           </Pressable>
         ))}
       </View>
       <Button
-        label={busy ? 'Applying…' : 'Apply to puppies without a tier'}
+        label={busy ? 'Applying…' : count ? `Apply to ${count}` : 'Tick puppies first'}
         variant="outline"
         className="mt-3"
-        disabled={busy}
+        disabled={busy || count === 0}
         onPress={() => {
+          const next: ProgrammeTierKey | null = isProgrammeTierKey(tier) ? tier : null;
           setBusy(true);
-          void applyLitterDefaultTier(litterId, tier)
+          void setProgrammeTierForDogs(litterId, selectedIds, next)
             .then((res) => {
-              Alert.alert(
-                'Tier applied',
-                `Updated ${res.updated} ${res.updated === 1 ? 'puppy' : 'puppies'}. ${res.skipped} already had a tier or price.`,
-              );
+              Alert.alert('Tier set', `Updated ${res.updated} ${res.updated === 1 ? 'puppy' : 'puppies'} to ${label}.`);
               onApplied?.();
             })
-            .catch((e) => Alert.alert('Could not apply tier', e instanceof Error ? e.message : 'Try again.'))
+            .catch((e) => Alert.alert('Could not set tier', e instanceof Error ? e.message : 'Try again.'))
             .finally(() => setBusy(false));
         }}
       />
-    </Card>
+    </View>
   );
 }

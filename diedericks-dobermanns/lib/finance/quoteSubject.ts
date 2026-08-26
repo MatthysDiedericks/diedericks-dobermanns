@@ -1,4 +1,5 @@
 import { resolveQuotePrice, type QuotePriceResult } from '@/lib/finance/quotePrice';
+import { programmeTierLabel } from '@/lib/dogs/programmeTier';
 
 export type QuoteSubjectKind = 'dog' | 'litter' | 'unallocated';
 
@@ -109,6 +110,7 @@ export function dogLineDescription(puppy: QuotePuppyOption): string {
     puppy.sex,
     colourPhrase(puppy.colour),
     tailPhrase(puppy.tail_type),
+    programmeTierLabel(puppy.programme_tier, null),
   ].filter(Boolean);
   return bits.length ? `${head} — ${bits.join(', ')}` : head;
 }
@@ -230,7 +232,6 @@ export function applySubjectChange(
   const puppy = dogId ? ctx.puppies.find((p) => p.id === dogId) ?? null : null;
   const litter = litterId ? ctx.litters.find((l) => l.id === litterId) ?? null : null;
   if (puppy?.programme_tier) tierKey = puppy.programme_tier;
-  else if (!tierKey && litter?.default_programme_tier) tierKey = litter.default_programme_tier;
   else if (!tierKey) tierKey = ctx.applicationTier ?? null;
 
   const tier = tierKey ? ctx.tiers.find((t) => t.tier_key === tierKey) : undefined;
@@ -245,7 +246,6 @@ export function applySubjectChange(
     {
       dogPrice: puppy?.price,
       dogTier: puppy?.programme_tier,
-      litterDefaultTier: litter?.default_programme_tier ?? puppy?.litter_default_tier,
       applicationTier: tierKey ?? ctx.applicationTier,
     },
     ctx.tiers,

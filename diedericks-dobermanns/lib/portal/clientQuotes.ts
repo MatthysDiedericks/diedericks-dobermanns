@@ -98,7 +98,7 @@ export async function fetchMyClientQuoteById(id: string): Promise<ClientQuoteDet
       ? supabase
           .from('litters')
           .select(
-            'id, status, expected_date, default_programme_tier, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
+            'id, status, expected_date, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
           )
           .in('id', litterIds)
       : Promise.resolve({ data: [] as never[] }),
@@ -165,7 +165,7 @@ export async function fetchMyClientQuoteById(id: string): Promise<ClientQuoteDet
               father_name: one(litter.father as unknown as Named | Named[] | null)?.name ?? '',
               expected_date: litter.expected_date,
               status: litter.status,
-              default_programme_tier: litter.default_programme_tier ?? null,
+              default_programme_tier: null,
             }
           : null,
       });

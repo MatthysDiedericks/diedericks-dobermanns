@@ -33,6 +33,7 @@ import { useAppQuoteDraftOffer } from '@/lib/finance/useAppQuoteDraftOffer';
 import { useAppQuoteDraftSave } from '@/lib/finance/useAppQuoteDraftSave';
 import { collectQuoteOutstanding, type QuoteOutstandingItem } from '@/lib/finance/quoteOutstanding';
 import { subjectStatement } from '@/lib/finance/quoteSubject';
+import { programmeTierLabel } from '@/lib/dogs/programmeTier';
 import type { Quote } from '@/types/app.types';
 
 export type { QuotePrefill };
@@ -138,7 +139,10 @@ export function AppQuoteBuilder({
         kind,
         puppy: it.dog_id ? dogs.find((d) => d.id === it.dog_id) ?? null : null,
         litter: it.litter_id ? litters.find((l) => l.id === it.litter_id) ?? null : null,
-        tierLabel: it.programme_tier ? tiers.find((t) => t.tier_key === it.programme_tier)?.display_label : null,
+        tierLabel:
+          (it.programme_tier
+            ? tiers.find((t) => t.tier_key === it.programme_tier)?.display_label
+            : null) ?? programmeTierLabel(it.programme_tier, null),
       });
     })
     .filter((s): s is string => Boolean(s));
