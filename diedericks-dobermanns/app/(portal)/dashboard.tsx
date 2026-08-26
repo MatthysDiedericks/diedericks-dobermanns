@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
 import { PortalDogThumb } from '@/components/portal/PortalDogThumb';
+import { PortalHealthDueCard } from '@/components/portal/PortalHealthDueCard';
 import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
 import {
   CommittedLitterPanel,
@@ -100,6 +101,7 @@ export default function PortalDashboard() {
             </EmptyState>
           )
         ) : null}
+        {dogs.length > 0 ? <PortalHealthDueCard /> : null}
         {dogs.map((dog) => (
             <Link key={dog.id} href={`/(portal)/dogs/${dog.id}` as never} asChild>
               <Pressable>

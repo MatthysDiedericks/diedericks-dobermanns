@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { DEWORMING_SELECT, VACCINATION_SELECT } from '@/lib/health/constants';
+import {
+  dewormingGroupKey,
+  dueFlags,
+  healthDueItems,
+  latestPerGroup,
+  vaccinationGroupKey,
+} from '@/lib/dogs/healthCalendar';
 import { requireSupabase, supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -17,26 +23,14 @@ export interface HealthScheduleEntry {
   notes: string | null;
 }
 
-function isOverdue(nextDue: string | null): boolean {
-  if (!nextDue) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(nextDue);
-  due.setHours(0, 0, 0, 0);
-  return due.getTime() < today.getTime();
-}
-
-function isFuture(nextDue: string | null): boolean {
-  if (!nextDue) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(nextDue);
-  due.setHours(0, 0, 0, 0);
-  return due.getTime() >= today.getTime();
-}
+const VAX_SELECT =
+  'id, dog_id, vaccine_name, date_administered, next_due_date, notes';
+const WORM_SELECT =
+  'id, dog_id, product_name, treatment_date, next_due_date, treatment_type, notes';
 
 /**
  * Vaccination and deworming schedule for dogs owned by the logged-in client.
+ * Due flags use the same `latestPerGroup` + `dueFlags` as the website.
  */
 export function useDogHealthSchedule() {
   const userId = useAuthStore((s) => s.session?.user.id);
@@ -71,54 +65,70 @@ export function useDogHealthSchedule() {
       const [vRes, dewRes] = await Promise.all([
         client
           .from('vaccinations')
-          .select(VACCINATION_SELECT)
+          .select(VAX_SELECT)
           .in('dog_id', dogIds)
           .order('date_administered', { ascending: false }),
         client
           .from('deworming_records')
-          .select(DEWORMING_SELECT)
-          .order('date_treated', { ascending: false }),
+          .select(WORM_SELECT)
+          .in('dog_id', dogIds)
+          .order('treatment_date', { ascending: false }),
       ]);
       if (vRes.error) throw new Error(vRes.error.message);
       if (dewRes.error) throw new Error(dewRes.error.message);
 
+      const vaccinations = vRes.data ?? [];
+      const deworming = dewRes.data ?? [];
+      const latestVax = new Set(
+        latestPerGroup(
+          vaccinations,
+          (r) => `${r.dog_id}::${vaccinationGroupKey(r.vaccine_name)}`,
+          (r) => r.date_administered,
+        ).map((r) => r.id),
+      );
+      const latestWorm = new Set(
+        latestPerGroup(
+          deworming,
+          (r) => `${r.dog_id}::${dewormingGroupKey(r.treatment_type)}`,
+          (r) => r.treatment_date,
+        ).map((r) => r.id),
+      );
+
       const rows: HealthScheduleEntry[] = [];
 
-      for (const raw of vRes.data ?? []) {
-        const r = raw as Record<string, unknown>;
-        const dogId = r.dog_id as string;
-        const nextDue = (r.next_due_date as string | null) ?? null;
+      for (const r of vaccinations) {
+        const flags = latestVax.has(r.id)
+          ? dueFlags(r.next_due_date)
+          : { isOverdue: false, isUpcoming: false };
         rows.push({
           id: `vax-${r.id}`,
-          dogId,
-          dogName: nameById.get(dogId) ?? 'Your dog',
+          dogId: r.dog_id,
+          dogName: nameById.get(r.dog_id) ?? 'Your dog',
           kind: 'vaccination',
           title: String(r.vaccine_name ?? 'Vaccination'),
           eventDate: String(r.date_administered),
-          nextDueDate: nextDue,
-          isUpcoming: isFuture(nextDue),
-          isOverdue: isOverdue(nextDue),
-          notes: (r.notes as string | null) ?? null,
+          nextDueDate: r.next_due_date,
+          isUpcoming: flags.isUpcoming,
+          isOverdue: flags.isOverdue,
+          notes: r.notes ?? null,
         });
       }
 
-      for (const raw of dewRes.data ?? []) {
-        const r = raw as Record<string, unknown>;
-        const ids = (r.dog_ids as string[] | null) ?? [];
-        const dogId = ids.find((id) => dogIds.includes(id));
-        if (!dogId) continue;
-        const nextDue = (r.next_due_date as string | null) ?? null;
+      for (const r of deworming) {
+        const flags = latestWorm.has(r.id)
+          ? dueFlags(r.next_due_date)
+          : { isOverdue: false, isUpcoming: false };
         rows.push({
           id: `dew-${r.id}`,
-          dogId,
-          dogName: nameById.get(dogId) ?? 'Your dog',
+          dogId: r.dog_id,
+          dogName: nameById.get(r.dog_id) ?? 'Your dog',
           kind: 'deworming',
-          title: String(r.product_name ?? r.treatment_type ?? 'Deworming'),
-          eventDate: String(r.date_treated),
-          nextDueDate: nextDue,
-          isUpcoming: isFuture(nextDue),
-          isOverdue: isOverdue(nextDue),
-          notes: (r.notes as string | null) ?? null,
+          title: String(r.product_name ?? 'Deworming'),
+          eventDate: String(r.treatment_date),
+          nextDueDate: r.next_due_date,
+          isUpcoming: flags.isUpcoming,
+          isOverdue: flags.isOverdue,
+          notes: r.notes ?? null,
         });
       }
 
@@ -150,7 +160,7 @@ export function useDogHealthSchedule() {
     return Array.from(map.entries()).map(([dogId, g]) => ({ dogId, ...g }));
   }, [entries]);
 
-  const upcoming = useMemo(() => entries.filter((e) => e.isUpcoming || e.isOverdue), [entries]);
+  const upcoming = useMemo(() => healthDueItems(entries), [entries]);
 
   return { entries, byDog, upcoming, loading, error, refresh };
 }

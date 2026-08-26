@@ -11,7 +11,7 @@ import { requireSupabase } from '@/lib/supabase';
 const VAX_SELECT =
   'id, vaccine_name, date_administered, next_due_date, administered_by, doctor_name';
 const WORM_SELECT =
-  'id, product_name, treatment_date, next_due_date, administered_by, doctor_name';
+  'id, product_name, treatment_date, next_due_date, treatment_type, administered_by, doctor_name';
 
 export function useDogHealthCalendar(dogId: string) {
   const [calendar, setCalendar] = useState<HealthCalendar>({ upcoming: [], history: [] });
