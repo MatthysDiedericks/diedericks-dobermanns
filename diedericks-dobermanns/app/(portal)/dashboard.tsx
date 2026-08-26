@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { WhatsAppHelpLink } from '@/components/contact/WhatsAppHelpLink';
 import { ExpectedLittersSection } from '@/components/portal/ExpectedLittersSection';
+import { PortalDogThumb } from '@/components/portal/PortalDogThumb';
 import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
 import {
   CommittedLitterPanel,
@@ -103,16 +103,8 @@ export default function PortalDashboard() {
         {dogs.map((dog) => (
             <Link key={dog.id} href={`/(portal)/dogs/${dog.id}` as never} asChild>
               <Pressable>
-                <Card className="mb-3 flex-row">
-                  <View className="h-20 w-20 overflow-hidden rounded-xl bg-surface">
-                    {dog.media?.[0] ? (
-                      <Image
-                        source={{ uri: dog.media[0].url }}
-                        style={{ width: '100%', height: '100%' }}
-                        contentFit="cover"
-                      />
-                    ) : null}
-                  </View>
+                <Card className="mb-3 flex-row items-center">
+                  <PortalDogThumb name={dog.name} media={dog.media} />
                   <View className="ml-4 flex-1">
                     <Typography variant="title">{dog.name}</Typography>
                     <View className="mt-1">
