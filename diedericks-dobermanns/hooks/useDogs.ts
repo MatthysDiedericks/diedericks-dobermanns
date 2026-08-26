@@ -37,7 +37,7 @@ const DOG_DETAIL_SELECT =
   'is_spayed_neutered, wrights_coi, registered_name, ' +
   'genetics_b_locus, genetics_d_locus, genetics_vwd_status, genetics_dcm1_status, genetics_dcm2_status, genetics_notes, ' +
   'status, category, price, is_public, is_featured, programme_tier, ' +
-  'father_id, mother_id, litter_id, owner_id, ' +
+  'father_id, mother_id, litter_id, owner_id, handover_status, handover_date, ' +
   'owner_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
   'deceased_at, deceased_cause, ' +
   'new_owner_name, reserved_for_name, ' +

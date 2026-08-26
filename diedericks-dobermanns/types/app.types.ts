@@ -279,6 +279,7 @@ export interface Dog {
   litter_id?: string | null;
   collar_colour?: string | null;
   handover_date?: string | null;
+  handover_status?: string | null;
   birth_weight_grams?: number | null;
   standard?: 'fci_kusa' | 'akc' | null;
   bloodline_type?: 'european' | 'american' | 'mixed' | null;

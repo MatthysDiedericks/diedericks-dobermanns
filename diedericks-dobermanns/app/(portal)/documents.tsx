@@ -9,6 +9,7 @@ import { Typography } from '@/components/ui/Typography';
 import { useClientPortalDocuments } from '@/hooks/useDocuments';
 import { PORTAL_DOC_SECTIONS } from '@/lib/portal/documentGroups';
 import { portalCategoryLabel } from '@/lib/portal/documentLabels';
+import { PortalHandoverPacks } from '@/components/portal/HandoverPackCard';
 import type { DocumentRecord } from '@/lib/documents/types';
 
 function statusLine(doc: DocumentRecord): string | null {
@@ -37,6 +38,7 @@ export default function DocumentsScreen() {
       <PageHeader eyebrow="Paperwork" title="Your Documents" back={false} />
 
       <View className="px-6 pb-10">
+        <PortalHandoverPacks />
         {loading ? (
           <Typography variant="bodyMuted">Loading documents…</Typography>
         ) : error ? (

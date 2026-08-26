@@ -13,6 +13,7 @@ import { DogStatCardsBlock } from '@/components/dogs/profile/DogStatCardsBlock';
 import { HealthCalendarSection } from '@/components/dogs/profile/HealthCalendarSection';
 import { DogOwnerSection } from '@/components/followUps/DogOwnerSection';
 import { AdminWorkStrip } from '@/components/dogs/profile/AdminWorkStrip';
+import { HandoverPackActions } from '@/components/dogs/profile/HandoverPackActions';
 import { ShareDogSection } from '@/components/dogs/profile/ShareDogSection';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
@@ -40,6 +41,7 @@ export function DogOverviewTab({
 }) {
   const router = useRouter();
   const actorId = useAuthStore((s) => s.session?.user.id);
+  const canGeneratePack = useAuthStore((s) => s.hasRole('admin', 'super_admin', 'management'));
   const [creating, setCreating] = useState(false);
   const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url ?? null;
   const health = useDogHealthCalendar(dog.id);
@@ -200,6 +202,11 @@ export function DogOverviewTab({
             }
           />
         ) : null}
+        <HandoverPackActions
+          dogId={dog.id}
+          canGenerate={canGeneratePack}
+          released={dog.handover_status === 'delivered'}
+        />
       </SectionCard>
 
       {canEdit ? <HeatStatusCard dog={dog} onRefresh={onRefresh} /> : null}
