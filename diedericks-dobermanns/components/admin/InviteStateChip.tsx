@@ -1,7 +1,18 @@
 import { Badge } from '@/components/ui/Badge';
-import { formatInviteState, isInvitedNotOpened, type InviteStateRow } from '@/lib/portal/invite';
+import {
+  formatInviteState,
+  isConfirmedNeverSignedIn,
+  isInviteStuck,
+  type InviteStateRow,
+} from '@/lib/portal/invite';
 
 export function InviteStateChip({ state }: { state: InviteStateRow | null | undefined }) {
   const label = formatInviteState(state);
-  return <Badge label={label} tone={isInvitedNotOpened(state) ? 'gold' : 'muted'} />;
+  const locked = isConfirmedNeverSignedIn(state);
+  return (
+    <Badge
+      label={label}
+      tone={locked ? 'danger' : isInviteStuck(state) ? 'gold' : 'muted'}
+    />
+  );
 }

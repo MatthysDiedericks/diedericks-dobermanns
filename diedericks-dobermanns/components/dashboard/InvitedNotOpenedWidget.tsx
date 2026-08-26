@@ -2,16 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { SurfaceCard } from '@/components/admin/SurfaceCard';
 import { Typography } from '@/components/ui/Typography';
-import { countUnopenedInvites } from '@/lib/portal/invite';
+import { countConfirmedNeverSignedIn, countUnopenedInvites } from '@/lib/portal/invite';
 
 export function InvitedNotOpenedWidget() {
-  const [count, setCount] = useState(0);
+  const [unopened, setUnopened] = useState(0);
+  const [locked, setLocked] = useState(0);
 
   const load = useCallback(async () => {
     try {
-      setCount(await countUnopenedInvites());
+      const [a, b] = await Promise.all([countUnopenedInvites(), countConfirmedNeverSignedIn()]);
+      setUnopened(a);
+      setLocked(b);
     } catch {
-      setCount(0);
+      setUnopened(0);
+      setLocked(0);
     }
   }, []);
 
@@ -21,19 +25,19 @@ export function InvitedNotOpenedWidget() {
 
   return (
     <SurfaceCard
-      title="Invited, not opened"
+      title="Portal lockouts"
       href="/(admin)/waitlist"
-      badge={count}
+      badge={locked}
       badgeTone="gold"
     >
-      {count === 0 ? (
+      {locked === 0 && unopened === 0 ? (
         <Typography variant="caption" className="text-subtle">
-          No invite links sitting unopened.
+          No buyers sitting on a burned or unopened invite.
         </Typography>
       ) : (
         <Typography variant="body" className="text-text">
-          {count} buyer{count === 1 ? '' : 's'} invited but never opened the link — they may be
-          stuck. Resend from the waiting list or their client record.
+          {locked} confirmed, never signed in — re-issue a code from the client record.
+          {unopened > 0 ? ` ${unopened} invited, not opened.` : ''}
         </Typography>
       )}
     </SurfaceCard>
