@@ -162,6 +162,19 @@ export async function verifySignupOtp(email: string, token: string): Promise<Aut
   return { error: error?.message ?? null };
 }
 
+/** Redeems an admin-issued invite code (not a signup OTP). A scanner cannot consume it. */
+export async function verifyInviteOtp(email: string, token: string): Promise<AuthResult> {
+  if (!supabase) return { error: DEMO_ERROR };
+  const { redeemInviteCode } = await import('@/lib/portal/invite');
+  const redeemed = await redeemInviteCode(email, token);
+  if ('error' in redeemed) return { error: redeemed.error };
+  const { error } = await supabase.auth.verifyOtp({
+    type: 'magiclink',
+    token_hash: redeemed.tokenHash,
+  });
+  return { error: error?.message ?? null };
+}
+
 /** Sends a fresh signup confirmation code/link to the given email. */
 export async function resendSignupOtp(email: string): Promise<AuthResult> {
   if (!supabase) return { error: DEMO_ERROR };

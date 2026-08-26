@@ -4,14 +4,17 @@ import { Share, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import {
+  emailPortalInvite,
+  formatInviteExpiry,
   formatInviteState,
   inviteToPortal,
-  isInvitedNotOpened,
+  INVITE_TTL_DAYS,
+  isInviteStuck,
   type InviteSource,
   type InviteStateRow,
 } from '@/lib/portal/invite';
 
-/** Admin invite. Share sheet is the WhatsApp path — nothing auto-sends. */
+/** Admin invite. Share sheet first (WhatsApp on a phone). Email is a second tap. */
 export function InviteToPortalButton({
   email,
   fullName,
@@ -31,6 +34,12 @@ export function InviteToPortalButton({
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stateLabel, setStateLabel] = useState(formatInviteState(initialState));
+  const [issued, setIssued] = useState<{
+    link: string;
+    code: string;
+    expiresAt: string;
+    whatsappMessage: string;
+  } | null>(null);
 
   useEffect(() => {
     setStateLabel(formatInviteState(initialState));
@@ -63,10 +72,14 @@ export function InviteToPortalButton({
     setStateLabel(
       `Invited ${new Date(res.invitedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} (not opened)`,
     );
+    setIssued({
+      link: res.link,
+      code: res.code,
+      expiresAt: res.expiresAt,
+      whatsappMessage: res.whatsappMessage,
+    });
     setNotice(
-      res.emailSent
-        ? 'Email sent. Share the link on WhatsApp — nothing else is sent until you tap send there.'
-        : (res.error ?? 'Link ready. Share it on WhatsApp.'),
+      `Invite ready. Expires ${formatInviteExpiry(res.expiresAt)} (${INVITE_TTL_DAYS} days). Share on WhatsApp — nothing else is sent until you tap send there.`,
     );
     try {
       await Share.share({ message: res.whatsappMessage, url: res.link });
@@ -75,7 +88,26 @@ export function InviteToPortalButton({
     }
   }
 
-  const resent = isInvitedNotOpened(initialState);
+  async function onEmail() {
+    if (!issued) return;
+    setBusy(true);
+    setError(null);
+    const res = await emailPortalInvite({
+      email: email!,
+      fullName,
+      link: issued.link,
+      code: issued.code,
+      expiresAt: issued.expiresAt,
+    });
+    setBusy(false);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setNotice('Email sent. WhatsApp is still the safer path.');
+  }
+
+  const resent = isInviteStuck(initialState) || Boolean(issued);
 
   return (
     <View className="gap-2">
@@ -83,11 +115,20 @@ export function InviteToPortalButton({
         {stateLabel}
       </Typography>
       <Button
-        label={busy ? 'Preparing…' : resent ? 'Resend link' : 'Invite to portal'}
+        label={busy ? 'Preparing…' : resent ? 'Re-issue invite' : 'Invite to portal'}
         onPress={() => void onInvite()}
         loading={busy}
         fullWidth
       />
+      {issued ? (
+        <Button
+          label="Email the invite"
+          variant="outline"
+          onPress={() => void onEmail()}
+          disabled={busy}
+          fullWidth
+        />
+      ) : null}
       {notice ? (
         <Typography variant="caption" className="text-gold">
           {notice}

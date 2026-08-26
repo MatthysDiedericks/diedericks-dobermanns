@@ -8,6 +8,7 @@ import {
   signUpWithEmail,
   updatePassword as authUpdatePassword,
   verifySignupOtp,
+  verifyInviteOtp,
 } from '@/lib/auth';
 import { claimMyRecords } from '@/lib/claimMyRecords';
 import { useAuthStore } from '@/stores/authStore';
@@ -52,8 +53,14 @@ export function useAuth() {
     async (email: string, token: string) => {
       setIsLoading(true);
       try {
-        const { error } = await verifySignupOtp(email.trim(), token.trim());
-        if (error) throw new Error(error);
+        const signup = await verifySignupOtp(email.trim(), token.trim());
+        if (!signup.error) {
+          void claimMyRecords();
+          await refresh();
+          return;
+        }
+        const invite = await verifyInviteOtp(email.trim(), token.trim());
+        if (invite.error) throw new Error(invite.error);
         void claimMyRecords();
         await refresh();
       } finally {

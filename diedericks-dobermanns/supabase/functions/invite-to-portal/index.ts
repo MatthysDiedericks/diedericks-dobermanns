@@ -1,8 +1,6 @@
-// Invite a buyer to the portal with a magic-link sign-in. Never generates a password.
-// Admin JWT required. Email sends only on this invocation (Matt's click).
-//
+// Invite a buyer to the portal. 6-digit code + click-to-open link. No password.
+// WhatsApp is the send path. Email only when Matt asks (sendEmail / sendEmailOnly).
 // Deploy: supabase functions deploy invite-to-portal
-// Secrets: RESEND_API_KEY (shared). SUPABASE_URL / SERVICE_ROLE_KEY injected.
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
@@ -13,9 +11,9 @@ const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const SITE = (Deno.env.get('SITE_URL') ?? 'https://diedericksdobermanns.com').replace(/\/$/, '');
 const FROM = 'Diedericks Dobermanns <no-reply@diedericksdobermanns.com>';
-
 const INVITE_MAX = 10;
 const INVITE_WINDOW_SECS = 3600;
+const TTL_DAYS = 7;
 
 type Source = 'application' | 'waiting_list' | 'client';
 
@@ -38,21 +36,32 @@ function waDigits(phone: string | null | undefined): string | null {
   return d;
 }
 
-function confirmUrl(tokenHash: string, email: string): string {
-  const params = new URLSearchParams({
-    token_hash: tokenHash,
-    type: 'magiclink',
-    next: '/portal',
-    email,
-  });
-  return `${SITE}/portal/auth/confirm?${params.toString()}`;
+function confirmUrl(inviteId: string): string {
+  return `${SITE}/portal/auth/confirm?invite=${encodeURIComponent(inviteId)}`;
 }
 
-function whatsappMessage(fullName: string, link: string): string {
+function verifyUrl(email: string): string {
+  return `${SITE}/portal/verify-code?email=${encodeURIComponent(email)}`;
+}
+
+function expiryLabel(iso: string): string {
+  return new Date(iso).toLocaleString('en-ZA', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Africa/Johannesburg',
+  });
+}
+
+function whatsappMessage(fullName: string, email: string, link: string, code: string, expiresAt: string): string {
   return (
-    `Hi ${firstName(fullName)}, here is your private link to your Diedericks Dobermanns account — ` +
-    `tap it and you are in, no password needed. You will be able to see your puppy's photos, ` +
-    `weights and paperwork.\n\n${link}`
+    `Hi ${firstName(fullName)}, your Diedericks Dobermanns sign-in code is ${code}. ` +
+    `It expires ${expiryLabel(expiresAt)} (${TTL_DAYS} days). ` +
+    `Type it at ${verifyUrl(email)} — a mail scanner cannot use a code.\n\n` +
+    `Or tap this link and press Open your account:\n${link}`
   );
 }
 
@@ -61,24 +70,28 @@ async function sha256Hex(value: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function sendInviteMail(to: string, fullName: string, link: string): Promise<string | null> {
+async function sendInviteMail(
+  to: string,
+  fullName: string,
+  link: string,
+  code: string,
+  expiresAt: string,
+): Promise<string | null> {
   if (!RESEND_API_KEY) return 'RESEND_API_KEY not set';
   const name = firstName(fullName);
   const html = `
     <div style="font-family:Georgia,serif;background:#111008;color:#F5F0E8;padding:32px;">
       <div style="max-width:560px;margin:0 auto;background:#1C1A0E;padding:32px;border:1px solid #C4A35A33;">
-        <h1 style="color:#C4A35A;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;">
-          Your private portal link
-        </h1>
+        <h1 style="color:#C4A35A;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;">Your private portal code</h1>
         <p>Hi ${name},</p>
-        <p>Here is your private link to your Diedericks Dobermanns account. Tap it on your phone and you are in — no password needed.</p>
+        <p>Your sign-in code is:</p>
+        <p style="font-size:28px;letter-spacing:0.24em;color:#C4A35A;">${code}</p>
+        <p style="font-size:12px;color:#C4A35A99;">Expires ${expiryLabel(expiresAt)} (${TTL_DAYS} days). Type it at ${verifyUrl(to)}.</p>
+        <p>Or open the link and press Open your account — fetching the page does not sign anyone in.</p>
         <p style="margin:28px 0;">
-          <a href="${link}" style="display:inline-block;background:#C4A35A;color:#111008;text-decoration:none;padding:14px 22px;letter-spacing:0.12em;text-transform:uppercase;font-size:13px;">
-            Open your account
-          </a>
+          <a href="${link}" style="display:inline-block;background:#C4A35A;color:#111008;text-decoration:none;padding:14px 22px;letter-spacing:0.12em;text-transform:uppercase;font-size:13px;">Open your account</a>
         </p>
         <p style="font-size:12px;word-break:break-all;color:#F5F0E8;">${link}</p>
-        <p style="margin-top:32px;font-size:12px;color:#C4A35A99;">Diedericks Dobermanns</p>
       </div>
     </div>`;
   const res = await fetch('https://api.resend.com/emails', {
@@ -87,7 +100,7 @@ async function sendInviteMail(to: string, fullName: string, link: string): Promi
     body: JSON.stringify({
       from: FROM,
       to,
-      subject: 'Your Diedericks Dobermanns account — tap to open',
+      subject: `Your Diedericks Dobermanns code is ${code}`,
       html,
     }),
   });
@@ -126,6 +139,11 @@ serve(async (req) => {
     phone?: string | null;
     source?: Source;
     sourceId?: string | null;
+    sendEmail?: boolean;
+    sendEmailOnly?: boolean;
+    link?: string;
+    code?: string;
+    expiresAt?: string;
   };
   try {
     body = await req.json();
@@ -135,8 +153,28 @@ serve(async (req) => {
 
   const email = (body.email ?? '').trim().toLowerCase();
   const fullName = (body.fullName ?? '').trim() || 'there';
+  if (!email.includes('@')) return json({ error: 'Invalid request' }, 422);
+
+  if (body.sendEmailOnly && body.link && body.code && body.expiresAt) {
+    const mailErr = await sendInviteMail(email, fullName, body.link, body.code, body.expiresAt);
+    if (mailErr) {
+      await admin.from('error_events').insert({
+        code: 'INVITE_SEND_FAILED',
+        area: 'auth',
+        severity: 'error',
+        message: mailErr,
+        actor_role: 'admin',
+        actor_id: actor.id,
+        surface: 'app',
+        route: '/invite-to-portal',
+      });
+      return json({ error: 'The email did not send. Use WhatsApp.' }, 500);
+    }
+    return json({ emailSent: true });
+  }
+
   const source = body.source;
-  if (!email.includes('@') || !source || !['application', 'waiting_list', 'client'].includes(source)) {
+  if (!source || !['application', 'waiting_list', 'client'].includes(source)) {
     return json({ error: 'Invalid request' }, 422);
   }
 
@@ -156,11 +194,9 @@ serve(async (req) => {
   const { data: existing } = await admin.from('users').select('id').ilike('email', email).maybeSingle();
   if (existing?.id) {
     userId = existing.id;
-    await admin.auth.admin.updateUserById(userId, { email_confirm: true });
   } else {
     const created = await admin.auth.admin.createUser({
       email,
-      email_confirm: true,
       user_metadata: { full_name: fullName },
     });
     userId = created.data.user?.id ?? null;
@@ -183,46 +219,25 @@ serve(async (req) => {
     }
   }
 
-  const generated = await admin.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
-    options: { redirectTo: `${SITE}/portal/auth/confirm` },
-  });
-  const tokenHash =
-    (generated.data.properties?.hashed_token as string | undefined) ??
-    (() => {
-      try {
-        const link = generated.data.properties?.action_link as string | undefined;
-        return link ? new URL(link).searchParams.get('token') : null;
-      } catch {
-        return null;
-      }
-    })();
-  if (!tokenHash) {
-    await admin.from('error_events').insert({
-      code: 'INVITE_UNHANDLED',
-      area: 'auth',
-      severity: 'error',
-      message: generated.error?.message ?? 'no token',
-      actor_role: 'admin',
-      actor_id: actor.id,
-      surface: 'app',
-      route: '/invite-to-portal',
-    });
-    return json({ error: 'Could not create the sign-in link.' }, 500);
-  }
+  const inviteId = crypto.randomUUID();
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const invitedAt = new Date();
+  const expiresAt = new Date(invitedAt.getTime() + TTL_DAYS * 86_400_000);
+  const link = confirmUrl(inviteId);
+  const codeHash = await sha256Hex(`portal_invite_code:${email}:${code}`);
 
-  const link = confirmUrl(tokenHash, email);
-  const invitedAt = new Date().toISOString();
   const { data: row } = await admin
     .from('portal_invites')
     .insert({
+      id: inviteId,
       email,
       user_id: userId,
       invited_by: actor.id,
-      invited_at: invitedAt,
+      invited_at: invitedAt.toISOString(),
       source,
       source_id: body.sourceId ?? null,
+      code_hash: codeHash,
+      expires_at: expiresAt.toISOString(),
     })
     .select('id')
     .maybeSingle();
@@ -237,28 +252,34 @@ serve(async (req) => {
     new_values: { email, source, source_id: body.sourceId ?? null, user_id: userId },
   });
 
-  const mailErr = await sendInviteMail(email, fullName, link);
-  if (mailErr) {
-    await admin.from('error_events').insert({
-      code: 'INVITE_SEND_FAILED',
-      area: 'auth',
-      severity: 'error',
-      message: mailErr,
-      actor_role: 'admin',
-      actor_id: actor.id,
-      surface: 'app',
-      route: '/invite-to-portal',
-    });
+  let mailErr: string | null = null;
+  if (body.sendEmail) {
+    mailErr = await sendInviteMail(email, fullName, link, code, expiresAt.toISOString());
+    if (mailErr) {
+      await admin.from('error_events').insert({
+        code: 'INVITE_SEND_FAILED',
+        area: 'auth',
+        severity: 'error',
+        message: mailErr,
+        actor_role: 'admin',
+        actor_id: actor.id,
+        surface: 'app',
+        route: '/invite-to-portal',
+      });
+    }
   }
 
+  const expiresIso = expiresAt.toISOString();
+  const message = whatsappMessage(fullName, email, link, code, expiresIso);
   const digits = waDigits(body.phone);
-  const message = whatsappMessage(fullName, link);
   return json({
     link,
-    invitedAt,
-    emailSent: !mailErr,
+    invitedAt: invitedAt.toISOString(),
+    emailSent: Boolean(body.sendEmail) && !mailErr,
+    code,
+    expiresAt: expiresIso,
     whatsappMessage: message,
     waUrl: digits ? `https://wa.me/${digits}?text=${encodeURIComponent(message)}` : null,
-    error: mailErr ? 'Link ready — the email did not send. Use WhatsApp.' : undefined,
+    error: mailErr ? 'Invite ready — the email did not send. Use WhatsApp.' : undefined,
   });
 });

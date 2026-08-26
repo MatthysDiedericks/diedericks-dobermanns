@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -2747,7 +2747,7 @@ export type Database = {
         Row: {
           allocation_type: string
           amount: number
-          amount_gross: number
+          amount_gross: number | null
           category_id: string | null
           created_at: string
           creditor_name: string | null
@@ -2781,6 +2781,7 @@ export type Database = {
         Insert: {
           allocation_type?: string
           amount: number
+          amount_gross?: number | null
           category_id?: string | null
           created_at?: string
           creditor_name?: string | null
@@ -2814,6 +2815,7 @@ export type Database = {
         Update: {
           allocation_type?: string
           amount?: number
+          amount_gross?: number | null
           category_id?: string | null
           created_at?: string
           creditor_name?: string | null
@@ -4673,7 +4675,9 @@ export type Database = {
       }
       portal_invites: {
         Row: {
+          code_hash: string | null
           email: string
+          expires_at: string
           id: string
           invited_at: string
           invited_by: string
@@ -4683,7 +4687,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          code_hash?: string | null
           email: string
+          expires_at?: string
           id?: string
           invited_at?: string
           invited_by: string
@@ -4693,7 +4699,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          code_hash?: string | null
           email?: string
+          expires_at?: string
           id?: string
           invited_at?: string
           invited_by?: string
@@ -7194,6 +7202,13 @@ export type Database = {
         Args: { p_row: Json; p_table: string }
         Returns: string
       }
+      auth_invite_flags: {
+        Args: { p_email: string }
+        Returns: {
+          email_confirmed_at: string
+          last_sign_in_at: string
+        }[]
+      }
       calculate_litter_dates: {
         Args: { p_mating_date?: string; p_ovulation_date?: string }
         Returns: {
@@ -7247,12 +7262,22 @@ export type Database = {
           waitlist: number
         }[]
       }
+      client_can_watch_training_video: {
+        Args: { p_video_id: string }
+        Returns: boolean
+      }
+      client_has_bundle_access: {
+        Args: { p_bundle_id: string }
+        Returns: boolean
+      }
+      client_owns_a_dog: { Args: never; Returns: boolean }
       client_owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
       contact_is_customer: { Args: { p_id: string }; Returns: boolean }
       convert_quote_to_invoice: {
         Args: { p_quote_id: string }
         Returns: string
       }
+      count_confirmed_never_signed_in: { Args: never; Returns: number }
       count_unopened_portal_invites: { Args: never; Returns: number }
       decline_quote: {
         Args: { p_quote_id: string; p_reason?: string }
@@ -7318,6 +7343,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_training_tier_change: {
+        Args: {
+          p_category_id?: string
+          p_from: string
+          p_to: string
+          p_video_ids: string[]
+        }
+        Returns: undefined
+      }
       mark_portal_invite_opened: { Args: never; Returns: undefined }
       marketing_audience_counts: {
         Args: never
@@ -7378,10 +7412,36 @@ export type Database = {
         }[]
       }
       pause_audit: { Args: { p_reason: string }; Returns: string }
+      portal_account_id_for_contact: {
+        Args: { p_contact_id: string }
+        Returns: string
+      }
+      portal_account_id_for_email: {
+        Args: { p_email: string }
+        Returns: string
+      }
+      portal_invite_for_code: {
+        Args: { p_code_hash: string; p_email: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          user_id: string
+        }[]
+      }
+      portal_invite_for_redeem: {
+        Args: { p_id: string }
+        Returns: {
+          email: string
+          expires_at: string
+          user_id: string
+        }[]
+      }
       portal_invite_states: {
         Args: { p_emails: string[] }
         Returns: {
           email: string
+          email_confirmed_at: string
           has_account: boolean
           invited_at: string
           last_sign_in_at: string
@@ -7446,6 +7506,10 @@ export type Database = {
         Returns: undefined
       }
       sweep_error_consistency: { Args: never; Returns: number }
+      training_owner_client_count: { Args: never; Returns: number }
+      training_storage_object_path: { Args: { raw: string }; Returns: string }
+      training_video_has_file: { Args: { p_url: string }; Returns: boolean }
+      training_video_tier: { Args: { p_tier: string }; Returns: string }
       verify_payment_proof: {
         Args: {
           p_amount: number
@@ -7589,3 +7653,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
