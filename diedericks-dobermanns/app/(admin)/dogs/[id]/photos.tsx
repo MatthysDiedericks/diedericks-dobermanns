@@ -16,6 +16,7 @@ import { Colors } from '@/constants/colors';
 import { useDogMedia } from '@/hooks/useDogMedia';
 import { useDogVideos } from '@/hooks/useDogVideos';
 import { useDog } from '@/hooks/useDogs';
+import { profileCoverHint } from '@/lib/dogs/profilePhoto';
 
 export default function DogPhotosScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -72,6 +73,9 @@ export default function DogPhotosScreen() {
         <PageHeader eyebrow={dog?.name ?? 'Dog'} title="Photos & Videos" back />
         <View className="mb-4 px-6">
           <Badge label={`${media.length} photo${media.length === 1 ? '' : 's'}`} tone="gold" />
+          <Typography variant="caption" className="mt-2 text-silver">
+            {profileCoverHint(dog?.status, media.some((m) => m.is_primary))}
+          </Typography>
         </View>
         <View className="px-4 pb-36">
           {error ? (

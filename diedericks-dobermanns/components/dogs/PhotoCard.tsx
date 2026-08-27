@@ -32,7 +32,7 @@ export function PhotoCard({ item, index, size, onPress, onLongPress }: PhotoCard
         ) : null}
         <View className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5">
           <Typography variant="caption" className="text-[10px] text-ink">
-            {index + 1}
+            {item.is_primary ? 'Profile' : index + 1}
           </Typography>
         </View>
       </View>

@@ -24,6 +24,7 @@ export default function AdminGalleryScreen() {
   const [shown, setShown] = useState(GRID_PAGE_SIZE);
   const visible = useMemo(() => items.slice(0, shown), [items, shown]);
   const dogName = dogs.find((d) => d.id === dogId)?.name;
+  const dogStatus = dogs.find((d) => d.id === dogId)?.status;
 
   async function toggle(id: string, next: boolean) {
     setBusy(id);
@@ -43,7 +44,7 @@ export default function AdminGalleryScreen() {
           onUploaded={() => setRefreshKey((n) => n + 1)}
         />
       </View>
-      <DogMediaManager key={`${dogId ?? 'all'}-${refreshKey}`} dogId={dogId} dogName={dogName} />
+      <DogMediaManager key={`${dogId ?? 'all'}-${refreshKey}`} dogId={dogId} dogName={dogName} dogStatus={dogStatus} />
       {dogId ? null : (
       <View className="gap-3 px-6">
         {!loading && items.length === 0 ? (

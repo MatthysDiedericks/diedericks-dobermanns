@@ -8,8 +8,17 @@ import { Colors } from '@/constants/colors';
 import { useDocumentsForEntity } from '@/hooks/useDocuments';
 import { useManagedDogMedia } from '@/hooks/useManagedDogMedia';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { profileCoverHint } from '@/lib/dogs/profilePhoto';
 
-export function DogMediaManager({ dogId, dogName }: { dogId: string | null; dogName?: string }) {
+export function DogMediaManager({
+  dogId,
+  dogName,
+  dogStatus,
+}: {
+  dogId: string | null;
+  dogName?: string;
+  dogStatus?: string | null;
+}) {
   const router = useRouter();
   const mgr = useManagedDogMedia(dogId);
   const docs = useDocumentsForEntity('dog', dogId ?? '');
@@ -22,6 +31,9 @@ export function DogMediaManager({ dogId, dogName }: { dogId: string | null; dogN
   const heading = dogId && dogName
     ? `${dogName} — ${photos} photo${photos === 1 ? '' : 's'}, ${videos} video${videos === 1 ? '' : 's'}`
     : `All dog media — ${photos} photo${photos === 1 ? '' : 's'}, ${videos} video${videos === 1 ? '' : 's'}`;
+  const hint = dogId
+    ? profileCoverHint(dogStatus, mgr.media.some((m) => m.is_primary))
+    : null;
 
   const ids = useMemo(() => [...selected], [selected]);
 
@@ -119,6 +131,12 @@ export function DogMediaManager({ dogId, dogName }: { dogId: string | null; dogN
           Long-press a tile to select several. Hide is on the tile; delete is behind ⋯.
         </Typography>
       )}
+
+      {hint ? (
+        <Typography variant="caption" className="mb-3 text-silver">
+          {hint}
+        </Typography>
+      ) : null}
 
       {mgr.loading ? <ActivityIndicator color={Colors.gold} /> : null}
       {mgr.error ? <Typography variant="caption" className="mb-2 text-danger">{mgr.error}</Typography> : null}

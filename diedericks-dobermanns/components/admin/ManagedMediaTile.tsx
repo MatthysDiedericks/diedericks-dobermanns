@@ -68,7 +68,7 @@ export function ManagedMediaTile({
           {item.is_primary ? (
             <View className="rounded bg-gold px-1.5 py-0.5">
               <Typography variant="caption" className="text-[10px] text-black">
-                Primary
+                Profile photo
               </Typography>
             </View>
           ) : null}
@@ -105,10 +105,14 @@ export function ManagedMediaTile({
           <Pressable onPress={onMoveDown} className="rounded-lg border border-gold/30 px-3 py-1.5">
             <Typography variant="caption" className="text-gold">↓</Typography>
           </Pressable>
+          <Pressable onPress={onSetCover} className="rounded-lg border border-gold/30 px-3 py-1.5">
+            <Typography variant="caption" className="text-gold">
+              {item.is_primary ? 'Profile photo' : 'Set as profile photo'}
+            </Typography>
+          </Pressable>
           <Pressable
             onPress={() =>
               Alert.alert('Actions', undefined, [
-                { text: 'Set as cover', onPress: onSetCover },
                 { text: 'Edit caption', onPress: onCaption },
                 {
                   text: 'Delete',

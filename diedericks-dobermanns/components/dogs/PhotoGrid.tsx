@@ -47,7 +47,7 @@ export function PhotoGrid({
   );
 
   function showActions(item: DogMedia, index: number) {
-    const options = ['Set as Primary', 'Edit Caption', 'Move Earlier', 'Move Later', 'Delete', 'Cancel'];
+    const options = ['Set as profile photo', 'Edit Caption', 'Move Earlier', 'Move Later', 'Delete', 'Cancel'];
     const destructive = 4;
     const cancel = 5;
 
@@ -78,7 +78,7 @@ export function PhotoGrid({
     }
 
     Alert.alert('Photo Options', item.caption ?? 'Choose an action', [
-      { text: 'Set as Primary', onPress: () => void onSetPrimary(item.id) },
+      { text: 'Set as profile photo', onPress: () => void onSetPrimary(item.id) },
       { text: 'Edit Caption', onPress: () => promptCaption(item) },
       ...(index > 0
         ? [{ text: 'Move Earlier', onPress: () => void run(2) }]
