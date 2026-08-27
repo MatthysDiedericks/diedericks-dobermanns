@@ -12,6 +12,7 @@ import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useDog } from '@/hooks/useDogs';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { formatDogAge, formatKennelDate } from '@/lib/kennel/formatters';
 
 const TABS = ['Profile', 'Health', 'Training', 'Litter', 'Documents', 'Gallery'] as const;
@@ -40,7 +41,7 @@ export default function DogProfileScreen() {
     );
   }
 
-  const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url;
+  const photo = profilePhotoUrl(dog.media);
   const photos = (dog.media ?? []).filter((m) => m.type === 'photo');
   const videos = (dog.media ?? []).filter((m) => m.type === 'video');
 

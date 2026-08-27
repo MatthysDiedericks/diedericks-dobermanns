@@ -23,6 +23,7 @@ import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { createDraftContract } from '@/lib/contracts/createDraft';
 import { contractStatusLabel } from '@/lib/dogs/contractStatus';
 import { formatCoiPercent } from '@/lib/dogs/formatCoi';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { titleCase } from '@/lib/format';
 import { formatWeight } from '@/lib/kennel/formatters';
 import { getAgeDays } from '@/lib/litters/weighingSchedule';
@@ -43,7 +44,7 @@ export function DogOverviewTab({
   const actorId = useAuthStore((s) => s.session?.user.id);
   const canGeneratePack = useAuthStore((s) => s.hasRole('admin', 'super_admin', 'management'));
   const [creating, setCreating] = useState(false);
-  const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url ?? null;
+  const photo = profilePhotoUrl(dog.media);
   const health = useDogHealthCalendar(dog.id);
   const weights = useWeightLogs(dog.id);
   const latestKg = weights.logs[0] ? Number(weights.logs[0].weight_kg) : null;
@@ -204,6 +205,7 @@ export function DogOverviewTab({
         ) : null}
         <HandoverPackActions
           dogId={dog.id}
+          dogName={dog.name}
           canGenerate={canGeneratePack}
           released={dog.handover_status === 'delivered'}
         />

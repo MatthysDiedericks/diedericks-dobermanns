@@ -27,6 +27,7 @@ import type {
   VetVisitRecord,
 } from '@/lib/health/types';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { requireSupabase } from '@/lib/supabase';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 
@@ -35,12 +36,11 @@ function toVisitTimestamp(date: string): string {
 }
 
 function mapHealthDog(row: Record<string, unknown>): HealthDog {
-  const media = (row.dog_media as { url: string; is_primary: boolean }[] | null) ?? [];
-  const primary = media.find((m) => m.is_primary) ?? media[0];
+  const media = (row.dog_media as { url: string; is_primary: boolean; thumbnail_url?: string | null; uploaded_at?: string | null }[] | null) ?? [];
   return {
     id: row.id as string,
     name: row.name as string,
-    photoUrl: primary?.url ?? null,
+    photoUrl: profilePhotoUrl(media),
   };
 }
 
@@ -602,7 +602,7 @@ export function useUpcomingHealthEvents(daysAhead = 30) {
       const client = requireSupabase();
       const { data: calRows, error: calErr } = await client
         .from('calendar_events')
-        .select(`${CALENDAR_EVENT_SELECT}, dog:dogs(id, name, dog_media(url, is_primary))`)
+        .select(`${CALENDAR_EVENT_SELECT}, dog:dogs(id, name, dog_media(url, thumbnail_url, is_primary, uploaded_at))`)
         .eq('is_completed', false)
         .gte('event_date', today)
         .lte('event_date', end)

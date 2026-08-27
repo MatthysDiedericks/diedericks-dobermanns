@@ -13,6 +13,7 @@ import { Colors } from '@/constants/colors';
 import { Config } from '@/constants/config';
 import { requireSupabase } from '@/lib/supabase';
 import { sessionMediaCaption, useTrainerDogHistory } from '@/hooks/useTrainer';
+import { pickProfilePhoto } from '@/lib/dogs/profilePhoto';
 import type { DogMedia } from '@/types/app.types';
 
 export default function TrainerDogProgressScreen() {
@@ -22,7 +23,7 @@ export default function TrainerDogProgressScreen() {
   const [gallery, setGallery] = useState<DogMedia[]>([]);
 
   const heroDog = sessions[0]?.dog;
-  const heroMedia = heroDog?.media?.find((m) => m.is_primary) ?? heroDog?.media?.[0];
+  const heroMedia = pickProfilePhoto(heroDog?.media);
 
   useEffect(() => {
     if (!dogId || sessions.length === 0) return;

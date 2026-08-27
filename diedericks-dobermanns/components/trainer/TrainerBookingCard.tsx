@@ -6,6 +6,7 @@ import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import type { BookingStatus, TrainingBooking } from '@/types/app.types';
 
 const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
@@ -30,9 +31,7 @@ function formatWhen(iso: string): string {
 }
 
 function primaryPhoto(booking: TrainingBooking): string | null {
-  const media = booking.dog?.media ?? [];
-  const primary = media.find((m) => m.is_primary) ?? media[0];
-  return primary?.thumbnail_url ?? primary?.url ?? null;
+  return profilePhotoUrl(booking.dog?.media);
 }
 
 export function TrainerBookingCard({

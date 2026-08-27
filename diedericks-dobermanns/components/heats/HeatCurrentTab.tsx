@@ -23,6 +23,7 @@ import {
 import { parseDateInput } from '@/lib/dogDetail/feedback';
 import { breedingWindowEnd, daysUntil, isActiveHeat } from '@/lib/heats/calculations';
 import { goHomeWindow, whelpWindow } from '@/lib/dogs/whelpDates';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import type { HeatCycleRecord } from '@/lib/heats/constants';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { Dog } from '@/types/app.types';
@@ -85,7 +86,7 @@ export function HeatCurrentTab({
     cycles[0] ??
     null;
 
-  const photo = dog?.media?.find((m) => m.is_primary)?.url ?? dog?.media?.[0]?.url;
+  const photo = profilePhotoUrl(dog?.media);
   const ovulation = cycle?.ovulation_date;
   const breedingWindow =
     ovulation && parseDateInput(ovulation)

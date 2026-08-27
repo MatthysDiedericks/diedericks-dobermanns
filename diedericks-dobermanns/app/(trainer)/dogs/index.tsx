@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useTrainerDogs } from '@/hooks/useTrainer';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
@@ -30,13 +31,13 @@ export default function TrainerDogsScreen() {
           />
         ) : (
           dogs.map(({ dog, completedSessions, lastSessionDate }) => {
-            const photo = dog.media?.find((m) => m.is_primary) ?? dog.media?.[0];
+            const photo = profilePhotoUrl(dog.media);
             return (
               <Pressable key={dog.id} onPress={() => router.push(`/(trainer)/dogs/${dog.id}` as never)}>
                 <Card className="flex-row items-center gap-3">
                   <View className="h-16 w-16 overflow-hidden rounded-xl bg-surface">
-                    {photo?.url ? (
-                      <Image source={{ uri: photo.thumbnail_url ?? photo.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    {photo ? (
+                      <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                     ) : null}
                   </View>
                   <View className="flex-1">

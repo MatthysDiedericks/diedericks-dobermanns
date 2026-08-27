@@ -6,6 +6,7 @@ import { ThumbImage } from '@/components/media/ThumbImage';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { formatPrice } from '@/lib/format';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import type { Dog } from '@/types/app.types';
 
 interface DogCardProps {
@@ -14,7 +15,7 @@ interface DogCardProps {
 }
 
 export function DogCard({ dog, variant = 'default' }: DogCardProps) {
-  const photo = dog.media?.find((m) => m.is_primary)?.url ?? dog.media?.[0]?.url;
+  const photo = profilePhotoUrl(dog.media);
 
   if (variant === 'carousel') {
     return (

@@ -28,6 +28,7 @@ export interface PublicPuppyMedia {
   thumbnail_url: string | null;
   is_primary: boolean;
   sort_order: number;
+  uploaded_at: string | null;
 }
 
 export interface PublicPuppyRow {
@@ -68,7 +69,7 @@ const LITTER_SELECT =
 
 const PUPPY_SELECT =
   'id, name, sex, colour, collar_colour, birth_weight_grams, status, date_of_birth, ' +
-  'dog_media(id, url, thumbnail_url, is_primary, sort_order)';
+  'dog_media(id, url, thumbnail_url, is_primary, sort_order, uploaded_at)';
 
 const MEDIA_SELECT = 'id, litter_id, dog_id, media_type, public_url, caption, sort_order, created_at';
 

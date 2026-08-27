@@ -9,7 +9,7 @@ import type { Dog } from '@/types/app.types';
 import type { DogFilterTab } from '@/types/phase10';
 
 const DOG_SELECT =
-  'id, name, call_name, breed, colour, sex, status, date_of_birth, microchip_number, programme_tier, updated_at, dog_media(url, thumbnail_url, is_primary)';
+  'id, name, call_name, breed, colour, sex, status, date_of_birth, microchip_number, programme_tier, updated_at, dog_media(url, thumbnail_url, is_primary, uploaded_at)';
 
 export interface KennelDog extends Dog {
   inHeat?: boolean;
@@ -36,7 +36,7 @@ export interface BreedingStockSections {
 
 function mapDogRow(row: Record<string, unknown>): KennelDog {
   const mediaRaw =
-    (row.dog_media as { url: string; thumbnail_url: string | null; is_primary: boolean }[] | null) ??
+    (row.dog_media as { url: string; thumbnail_url: string | null; is_primary: boolean; uploaded_at: string | null }[] | null) ??
     [];
   const media = mediaRaw.map((m, i) => ({
     id: `${row.id}-${i}`,
@@ -47,7 +47,7 @@ function mapDogRow(row: Record<string, unknown>): KennelDog {
     caption: null,
     is_primary: m.is_primary,
     sort_order: i,
-    uploaded_at: '',
+    uploaded_at: m.uploaded_at ?? '',
   }));
   return { ...(row as unknown as KennelDog), media };
 }

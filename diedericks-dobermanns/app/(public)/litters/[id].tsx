@@ -16,6 +16,7 @@ import { Colors } from '@/constants/colors';
 import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { usePublicLitterDetail } from '@/hooks/usePublicLitterDetail';
 import { titleCase } from '@/lib/format';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -98,7 +99,7 @@ export default function LitterDetailScreen() {
               {puppies.map((p) => {
                 const logs = weightsByPuppyId.get(p.id) ?? [];
                 const latest = logs[logs.length - 1] ?? null;
-                const primaryPhoto = p.dog_media.find((m) => m.is_primary) ?? p.dog_media[0] ?? null;
+                const photoUrl = profilePhotoUrl(p.dog_media);
                 return (
                   <PublicPuppyCard
                     key={p.id}
@@ -106,7 +107,7 @@ export default function LitterDetailScreen() {
                     sex={p.sex}
                     collarColour={p.collar_colour}
                     status={p.status}
-                    photoUrl={primaryPhoto?.url ?? null}
+                    photoUrl={photoUrl}
                     latestWeightKg={latest?.weight_kg ?? null}
                   />
                 );

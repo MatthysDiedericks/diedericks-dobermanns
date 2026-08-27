@@ -19,7 +19,7 @@ export const CALENDAR_EVENT_SELECT =
   'id, title, event_type, event_date, end_date, dog_id, is_completed, is_reminder, notes, source_table, source_id, dogs(name, status)';
 
 export const HEALTH_DOG_SELECT =
-  'id, name, dog_media(url, is_primary)';
+  'id, name, dog_media(url, thumbnail_url, is_primary, uploaded_at)';
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
   vaccination: 'VACCINATION',

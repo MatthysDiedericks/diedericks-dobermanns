@@ -19,6 +19,7 @@ import Animated, {
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { ThumbImage } from '@/components/media/ThumbImage';
+import { pickProfilePhoto } from '@/lib/dogs/profilePhoto';
 import type { DogMedia } from '@/types/app.types';
 
 const HERO_HEIGHT = 280;
@@ -78,7 +79,7 @@ export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
         .sort((a, b) => a.sort_order - b.sort_order),
     [media],
   );
-  const primary = photos.find((m) => m.is_primary) ?? photos[0] ?? null;
+  const primary = pickProfilePhoto(photos);
   const [viewer, setViewer] = useState<DogMedia | null>(null);
   const width = Dimensions.get('window').width;
 

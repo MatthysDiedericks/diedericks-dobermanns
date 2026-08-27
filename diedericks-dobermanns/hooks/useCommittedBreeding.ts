@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { pickProfilePhoto, profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -50,7 +51,7 @@ async function hydrateParents(links: ParentLink[]): Promise<LineageParent[]> {
           .maybeSingle(),
         supabase
           .from('dog_media')
-          .select('url, is_primary')
+          .select('url, thumbnail_url, is_primary, uploaded_at')
           .eq('dog_id', parent_id)
           .eq('type', 'photo')
           .eq('is_public', true),
@@ -65,17 +66,19 @@ async function hydrateParents(links: ParentLink[]): Promise<LineageParent[]> {
           .eq('dog_id', parent_id),
       ]);
       if (!dog) return null;
-      const photos = (media ?? [])
-        .slice()
-        .sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+      const photos = media ?? [];
+      const cover = pickProfilePhoto(photos);
       return {
         id: dog.id,
         name: dog.name,
         callName: dog.call_name,
         registeredName: dog.registered_name,
         role: role === 'sire' ? 'sire' : 'dam',
-        photoUrl: photos[0]?.url ?? null,
-        photoUrls: photos.map((p) => p.url).filter(Boolean),
+        photoUrl: profilePhotoUrl(photos),
+        photoUrls: [
+          cover?.thumbnail_url || cover?.url,
+          ...photos.filter((p) => p !== cover).map((p) => p.thumbnail_url || p.url),
+        ].filter((u): u is string => Boolean(u)),
         hipScore: dog.hip_score,
         elbowScore: dog.elbow_score,
         dcmStatus: dog.dcm_status,

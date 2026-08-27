@@ -10,6 +10,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDog } from '@/hooks/useDogs';
 import { deleteDog, useSubmitting } from '@/hooks/useMutations';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 
 export default function EditDogScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -49,11 +50,7 @@ export default function EditDogScreen() {
     );
   }
 
-  const primaryPhoto =
-    dog.media?.find((m) => m.is_primary)?.thumbnail_url ??
-    dog.media?.find((m) => m.is_primary)?.url ??
-    dog.media?.[0]?.thumbnail_url ??
-    dog.media?.[0]?.url;
+  const primaryPhoto = profilePhotoUrl(dog.media);
 
   return (
     <KeyboardAvoidingView

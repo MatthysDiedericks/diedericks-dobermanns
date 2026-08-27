@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { coiResultFromEstimate, type CoiResult } from '@/lib/breeding/coi';
 import {
+  BREEDING_DOG_SELECT,
   PAIRING_SELECT,
   PLANNER_FEMALE_FILTER,
   PLANNER_MALE_FILTER,
@@ -9,6 +10,7 @@ import {
 import { evaluatePairing } from '@/lib/breeding/evaluatePairing';
 import { seedBreedingProgrammeIfEmpty } from '@/lib/breeding/seed';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { requireSupabase } from '@/lib/supabase';
 import type {
   BreedingLine,
@@ -22,8 +24,8 @@ import type { TablesInsert } from '@/types/database.types';
 const LINE_ORDER: Record<string, number> = { A: 0, B: 1, Cross: 2, Unknown: 3 };
 
 function photoFromRow(row: Record<string, unknown>): string | null {
-  const media = (row.dog_media as { url: string; is_primary: boolean }[] | null) ?? [];
-  return media.find((m) => m.is_primary)?.url ?? media[0]?.url ?? null;
+  const media = (row.dog_media as { url: string; is_primary: boolean; thumbnail_url?: string | null; uploaded_at?: string | null }[] | null) ?? [];
+  return profilePhotoUrl(media);
 }
 
 function mapPlannerDog(row: Record<string, unknown>): PlannerDog {
@@ -125,18 +127,14 @@ export function useBreedingPlanner(generation = 1) {
       const [maleRes, femaleRes, pairRes] = await Promise.all([
         client
           .from('dogs')
-          .select(
-            'id, name, call_name, sex, date_of_birth, father_id, mother_id, line, generation, breeding_role, urgency_flag, health_dcm1, health_dcm2, health_dcm3, health_dcm4, health_dcm5, health_hd, health_ed, holter_date, holter_result, wrights_coi, notes, origin_pairing_id, status, dog_media(url, is_primary)',
-          )
+          .select(BREEDING_DOG_SELECT)
           .eq('sex', 'male')
           .in('status', [...PLANNER_MALE_FILTER])
           .or('breeding_role.in.(Sire,Both,Prospect),line.in.(A,B,Cross)')
           .order('name'),
         client
           .from('dogs')
-          .select(
-            'id, name, call_name, sex, date_of_birth, father_id, mother_id, line, generation, breeding_role, urgency_flag, health_dcm1, health_dcm2, health_dcm3, health_dcm4, health_dcm5, health_hd, health_ed, holter_date, holter_result, wrights_coi, notes, origin_pairing_id, status, dog_media(url, is_primary)',
-          )
+          .select(BREEDING_DOG_SELECT)
           .eq('sex', 'female')
           .in('status', [...PLANNER_FEMALE_FILTER])
           .or('breeding_role.in.(Dam,Both,Prospect),line.in.(A,B,Cross),urgency_flag.eq.true')

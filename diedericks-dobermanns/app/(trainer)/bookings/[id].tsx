@@ -16,6 +16,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { completeBooking, useSubmitting } from '@/hooks/useMutations';
 import { useSessionDogMedia, useTrainerBooking } from '@/hooks/useTrainer';
+import { pickProfilePhoto } from '@/lib/dogs/profilePhoto';
 import type { BookingStatus } from '@/types/app.types';
 
 const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
@@ -70,8 +71,7 @@ export default function TrainerBookingDetailScreen() {
     );
   }
 
-  const mediaList = booking.dog?.media ?? [];
-  const hero = mediaList.find((m) => m.is_primary) ?? mediaList[0];
+  const hero = pickProfilePhoto(booking.dog?.media);
 
   return (
     <ScreenContainer>

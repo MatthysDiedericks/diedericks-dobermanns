@@ -147,7 +147,7 @@ export function useMyDogs(): ListResult<Dog> {
       }
       const { data: rows, error: err } = await supabase
         .from('dogs')
-        .select('id, name, colour, sex, status, date_of_birth, dog_media(url, is_primary)')
+        .select('id, name, colour, sex, status, date_of_birth, dog_media(url, thumbnail_url, is_primary, uploaded_at)')
         .in('id', dogIds)
         .order('name');
       if (err) throw new Error(err.message);

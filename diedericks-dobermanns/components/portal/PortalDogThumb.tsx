@@ -4,18 +4,15 @@ import { View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
 import { supabaseThumbUrl } from '@/lib/thumbs';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import type { DogMedia } from '@/types/app.types';
 
 const SIZE = 112;
 
 function primaryUrl(
-  media: Pick<DogMedia, 'url' | 'thumbnail_url' | 'is_primary'>[] | undefined,
+  media: Pick<DogMedia, 'url' | 'thumbnail_url' | 'is_primary' | 'uploaded_at'>[] | undefined,
 ): string | null {
-  if (!media?.length) return null;
-  const picked = media.find((m) => m.is_primary) ?? media[0];
-  const thumb = picked?.thumbnail_url?.trim();
-  const url = picked?.url?.trim();
-  return thumb || url || null;
+  return profilePhotoUrl(media);
 }
 
 function initialOf(name: string): string {
@@ -28,7 +25,7 @@ export function PortalDogThumb({
   media,
 }: {
   name: string;
-  media: Pick<DogMedia, 'url' | 'thumbnail_url' | 'is_primary'>[] | undefined;
+  media: Pick<DogMedia, 'url' | 'thumbnail_url' | 'is_primary' | 'uploaded_at'>[] | undefined;
 }) {
   const url = primaryUrl(media);
   const [failed, setFailed] = useState(false);

@@ -42,7 +42,7 @@ export function useMyApplications(): ListResult<Application> {
 }
 
 const PORTAL_DOG_SELECT =
-  'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media(url, thumbnail_url, is_primary)';
+  'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media(url, thumbnail_url, is_primary, uploaded_at)';
 
 export function usePortalDogs(forUserId?: string) {
   const sessionId = useAuthStore((s) => s.session?.user.id);
@@ -97,7 +97,7 @@ export function usePortalDogs(forUserId?: string) {
 }
 
 const RESERVATION_SELECT =
-  'id, status, deposit_paid, deposit_amount, total_price, expected_pickup_date, dog:dogs(id, name, colour, sex, date_of_birth, microchip_number, dog_media(url, is_primary))';
+  'id, status, deposit_paid, deposit_amount, total_price, expected_pickup_date, dog:dogs(id, name, colour, sex, date_of_birth, microchip_number, dog_media(url, thumbnail_url, is_primary, uploaded_at))';
 
 export function usePortalReservation() {
   const userId = useAuthStore((s) => s.session?.user.id);

@@ -18,6 +18,7 @@ import {
 import { recordActualHeat } from '@/lib/heats/recordHeat';
 import { buildFemaleHeatSummary, sortBreedingFemales } from '@/lib/heats/summaries';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { requireSupabase } from '@/lib/supabase';
 import type { Json, TablesUpdate } from '@/types/database.types';
 
@@ -120,7 +121,7 @@ export function useFemaleHeatSummaries() {
       const client = requireSupabase();
       const { data: dogs, error: dErr } = await client
         .from('dogs')
-        .select('id, name, date_of_birth, dog_media(url, is_primary)')
+        .select('id, name, date_of_birth, dog_media(url, thumbnail_url, is_primary, uploaded_at)')
         .eq('sex', 'female')
         .or('category.eq.breeding_stock,status.eq.breeding_stock,status.eq.stud,status.eq.keep')
         .order('name');
@@ -176,9 +177,14 @@ export function useFemaleHeatSummaries() {
       setSummaries(
         sortBreedingFemales(
           (dogs ?? []).map((dog) => {
-            const media =
-              (dog.dog_media as unknown as { url: string; is_primary: boolean }[] | null) ?? [];
-            const photo = media.find((m) => m.is_primary)?.url ?? media[0]?.url ?? null;
+            const photo = profilePhotoUrl(
+              (dog.dog_media as unknown as {
+                url: string;
+                is_primary: boolean;
+                thumbnail_url?: string | null;
+                uploaded_at?: string | null;
+              }[] | null) ?? [],
+            );
             return buildFemaleHeatSummary(
               {
                 id: dog.id,

@@ -11,7 +11,7 @@ const TRAINER_BOOKING_SELECT =
   'client_notes, trainer_notes, confirmed_at, completed_at, updated_at, ' +
   'video_room_url, video_host_url, ' +
   'session_type:training_session_types(id, name, duration_minutes), ' +
-  'dog:dogs(id, name, colour, dog_media(url, is_primary, thumbnail_url)), ' +
+  'dog:dogs(id, name, colour, dog_media(url, thumbnail_url, is_primary, uploaded_at)), ' +
   'client:users!training_bookings_client_id_fkey(id, full_name, email)';
 
 export interface TrainerDogSummary {
@@ -205,7 +205,7 @@ export function useTrainerDogs() {
       const { data, error: err } = await supabase
         .from('training_bookings')
         .select(
-          'dog_id, scheduled_at, status, dog:dogs(id, name, colour, status, dog_media(url, is_primary, thumbnail_url))',
+          'dog_id, scheduled_at, status, dog:dogs(id, name, colour, status, dog_media(url, thumbnail_url, is_primary, uploaded_at))',
         )
         .eq('trainer_id', trainerId)
         .not('dog_id', 'is', null);

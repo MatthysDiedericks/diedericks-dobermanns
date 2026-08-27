@@ -9,6 +9,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { ExpectingDogEntry, KennelDog } from '@/hooks/useKennelDogs';
 import { programmeTierLabel } from '@/lib/dogs/programmeTier';
+import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { DogColour } from '@/types/app.types';
 import { COLOUR_HEX as SHARED_COLOUR_HEX } from '@/lib/colours/dogColours';
@@ -56,8 +57,7 @@ function SexColourRow({ sex, colour }: { sex: KennelDog['sex']; colour: KennelDo
 }
 
 function DogPhoto({ dog, muted }: { dog: KennelDog; muted?: boolean }) {
-  const picked = dog.media?.find((m) => m.is_primary) ?? dog.media?.[0];
-  const photo = picked?.thumbnail_url || picked?.url || null;
+  const photo = profilePhotoUrl(dog.media);
 
   return (
     <View

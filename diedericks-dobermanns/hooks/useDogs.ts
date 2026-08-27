@@ -38,7 +38,7 @@ const DOG_DETAIL_SELECT =
   'genetics_b_locus, genetics_d_locus, genetics_vwd_status, genetics_dcm1_status, genetics_dcm2_status, genetics_notes, ' +
   'status, category, price, is_public, is_featured, programme_tier, ' +
   'father_id, mother_id, litter_id, owner_id, handover_status, handover_date, ' +
-  'owner_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
+  'owner_contact_id, buyer_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
   'deceased_at, deceased_cause, ' +
   'new_owner_name, reserved_for_name, ' +
   'owner_contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone, whatsapp_number, email), ' +
@@ -133,7 +133,7 @@ const LITTER_WITH_PUPPIES_SELECT = `
   father:dogs!litters_father_id_fkey(id, name),
   puppies:dogs!dogs_litter_id_fkey(
     id, name, sex, colour, status, date_of_birth,
-    dog_media(url, is_primary)
+    dog_media(url, thumbnail_url, is_primary, uploaded_at)
   )
 `;
 
@@ -176,7 +176,7 @@ const LITTER_DETAIL_SELECT = `
   puppies:dogs!dogs_litter_id_fkey(
     id, name, sex, colour, collar_colour, birth_weight_grams, status, date_of_birth, price, reserved_for_name, programme_tier,
     owner_id, released_at,
-    dog_media(url, is_primary)
+    dog_media(url, thumbnail_url, is_primary, uploaded_at)
   )
 `;
 
