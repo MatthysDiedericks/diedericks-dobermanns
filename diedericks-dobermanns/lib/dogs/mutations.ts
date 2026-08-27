@@ -57,8 +57,9 @@ export interface DogMediaInput {
 
 /**
  * Replaces a dog's full media set so reordering and removals persist. The list
- * order becomes `sort_order`; the first photo is marked primary (the cover used
- * as the thumbnail everywhere). Documents are ignored (dog_media is photo/video).
+ * order becomes `sort_order`. `is_primary` is never set here — that flag is
+ * only written when someone clicks "Set as profile photo". Documents are
+ * ignored (dog_media is photo/video).
  */
 export async function replaceDogMedia(
   dogId: string,
@@ -74,8 +75,6 @@ export async function replaceDogMedia(
       is_primary: false,
       sort_order: i,
     }));
-  const firstPhoto = rows.findIndex((r) => r.type === 'photo');
-  if (firstPhoto >= 0) rows[firstPhoto].is_primary = true;
 
   const { error: delErr } = await supabase.from('dog_media').delete().eq('dog_id', dogId);
   if (delErr) return { error: delErr.message };
