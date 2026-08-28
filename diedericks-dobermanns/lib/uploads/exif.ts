@@ -118,7 +118,7 @@ export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
   return out;
 }
 
-export function stripImageMetadata(kind: "jpg" | "png" | "webp" | "heic", bytes: Uint8Array): Uint8Array {
+export function stripImageMetadata(kind: "jpg" | "png" | "webp", bytes: Uint8Array): Uint8Array {
   if (kind === "jpg") return stripJpegExif(bytes);
   if (kind === "png") return stripPngMetadata(bytes);
   if (kind === "webp") return stripWebpMetadata(bytes);

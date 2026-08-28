@@ -18,10 +18,17 @@ const CODES = [
 ] as const;
 
 type Row = { id: number; occurred_at: string; code: string; message: string | null };
+type PreviewRow = {
+  id: number;
+  created_at: string;
+  actor_email: string | null;
+  new_values: { client_name?: string } | null;
+};
 
 /** Read-only summary. Filtering stays on the website. */
 export default function AdminSecurityScreen() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [previews, setPreviews] = useState<PreviewRow[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,21 +39,29 @@ export default function AdminSecurityScreen() {
     try {
       const supabase = requireSupabase();
       const since = new Date(Date.now() - 30 * 24 * 3_600_000).toISOString();
-      const [{ data, error: qErr }, { data: countRows, error: cErr }] = await Promise.all([
-        supabase
-          .from('error_events' as never)
-          .select('id, occurred_at, code, message' as never)
-          .like('code' as never, 'SECURITY_%')
-          .gte('occurred_at' as never, since)
-          .order('occurred_at' as never, { ascending: false })
-          .limit(40),
-        supabase
-          .from('error_events' as never)
-          .select('code' as never)
-          .like('code' as never, 'SECURITY_%')
-          .gte('occurred_at' as never, since)
-          .limit(2000),
-      ]);
+      const [{ data, error: qErr }, { data: countRows, error: cErr }, { data: previewRows }] =
+        await Promise.all([
+          supabase
+            .from('error_events' as never)
+            .select('id, occurred_at, code, message' as never)
+            .like('code' as never, 'SECURITY_%')
+            .gte('occurred_at' as never, since)
+            .order('occurred_at' as never, { ascending: false })
+            .limit(40),
+          supabase
+            .from('error_events' as never)
+            .select('code' as never)
+            .like('code' as never, 'SECURITY_%')
+            .gte('occurred_at' as never, since)
+            .limit(2000),
+          supabase
+            .from('audit_log')
+            .select('id, created_at, actor_email, new_values')
+            .eq('action', 'preview')
+            .eq('table_name', 'users')
+            .order('created_at', { ascending: false })
+            .limit(20),
+        ]);
       if (qErr) throw new Error(qErr.message);
       if (cErr) throw new Error(cErr.message);
       const list = (data ?? []) as unknown as Row[];
@@ -57,6 +72,7 @@ export default function AdminSecurityScreen() {
       }
       setCounts(next);
       setRows(list);
+      setPreviews((previewRows ?? []) as unknown as PreviewRow[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
@@ -113,6 +129,28 @@ export default function AdminSecurityScreen() {
             </Typography>
           </View>
         ))}
+        <Typography variant="subtitle" className="mb-3 mt-8 text-gold">
+          Portal previews
+        </Typography>
+        {previews.length === 0 ? (
+          <Typography variant="body" className="text-subtle">
+            No portal previews logged yet.
+          </Typography>
+        ) : (
+          previews.map((p) => (
+            <View key={p.id} className="mb-3 rounded-xl border border-gold/20 bg-[#1C1A0E] px-4 py-3">
+              <Typography variant="caption" className="text-gold">
+                {p.new_values?.client_name || 'Client'}
+              </Typography>
+              <Typography variant="body" className="mt-1 text-text">
+                {p.actor_email ?? 'Admin'} previewed this portal
+              </Typography>
+              <Typography variant="caption" className="mt-1 text-subtle">
+                {new Date(p.created_at).toLocaleString()}
+              </Typography>
+            </View>
+          ))
+        )}
       </ScrollView>
     </ScreenContainer>
   );

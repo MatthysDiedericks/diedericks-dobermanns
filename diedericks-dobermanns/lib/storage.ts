@@ -1,5 +1,11 @@
 import { requireSupabase, supabase } from '@/lib/supabase';
-import { MAX_UPLOAD_BYTES, STAFF_MEDIA_MAX_BYTES } from '@/lib/uploads/constants';
+import {
+  MAX_UPLOAD_BYTES,
+  STAFF_MEDIA_MAX_BYTES,
+  tooLargeMessage,
+} from '@/lib/uploads/constants';
+import { convertUriToJpeg, looksLikeHeic } from '@/lib/uploads/heic';
+import { detectUploadKind } from '@/lib/uploads/magic';
 import { storagePathFor } from '@/lib/uploads/path';
 import { prepareUpload, UploadValidationError } from '@/lib/uploads/prepare';
 
@@ -22,6 +28,8 @@ export interface UploadOptions {
   uri: string;
   contentType: string;
   sizeBytes?: number;
+  /** Original filename — used to detect HEIC before conversion. */
+  fileName?: string;
   /** Overrides the default 10MB cap when provided (e.g. for video uploads). */
   maxBytes?: number;
 }
@@ -46,13 +54,6 @@ export async function uploadFile(opts: UploadOptions): Promise<UploadResult> {
   const isVideo = opts.contentType.startsWith('video/');
   const maxBytes = opts.maxBytes ?? (isVideo ? STAFF_MEDIA_MAX_BYTES : MAX_UPLOAD_BYTES);
 
-  if (opts.sizeBytes != null && opts.sizeBytes > maxBytes) {
-    return {
-      path: null,
-      error: `That file is over ${Math.round(maxBytes / (1024 * 1024))} MB — please send a smaller copy, or WhatsApp us.`,
-    };
-  }
-
   try {
     const supabase = requireSupabase();
     if (opts.bucket === 'documents') {
@@ -68,19 +69,33 @@ export async function uploadFile(opts: UploadOptions): Promise<UploadResult> {
         };
       }
     }
-    const response = await fetch(opts.uri);
-    const raw = new Uint8Array(await response.arrayBuffer());
+
+    let uri = opts.uri;
+    let contentType = opts.contentType;
+
+    if (!isVideo && (looksLikeHeic(opts.fileName, contentType) || contentType.startsWith('image/'))) {
+      if (looksLikeHeic(opts.fileName, contentType)) {
+        uri = await convertUriToJpeg(uri);
+        contentType = 'image/jpeg';
+      }
+    }
+
+    const response = await fetch(uri);
+    let raw = new Uint8Array(await response.arrayBuffer());
+
+    if (!isVideo && detectUploadKind(raw) === 'heic') {
+      uri = await convertUriToJpeg(opts.uri);
+      contentType = 'image/jpeg';
+      raw = new Uint8Array(await (await fetch(uri)).arrayBuffer());
+    }
+
     if (raw.byteLength > maxBytes) {
-      return {
-        path: null,
-        error: `That file is over ${Math.round(maxBytes / (1024 * 1024))} MB — please send a smaller copy, or WhatsApp us.`,
-      };
+      return { path: null, error: tooLargeMessage(raw.byteLength, maxBytes) };
     }
 
     const scope = folderOf(opts.path);
     let path = opts.path;
     let bytes: Uint8Array = raw;
-    let contentType = opts.contentType;
 
     if (isVideo) {
       path = storagePathFor(scope, 'mp4');

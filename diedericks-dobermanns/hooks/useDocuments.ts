@@ -7,6 +7,8 @@ import {
   fileTypeFromName,
   MAX_DOCUMENT_BYTES,
 } from '@/lib/documents/constants';
+import { tooLargeMessage } from '@/lib/uploads/constants';
+import { prepareDocumentFromUri } from '@/lib/uploads/prepareFromUri';
 import { PORTAL_CATEGORY_GROUPS, buildCategoryGroupMap } from '@/lib/documents/portalCategories';
 import type { DocumentRecord, DocumentUploadMetadata, PickedDocumentFile } from '@/lib/documents/types';
 import { RateLimitError, assertRateLimit, blockedMessage } from '@/lib/security/rateLimit';
@@ -117,9 +119,6 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
 
   const upload = useCallback(
     async (file: PickedDocumentFile, metadata: Omit<DocumentUploadMetadata, 'entityType' | 'entityId'>) => {
-        if (file.size > MAX_DOCUMENT_BYTES) {
-          throw new Error('That file is over 10 MB — please send a smaller copy, or WhatsApp us.');
-        }
         setUploading(true);
         try {
           const supabase = requireSupabase();
@@ -129,10 +128,16 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
             throw new Error(e instanceof RateLimitError ? e.message : await blockedMessage());
           }
           const uid = await currentUserId();
-          const response = await fetch(file.uri);
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          const { prepareUpload } = await import('@/lib/uploads/prepare');
-          const prepared = prepareUpload(bytes, `${entityType}/${entityId}`);
+          const prepared = await prepareDocumentFromUri({
+            uri: file.uri,
+            name: file.name,
+            mimeType: file.mimeType,
+            ownerScope: `${entityType}/${entityId}`,
+            maxBytes: MAX_DOCUMENT_BYTES,
+          });
+          if (prepared.bytes.byteLength > MAX_DOCUMENT_BYTES) {
+            throw new Error(tooLargeMessage(prepared.bytes.byteLength, MAX_DOCUMENT_BYTES));
+          }
 
           const { error: uploadError } = await supabase.storage
             .from(BUCKET)

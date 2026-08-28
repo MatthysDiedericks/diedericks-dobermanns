@@ -38,10 +38,11 @@ serve(async (req) => {
     const { to, subject, html, attachments } = (await req.json()) as EmailPayload;
     const body: Record<string, unknown> = { from: FROM, to, subject, html };
     if (attachments?.length) {
+      // Resend reads base64 from `content`. Dropping this array is a silent
+      // success — the covering note arrives, the file does not.
       body.attachments = attachments.map((a) => ({
         filename: a.filename,
         content: a.content,
-        content_type: a.contentType ?? 'application/pdf',
       }));
     }
     const res = await fetch('https://api.resend.com/emails', {
@@ -53,7 +54,11 @@ serve(async (req) => {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    return new Response(JSON.stringify(data), {
+    const payload = {
+      ...data,
+      attachmentCount: attachments?.length ?? 0,
+    };
+    return new Response(JSON.stringify(payload), {
       status: res.ok ? 200 : 502,
       headers: { 'Content-Type': 'application/json' },
     });

@@ -2,6 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 
 import { uploadFile } from '@/lib/storage';
 import { requireSupabase } from '@/lib/supabase';
+import { ACCEPT_DOCUMENT_MIME } from '@/lib/uploads/constants';
 
 function newFileId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -19,7 +20,7 @@ export interface ReceiptUploadResult {
 /** Picks a PDF/image receipt and uploads to the private documents bucket. */
 export async function pickAndUploadReceipt(userId: string): Promise<ReceiptUploadResult | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/pdf', 'image/jpeg', 'image/png'],
+    type: [...ACCEPT_DOCUMENT_MIME],
     copyToCacheDirectory: true,
   });
   if (result.canceled || !result.assets?.[0]) return null;
@@ -29,12 +30,13 @@ export async function pickAndUploadReceipt(userId: string): Promise<ReceiptUploa
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
-  const path = `${userId}/expenses/${year}/${month}/${newFileId()}.${ext}`;
+  const path = `${userId}/expenses/${year}/${month}/${newFileId()}.${ext === 'pdf' ? 'pdf' : 'jpg'}`;
 
   const upload = await uploadFile({
     bucket: 'documents',
     path,
     uri: file.uri,
+    fileName: file.name,
     contentType: file.mimeType ?? (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'),
     sizeBytes: file.size,
   });

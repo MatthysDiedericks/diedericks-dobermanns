@@ -43,6 +43,7 @@ export type DueCheckIn = {
     ownership_status: OwnershipStatus;
     do_not_contact: boolean;
     litter_id: string | null;
+    owner_id: string | null;
   } | null;
   contact: {
     id: string;

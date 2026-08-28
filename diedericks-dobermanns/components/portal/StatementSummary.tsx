@@ -12,6 +12,7 @@ type Props = {
   ledger: StatementRow[];
   onDownload?: () => void;
   downloading?: boolean;
+  downloadDisabled?: boolean;
 };
 
 /** Statement totals + chronological ledger above the portal invoice list. */
@@ -22,6 +23,7 @@ export function StatementSummary({
   ledger,
   onDownload,
   downloading,
+  downloadDisabled,
 }: Props) {
   return (
     <View className="mb-4 gap-3">
@@ -49,8 +51,13 @@ export function StatementSummary({
           </Typography>
         </View>
         {onDownload ? (
-          <Pressable onPress={onDownload} disabled={downloading} className="mt-4">
-            <Typography variant="caption" className="text-gold">
+          <Pressable
+            onPress={onDownload}
+            disabled={downloading || downloadDisabled}
+            accessibilityHint={downloadDisabled ? 'Disabled in preview.' : undefined}
+            className="mt-4"
+          >
+            <Typography variant="caption" className={downloadDisabled ? 'text-gold/40' : 'text-gold'}>
               {downloading ? 'Preparing statement…' : 'Download statement'}
             </Typography>
           </Pressable>

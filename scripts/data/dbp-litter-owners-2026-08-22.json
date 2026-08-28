@@ -1,0 +1,404 @@
+{
+  "source": "DogBreederPro → Dogs → Litters (155), captured 2026-08-22",
+  "how_to_recapture": "DBP Dogs page, left sidebar Litters (155). Do not use Kennel → Litters (never renders).",
+  "rules": [
+    "This file is a human-curated split of concatenated DBP puppy+buyer lines. Do not re-parse dog.name.",
+    "Lines Matt flagged as ambiguous are included with ambiguous=true; apply the owner name, but still only auto-link a contact on unique exact/normalised match.",
+    "Std → programme_tier puppy; Elite → elite_developed. Never overwrite an existing tier.",
+    "Bold names without an em-dash (Katana, Grey, Cairo, Liebe, Thor, Alpha, Lara) are call names, not buyers.",
+    "Go-home was 8 weeks until mid-2025, then 10 weeks."
+  ],
+  "litters": [
+    {
+      "whelped": "2026-07-10",
+      "letter": "J",
+      "dam": "Claire",
+      "sire": "Santini Betelges",
+      "go_home_date": "2026-09-18",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "birth_order": 1, "collar": "pink", "owner": "Josef Kotse" },
+        { "birth_order": 2, "collar": "red", "no_owner": true },
+        { "birth_order": 3, "collar": "gold", "owner": "Jannecke Smit" },
+        { "birth_order": 4, "collar": "purple", "owner": "Gabriella Kruger" },
+        { "birth_order": 5, "collar": "peach", "owner": "Nicolas Hohls" },
+        { "birth_order": 6, "collar": "orange", "owner": "Deon Vlok" },
+        { "birth_order": 7, "collar": "blue", "owner": "Lee Prinsloo" },
+        { "birth_order": 8, "collar": "grey", "owner": "Leo Middelberg" },
+        { "birth_order": 9, "collar": "yellow", "owner": "Elrid Gerber" },
+        { "birth_order": 10, "died": "2026-07-11" }
+      ]
+    },
+    {
+      "whelped": "2026-06-05",
+      "letter": "I",
+      "dam": "Cyprys De Zelig",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2026-08-14",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "birth_order": 1, "collar": "black", "call_name": "Jazzmine", "retained": true },
+        { "birth_order": 2, "collar": "yellow", "died": "2026-06-14" }
+      ]
+    },
+    {
+      "whelped": "2026-06-01",
+      "letter": "H",
+      "dam": "Cendra Diedericks",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2026-08-10",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "birth_order": 1, "collar": "blue", "died": "2026-06-20" },
+        { "birth_order": 3, "collar": "orange", "call_name": "Bruce", "retained": true }
+      ]
+    },
+    {
+      "whelped": "2025-12-11",
+      "letter": "G",
+      "dam": "Claire",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2026-02-19",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "birth_order": 1, "collar": "yellow", "no_owner": true },
+        { "birth_order": 2, "collar": "blue", "no_owner": true },
+        { "birth_order": 3, "died": true },
+        { "birth_order": 4, "collar": "orange", "no_owner": true },
+        { "birth_order": 5, "died": true },
+        { "birth_order": 6, "died": true },
+        { "birth_order": 7, "collar": "purple", "no_owner": true },
+        { "birth_order": 8, "collar": "pink", "no_owner": true },
+        { "birth_order": 9, "died": true },
+        { "birth_order": 10, "collar": "peach", "no_owner": true },
+        { "birth_order": 11, "died": true }
+      ]
+    },
+    {
+      "whelped": "2025-11-27",
+      "letter": "F",
+      "dam": "Cyprys De Zelig",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2026-02-05",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "birth_order": 1, "collar": "red", "call_name": "Loki", "no_owner": true },
+        { "birth_order": 2, "collar": "pink", "no_owner": true },
+        { "birth_order": 3, "collar": "blue", "tier": "elite_developed", "no_owner": true },
+        { "birth_order": 4, "collar": "peach", "died": "2026-01-26" },
+        { "birth_order": 5, "collar": "purple", "no_owner": true },
+        { "birth_order": 6, "collar": "yellow", "no_owner": true }
+      ]
+    },
+    {
+      "whelped": "2025-11-17",
+      "letter": "E",
+      "dam": "Hailey De Zelig",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2026-01-26",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "collar": "orange", "call_name": "Dexter Von Diedericks", "no_owner": true },
+        { "birth_order": 2, "died": "2025-11-28" },
+        { "birth_order": 3, "collar": "dark green", "no_owner": true }
+      ]
+    },
+    {
+      "whelped": "2025-09-23",
+      "letter": "D",
+      "dam": "Raconti Odessa",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2025-12-02",
+      "go_home_weeks": 10,
+      "puppies": [
+        { "collar": "yellow", "call_name": "Calvin von Diedericks", "no_owner": true },
+        { "call_name": "Cocoa", "owner": "Klarabell" },
+        { "collar": "gold", "call_name": "Kim von Diedericks", "retained": true },
+        { "call_name": "Klara", "owner": "Yolandi Botha" },
+        { "call_name": "Loki", "owner": "Marc Le Roux" },
+        { "call_name": "Miles", "owner": "Miles von Diedericks", "ambiguous": true },
+        { "call_name": "Odin Christoff de Villiers Marais", "owner": "Odin Christoff Marais" },
+        { "call_name": "Storm", "owner": "Susan Coetze-Smit" }
+      ]
+    },
+    {
+      "whelped": "2025-05-23",
+      "letter": "C",
+      "dam": "Claire",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2025-07-18",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Hugo", "owner": "Hugo von Diedericks", "ambiguous": true },
+        { "call_name": "Jack", "owner": "Jo-Anne", "tier": "puppy" },
+        { "birth_order": 2, "collar": "purple", "owner": "Robbert Miller", "tier": "puppy", "collar_note": "DBP wrote PURPULE" },
+        { "birth_order": 3, "collar": "black", "owner": "Marc Le Roux", "tier": "puppy" },
+        { "birth_order": 4, "collar": "gold", "owner": "Michael Steyn", "tier": "elite_developed" },
+        { "birth_order": 5, "collar": "yellow", "owner": "Marco D'Avico", "tier": "puppy" },
+        { "birth_order": 6, "collar": "pink", "owner": "Jaques Holthausen", "tier": "elite_developed" },
+        { "birth_order": 9, "collar": "red", "owner": "Dexter", "tier": "elite_developed" },
+        { "birth_order": 8, "collar": "orange", "died": "2025-06-23" }
+      ]
+    },
+    {
+      "whelped": "2025-05-17",
+      "letter": "B",
+      "dam": "Cyprys De Zelig",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2025-07-12",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "birth_order": 1, "collar": "orange", "owner": "Paul Farrel", "tier": "puppy" },
+        { "birth_order": 2, "collar": "gold", "call_name": "Knox", "owner": "Ruoall Chapman", "tier": "elite_developed" },
+        { "birth_order": 3, "collar": "yellow", "owner": "Naomie", "tier": "puppy" },
+        { "birth_order": 4, "collar": "grey", "owner": "Arina van der Merwe", "tier": "puppy" },
+        { "birth_order": 5, "collar": "blue", "owner": "Leandre Van Zyl", "tier": "puppy" },
+        { "birth_order": 6, "collar": "pink", "owner": "Jeremy Richard Smith" },
+        { "birth_order": 7, "collar": "green", "call_name": "Max", "owner": "Cole De Kock", "tier": "puppy", "notes": "PE" },
+        { "birth_order": 8, "collar": "purple", "owner": "Howard Pam Essery" }
+      ]
+    },
+    {
+      "whelped": "2025-02-06",
+      "letter": "A",
+      "dam": "Hannah",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2025-04-03",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Hannah", "owner": "Doug Andrew" },
+        { "birth_order": 1, "collar": "red", "owner": "Gunter", "tier": "elite_developed" },
+        { "birth_order": 11, "collar": "grey", "call_name": "Bella Bom", "no_owner": true },
+        { "birth_order": 12, "collar": "peach", "owner": "Liezel v Eden" },
+        { "birth_order": 4, "collar": "orange", "owner": "Nadja", "tier": "puppy" },
+        { "birth_order": 5, "collar": "purple", "call_name": "Blondie", "tier": "puppy", "no_owner": true },
+        { "birth_order": 6, "collar": "gold", "call_name": "Hunter", "no_owner": true },
+        { "collar": "yellow", "call_name": "Zorba", "owner": "Doug Andrew", "tier": "elite_developed" },
+        { "birth_order": 2, "call_name": "Hazel", "died": "2025-07-14" },
+        { "birth_order": 7, "died_note": "Feb 2025" },
+        { "birth_order": 8, "died_note": "Feb 2025" },
+        { "birth_order": 9, "died": "2025-07-01" }
+      ]
+    },
+    {
+      "whelped": "2024-11-17",
+      "letter": "B",
+      "dam": "Hailey De Zelig",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2025-01-12",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "birth_order": 1, "no_owner": true },
+        { "birth_order": 2, "no_owner": true },
+        { "birth_order": 3, "no_owner": true },
+        { "birth_order": 4, "call_name": "Katana" },
+        { "birth_order": 5, "call_name": "Grey" },
+        { "birth_order": 6, "no_owner": true },
+        { "birth_order": 7, "call_name": "Cairo" },
+        { "birth_order": 8, "call_name": "Liebe" }
+      ]
+    },
+    {
+      "whelped": "2024-09-09",
+      "letter": "F",
+      "dam": "Raconti Odessa",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2024-11-04",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "birth_order": 1, "collar": "gold", "no_owner": true },
+        { "birth_order": 2, "owner": "Eben" },
+        { "birth_order": 3, "collar": "orange", "no_owner": true },
+        { "birth_order": 4, "collar": "blue", "call_name": "Alpha" },
+        { "birth_order": 5, "collar": "pink", "call_name": "Lara" }
+      ]
+    },
+    {
+      "whelped": "2024-06-10",
+      "letter": "M",
+      "dam": "Cyprys De Zelig",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2024-08-05",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Ade", "owner": "Ade Boomer", "ambiguous": true },
+        { "call_name": "Boomer", "owner": "Boomer Tshaka", "ambiguous": true },
+        { "call_name": "Merida", "no_owner": true },
+        { "birth_order": 3, "died": "2024-06-22" },
+        { "birth_order": 4, "collar": "white", "no_owner": true },
+        { "birth_order": 7, "call_name": "Liv", "no_owner": true },
+        { "birth_order": 9, "call_name": "Thor" },
+        { "call_name": "XENA", "owner": "Xena Wise", "ambiguous": true },
+        { "call_name": "Zeus", "owner": "Zeus Elmes", "ambiguous": true }
+      ]
+    },
+    {
+      "whelped": "2023-09-22",
+      "dam": "Hailey De Zelig",
+      "sire": "Raconti Einston Of Zhen",
+      "go_home_date": "2023-11-17",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Blue", "owner": "de Vries", "ambiguous": true },
+        { "call_name": "Ceasar", "owner": "Bemath" },
+        { "call_name": "Hillton", "no_owner": true },
+        { "call_name": "Argo", "owner": "LIV-KARA" },
+        { "owner": "vd Walt", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "call_name": "Raven", "owner": "Love" },
+        { "call_name": "Sasha", "owner": "Nagel" }
+      ]
+    },
+    {
+      "whelped": "2023-09-18",
+      "dam": "Raconti Toffi",
+      "sire": "Hillo Betelges",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Hazel Diedericks", "collar": "pink", "notes": "DBP line: Hazel Diedericks (Cherise Pink) — collar vs owner not split" }
+      ]
+    },
+    {
+      "whelped": "2023-05-02",
+      "letter": "L",
+      "dam": "Cyprys De Zelig",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2023-06-27",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "collar": "blue", "call_name": "Diablo", "no_owner": true },
+        { "birth_order": 1, "collar": "red", "no_owner": true },
+        { "birth_order": 2, "collar": "purple", "no_owner": true },
+        { "collar": "black", "call_name": "Winston", "no_owner": true }
+      ]
+    },
+    {
+      "whelped": "2023-04-04",
+      "letter": "K",
+      "dam": "Raconti Gravin Zone",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2023-05-30",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Bliksem", "collar": "light blue", "retained": true, "tier": "elite_developed", "notes": "DBP: Elite Pup" },
+        { "call_name": "Cendra Diedericks", "collar": "peach", "retained": true },
+        { "call_name": "Diablo", "collar": "light green", "no_owner": true },
+        { "call_name": "Hunter Junior", "collar": "red", "no_owner": true },
+        { "birth_order": 1, "owner": "Shasha", "tier": "elite_developed" }
+      ]
+    },
+    {
+      "whelped": "2022-10-02",
+      "letter": "J",
+      "dam": "Raconti Toffi",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2022-11-27",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Atlas", "owner": "Pinkerton" },
+        { "call_name": "Boesman", "no_owner": true },
+        { "call_name": "Gunther", "no_owner": true },
+        { "birth_order": 1, "owner": "Myron" },
+        { "owner": "Otong", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "owner": "Stopford Boy", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "birth_order": 4, "died_note": "Oct 2022" },
+        { "birth_order": 7, "died_note": "Oct 2022" }
+      ]
+    },
+    {
+      "whelped": "2022-09-24",
+      "letter": "I",
+      "dam": "Raconti Odessa",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2022-11-19",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "De Zelig Dasha", "owner": "Orlop" },
+        { "call_name": "Freya", "no_owner": true },
+        { "call_name": "Juice", "owner": "Pinkerton" },
+        { "collar": "pink", "no_owner": true },
+        { "birth_order": 3, "collar": "turquoise", "no_owner": true },
+        { "owner": "Aspeling", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "call_name": "De Zelig Rain", "owner": "Bester" },
+        { "call_name": "Storm", "owner": "Selkon" },
+        { "birth_order": 4, "died": "2023-03-16" }
+      ]
+    },
+    {
+      "whelped": "2022-04-04",
+      "letter": "H",
+      "dam": "Raconti Gravin Zone",
+      "sire": "Hillo Betelges",
+      "go_home_date": "2022-05-30",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Diesel", "owner": "Selkon" },
+        { "call_name": "Karyn", "owner": "Twine" },
+        { "call_name": "Lagertha", "owner": "Cilliers" },
+        { "birth_order": 11, "collar": "orange", "no_owner": true },
+        { "birth_order": 4, "collar": "purple", "no_owner": true },
+        { "birth_order": 7, "call_name": "Hunter", "notes": "Hunter × Cuba" },
+        { "call_name": "Tago", "owner": "Cronje" },
+        { "birth_order": 9, "died_note": "Apr 2022" },
+        { "birth_order": 13, "died_note": "Apr 2022" }
+      ]
+    },
+    {
+      "whelped": "2022-03-27",
+      "letter": "E",
+      "dam": "Cyprys De Zelig",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2022-05-22",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Kaptein", "owner": "Campher" },
+        { "call_name": "Mulan", "owner": "Graham" },
+        { "owner": "Kruger", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "owner": "Stopford", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "owner": "Wessels", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "owner": "Whitehead", "match_hint": "unnamed Puppy — cannot auto-match" },
+        { "call_name": "Yatka", "owner": "Boehme" },
+        { "call_name": "Zurika", "owner": "Barnard" }
+      ]
+    },
+    {
+      "whelped": "2021-04-18",
+      "letter": "D",
+      "dam": "Raconti Gravin Zone",
+      "sire": "Dharkha Betelges",
+      "go_home_date": "2021-06-13",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Claire", "collar": "white", "retained": true },
+        { "call_name": "NINJA", "collar": "orange", "no_owner": true },
+        { "call_name": "RAGNAR", "collar": "red", "no_owner": true },
+        { "call_name": "BAILEY", "died": "2021-08-11" }
+      ]
+    },
+    {
+      "whelped": "2019-09-19",
+      "letter": "C",
+      "dam": "Raconti Toffi",
+      "sire": "Raconti Einston Of Zhen",
+      "go_home_date": "2019-11-14",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "Ceasar", "no_owner": true },
+        { "call_name": "Chase", "no_owner": true },
+        { "call_name": "Cooper", "no_owner": true },
+        { "call_name": "Kaiser", "no_owner": true },
+        { "call_name": "Casey", "died": "2020-01-01" },
+        { "birth_order": 6, "died": "2019-10-19" }
+      ]
+    },
+    {
+      "whelped": "2019-03-31",
+      "dam": "Raconti Gravin Zone",
+      "sire": "Raconti Einston Of Zhen",
+      "go_home_date": "2019-05-26",
+      "go_home_weeks": 8,
+      "puppies": [
+        { "call_name": "MAX", "registration_number": "ZA006036B20", "notes": "KUSA number from DBP, not an owner" }
+      ]
+    }
+  ]
+}

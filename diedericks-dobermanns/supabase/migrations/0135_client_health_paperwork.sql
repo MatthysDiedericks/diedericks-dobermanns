@@ -1,4 +1,4 @@
-﻿-- Additive: a client may file vet paperwork on their own dogs.
+-- Additive: a client may file vet paperwork on their own dogs.
 -- Does not replace or widen any existing documents policy.
 -- Staff already insert via "staff insert documents rows".
 -- Nothing in this change sends email or WhatsApp.

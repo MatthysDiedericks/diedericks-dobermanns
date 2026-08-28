@@ -46,6 +46,7 @@ export function mimeForKind(kind: DetectedKind): string {
   if (kind === "png") return "image/png";
   if (kind === "webp") return "image/webp";
   if (kind === "heic") return "image/heic";
+  if (kind === "heif") return "image/heif";
   if (kind === "mp4") return "video/mp4";
   if (kind === "m4v") return "video/x-m4v";
   if (kind === "mov") return "video/quicktime";
@@ -55,5 +56,6 @@ export function mimeForKind(kind: DetectedKind): string {
 
 export function storedExt(kind: DetectedKind): string {
   if (kind === "jpeg") return "jpg";
+  if (kind === "heif") return "heic";
   return kind;
 }

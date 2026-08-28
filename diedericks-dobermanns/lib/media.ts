@@ -9,6 +9,11 @@ import {
   type StorageBucket,
 } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
+import {
+  ACCEPT_DOCUMENT_MIME,
+  HEIC_CONVERT_FAILED_MESSAGE,
+} from '@/lib/uploads/constants';
+import { convertUriToJpeg, looksLikeHeic } from '@/lib/uploads/heic';
 
 export type MediaKind = 'image' | 'video' | 'document';
 
@@ -48,7 +53,7 @@ interface ManipulatorModule {
   ImageManipulator?: { manipulate: (uri: string) => ManipulateContext };
 }
 
-export async function compressImage(uri: string): Promise<string> {
+export async function compressImage(uri: string, name?: string, mime?: string): Promise<string> {
   const mod = ImageManipulator as unknown as ManipulatorModule;
   try {
     // Legacy API (still exported in some versions).
@@ -72,7 +77,13 @@ export async function compressImage(uri: string): Promise<string> {
       return saved.uri;
     }
   } catch {
-    // Fall through to the original URI.
+    if (looksLikeHeic(name, mime)) {
+      throw new Error(HEIC_CONVERT_FAILED_MESSAGE);
+    }
+    return uri;
+  }
+  if (looksLikeHeic(name, mime)) {
+    throw new Error(HEIC_CONVERT_FAILED_MESSAGE);
   }
   return uri;
 }
@@ -172,13 +183,7 @@ export async function captureWithCamera(opts: PickOptions): Promise<PickedMedia[
 
 /** Opens the document picker (PDF + images by default). */
 export async function pickDocument(
-  types: string[] = [
-    'application/pdf',
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/heic',
-  ],
+  types: string[] = [...ACCEPT_DOCUMENT_MIME],
 ): Promise<PickedMedia[]> {
   const result = await DocumentPicker.getDocumentAsync({
     type: types,
@@ -231,16 +236,39 @@ export async function uploadMedia(
 ): Promise<UploadOutcome> {
   if (!supabase) return { url: item.uri, error: null };
 
-  const uri = item.kind === 'image' ? await compressImage(item.uri) : item.uri;
-  const path = buildObjectPath(folder, extensionFor(item));
-  const contentType = contentTypeFor(item);
+  let uri = item.uri;
+  let mimeType = item.mimeType;
+  let name = item.name;
+  try {
+    if (item.kind === 'image') {
+      uri = await compressImage(item.uri, item.name, item.mimeType);
+      mimeType = 'image/jpeg';
+    } else if (looksLikeHeic(item.name, item.mimeType)) {
+      uri = await convertUriToJpeg(item.uri);
+      mimeType = 'image/jpeg';
+      if (name) name = name.replace(/\.(heic|heif)$/i, '.jpg');
+    }
+  } catch (e) {
+    return { url: null, error: e instanceof Error ? e.message : 'Could not prepare that photo.' };
+  }
+
+  const prepared: PickedMedia = { ...item, uri, mimeType, name };
+  const path = buildObjectPath(folder, extensionFor(prepared));
+  const contentType = contentTypeFor(prepared);
 
   let lastError: string | null = null;
   for (let i = 0; i < attempts; i++) {
-    const { error } = await uploadFile({ bucket, path, uri, contentType, sizeBytes: item.sizeBytes });
+    const { error } = await uploadFile({
+      bucket,
+      path,
+      uri,
+      fileName: name,
+      contentType,
+      sizeBytes: item.sizeBytes,
+    });
     if (!error) return { url: getPublicUrl(bucket, path), error: null };
     lastError = error;
-    if (i < attempts - 1) await sleep(500 * 2 ** i); // 0.5s, 1s backoff
+    if (i < attempts - 1) await sleep(500 * 2 ** i);
   }
   return { url: null, error: lastError };
 }

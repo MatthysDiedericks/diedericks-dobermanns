@@ -1,7 +1,11 @@
 import { format, parseISO } from 'date-fns';
 
 import { formatAmountPlain } from '@/lib/finance/formatters';
+import type { StatementRow } from '@/lib/finance/statementRows';
 import type { InvoiceWithDetails } from '@/types/finance';
+
+export type { StatementRow } from '@/lib/finance/statementRows';
+export { buildStatementRows } from '@/lib/finance/statementRows';
 
 export type BankingDetails = {
   bank: string;
@@ -172,15 +176,6 @@ export function letterheadBlock(logoBase64: string): string {
     <div class="gold-line"></div>`;
 }
 
-export interface StatementRow {
-  date: string;
-  reference: string;
-  description: string;
-  debit: number;
-  credit: number;
-  balance: number;
-}
-
 export function buildStatementHTML(
   clientName: string,
   clientContact: string | null,
@@ -260,62 +255,4 @@ function formatStmtDate(value: string): string {
   } catch {
     return value;
   }
-}
-
-export function buildStatementRows(
-  invoices: Array<{ issue_date: string; invoice_number: string; total_amount: number; notes: string | null }>,
-  payments: Array<{
-    payment_date: string;
-    amount: number;
-    reference: string | null;
-    invoice_number: string;
-  }>,
-): StatementRow[] {
-  type LedgerEntry = {
-    date: string;
-    reference: string;
-    description: string;
-    debit: number;
-    credit: number;
-    sortKey: string;
-  };
-
-  const entries: LedgerEntry[] = [];
-
-  for (const inv of invoices) {
-    entries.push({
-      date: inv.issue_date,
-      reference: inv.invoice_number,
-      description: inv.notes?.trim() || 'Invoice',
-      debit: inv.total_amount,
-      credit: 0,
-      sortKey: `${inv.issue_date}T00-${inv.invoice_number}`,
-    });
-  }
-
-  for (const pay of payments) {
-    entries.push({
-      date: pay.payment_date,
-      reference: pay.reference ?? `PAY-${pay.invoice_number}`,
-      description: 'Payment received',
-      debit: 0,
-      credit: pay.amount,
-      sortKey: `${pay.payment_date}T01-${pay.reference ?? pay.invoice_number}`,
-    });
-  }
-
-  entries.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-
-  let balance = 0;
-  return entries.map((e) => {
-    balance += e.debit - e.credit;
-    return {
-      date: e.date,
-      reference: e.reference,
-      description: e.description,
-      debit: e.debit,
-      credit: e.credit,
-      balance,
-    };
-  });
 }

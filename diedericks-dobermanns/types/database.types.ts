@@ -2365,6 +2365,7 @@ export type Database = {
           body_length_cm: number | null
           breed: string
           breeding_role: string | null
+          buyer_contact_id: string | null
           call_name: string | null
           call_sign: string | null
           category: string
@@ -2465,6 +2466,7 @@ export type Database = {
           body_length_cm?: number | null
           breed?: string
           breeding_role?: string | null
+          buyer_contact_id?: string | null
           call_name?: string | null
           call_sign?: string | null
           category?: string
@@ -2565,6 +2567,7 @@ export type Database = {
           body_length_cm?: number | null
           breed?: string
           breeding_role?: string | null
+          buyer_contact_id?: string | null
           call_name?: string | null
           call_sign?: string | null
           category?: string

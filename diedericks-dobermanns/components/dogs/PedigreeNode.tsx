@@ -2,6 +2,7 @@ import { Pressable, View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
 import type { PedigreeAncestor } from '@/hooks/useDogPedigree';
+import { formatCoiPercent } from '@/lib/dogs/formatCoi';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 
 interface PedigreeNodeProps {
@@ -43,9 +44,9 @@ export function PedigreeNode({
           {formatKennelDate(dateOfBirth)}
         </Typography>
       ) : null}
-      {wrightsCoi != null && Number.isFinite(wrightsCoi) ? (
+      {formatCoiPercent(wrightsCoi) ? (
         <Typography variant="caption" className="mt-0.5 text-muted">
-          COI {wrightsCoi.toFixed(2)}%
+          COI {formatCoiPercent(wrightsCoi)}
         </Typography>
       ) : null}
       {onPress ? (

@@ -1,3 +1,5 @@
+import { ACCEPT_DOCUMENT_MIME, MAX_UPLOAD_BYTES } from '@/lib/uploads/constants';
+
 export type DocumentEntityType =
   | 'dog'
   | 'litter'
@@ -100,16 +102,10 @@ export function fileTypeFromName(filename: string): DocumentFileType {
   return 'jpg';
 }
 
-export const ACCEPTED_MIME_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/heic',
-  'image/heif',
-];
+/** One shared list — do not invent a local accept list in uploaders. */
+export const ACCEPTED_MIME_TYPES: readonly string[] = [...ACCEPT_DOCUMENT_MIME];
 
-export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+export const MAX_DOCUMENT_BYTES = MAX_UPLOAD_BYTES;
 
 /** Sentinel UUID for kennel-wide documents (`documents.entity_type = 'kennel'`). */
 export const KENNEL_DOCUMENT_ENTITY_ID = '00000000-0000-0000-0000-000000000001';

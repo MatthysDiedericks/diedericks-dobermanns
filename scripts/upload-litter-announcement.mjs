@@ -67,6 +67,14 @@ const UPLOADS = [
     label: 'Santini x Odessa',
     file: 'WhatsApp Image 2026-08-06 at 16.56.47.jpeg',
   },
+  {
+    // Cleopatra × Dharka — planned, not yet mated. Record created 20 Aug 2026;
+    // status 'planned' and is_public true so it advertises on the site. No dates
+    // yet, so the card shows the poster and the pairing only.
+    litterId: '1b5b7aa7-a2b3-4dd5-a26b-fce1718a3315',
+    label: 'Cleopatra x Dharka (planned)',
+    file: 'WhatsApp Image 2026-08-19 at 17.08.03.jpeg',
+  },
 ];
 
 if (!SERVICE_KEY) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { CheckInKind, DueCheckIn, OverallHealth } from '@/lib/followUps/types';
+import { dogHasKnownOwner } from '@/lib/followUps/contactability';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { requireSupabase } from '@/lib/supabase';
 
@@ -22,9 +23,9 @@ export function useOwnerFollowUps(kindFilter: CheckInKind | 'all' = 'all') {
         .select(
           `
           id, dog_id, contact_id, kind, due_date, status, draft_message,
-          dog:dogs!check_ins_dog_id_fkey(
+          dog:dogs!inner(
             id, name, call_name, date_of_birth, sex, ownership_status,
-            do_not_contact, litter_id
+            do_not_contact, litter_id, owner_id
           ),
           contact:contacts!check_ins_contact_id_fkey(
             id, full_name, phone, whatsapp_number, email
@@ -33,13 +34,14 @@ export function useOwnerFollowUps(kindFilter: CheckInKind | 'all' = 'all') {
         )
         .eq('status', 'due')
         .lte('due_date', weekEnd())
+        .not('dogs.owner_id', 'is', null)
         .order('due_date', { ascending: true });
 
       if (kindFilter !== 'all') q = q.eq('kind', kindFilter);
 
       const { data, error: err } = await q;
       if (err) throw new Error(err.message);
-      setItems((data ?? []) as unknown as DueCheckIn[]);
+      setItems(((data ?? []) as unknown as DueCheckIn[]).filter((r) => dogHasKnownOwner(r.dog)));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load follow-ups');
       setItems([]);
@@ -64,9 +66,10 @@ export function useDueCheckInCount() {
     try {
       const { count: c, error } = await requireSupabase()
         .from('check_ins')
-        .select('id', { count: 'exact', head: true })
+        .select('id, dog:dogs!inner(owner_id)', { count: 'exact', head: true })
         .eq('status', 'due')
-        .lte('due_date', weekEnd());
+        .lte('due_date', weekEnd())
+        .not('dogs.owner_id', 'is', null);
       if (error) throw new Error(error.message);
       setCount(c ?? 0);
     } catch {

@@ -15,7 +15,7 @@ const QUOTE_SELECT =
   'notes, valid_until, converted_invoice_id, created_by, created_at, updated_at, ' +
   'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
   'delivery_decision, delivery_note, ' +
-  'client:users(id, full_name, phone, email), ' +
+  'client:users!quotes_client_id_fkey(id, full_name, phone, email), ' +
   'contact:contacts!quotes_contact_id_fkey(full_name, email, phone, merged_into_contact_id), ' +
   'application:applications(email, phone), ' +
   'items:quote_items(id, item_type, dog_id, litter_id, subject_kind, description, quantity, unit_price, line_total, sort_order, catalogue_code)';

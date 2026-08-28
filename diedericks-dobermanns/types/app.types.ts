@@ -288,6 +288,7 @@ export interface Dog {
   chest_girth_cm?: number | null;
   owner_id?: string | null;
   owner_contact_id?: string | null;
+  buyer_contact_id?: string | null;
   placement_date?: string | null;
   ownership_status?:
     | 'unknown'

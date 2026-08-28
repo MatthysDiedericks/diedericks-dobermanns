@@ -1,7 +1,8 @@
 /**
  * generate-check-ins.mjs
  *
- * Calls generate_due_check_ins() — inserts due rows with draft text only.
+ * Calls generate_due_check_ins() — inserts due rows with draft text for Matt.
+ * Birthday rows require dogs.owner_id and never use Puppy/Pup N placeholders.
  * Never sends WhatsApp, email, or any outbound message.
  *
  *   node scripts/generate-check-ins.mjs

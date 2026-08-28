@@ -1,11 +1,12 @@
 import * as DocumentPicker from 'expo-document-picker';
 
 import {
+  ACCEPT_DOCUMENT_MIME,
   MAX_APPLICATION_FILES,
-  MAX_UPLOAD_BYTES,
   TOO_MANY_FILES_MESSAGE,
 } from '@/lib/uploads/constants';
-import { prepareUpload, UploadValidationError } from '@/lib/uploads/prepare';
+import { prepareDocumentFromUri } from '@/lib/uploads/prepareFromUri';
+import { UploadValidationError } from '@/lib/uploads/prepare';
 import { ERROR_CODES } from '@/lib/errors/codes';
 import { logSecurity } from '@/lib/security/logSecurity';
 
@@ -24,7 +25,7 @@ export async function pickApplicationFiles(
   const remaining = MAX_APPLICATION_FILES - current.length;
   if (remaining <= 0) return { files: current, error: TOO_MANY_FILES_MESSAGE };
   const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic'],
+    type: [...ACCEPT_DOCUMENT_MIME],
     multiple: true,
     copyToCacheDirectory: true,
   });
@@ -34,16 +35,18 @@ export async function pickApplicationFiles(
     if (next.length >= MAX_APPLICATION_FILES) {
       return { files: next, error: TOO_MANY_FILES_MESSAGE };
     }
-    if ((asset.size ?? 0) > MAX_UPLOAD_BYTES) {
-      return {
-        files: next,
-        error: 'That file is over 10 MB — please send a smaller copy, or WhatsApp us.',
-      };
-    }
-    const response = await fetch(asset.uri);
-    const bytes = new Uint8Array(await response.arrayBuffer());
     try {
-      prepareUpload(bytes, 'applications/preflight');
+      const prepared = await prepareDocumentFromUri({
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType,
+        ownerScope: 'applications/preflight',
+      });
+      next.push({
+        uri: asset.uri,
+        name: asset.name,
+        size: prepared.bytes.byteLength,
+      });
     } catch (e) {
       logSecurity({
         code: ERROR_CODES.SECURITY_UPLOAD_REJECTED,
@@ -56,7 +59,6 @@ export async function pickApplicationFiles(
         error: e instanceof UploadValidationError ? e.message : 'That file could not be accepted.',
       };
     }
-    next.push({ uri: asset.uri, name: asset.name, size: asset.size ?? bytes.byteLength });
   }
   return { files: next, error: null };
 }

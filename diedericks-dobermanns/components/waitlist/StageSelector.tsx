@@ -5,6 +5,9 @@ import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
+import { recordBuyerCallName } from '@/lib/dogs/buyerName';
+import { isPlaceholderDogName, realDogName } from '@/lib/dogs/placeholderName';
+import { showError } from '@/lib/dogDetail/feedback';
 import { moveWaitlistStage } from '@/lib/waitlist/mutations';
 import { createHandoverBalanceInvoice, recordWaitlistDeposit } from '@/lib/waitlist/salesFlow';
 import { PIPELINE_STAGES, stageLabel, TERMINAL_STAGES } from '@/lib/waitlist/constants';
@@ -28,6 +31,8 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
   const [depositAmount, setDepositAmount] = useState('');
   const [depositMethod, setDepositMethod] = useState('');
   const [depositRef, setDepositRef] = useState('');
+  const [handoverOpen, setHandoverOpen] = useState(false);
+  const [buyerCallName, setBuyerCallName] = useState('');
   const allStages = [...PIPELINE_STAGES, ...TERMINAL_STAGES];
 
   function reset() {
@@ -37,6 +42,8 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
     setDepositAmount('');
     setDepositMethod('');
     setDepositRef('');
+    setHandoverOpen(false);
+    setBuyerCallName('');
   }
 
   async function moveTo(stage: string) {
@@ -96,6 +103,21 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
     }
   }
 
+  async function confirmHandover() {
+    if (!entry) return;
+    if (entry.assigned_dog_id) {
+      if (isPlaceholderDogName(buyerCallName)) return;
+      const { error: nameErr } = await run(() =>
+        recordBuyerCallName(entry.assigned_dog_id!, buyerCallName, entry.assigned_dog?.name),
+      );
+      if (nameErr) {
+        showError(nameErr);
+        return;
+      }
+    }
+    await moveTo('handover_complete');
+  }
+
   function selectStage(stage: string) {
     if (
       (stage === 'do_not_sell' || stage === 'on_hold' || stage === 'withdrawn') &&
@@ -111,6 +133,13 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
     if (stage === 'deposit_paid') {
       setDepositOpen(true);
       setDepositAmount(entry?.quoted_price ? String(entry.quoted_price) : '');
+      return;
+    }
+    if (stage === 'handover_complete' && entry?.assigned_dog_id) {
+      setHandoverOpen(true);
+      setBuyerCallName(
+        realDogName(entry.assigned_dog?.call_name, entry.assigned_dog?.name) ?? '',
+      );
       return;
     }
     void moveTo(stage);
@@ -166,6 +195,44 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
                 label="Cancel"
                 variant="outline"
                 onPress={() => setDepositOpen(false)}
+                fullWidth
+                className="mt-2"
+              />
+            </View>
+          ) : handoverOpen ? (
+            <View>
+              <Typography variant="label" className="mb-2 text-gold">
+                Name the buyer uses
+              </Typography>
+              {entry?.assigned_dog?.name && isPlaceholderDogName(entry.assigned_dog.name) ? (
+                <Typography variant="caption" className="mb-2 text-amber-300">
+                  Currently listed as {entry.assigned_dog.name}. Do not leave this as the name
+                  they will be wished happy birthday under.
+                </Typography>
+              ) : null}
+              <Input
+                label="What do they call this dog?"
+                placeholder="Ade"
+                autoCapitalize="words"
+                value={buyerCallName}
+                onChangeText={setBuyerCallName}
+              />
+              <Typography variant="caption" className="mt-2 text-silver">
+                Saved on the dog as the call name. Ask at handover so birthday check-ins are
+                personal, not “Puppy 7”.
+              </Typography>
+              <Button
+                label="Complete handover"
+                onPress={() => void confirmHandover()}
+                loading={submitting}
+                disabled={isPlaceholderDogName(buyerCallName)}
+                fullWidth
+                className="mt-4"
+              />
+              <Button
+                label="Cancel"
+                variant="outline"
+                onPress={() => setHandoverOpen(false)}
                 fullWidth
                 className="mt-2"
               />

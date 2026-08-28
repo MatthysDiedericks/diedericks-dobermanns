@@ -136,22 +136,17 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
 
     async function pickFile() {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ACCEPTED_MIME_TYPES,
+        type: [...ACCEPTED_MIME_TYPES],
         copyToCacheDirectory: true,
       });
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
-      if ((asset.size ?? 0) > MAX_DOCUMENT_BYTES) {
-        Alert.alert('File too large', 'That file is over 10 MB — please send a smaller copy, or WhatsApp us.');
-        return;
-      }
-      const picked: PickedDocumentFile = {
+      setFile({
         uri: asset.uri,
         name: asset.name,
         mimeType: asset.mimeType ?? 'application/octet-stream',
         size: asset.size ?? 0,
-      };
-      setFile(picked);
+      } satisfies PickedDocumentFile);
       if (!name.trim()) {
         const base = asset.name.replace(/\.[^.]+$/, '');
         setName(base);

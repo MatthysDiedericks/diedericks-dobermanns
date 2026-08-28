@@ -60,13 +60,19 @@ export default function ReservationScreen() {
               />
             </Card>
 
+            {/*
+              A framed portrait, not a banner. Full width with a fixed height is a
+              letterbox, and `cover` then zooms a photo of a sitting dog until only
+              its nose is in frame. Constrain the width, keep a 4:5 portrait shape,
+              and `contain` so the whole dog fits however the photo was taken.
+              Matches ReservationSummary.tsx on the website.
+            */}
             {thumb ? (
-              <View className="mt-4 w-full overflow-hidden rounded-xl bg-surface" style={{ maxHeight: 420 }}>
+              <View className="mt-4 self-center overflow-hidden rounded-xl bg-background" style={{ width: 300 }}>
                 <Image
                   source={{ uri: thumb }}
-                  style={{ width: '100%', height: 280 }}
-                  contentFit="cover"
-                  contentPosition={{ top: '30%', left: '50%' }}
+                  style={{ width: 300, height: 375 }}
+                  contentFit="contain"
                 />
               </View>
             ) : null}

@@ -30,15 +30,6 @@ export type ContractStatus =
   | 'signed_both'
   | 'void';
 
-export type KennelDocCategory =
-  | 'general'
-  | 'health'
-  | 'breeding'
-  | 'training'
-  | 'legal'
-  | 'marketing'
-  | 'templates';
-
 export type MatingType = 'natural' | 'ai_fresh' | 'ai_chilled' | 'ai_frozen';
 
 export interface HeatCycle {
@@ -99,25 +90,6 @@ export interface ContractTemplate {
   party_2_label: string;
   dog_label: string;
   body_html: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface KennelDocument {
-  id: string;
-  name: string;
-  original_filename: string;
-  file_url: string;
-  mime_type: string | null;
-  file_size: number | null;
-  category: KennelDocCategory;
-  tags: string[] | null;
-  is_starred: boolean;
-  storage_path?: string | null;
-  linked_dog_id?: string | null;
-  linked_litter_id?: string | null;
-  notes: string | null;
-  created_by: string | null;
   created_at: string;
   updated_at: string;
 }

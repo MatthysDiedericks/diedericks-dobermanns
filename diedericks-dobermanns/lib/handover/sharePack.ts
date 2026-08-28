@@ -3,18 +3,24 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 import { Config } from '@/constants/config';
+import { packQueryString, type PackChoice } from '@/lib/handover/sections';
 import { requireSupabase } from '@/lib/supabase';
 
-export async function fetchHandoverPackFile(
-  dogId: string,
-): Promise<{ uri: string; filename: string }> {
+async function authHeaders(): Promise<HeadersInit> {
   const { data } = await requireSupabase().auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error('Not signed in');
+  return { Authorization: `Bearer ${token}` };
+}
 
-  const res = await fetch(`${Config.app.webBaseUrl}/api/puppies/${dogId}/handover-pack`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function fetchHandoverPackFile(
+  dogId: string,
+  choice?: PackChoice,
+): Promise<{ uri: string; filename: string }> {
+  const res = await fetch(
+    `${Config.app.webBaseUrl}/api/puppies/${dogId}/handover-pack${choice ? packQueryString(choice) : ''}`,
+    { headers: await authHeaders() },
+  );
   if (res.status === 404) {
     throw new Error('This pack is not available yet. It appears after go-home.');
   }
@@ -50,8 +56,8 @@ function filenameFromDisposition(header: string | null): string | null {
   return m?.[1] ?? null;
 }
 
-export async function shareHandoverPack(dogId: string): Promise<void> {
-  const { uri, filename } = await fetchHandoverPackFile(dogId);
+export async function shareHandoverPack(dogId: string, choice?: PackChoice): Promise<void> {
+  const { uri, filename } = await fetchHandoverPackFile(dogId, choice);
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(uri, {
       mimeType: 'application/pdf',
@@ -63,7 +69,52 @@ export async function shareHandoverPack(dogId: string): Promise<void> {
   await Print.printAsync({ uri });
 }
 
-export async function printHandoverPack(dogId: string): Promise<void> {
-  const { uri } = await fetchHandoverPackFile(dogId);
+export async function printHandoverPack(dogId: string, choice?: PackChoice): Promise<void> {
+  const { uri } = await fetchHandoverPackFile(dogId, choice);
   await Print.printAsync({ uri });
+}
+
+export type HandoverOutline = {
+  buyerName: string | null;
+  buyerEmail: string | null;
+  buyerPhone: string | null;
+  contactId: string | null;
+  portalUrl: string;
+  missing: string[];
+  items: {
+    id: string;
+    label: string;
+    pages: number;
+    bytes: number;
+    locked?: boolean;
+    children?: { id: string; label: string; pages: number; bytes: number }[];
+  }[];
+};
+
+export async function fetchHandoverOutline(dogId: string): Promise<HandoverOutline> {
+  const res = await fetch(`${Config.app.webBaseUrl}/api/puppies/${dogId}/handover-pack/outline`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error('Could not load pack outline.');
+  return (await res.json()) as HandoverOutline;
+}
+
+export async function sendHandoverPack(input: {
+  dogId: string;
+  packQuery: string;
+  subject: string;
+  message: string;
+}): Promise<{ error?: string; to?: string }> {
+  const res = await fetch(`${Config.app.webBaseUrl}/api/puppies/${input.dogId}/handover-pack/send`, {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      pack: input.packQuery || undefined,
+      subject: input.subject,
+      message: input.message,
+    }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { error?: string; to?: string };
+  if (!res.ok) return { error: data.error || `Send failed (${res.status})` };
+  return { to: data.to };
 }

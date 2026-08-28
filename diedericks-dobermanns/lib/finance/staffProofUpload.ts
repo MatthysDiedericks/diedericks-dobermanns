@@ -63,6 +63,7 @@ export async function uploadStaffPaymentProof(input: {
     bucket: "documents",
     path: `${scope}/proof.jpg`,
     uri: input.proof.uri,
+    fileName: input.proof.fileName,
     contentType: input.proof.mimeType,
     sizeBytes: input.proof.sizeBytes,
   });
@@ -87,7 +88,7 @@ export async function uploadStaffPaymentProof(input: {
       is_public: false,
       uploaded_by: actorId,
       file_size_bytes: input.proof.sizeBytes ?? null,
-      mime_type: input.proof.mimeType,
+      mime_type: "image/jpeg",
       related_quote_id: input.quoteId ?? null,
       related_invoice_id: input.invoiceId,
       review_status: "verified",
