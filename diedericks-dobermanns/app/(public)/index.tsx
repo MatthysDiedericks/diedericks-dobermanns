@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { type Href, Link, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Dimensions, FlatList, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +17,7 @@ import { Config } from '@/constants/config';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useDogs } from '@/hooks/useDogs';
 import { useTestimonials } from '@/hooks/useContent';
+import { sortByDailySeed } from '@/lib/dogs/dailyOrder';
 import { openUrl } from '@/lib/social';
 
 const { height } = Dimensions.get('window');
@@ -39,7 +41,8 @@ const TIERS = [
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { dogs } = useDogs({ featuredOnly: true });
+  const { dogs: featuredDogs } = useDogs({ featuredOnly: true });
+  const dogs = useMemo(() => sortByDailySeed(featuredDogs), [featuredDogs]);
   const { data: testimonials } = useTestimonials();
   const { settings } = useAppSettings();
 
