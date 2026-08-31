@@ -603,6 +603,152 @@ export type Database = {
         }
         Relationships: []
       }
+      breeding_plan_steps: {
+        Row: {
+          actual_at: string | null
+          blocked_reason: string | null
+          created_at: string
+          dam_id: string | null
+          detail: string | null
+          expected_end: string | null
+          expected_start: string | null
+          heat_cycle_id: string | null
+          id: string
+          litter_id: string | null
+          notes: string | null
+          plan_id: string
+          result_dog_id: string | null
+          sire_id: string | null
+          status: string
+          step_order: number
+          step_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_at?: string | null
+          blocked_reason?: string | null
+          created_at?: string
+          dam_id?: string | null
+          detail?: string | null
+          expected_end?: string | null
+          expected_start?: string | null
+          heat_cycle_id?: string | null
+          id?: string
+          litter_id?: string | null
+          notes?: string | null
+          plan_id: string
+          result_dog_id?: string | null
+          sire_id?: string | null
+          status?: string
+          step_order: number
+          step_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_at?: string | null
+          blocked_reason?: string | null
+          created_at?: string
+          dam_id?: string | null
+          detail?: string | null
+          expected_end?: string | null
+          expected_start?: string | null
+          heat_cycle_id?: string | null
+          id?: string
+          litter_id?: string | null
+          notes?: string | null
+          plan_id?: string
+          result_dog_id?: string | null
+          sire_id?: string | null
+          status?: string
+          step_order?: number
+          step_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breeding_plan_steps_dam_id_fkey"
+            columns: ["dam_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_heat_cycle_id_fkey"
+            columns: ["heat_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "heat_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "breeding_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_result_dog_id_fkey"
+            columns: ["result_dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_sire_id_fkey"
+            columns: ["sire_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      breeding_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          objective: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          objective: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          objective?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       broadcast_messages: {
         Row: {
           body: string
@@ -7516,6 +7662,81 @@ export type Database = {
         }
         Relationships: []
       }
+      v_breeding_plan_steps: {
+        Row: {
+          actual_at: string | null
+          blocked_reason: string | null
+          created_at: string | null
+          dam_id: string | null
+          detail: string | null
+          effective_status: string | null
+          expected_end: string | null
+          expected_start: string | null
+          heat_cycle_id: string | null
+          id: string | null
+          litter_id: string | null
+          notes: string | null
+          plan_id: string | null
+          result_dog_id: string | null
+          sire_id: string | null
+          status: string | null
+          step_order: number | null
+          step_type: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breeding_plan_steps_dam_id_fkey"
+            columns: ["dam_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_heat_cycle_id_fkey"
+            columns: ["heat_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "heat_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "breeding_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_result_dog_id_fkey"
+            columns: ["result_dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "breeding_plan_steps_sire_id_fkey"
+            columns: ["sire_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_cash_expected_in: {
         Row: {
           amount: number | null
@@ -7675,6 +7896,10 @@ export type Database = {
           severity: string
         }[]
       }
+      category_from_dog_interest: {
+        Args: { p_interest: string }
+        Returns: string
+      }
       check_rate_limit: {
         Args: {
           p_action: string
@@ -7700,6 +7925,10 @@ export type Database = {
       }
       client_has_bundle_access: {
         Args: { p_bundle_id: string }
+        Returns: boolean
+      }
+      client_has_payment: {
+        Args: { p_client_id: string; p_contact_id: string }
         Returns: boolean
       }
       client_owns_a_dog: { Args: never; Returns: boolean }
@@ -7922,6 +8151,14 @@ export type Database = {
           opened_at: string
         }[]
       }
+      promote_waitlist_on_payment: {
+        Args: {
+          p_client_id: string
+          p_contact_id: string
+          p_invoice_id?: string
+        }
+        Returns: undefined
+      }
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
       rate_limit_blocked_message: { Args: never; Returns: string }
@@ -8015,6 +8252,14 @@ export type Database = {
           p_reference?: string
         }
         Returns: string
+      }
+      waiting_list_insert_with_override: {
+        Args: { p_reason: string; p_row: Json }
+        Returns: string
+      }
+      waiting_list_row_has_payment: {
+        Args: { p_row: Database["public"]["Tables"]["waiting_list"]["Row"] }
+        Returns: boolean
       }
     }
     Enums: {
