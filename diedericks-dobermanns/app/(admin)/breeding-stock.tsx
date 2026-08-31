@@ -19,7 +19,10 @@ export default function AdminBreedingStockScreen() {
   const router = useRouter();
   const { data: dogs, loading } = useAdminDogs();
   const breeders = dogs.filter(
-    (d) => d.category === 'breeding_stock' || d.status === 'breeding_stock',
+    (d) =>
+      d.status !== 'deceased' &&
+      !d.deceased_at &&
+      (d.category === 'breeding_stock' || d.status === 'breeding_stock'),
   );
 
   return (
