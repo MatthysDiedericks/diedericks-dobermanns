@@ -247,6 +247,7 @@ export interface Dog {
   hip_score: string | null;
   elbow_score: string | null;
   dcm_status: DcmStatus | null;
+  pedigree_photo_media_id?: string | null;
   pedigree_url: string | null;
   pedigree?: DogPedigree | null;
   description: string | null;
@@ -748,6 +749,7 @@ export interface Quote {
     | 'not_applicable'
     | null;
   delivery_note?: string | null;
+  quote_type?: string | null;
   // Joined / derived
   client?: AppUser;
   contact?: {

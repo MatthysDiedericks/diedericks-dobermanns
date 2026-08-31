@@ -123,7 +123,7 @@ export function useFemaleHeatSummaries() {
       const { data: dogs, error: dErr } = await applyActiveKennelStockFilter(
         client
           .from('dogs')
-          .select('id, name, date_of_birth, dog_media(url, thumbnail_url, is_primary, uploaded_at)')
+          .select('id, name, date_of_birth, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)')
           .eq('sex', 'female'),
       ).order('name');
       if (dErr) throw new Error(dErr.message);

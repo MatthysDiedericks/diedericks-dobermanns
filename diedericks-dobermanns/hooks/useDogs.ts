@@ -24,7 +24,7 @@ export interface UseDogsOptions {
 const INACTIVE_STATUSES = ['sold', 'deceased', 'retired', 'donated', 'gifted'];
 
 const DOG_LIST_SELECT =
-  'id, name, breed, colour, sex, status, date_of_birth, microchip_number, category, price, is_public, is_featured, dog_media(url, is_primary, type, sort_order, id, dog_id, thumbnail_url, caption, uploaded_at)';
+  'id, name, breed, colour, sex, status, date_of_birth, microchip_number, category, price, is_public, is_featured, dog_media!dog_media_dog_id_fkey(url, is_primary, type, sort_order, id, dog_id, thumbnail_url, caption, uploaded_at)';
 
 const DOG_DETAIL_SELECT =
   'id, name, call_name, breed, colour, sex, date_of_birth, location, ' +
@@ -40,9 +40,10 @@ const DOG_DETAIL_SELECT =
   'father_id, mother_id, litter_id, owner_id, handover_status, handover_date, ' +
   'owner_contact_id, buyer_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
   'deceased_at, deceased_cause, ' +
+  'pedigree_photo_media_id, ' +
   'new_owner_name, reserved_for_name, ' +
   'owner_contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone, whatsapp_number, email), ' +
-  'dog_media(id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
+  'dog_media!dog_media_dog_id_fkey(id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
 
 function mapDogMedia(row: Record<string, unknown>): Dog {
   const media = (row.dog_media as Dog['media']) ?? [];
@@ -133,7 +134,7 @@ const LITTER_WITH_PUPPIES_SELECT = `
   father:dogs!litters_father_id_fkey(id, name),
   puppies:dogs!dogs_litter_id_fkey(
     id, name, sex, colour, status, date_of_birth,
-    dog_media(url, thumbnail_url, is_primary, uploaded_at)
+    dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)
   )
 `;
 
@@ -176,7 +177,7 @@ const LITTER_DETAIL_SELECT = `
   puppies:dogs!dogs_litter_id_fkey(
     id, name, sex, colour, collar_colour, birth_weight_grams, status, date_of_birth, price, reserved_for_name, programme_tier,
     owner_id, released_at,
-    dog_media(url, thumbnail_url, is_primary, uploaded_at)
+    dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)
   )
 `;
 

@@ -147,6 +147,8 @@ export default function DogProfileScreen() {
                 dogId={dog.id}
                 displayName={dog.name}
                 profileRoutePrefix="/(public)/dogs/"
+                publicOnly
+                disableAncestorLinks
               />
             </Collapsible>
           ) : hasPedigree(dog.pedigree) ? (

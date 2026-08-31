@@ -18,6 +18,8 @@ export function ManagedMediaTile({
   onMoveUp,
   onMoveDown,
   onSetCover,
+  onSetPedigreePhoto,
+  isPedigreePhoto,
   onCaption,
   onDelete,
 }: {
@@ -30,6 +32,8 @@ export function ManagedMediaTile({
   onMoveUp: () => void;
   onMoveDown: () => void;
   onSetCover: () => void;
+  onSetPedigreePhoto?: () => void;
+  isPedigreePhoto?: boolean;
   onCaption: () => void;
   onDelete: () => void;
 }) {
@@ -68,7 +72,14 @@ export function ManagedMediaTile({
           {item.is_primary ? (
             <View className="rounded bg-gold px-1.5 py-0.5">
               <Typography variant="caption" className="text-[10px] text-black">
-                Profile photo
+                Card photo
+              </Typography>
+            </View>
+          ) : null}
+          {isPedigreePhoto ? (
+            <View className="rounded bg-gold px-1.5 py-0.5">
+              <Typography variant="caption" className="text-[10px] text-black">
+                Pedigree photo
               </Typography>
             </View>
           ) : null}
@@ -107,9 +118,16 @@ export function ManagedMediaTile({
           </Pressable>
           <Pressable onPress={onSetCover} className="rounded-lg border border-gold/30 px-3 py-1.5">
             <Typography variant="caption" className="text-gold">
-              {item.is_primary ? 'Profile photo' : 'Set as profile photo'}
+              {item.is_primary ? 'Card photo' : 'Set as card photo'}
             </Typography>
           </Pressable>
+          {item.type !== 'video' && onSetPedigreePhoto ? (
+            <Pressable onPress={onSetPedigreePhoto} className="rounded-lg border border-gold/30 px-3 py-1.5">
+              <Typography variant="caption" className="text-gold">
+                {isPedigreePhoto ? 'Clear pedigree photo' : 'Set as pedigree photo'}
+              </Typography>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() =>
               Alert.alert('Actions', undefined, [

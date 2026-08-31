@@ -114,6 +114,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="waitlist/match" options={{ href: null }} />
         <Tabs.Screen name="waitlist/follow-ups" options={{ href: null }} />
         <Tabs.Screen name="follow-ups" options={{ href: null }} />
+        <Tabs.Screen name="pedigree/ancestor-photos" options={{ href: null }} />
       </Tabs>
     </AuthGuard>
   );

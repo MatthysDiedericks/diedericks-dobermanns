@@ -32,7 +32,7 @@ import type {
 } from '@/types/app.types';
 
 const ADMIN_DOG_SELECT =
-  'id, name, breed, colour, sex, status, date_of_birth, category, price, is_public, is_featured, created_at, media:dog_media(id, dog_id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
+  'id, name, breed, colour, sex, status, date_of_birth, category, price, is_public, is_featured, created_at, media:dog_media!dog_media_dog_id_fkey(id, dog_id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
 
 const WAITING_LIST_SELECT =
   'id, client_id, litter_id, preference_notes, position, status, pipeline_stage, follow_up_date, feedback, expected_delivery_date, created_at, client:users(id, full_name, phone)';

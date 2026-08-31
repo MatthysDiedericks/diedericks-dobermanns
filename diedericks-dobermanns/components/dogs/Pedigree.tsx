@@ -19,13 +19,7 @@ interface NodeCardProps {
 function NodeCard({ node, generation }: NodeCardProps) {
   const name = node?.name?.trim();
   if (!name) {
-    return (
-      <View className="rounded-xl border border-dashed border-gold/15 bg-black-rich px-3 py-2.5">
-        <Typography variant="caption" className="italic">
-          Unknown
-        </Typography>
-      </View>
-    );
+    return <View className="rounded-xl border border-gold/10 bg-black-rich px-3 py-2.5" />;
   }
   return (
     <View className="rounded-xl border border-gold/15 bg-black-rich px-3 py-2.5">

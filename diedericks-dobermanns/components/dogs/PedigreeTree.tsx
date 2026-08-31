@@ -1,11 +1,11 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
+import { GenerationSelector } from '@/components/dogs/GenerationSelector';
 import {
   PEDIGREE_COLUMN_WIDTH,
   PEDIGREE_NODE_MIN_HEIGHT,
   PedigreeNode,
-  ancestorIsSireSide,
   ancestorNodeLabel,
   subjectNodeLabel,
 } from '@/components/dogs/PedigreeNode';
@@ -16,75 +16,85 @@ import {
   useDogPedigree,
   type PedigreeAncestor,
 } from '@/hooks/useDogPedigree';
+import { usePedigreePhotoMaps } from '@/hooks/usePedigreePhotoMaps';
 import {
   maxPedigreeGeneration,
   pedigreeRowSpan,
   positionToRowIndex,
 } from '@/lib/pedigree/layout';
+import { generationColumnTitle, positionsForDepth } from '@/lib/pedigree/generation';
+import { usePedigreeDepth } from '@/lib/pedigree/usePedigreeDepth';
+import { pickPedigreePhoto } from '@/lib/dogs/profilePhoto';
+import { resolveAncestorPhoto } from '@/lib/pedigree/resolveAncestorPhoto';
 
 interface PedigreeTreeProps {
   dogId: string;
-  /** Short display name when registered_name is missing on the subject. */
   displayName?: string;
-  /** Route prefix for own-kennel ancestor taps, e.g. `/(admin)/dogs/` */
   profileRoutePrefix?: string;
-  /** When set, skip the dog's own pedigree_ancestors fetch and render these. */
   ancestors?: PedigreeAncestor[];
   registeredName?: string | null;
   wrightsCoi?: number | null;
   emptyLabel?: string;
-  /** Portal charts must not deep-link into admin dog profiles. */
   disableAncestorLinks?: boolean;
+  publicOnly?: boolean;
 }
 
 function ColumnNodes({
   generation,
-  maxGen,
+  depth,
   ancestors,
+  photoUrl,
   onOwnDogPress,
 }: {
   generation: number;
-  maxGen: number;
+  depth: number;
   ancestors: PedigreeAncestor[];
+  photoUrl: (a: PedigreeAncestor) => string | null;
   onOwnDogPress?: (id: string) => void;
 }) {
-  const rowSpan = pedigreeRowSpan(generation, maxGen);
+  const rowSpan = pedigreeRowSpan(generation, depth);
   const cellHeight = PEDIGREE_NODE_MIN_HEIGHT * rowSpan;
-  const nodes = ancestors.filter(
-    (a) => a.position.length === generation || a.generation === generation,
-  );
+  const byPos = new Map(ancestors.map((a) => [a.position, a]));
 
   return (
-    <View style={{ width: PEDIGREE_COLUMN_WIDTH, height: PEDIGREE_NODE_MIN_HEIGHT * 2 ** maxGen }}>
-      {nodes.map((a) => {
-        const row = positionToRowIndex(a.position);
-        const top = row * PEDIGREE_NODE_MIN_HEIGHT * rowSpan;
-        return (
-          <View
-            key={a.position}
-            style={{
-              position: 'absolute',
-              top,
-              left: 4,
-              right: 4,
-              height: cellHeight - 4,
-            }}
-          >
-            <PedigreeNode
-              label={ancestorNodeLabel(a)}
-              titlesHealth={a.titlesHealth}
-              dateOfBirth={a.dateOfBirth}
-              wrightsCoi={a.wrightsCoi}
-              sireSide={ancestorIsSireSide(a.position)}
-              onPress={
-                a.ownAncestorId && onOwnDogPress
-                  ? () => onOwnDogPress(a.ownAncestorId!)
-                  : undefined
-              }
-            />
-          </View>
-        );
-      })}
+    <View style={{ width: PEDIGREE_COLUMN_WIDTH, height: PEDIGREE_NODE_MIN_HEIGHT * 2 ** depth }}>
+      {positionsForDepth(depth)
+        .filter((p) => p.length === generation)
+        .map((position) => {
+          const a = byPos.get(position);
+          const named = Boolean(a?.registeredName?.trim());
+          const row = positionToRowIndex(position);
+          const top = row * PEDIGREE_NODE_MIN_HEIGHT * rowSpan;
+          return (
+            <View
+              key={position}
+              style={{
+                position: 'absolute',
+                top,
+                left: 4,
+                right: 4,
+                height: cellHeight - 4,
+              }}
+            >
+              {named && a ? (
+                <PedigreeNode
+                  label={ancestorNodeLabel(a)}
+                  titlesHealth={a.titlesHealth}
+                  dateOfBirth={a.dateOfBirth}
+                  photoUrl={photoUrl(a)}
+                  generation={generation}
+                  onPress={
+                    a.ownAncestorId && onOwnDogPress
+                      ? () => onOwnDogPress(a.ownAncestorId!)
+                      : undefined
+                  }
+                />
+              ) : (
+                <PedigreeNode label="" generation={generation} empty />
+              )}
+            </View>
+          );
+        })}
     </View>
   );
 }
@@ -98,6 +108,7 @@ export function PedigreeTree({
   wrightsCoi: wrightsCoiProp,
   emptyLabel,
   disableAncestorLinks,
+  publicOnly = false,
 }: PedigreeTreeProps) {
   const router = useRouter();
   const fetched = useDogPedigree(ancestorsProp ? '' : dogId);
@@ -106,6 +117,15 @@ export function PedigreeTree({
   const wrightsCoi = wrightsCoiProp ?? fetched.wrightsCoi;
   const loading = ancestorsProp ? false : fetched.loading;
   const error = ancestorsProp ? null : fetched.error;
+
+  const ownIds = ancestors.map((a) => a.ownAncestorId).filter((id): id is string => Boolean(id));
+  if (dogId) ownIds.push(dogId);
+  const photos = usePedigreePhotoMaps(ownIds);
+
+  const maxGen = maxPedigreeGeneration(ancestors.map((a) => a.position));
+  const { depth, setDepth } = usePedigreeDepth(maxGen, 'app');
+  const visible = ancestors.filter((a) => a.position.length <= depth);
+  const totalHeight = PEDIGREE_NODE_MIN_HEIGHT * (depth > 0 ? 2 ** depth : 1);
 
   if (loading) return <CardListSkeleton count={2} />;
   if (error) {
@@ -121,22 +141,39 @@ export function PedigreeTree({
     ) : null;
   }
 
-  const positions = ancestors.map((a) => a.position);
-  const maxGen = maxPedigreeGeneration(positions);
-  const totalHeight = PEDIGREE_NODE_MIN_HEIGHT * 2 ** maxGen;
-
   function openProfile(ownId: string) {
     router.push(`${profileRoutePrefix}${ownId}` as never);
   }
 
+  function photoFor(a: PedigreeAncestor): string | null {
+    return resolveAncestorPhoto({
+      registeredName: a.registeredName,
+      ownAncestorId: a.ownAncestorId,
+      ownDogs: photos.ownDogs,
+      ancestorPhotos: photos.ancestorPhotos,
+      publicOnly,
+    });
+  }
+
   return (
     <View>
-      <Typography variant="caption" className="mb-3 text-muted">
-        Scroll horizontally to explore {maxGen} generation{maxGen === 1 ? '' : 's'} · Sire branch
-        (top) · Dam branch (bottom)
-      </Typography>
+      <GenerationSelector maxGen={maxGen} depth={depth} onChange={setDepth} surface="app" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View className="flex-row pr-4" style={{ minHeight: totalHeight }}>
+          <View
+            style={{
+              width: 18,
+              height: totalHeight,
+              justifyContent: 'space-around',
+            }}
+          >
+            <Typography variant="caption" className="text-[#C4A35A]" style={{ transform: [{ rotate: '-90deg' }] }}>
+              SIRE LINE
+            </Typography>
+            <Typography variant="caption" className="text-[#C4A35A]" style={{ transform: [{ rotate: '-90deg' }] }}>
+              DAM LINE
+            </Typography>
+          </View>
           <View
             style={{
               width: PEDIGREE_COLUMN_WIDTH,
@@ -147,21 +184,37 @@ export function PedigreeTree({
           >
             <PedigreeNode
               label={subjectNodeLabel(registeredName, displayName)}
-              wrightsCoi={wrightsCoi}
+              generation={0}
               emphasis
+              photoUrl={(() => {
+                const own = photos.ownDogs.get(dogId);
+                if (!own) return null;
+                const picked = pickPedigreePhoto(own.media, own.pedigreePhotoMediaId);
+                return picked?.thumbnail_url || picked?.url || null;
+              })()}
             />
           </View>
-          {Array.from({ length: maxGen }, (_, i) => i + 1).map((gen) => (
-            <ColumnNodes
-              key={gen}
-              generation={gen}
-              maxGen={maxGen}
-              ancestors={ancestors}
-              onOwnDogPress={disableAncestorLinks ? undefined : openProfile}
-            />
+          {Array.from({ length: depth }, (_, i) => i + 1).map((gen) => (
+            <View key={gen}>
+              <Typography variant="caption" className="mb-1 text-center text-[#C4A35A]">
+                {generationColumnTitle(gen)}
+              </Typography>
+              <ColumnNodes
+                generation={gen}
+                depth={depth}
+                ancestors={visible}
+                photoUrl={photoFor}
+                onOwnDogPress={disableAncestorLinks ? undefined : openProfile}
+              />
+            </View>
           ))}
         </View>
       </ScrollView>
+      {wrightsCoi != null ? (
+        <Typography variant="caption" className="mt-2 text-[#A8A090]">
+          Wright&apos;s COI {wrightsCoi.toFixed(1)}% over {maxGen} generations
+        </Typography>
+      ) : null}
     </View>
   );
 }

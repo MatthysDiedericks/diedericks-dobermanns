@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-native';
 
 import { ManagedMediaTile } from '@/components/admin/ManagedMediaTile';
@@ -8,7 +8,8 @@ import { Colors } from '@/constants/colors';
 import { useDocumentsForEntity } from '@/hooks/useDocuments';
 import { useManagedDogMedia } from '@/hooks/useManagedDogMedia';
 import { formatKennelDate } from '@/lib/kennel/formatters';
-import { profileCoverHint } from '@/lib/dogs/profilePhoto';
+import { pedigreePhotoHint, profileCoverHint } from '@/lib/dogs/profilePhoto';
+import { supabase } from '@/lib/supabase';
 
 export function DogMediaManager({
   dogId,
@@ -25,6 +26,22 @@ export function DogMediaManager({
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [captionEdit, setCaptionEdit] = useState<{ id: string; text: string } | null>(null);
+  const [pedigreePhotoMediaId, setPedigreePhotoMediaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dogId || !supabase) return;
+    void supabase
+      .from('dogs')
+      .select('pedigree_photo_media_id')
+      .eq('id', dogId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setPedigreePhotoMediaId(
+          (data as { pedigree_photo_media_id?: string | null } | null)?.pedigree_photo_media_id ??
+            null,
+        );
+      });
+  }, [dogId, mgr.media]);
 
   const photos = mgr.media.filter((m) => m.type === 'photo').length;
   const videos = mgr.media.filter((m) => m.type === 'video').length;
@@ -32,7 +49,7 @@ export function DogMediaManager({
     ? `${dogName} — ${photos} photo${photos === 1 ? '' : 's'}, ${videos} video${videos === 1 ? '' : 's'}`
     : `All dog media — ${photos} photo${photos === 1 ? '' : 's'}, ${videos} video${videos === 1 ? '' : 's'}`;
   const hint = dogId
-    ? profileCoverHint(dogStatus, mgr.media.some((m) => m.is_primary))
+    ? `${profileCoverHint(dogStatus, mgr.media.some((m) => m.is_primary))} ${pedigreePhotoHint(Boolean(pedigreePhotoMediaId))}`
     : null;
 
   const ids = useMemo(() => [...selected], [selected]);
@@ -158,6 +175,22 @@ export function DogMediaManager({
           onMoveUp={() => void mgr.move(item.id, -1)}
           onMoveDown={() => void mgr.move(item.id, 1)}
           onSetCover={() => void mgr.setCover(item.id, item.dog_id)}
+          isPedigreePhoto={pedigreePhotoMediaId === item.id}
+          onSetPedigreePhoto={
+            dogId
+              ? () =>
+                  void mgr
+                    .setPedigreePhoto(
+                      dogId,
+                      pedigreePhotoMediaId === item.id ? null : item.id,
+                    )
+                    .then(() =>
+                      setPedigreePhotoMediaId(
+                        pedigreePhotoMediaId === item.id ? null : item.id,
+                      ),
+                    )
+              : undefined
+          }
           onCaption={() => setCaptionEdit({ id: item.id, text: item.caption ?? '' })}
           onDelete={() => confirmDelete(item.id)}
         />

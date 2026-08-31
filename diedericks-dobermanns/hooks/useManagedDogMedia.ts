@@ -119,6 +119,19 @@ export function useManagedDogMedia(dogId: string | null) {
     [load],
   );
 
+  const setPedigreePhoto = useCallback(
+    async (ownerDogId: string, mediaId: string | null) => {
+      if (!supabase) throw new Error('Unavailable.');
+      const { error: err } = await supabase
+        .from('dogs')
+        .update({ pedigree_photo_media_id: mediaId })
+        .eq('id', ownerDogId);
+      if (err) throw new Error(err.message);
+      await load();
+    },
+    [load],
+  );
+
   const updateCaption = useCallback(
     async (id: string, caption: string) => {
       if (!supabase) throw new Error('Unavailable.');
@@ -183,6 +196,7 @@ export function useManagedDogMedia(dogId: string | null) {
     setPublic,
     bulkSetPublic,
     setCover,
+    setPedigreePhoto,
     updateCaption,
     remove,
     bulkRemove,

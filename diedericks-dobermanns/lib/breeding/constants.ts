@@ -1,5 +1,5 @@
 export const BREEDING_DOG_SELECT =
-  'id, name, call_name, sex, date_of_birth, father_id, mother_id, line, generation, breeding_role, urgency_flag, health_dcm1, health_dcm2, health_dcm3, health_dcm4, health_dcm5, health_hd, health_ed, holter_date, holter_result, wrights_coi, notes, origin_pairing_id, status, dog_media(url, thumbnail_url, is_primary, uploaded_at)';
+  'id, name, call_name, sex, date_of_birth, father_id, mother_id, line, generation, breeding_role, urgency_flag, health_dcm1, health_dcm2, health_dcm3, health_dcm4, health_dcm5, health_hd, health_ed, holter_date, holter_result, wrights_coi, notes, origin_pairing_id, status, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)';
 
 export const PLANNER_MALE_FILTER = ['keep', 'stud', 'breeding_stock'] as const;
 export const PLANNER_FEMALE_FILTER = ['keep'] as const;

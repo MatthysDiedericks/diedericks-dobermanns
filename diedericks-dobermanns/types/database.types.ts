@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -10,32 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -82,6 +57,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ancestor_photos: {
+        Row: {
+          created_at: string
+          credit: string | null
+          display_name: string
+          id: string
+          is_public: boolean
+          name_key: string
+          source_note: string | null
+          storage_path: string
+          thumbnail_url: string | null
+          updated_at: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          credit?: string | null
+          display_name: string
+          id?: string
+          is_public?: boolean
+          name_key: string
+          source_note?: string | null
+          storage_path: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          credit?: string | null
+          display_name?: string
+          id?: string
+          is_public?: boolean
+          name_key?: string
+          source_note?: string | null
+          storage_path?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: []
       }
       app_settings: {
         Row: {
@@ -2435,6 +2455,7 @@ export type Database = {
           ownership_status: string
           ownership_status_at: string | null
           passport_number: string | null
+          pedigree_photo_media_id: string | null
           pedigree_url: string | null
           placement_date: string | null
           price: number | null
@@ -2536,6 +2557,7 @@ export type Database = {
           ownership_status?: string
           ownership_status_at?: string | null
           passport_number?: string | null
+          pedigree_photo_media_id?: string | null
           pedigree_url?: string | null
           placement_date?: string | null
           price?: number | null
@@ -2637,6 +2659,7 @@ export type Database = {
           ownership_status?: string
           ownership_status_at?: string | null
           passport_number?: string | null
+          pedigree_photo_media_id?: string | null
           pedigree_url?: string | null
           placement_date?: string | null
           price?: number | null
@@ -2659,6 +2682,20 @@ export type Database = {
           wrights_coi?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "dogs_buyer_contact_id_fkey"
+            columns: ["buyer_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dogs_buyer_contact_id_fkey"
+            columns: ["buyer_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dogs_father_id_fkey"
             columns: ["father_id"]
@@ -2713,6 +2750,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dogs_pedigree_photo_media_id_fkey"
+            columns: ["pedigree_photo_media_id"]
+            isOneToOne: false
+            referencedRelation: "dog_media"
             referencedColumns: ["id"]
           },
         ]
@@ -3594,11 +3638,13 @@ export type Database = {
           id: string
           internal_notes: string | null
           invoice_number: string
+          invoice_type: string
           issue_date: string
           litter_id: string | null
           notes: string | null
           paid_date: string | null
           quote_id: string | null
+          recurring_invoice_id: string | null
           reservation_id: string | null
           source: string | null
           status: string
@@ -3624,11 +3670,13 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           invoice_number: string
+          invoice_type?: string
           issue_date?: string
           litter_id?: string | null
           notes?: string | null
           paid_date?: string | null
           quote_id?: string | null
+          recurring_invoice_id?: string | null
           reservation_id?: string | null
           source?: string | null
           status?: string
@@ -3654,11 +3702,13 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           invoice_number?: string
+          invoice_type?: string
           issue_date?: string
           litter_id?: string | null
           notes?: string | null
           paid_date?: string | null
           quote_id?: string | null
+          recurring_invoice_id?: string | null
           reservation_id?: string | null
           source?: string | null
           status?: string
@@ -3715,6 +3765,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_recurring_invoice_id_fkey"
+            columns: ["recurring_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_invoices"
             referencedColumns: ["id"]
           },
           {
@@ -4938,6 +4995,57 @@ export type Database = {
           },
         ]
       }
+      portal_members: {
+        Row: {
+          accepted_at: string | null
+          account_holder_id: string
+          can_view_financials: boolean
+          created_at: string
+          full_name: string
+          id: string
+          invited_at: string
+          invited_email: string
+          member_user_id: string | null
+          relationship: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_holder_id: string
+          can_view_financials?: boolean
+          created_at?: string
+          full_name: string
+          id?: string
+          invited_at?: string
+          invited_email: string
+          member_user_id?: string | null
+          relationship?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          account_holder_id?: string
+          can_view_financials?: boolean
+          created_at?: string
+          full_name?: string
+          id?: string
+          invited_at?: string
+          invited_email?: string
+          member_user_id?: string | null
+          relationship?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pricing_tiers: {
         Row: {
           created_at: string
@@ -5309,6 +5417,7 @@ export type Database = {
           last_sent_revision: number | null
           notes: string | null
           quote_number: string
+          quote_type: string
           reopen_reason: string | null
           reopened_at: string | null
           reopened_by: string | null
@@ -5340,6 +5449,7 @@ export type Database = {
           last_sent_revision?: number | null
           notes?: string | null
           quote_number: string
+          quote_type?: string
           reopen_reason?: string | null
           reopened_at?: string | null
           reopened_by?: string | null
@@ -5371,6 +5481,7 @@ export type Database = {
           last_sent_revision?: number | null
           notes?: string | null
           quote_number?: string
+          quote_type?: string
           reopen_reason?: string | null
           reopened_at?: string | null
           reopened_by?: string | null
@@ -5479,6 +5590,108 @@ export type Database = {
           salt?: string
         }
         Relationships: []
+      }
+      recurring_invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string
+          dog_id: string | null
+          id: string
+          invoice_type: string
+          is_active: boolean
+          last_generated_at: string | null
+          last_generated_invoice_id: string | null
+          next_issue_date: string
+          notes: string | null
+          occurrences_remaining: number | null
+          recurrence_end_date: string | null
+          recurrence_interval: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description: string
+          dog_id?: string | null
+          id?: string
+          invoice_type?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          last_generated_invoice_id?: string | null
+          next_issue_date: string
+          notes?: string | null
+          occurrences_remaining?: number | null
+          recurrence_end_date?: string | null
+          recurrence_interval: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string
+          dog_id?: string | null
+          id?: string
+          invoice_type?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          last_generated_invoice_id?: string | null
+          next_issue_date?: string
+          notes?: string | null
+          occurrences_remaining?: number | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_invoices_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_last_generated_invoice_id_fkey"
+            columns: ["last_generated_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_invoices_last_generated_invoice_id_fkey"
+            columns: ["last_generated_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_expected_in"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
       }
       reservations: {
         Row: {
@@ -7516,6 +7729,7 @@ export type Database = {
           min_days: number
         }[]
       }
+      dog_go_home_date: { Args: { p_dog_id: string }; Returns: string }
       dog_ids_for: { Args: { p_user_id: string }; Returns: string[] }
       dog_is_contactable: { Args: { p_dog_id: string }; Returns: boolean }
       dog_lineage_for: {
@@ -7539,6 +7753,13 @@ export type Database = {
       generate_due_check_ins: {
         Args: { p_horizon_days?: number }
         Returns: number
+      }
+      generate_due_recurring_invoices: {
+        Args: never
+        Returns: {
+          invoice_id: string
+          schedule_id: string
+        }[]
       }
       get_ancestors: {
         Args: { p_depth?: number; p_dog_id: string }
@@ -7604,6 +7825,7 @@ export type Database = {
           mother_id: string
         }[]
       }
+      my_client_ids: { Args: never; Returns: string[] }
       my_contact_ids: { Args: never; Returns: string[] }
       my_dog_ids: { Args: never; Returns: string[] }
       my_dog_lineage: {
@@ -7614,12 +7836,31 @@ export type Database = {
         }[]
       }
       my_dog_parent_ids: { Args: never; Returns: string[] }
+      my_financial_client_ids: { Args: never; Returns: string[] }
+      my_guest_access: {
+        Args: never
+        Returns: {
+          account_holder_id: string
+          can_view_financials: boolean
+          holder_name: string
+          membership_id: string
+        }[]
+      }
       my_parent_links: {
         Args: never
         Returns: {
           parent_id: string
           role: string
           source: string
+        }[]
+      }
+      owner_photo_window: {
+        Args: { p_dog_id: string }
+        Returns: {
+          can_upload: boolean
+          next_window_at: string
+          photos_in_window: number
+          window_open_at: string
         }[]
       }
       parent_ids_for: { Args: { p_user_id: string }; Returns: string[] }
@@ -7762,6 +8003,8 @@ export type Database = {
       training_storage_object_path: { Args: { raw: string }; Returns: string }
       training_video_has_file: { Args: { p_url: string }; Returns: boolean }
       training_video_tier: { Args: { p_tier: string }; Returns: string }
+      trigger_generate_recurring_invoices: { Args: never; Returns: undefined }
+      trigger_owner_photo_reminders_check: { Args: never; Returns: undefined }
       verify_payment_proof: {
         Args: {
           p_amount: number
@@ -7901,9 +8144,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

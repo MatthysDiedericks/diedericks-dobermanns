@@ -87,11 +87,21 @@ export default function PedigreeScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {tab === 'chart' ? (
-            <PedigreeTree
-              dogId={dogId}
-              displayName={dog.name}
-              profileRoutePrefix="/(admin)/dogs/"
-            />
+            <View>
+              <Pressable
+                onPress={() => router.push('/(admin)/pedigree/ancestor-photos' as never)}
+                className="mb-4 self-start rounded-full border border-gold/40 px-4 py-2"
+              >
+                <Typography variant="caption" className="text-gold">
+                  Ancestor photos
+                </Typography>
+              </Pressable>
+              <PedigreeTree
+                dogId={dogId}
+                displayName={dog.name}
+                profileRoutePrefix="/(admin)/dogs/"
+              />
+            </View>
           ) : null}
           {tab === 'siblings' ? (
             <DogSiblingsSection dogId={dogId} profileRoutePrefix="/(admin)/dogs/" />

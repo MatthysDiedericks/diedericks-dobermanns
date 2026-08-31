@@ -8,10 +8,13 @@
  *
  * `is_primary` is only ever written by a deliberate click, never on upload.
  * Embed PROFILE_PHOTO_EMBED on every dogs.dog_media select so step 2 can run.
+ * After dogs.pedigree_photo_media_id, the embed must be hinted:
+ * `dog_media!dog_media_dog_id_fkey(...)` — otherwise PostgREST cannot tell
+ * the gallery from the pedigree-photo FK.
  */
 
 export const PROFILE_PHOTO_EMBED =
-  'url, thumbnail_url, is_primary, uploaded_at';
+  'id, url, thumbnail_url, is_primary, uploaded_at';
 
 export type ProfilePhotoInput = {
   url: string;
@@ -62,6 +65,36 @@ export function profilePhotoUrl(
   return thumb || url || null;
 }
 
+/**
+ * Photo for the pedigree certificate.
+ * 1. The photo chosen in `dogs.pedigree_photo_media_id`.
+ * 2. Otherwise whatever `pickProfilePhoto` returns (pinned cover, else newest).
+ * 3. Otherwise null — render the crest monogram, never a broken image frame.
+ */
+export function pickPedigreePhoto<T extends ProfilePhotoInput & { id: string }>(
+  media: T[] | null | undefined,
+  pedigreePhotoMediaId: string | null | undefined,
+): T | null {
+  const photos = (media ?? []).filter(isPhoto);
+  if (pedigreePhotoMediaId) {
+    const chosen = photos.find((m) => m.id === pedigreePhotoMediaId);
+    if (chosen) return chosen;
+  }
+  return pickProfilePhoto(photos);
+}
+
+/** Thumbnail if present, else the full image URL, for a pedigree cell. */
+export function pedigreePhotoUrl(
+  media: (ProfilePhotoInput & { id: string })[] | null | undefined,
+  pedigreePhotoMediaId: string | null | undefined,
+): string | null {
+  const picked = pickPedigreePhoto(media, pedigreePhotoMediaId);
+  if (!picked) return null;
+  const thumb = picked.thumbnail_url?.trim();
+  const url = picked.url?.trim();
+  return thumb || url || null;
+}
+
 /** Copy shown above the photo picker so Matt can see which rule is in play. */
 export function profileCoverHint(
   status: string | null | undefined,
@@ -69,13 +102,20 @@ export function profileCoverHint(
 ): string {
   if (isBredPuppyStatus(status)) {
     return hasChosenCover
-      ? 'A photo is pinned as the profile photo.'
-      : 'Showing the most recent photo. Pin one to keep it as the profile photo.';
+      ? 'A photo is pinned as the card photo.'
+      : 'Showing the most recent photo. Pin one to keep it as the card photo.';
   }
   if (isKennelOwnedStatus(status)) {
-    return "This dog's card uses the photo you mark as the profile photo.";
+    return "This dog's card uses the photo you mark as the card photo.";
   }
   return hasChosenCover
-    ? 'A photo is pinned as the profile photo.'
-    : 'Showing the most recent photo. Pin one to keep it as the profile photo.';
+    ? 'A photo is pinned as the card photo.'
+    : 'Showing the most recent photo. Pin one to keep it as the card photo.';
+}
+
+/** Copy shown beside the card-photo hint: conformation shot vs head shot. */
+export function pedigreePhotoHint(hasChosenPedigreePhoto: boolean): string {
+  return hasChosenPedigreePhoto
+    ? 'A conformation shot is pinned for the pedigree certificate. The card photo is separate.'
+    : 'The pedigree uses the card photo until you pick a conformation shot.';
 }
