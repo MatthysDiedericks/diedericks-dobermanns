@@ -21,6 +21,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useCommittedBreeding } from '@/hooks/useCommittedBreeding';
+import { useGuestAccess } from '@/hooks/useGuestAccess';
 import { useMyApplications, usePortalDogs } from '@/hooks/usePortal';
 import { canApplyAgain } from '@/lib/applications/applyAgain';
 import { ageFromDob, birthdayAgeWords, isBirthdayToday } from '@/lib/format';
@@ -51,8 +52,17 @@ export default function PortalDashboard() {
   const { data: applications } = useMyApplications();
   const { currentStep } = useBuyerJourney();
   const { parents, litter, onWaitlist } = useCommittedBreeding();
+  const guest = useGuestAccess();
   const isApproved = applications.some((a) => a.status === 'approved');
-  const quickLinks = [...BASE_QUICK_LINKS, isApproved ? PROFILE_LINK : APPLICATION_LINK];
+  const quickLinks = [
+    ...BASE_QUICK_LINKS.filter((l) => {
+      if (!guest.canViewFinancials && (l.label === 'Quotes' || l.label === 'Contracts')) {
+        return false;
+      }
+      return true;
+    }),
+    isApproved ? PROFILE_LINK : APPLICATION_LINK,
+  ];
   const primaryDog = dogs[0];
   const birthdayDogs = dogs.filter((d) => isBirthdayToday(d.date_of_birth));
 

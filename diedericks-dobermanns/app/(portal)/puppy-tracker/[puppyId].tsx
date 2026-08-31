@@ -16,7 +16,7 @@ import { useClientDogNotes } from '@/hooks/useClientDogNotes';
 import { useCommittedBreeding } from '@/hooks/useCommittedBreeding';
 import { useDog } from '@/hooks/useDogs';
 import { useTrainingLogs, useVaccinations } from '@/hooks/useRecords';
-import { requireSupabase } from '@/lib/supabase';
+import { fetchMyDogIds } from '@/lib/portal/memberScope';
 import { useAuthStore } from '@/stores/authStore';
 
 type TabId = 'info' | 'health' | 'training' | 'notes';
@@ -49,8 +49,7 @@ export default function PuppyTrackerScreen() {
         return;
       }
       try {
-        const { data } = await requireSupabase().rpc('dog_ids_for', { p_user_id: userId });
-        const ids = (data ?? []) as string[];
+        const ids = await fetchMyDogIds();
         setOwned(ids.includes(id));
       } catch {
         setOwned(false);

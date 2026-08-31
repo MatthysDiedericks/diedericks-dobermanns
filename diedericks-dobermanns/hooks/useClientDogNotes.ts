@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { fetchMyClientIds } from '@/lib/portal/memberScope';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -39,14 +40,16 @@ export function useClientDogNotes(dogId: string) {
     setLoading(true);
     setError(null);
     try {
+      const ids = await fetchMyClientIds();
       const { data, error: err } = await requireSupabase()
         .from('client_dog_notes')
         .select('id, client_id, dog_id, nickname, personal_notes, vet_practice, vet_name, vet_phone, updated_at')
-        .eq('client_id', profile.id)
-        .eq('dog_id', dogId)
-        .maybeSingle();
+        .in('client_id', ids)
+        .eq('dog_id', dogId);
       if (err) throw new Error(err.message);
-      setNotes((data as ClientDogNotes | null) ?? null);
+      const rows = (data ?? []) as ClientDogNotes[];
+      const own = rows.find((r) => r.client_id === profile.id);
+      setNotes(own ?? rows[0] ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load notes');
     } finally {

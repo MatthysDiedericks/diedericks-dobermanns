@@ -15,7 +15,7 @@ const INVITE_MAX = 10;
 const INVITE_WINDOW_SECS = 3600;
 const TTL_DAYS = 7;
 
-type Source = 'application' | 'waiting_list' | 'client';
+type Source = 'application' | 'waiting_list' | 'client' | 'member';
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -76,31 +76,41 @@ async function sendInviteMail(
   link: string,
   code: string,
   expiresAt: string,
+  memberHolder?: string,
 ): Promise<string | null> {
   if (!RESEND_API_KEY) return 'RESEND_API_KEY not set';
   const name = firstName(fullName);
+  const holder = memberHolder?.trim() || '';
+  const heading = holder ? `${holder} has added you` : 'Your private portal code';
+  const intro = holder
+    ? `${holder} has added you to their Diedericks Dobermanns portal so you can see the vaccination schedule, upload photos and read training updates.`
+    : 'Your sign-in code is:';
   const html = `
     <div style="font-family:Georgia,serif;background:#111008;color:#F5F0E8;padding:32px;">
       <div style="max-width:560px;margin:0 auto;background:#1C1A0E;padding:32px;border:1px solid #C4A35A33;">
-        <h1 style="color:#C4A35A;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;">Your private portal code</h1>
+        <h1 style="color:#C4A35A;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;">${heading}</h1>
         <p>Hi ${name},</p>
+        <p>${intro}</p>
         <p>Your sign-in code is:</p>
         <p style="font-size:28px;letter-spacing:0.24em;color:#C4A35A;">${code}</p>
         <p style="font-size:12px;color:#C4A35A99;">Expires ${expiryLabel(expiresAt)} (${TTL_DAYS} days). Type it at ${verifyUrl(to)}.</p>
         <p>Or open the link and press Sign in to your portal — fetching the page does not sign anyone in.</p>
         <p style="margin:28px 0;">
-          <a href="${link}" style="display:inline-block;background:#C4A35A;color:#111008;text-decoration:none;padding:14px 22px;letter-spacing:0.12em;text-transform:uppercase;font-size:13px;">Sign in to your portal</a>
+          <a href="${link}" style="display:inline-block;background:#C4A35A;color:#111008;text-decoration:none;padding:14px 22px;letter-spacing:0.12em;text-transform:uppercase;font-size:13px;">${holder ? 'Open the portal' : 'Sign in to your portal'}</a>
         </p>
         <p style="font-size:12px;word-break:break-all;color:#F5F0E8;">${link}</p>
       </div>
     </div>`;
+  const subject = holder
+    ? `${holder} has added you to their Diedericks Dobermanns portal`
+    : `Your Diedericks Dobermanns code is ${code}`;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: FROM,
       to,
-      subject: `Your Diedericks Dobermanns code is ${code}`,
+      subject,
       html,
     }),
   });
@@ -129,9 +139,6 @@ serve(async (req) => {
     .select('id, role, full_name, email')
     .eq('id', actor.id)
     .maybeSingle();
-  if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-    return json({ error: 'Forbidden' }, 403);
-  }
 
   let body: {
     email?: string;
@@ -144,11 +151,27 @@ serve(async (req) => {
     link?: string;
     code?: string;
     expiresAt?: string;
+    holderName?: string;
   };
   try {
     body = await req.json();
   } catch {
     return json({ error: 'Invalid request' }, 422);
+  }
+
+  const isAdmin = Boolean(profile && ['admin', 'super_admin'].includes(profile.role));
+  if (body.source === 'member') {
+    if (!body.sourceId) return json({ error: 'Invalid request' }, 422);
+    const { data: membership } = await admin
+      .from('portal_members')
+      .select('id, account_holder_id')
+      .eq('id', body.sourceId)
+      .maybeSingle();
+    if (!membership || membership.account_holder_id !== actor.id) {
+      return json({ error: 'Forbidden' }, 403);
+    }
+  } else if (!isAdmin) {
+    return json({ error: 'Forbidden' }, 403);
   }
 
   const email = (body.email ?? '').trim().toLowerCase();
@@ -174,7 +197,7 @@ serve(async (req) => {
   }
 
   const source = body.source;
-  if (!source || !['application', 'waiting_list', 'client'].includes(source)) {
+  if (!source || !['application', 'waiting_list', 'client', 'member'].includes(source)) {
     return json({ error: 'Invalid request' }, 422);
   }
 
@@ -247,14 +270,21 @@ serve(async (req) => {
     record_id: row?.id ?? userId,
     action: 'insert',
     actor_id: actor.id,
-    actor_email: actor.email ?? profile.email,
-    actor_role: 'admin',
+    actor_email: actor.email ?? profile?.email,
+    actor_role: source === 'member' ? 'client' : 'admin',
     new_values: { email, source, source_id: body.sourceId ?? null, user_id: userId },
   });
 
   let mailErr: string | null = null;
   if (body.sendEmail) {
-    mailErr = await sendInviteMail(email, fullName, link, code, expiresAt.toISOString());
+    mailErr = await sendInviteMail(
+      email,
+      fullName,
+      link,
+      code,
+      expiresAt.toISOString(),
+      source === 'member' ? (body.holderName ?? profile?.full_name ?? undefined) : undefined,
+    );
     if (mailErr) {
       await admin.from('error_events').insert({
         code: 'INVITE_SEND_FAILED',

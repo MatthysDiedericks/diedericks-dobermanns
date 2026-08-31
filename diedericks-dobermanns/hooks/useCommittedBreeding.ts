@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { pickProfilePhoto, profilePhotoUrl } from '@/lib/dogs/profilePhoto';
+import { fetchMyClientIds } from '@/lib/portal/memberScope';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -116,19 +117,34 @@ export function useCommittedBreeding(forUserId?: string) {
     setLoading(true);
     try {
       const supabase = requireSupabase();
-      const [{ data: links }, { data: litterRows }, { data: dogIds }, { data: waitRows }] =
-        await Promise.all([
-          supabase.rpc('parent_links_for', { p_user_id: userId }),
-          supabase.rpc('assigned_litter_for', { p_user_id: userId }),
-          supabase.rpc('dog_ids_for', { p_user_id: userId }),
-          supabase
-            .from('waiting_list')
-            .select('id')
-            .eq('client_id', userId)
-            .eq('status', 'active')
-            .neq('pipeline_stage', 'withdrawn')
-            .limit(1),
-        ]);
+      const scopeIds =
+        forUserId && sessionId && forUserId !== sessionId ? [forUserId] : await fetchMyClientIds();
+      const packs = await Promise.all(
+        scopeIds.map(async (id) => {
+          const [linksRes, litterRes, dogsRes, waitRes] = await Promise.all([
+            supabase.rpc('parent_links_for', { p_user_id: id }),
+            supabase.rpc('assigned_litter_for', { p_user_id: id }),
+            supabase.rpc('dog_ids_for', { p_user_id: id }),
+            supabase
+              .from('waiting_list')
+              .select('id')
+              .eq('client_id', id)
+              .eq('status', 'active')
+              .neq('pipeline_stage', 'withdrawn')
+              .limit(1),
+          ]);
+          return {
+            links: linksRes.data,
+            litterRows: litterRes.data,
+            dogIds: dogsRes.data,
+            waitRows: waitRes.data,
+          };
+        }),
+      );
+      const links = packs.flatMap((p) => p.links ?? []);
+      const litterRows = packs.flatMap((p) => p.litterRows ?? []);
+      const dogIds = packs.flatMap((p) => p.dogIds ?? []);
+      const waitRows = packs.flatMap((p) => p.waitRows ?? []);
       const unique = new Map<string, ParentLink>();
       for (const link of (links ?? []) as ParentLink[]) {
         if (!unique.has(link.parent_id)) unique.set(link.parent_id, link);
@@ -168,7 +184,7 @@ export function useCommittedBreeding(forUserId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, forUserId, sessionId]);
 
   useEffect(() => {
     void refresh();

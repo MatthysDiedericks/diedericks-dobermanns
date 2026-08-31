@@ -172,6 +172,13 @@ export async function verifyInviteOtp(email: string, token: string): Promise<Aut
     type: 'magiclink',
     token_hash: redeemed.tokenHash,
   });
+  if (!error) {
+    try {
+      await supabase.rpc('mark_portal_invite_opened');
+    } catch {
+      /* session still stands */
+    }
+  }
   return { error: error?.message ?? null };
 }
 

@@ -5,6 +5,7 @@ import {
   deriveBuyerJourneyStep,
   type BuyerJourneyStep,
 } from '@/lib/portal/buyerJourney';
+import { fetchMyDogIds, fetchMyFinancialClientIds } from '@/lib/portal/memberScope';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -32,6 +33,7 @@ export function useBuyerJourney() {
     setLoading(true);
     try {
       const supabase = requireSupabase();
+      const financialIds = await fetchMyFinancialClientIds();
       const appsRes = await supabase
         .from('applications')
         .select('id, status')
@@ -46,11 +48,18 @@ export function useBuyerJourney() {
         .order('created_at', { ascending: false });
       quotesQuery =
         appIds.length > 0
-          ? quotesQuery.or(`client_id.eq.${userId},application_id.in.(${appIds.join(',')})`)
-          : quotesQuery.eq('client_id', userId);
+          ? quotesQuery.or(
+              `${financialIds.map((id) => `client_id.eq.${id}`).join(',')},application_id.in.(${appIds.join(',')})`,
+            )
+          : financialIds.length === 1
+            ? quotesQuery.eq('client_id', financialIds[0]!)
+            : quotesQuery.in('client_id', financialIds);
+      const dogIds = await fetchMyDogIds();
       const [quotesRes, dogsRes] = await Promise.all([
         quotesQuery,
-        supabase.from('dogs').select('id').eq('owner_id', userId).limit(1),
+        dogIds.length
+          ? supabase.from('dogs').select('id').in('id', dogIds).limit(1)
+          : Promise.resolve({ data: [] as { id: string }[] }),
       ]);
 
       // review_status from migration 0053 — cast until database.types catches up.
@@ -58,7 +67,7 @@ export function useBuyerJourney() {
         .from('documents')
         .select('id, review_status' as 'id')
         .eq('category', 'proof_of_payment')
-        .eq('uploaded_by', userId);
+        .in('uploaded_by', financialIds);
 
       const application = appsRes.data?.[0] ?? null;
       const quotes = (quotesRes.data ?? []) as unknown as {

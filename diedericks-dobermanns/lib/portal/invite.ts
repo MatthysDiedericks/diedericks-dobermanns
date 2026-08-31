@@ -1,6 +1,6 @@
 import { requireSupabase } from '@/lib/supabase';
 
-export type InviteSource = 'application' | 'waiting_list' | 'client';
+export type InviteSource = 'application' | 'waiting_list' | 'client' | 'member';
 
 export type InviteStateRow = {
   email: string;
@@ -134,6 +134,7 @@ export async function inviteToPortal(input: {
   source: InviteSource;
   sourceId?: string | null;
   sendEmail?: boolean;
+  holderName?: string;
 }): Promise<IssueInviteResult | { error: string }> {
   const { data, error } = await requireSupabase().functions.invoke('invite-to-portal', {
     body: { ...input, sendEmail: input.sendEmail ?? false },

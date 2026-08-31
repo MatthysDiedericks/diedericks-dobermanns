@@ -7,6 +7,7 @@ import {
   latestPerGroup,
   vaccinationGroupKey,
 } from '@/lib/dogs/healthCalendar';
+import { fetchMyDogIds } from '@/lib/portal/memberScope';
 import { requireSupabase, supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -48,11 +49,7 @@ export function useDogHealthSchedule() {
     setError(null);
     try {
       const client = requireSupabase();
-      const { data: ids, error: idsErr } = await client.rpc('dog_ids_for', {
-        p_user_id: userId,
-      });
-      if (idsErr) throw new Error(idsErr.message);
-      const dogIds = (ids ?? []) as string[];
+      const dogIds = await fetchMyDogIds();
       if (dogIds.length === 0) {
         setEntries([]);
         return;

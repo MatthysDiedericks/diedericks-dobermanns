@@ -58,6 +58,17 @@ export type AppDatabase = {
         Args: { p_application_id: string };
         Returns: Record<string, unknown>;
       };
+      my_client_ids: { Args: Record<string, never>; Returns: string[] };
+      my_financial_client_ids: { Args: Record<string, never>; Returns: string[] };
+      my_guest_access: {
+        Args: Record<string, never>;
+        Returns: {
+          membership_id: string;
+          account_holder_id: string;
+          holder_name: string | null;
+          can_view_financials: boolean;
+        }[];
+      };
       log_training_tier_change: {
         Args: {
           p_video_ids: string[];

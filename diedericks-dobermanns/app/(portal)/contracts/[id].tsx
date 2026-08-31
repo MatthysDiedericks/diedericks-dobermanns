@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useContracts } from '@/hooks/usePortal';
+import { useGuestAccess } from '@/hooks/useGuestAccess';
 import { signingUrl } from '@/lib/contracts/signingLink';
 import { Config } from '@/constants/config';
 
@@ -16,6 +17,7 @@ export default function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data: contracts } = useContracts();
+  const guest = useGuestAccess();
   const contract = contracts.find((c) => c.id === id);
   const isSigned = Boolean(
     contract?.signed_by_client || contract?.status === 'signed_client' || contract?.status === 'signed_both',
@@ -62,8 +64,13 @@ export default function ContractDetailScreen() {
               signing page as WhatsApp.
             </Typography>
           )}
-          {!isSigned ? (
+          {!isSigned && !guest.isGuest ? (
             <Button label="Review & accept" onPress={() => void openSigning()} fullWidth className="mt-3" />
+          ) : null}
+          {guest.isGuest && !isSigned ? (
+            <Typography variant="bodyMuted" className="mt-3">
+              Only {guest.holderName ?? 'the account holder'} can accept this agreement.
+            </Typography>
           ) : null}
         </Card>
         <View className="flex-1 overflow-hidden rounded-lg">

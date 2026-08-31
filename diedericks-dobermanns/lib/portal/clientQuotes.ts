@@ -1,3 +1,4 @@
+import { fetchMyFinancialClientIds } from '@/lib/portal/memberScope';
 import { requireSupabase } from '@/lib/supabase';
 import { litterPairLabel, subjectStatement, type QuoteSubjectKind } from '@/lib/finance/quoteSubject';
 
@@ -40,7 +41,8 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 /** Non-draft quotes visible to the signed-in client. Filter by userId — admin RLS would otherwise return every quote. */
 export async function fetchMyClientQuotes(userId: string): Promise<ClientQuoteListRow[]> {
   const supabase = requireSupabase();
-  const { data: apps } = await supabase.from('applications').select('id').eq('user_id', userId);
+  const userIds = await fetchMyFinancialClientIds();
+  const { data: apps } = await supabase.from('applications').select('id').in('user_id', userIds);
   const appIds = (apps ?? []).map((a) => a.id);
   let q = supabase
     .from('quotes')
@@ -51,8 +53,10 @@ export async function fetchMyClientQuotes(userId: string): Promise<ClientQuoteLi
     .order('created_at', { ascending: false });
   q =
     appIds.length > 0
-      ? q.or(`client_id.eq.${userId},application_id.in.(${appIds.join(',')})`)
-      : q.eq('client_id', userId);
+      ? q.or(`${userIds.map((id) => `client_id.eq.${id}`).join(',')},application_id.in.(${appIds.join(',')})`)
+      : userIds.length === 1
+        ? q.eq('client_id', userIds[0]!)
+        : q.in('client_id', userIds);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return ((data ?? []) as unknown as ClientQuoteListRow[]).map((q) => ({
@@ -80,14 +84,15 @@ export async function fetchMyClientQuoteById(
     client_id: string | null;
     application_id: string | null;
   };
-  if (row.client_id === userId) {
-    // owned
+  const userIds = await fetchMyFinancialClientIds();
+  if (row.client_id && userIds.includes(row.client_id)) {
+    // owned by this portal
   } else if (row.application_id) {
     const { data: app } = await supabase
       .from('applications')
       .select('id')
       .eq('id', row.application_id)
-      .eq('user_id', userId)
+      .in('user_id', userIds)
       .maybeSingle();
     if (!app) return null;
   } else {
@@ -135,12 +140,12 @@ export async function fetchMyClientQuoteById(
   const dogMap = new Map((dogs ?? []).map((d) => [d.id, d]));
   const litterMap = new Map((litters ?? []).map((l) => [l.id, l]));
 
-  const row = quote as unknown as ClientQuoteDetail;
+  const detail = quote as unknown as ClientQuoteDetail;
   return {
-    ...row,
-    total: Number(row.total),
-    subtotal: Number(row.subtotal),
-    discount: Number(row.discount),
+    ...detail,
+    total: Number(detail.total),
+    subtotal: Number(detail.subtotal),
+    discount: Number(detail.discount),
     items: rows.map((it) => {
       if (it.item_type !== 'dog') {
         return {

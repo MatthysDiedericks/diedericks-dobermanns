@@ -1,3 +1,4 @@
+import { fetchMyClientIds, fetchMyDogIds, fetchMyFinancialClientIds } from '@/lib/portal/memberScope';
 import { MOCK_APPLICATIONS, MOCK_CONTRACTS } from '@/lib/mockData';
 import { useRemoteList, type ListResult } from '@/hooks/useRemoteList';
 import { useCallback, useEffect, useState } from 'react';
@@ -20,13 +21,14 @@ const PORTAL_CONTRACT_SELECT =
 
 export function useContracts(): ListResult<Contract> {
   const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
-  return useRemoteList<Contract>(MOCK_CONTRACTS, (client) =>
-    client
+  return useRemoteList<Contract>(MOCK_CONTRACTS, async (client) => {
+    const ids = userId ? await fetchMyFinancialClientIds() : [];
+    return await client
       .from('contracts')
       .select(PORTAL_CONTRACT_SELECT)
-      .eq('client_id', userId ?? '')
-      .order('created_at', { ascending: false }),
-  );
+      .in('client_id', ids.length ? ids : [userId ?? ''])
+      .order('created_at', { ascending: false });
+  });
 }
 
 /** The signed-in client's own applications. */
@@ -42,7 +44,7 @@ export function useMyApplications(): ListResult<Application> {
 }
 
 const PORTAL_DOG_SELECT =
-  'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media(url, thumbnail_url, is_primary, uploaded_at)';
+  'id, name, colour, sex, status, date_of_birth, microchip_number, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)';
 
 export function usePortalDogs(forUserId?: string) {
   const sessionId = useAuthStore((s) => s.session?.user.id);
@@ -61,11 +63,7 @@ export function usePortalDogs(forUserId?: string) {
     setError(null);
     try {
       const supabase = requireSupabase();
-      const { data: ids, error: idsErr } = await supabase.rpc('dog_ids_for', {
-        p_user_id: userId,
-      });
-      if (idsErr) throw new Error(idsErr.message);
-      const dogIds = (ids ?? []) as string[];
+      const dogIds = await fetchMyDogIds(forUserId, sessionId);
       if (dogIds.length === 0) {
         setDogs([]);
         return;
@@ -97,7 +95,7 @@ export function usePortalDogs(forUserId?: string) {
 }
 
 const RESERVATION_SELECT =
-  'id, status, deposit_paid, deposit_amount, total_price, expected_pickup_date, dog:dogs(id, name, colour, sex, date_of_birth, microchip_number, dog_media(url, thumbnail_url, is_primary, uploaded_at))';
+  'id, status, deposit_paid, deposit_amount, total_price, expected_pickup_date, dog:dogs(id, name, colour, sex, date_of_birth, microchip_number, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at))';
 
 export function usePortalReservation() {
   const userId = useAuthStore((s) => s.session?.user.id);
@@ -115,10 +113,11 @@ export function usePortalReservation() {
     setError(null);
     try {
       const supabase = requireSupabase();
+      const ids = await fetchMyClientIds();
       const { data, error: err } = await supabase
         .from('reservations')
         .select(RESERVATION_SELECT)
-        .eq('client_id', userId)
+        .in('client_id', ids)
         .eq('status', 'confirmed')
         .maybeSingle();
       if (err) throw new Error(err.message);
@@ -221,10 +220,11 @@ export function usePortalWaitlistEntry() {
     setError(null);
     try {
       const supabase = requireSupabase();
+      const ids = await fetchMyClientIds();
       const { data, error: err } = await supabase
         .from('waiting_list')
         .select(WAITLIST_SELECT)
-        .eq('client_id', userId)
+        .in('client_id', ids)
         .neq('pipeline_stage', 'withdrawn')
         .order('created_at', { ascending: false })
         .limit(1)

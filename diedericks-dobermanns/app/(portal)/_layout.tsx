@@ -3,22 +3,25 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PortalHostMarker } from '@/components/portal/PortalHostMarker';
 import { WhatsAppFab } from '@/components/social/WhatsAppFab';
 import { Colors } from '@/constants/colors';
 import { tabBarTheme } from '@/constants/navTheme';
+import { useGuestAccess } from '@/hooks/useGuestAccess';
 import { useClientMessages } from '@/hooks/useMessages';
 import { useNotifications } from '@/hooks/useNotifications';
 
 export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 
 export default function PortalLayout() {
-  // Loads the client's inbox + drives the unread badge while in the portal.
   const { unreadCount } = useNotifications();
   const { unreadCount: unreadMessages } = useClientMessages();
+  const guest = useGuestAccess();
 
   return (
     <AuthGuard>
       <View style={{ flex: 1 }}>
+      <PortalHostMarker isGuest={guest.isGuest} holderName={guest.holderName} />
       <Tabs screenOptions={tabBarTheme}>
         <Tabs.Screen
           name="dashboard"
@@ -95,6 +98,8 @@ export default function PortalLayout() {
         <Tabs.Screen name="dogs/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/milestones" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/health" options={{ href: null }} />
+        <Tabs.Screen name="profile/access" options={{ href: null }} />
+        <Tabs.Screen name="report-health/[dogId]" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/waitlist" options={{ href: null }} />
       </Tabs>
       <WhatsAppFab />

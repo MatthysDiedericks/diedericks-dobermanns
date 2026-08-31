@@ -6,6 +6,7 @@ import {
   MOCK_TRAINING_BOOKINGS,
 } from '@/lib/mockData';
 import { useRemoteList, type ListResult } from '@/hooks/useRemoteList';
+import { fetchMyDogIds } from '@/lib/portal/memberScope';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type {
@@ -136,18 +137,14 @@ export function useMyDogs(): ListResult<Dog> {
     setError(null);
     try {
       const supabase = requireSupabase();
-      const { data: ids, error: idsErr } = await supabase.rpc('dog_ids_for', {
-        p_user_id: userId,
-      });
-      if (idsErr) throw new Error(idsErr.message);
-      const dogIds = (ids ?? []) as string[];
+      const dogIds = await fetchMyDogIds();
       if (dogIds.length === 0) {
         setData([]);
         return;
       }
       const { data: rows, error: err } = await supabase
         .from('dogs')
-        .select('id, name, colour, sex, status, date_of_birth, dog_media(url, thumbnail_url, is_primary, uploaded_at)')
+        .select('id, name, colour, sex, status, date_of_birth, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)')
         .in('id', dogIds)
         .order('name');
       if (err) throw new Error(err.message);

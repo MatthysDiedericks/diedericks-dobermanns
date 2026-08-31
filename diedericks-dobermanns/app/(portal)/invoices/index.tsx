@@ -15,6 +15,7 @@ import { buildStatementRows } from '@/lib/finance/invoiceHtml';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
 import { fetchClientPayments } from '@/lib/finance/clientPayments';
 import { fetchClientInvoices } from '@/lib/finance/queries';
+import { fetchMyFinancialClientIds } from '@/lib/portal/memberScope';
 import { useAuthStore } from '@/stores/authStore';
 import type { InvoiceListRow } from '@/types/finance';
 
@@ -36,10 +37,14 @@ export default function ClientInvoicesScreen() {
   useEffect(() => {
     if (!clientId) return;
     setLoading(true);
-    Promise.all([fetchClientInvoices(clientId), fetchClientPayments(clientId)])
-      .then(([inv, pay]) => {
-        setInvoices(inv);
-        setPayments(pay);
+    Promise.all([fetchMyFinancialClientIds()])
+      .then(async ([ids]) => {
+        const [invChunks, payChunks] = await Promise.all([
+          Promise.all(ids.map((id) => fetchClientInvoices(id))),
+          Promise.all(ids.map((id) => fetchClientPayments(id))),
+        ]);
+        setInvoices(invChunks.flat());
+        setPayments(payChunks.flat());
       })
       .catch((e) => console.warn('[portal/invoices]', e))
       .finally(() => setLoading(false));

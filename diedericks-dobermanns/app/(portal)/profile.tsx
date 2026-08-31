@@ -9,6 +9,7 @@ import {
   PURPOSE_OPTIONS,
 } from '@/components/portal/ProfileFormOptions';
 import { MarketingConsentToggle } from '@/components/portal/MarketingConsentToggle';
+import { GuestAccessBanner } from '@/components/portal/GuestAccessBanner';
 import { ProfileSection } from '@/components/portal/ProfileSection';
 import { DeleteAccountModal } from '@/components/account/DeleteAccountModal';
 import { ReportProblemLink } from '@/components/portal/ReportProblemLink';
@@ -21,6 +22,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Config } from '@/constants/config';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { useGuestAccess } from '@/hooks/useGuestAccess';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -31,6 +33,7 @@ export default function ProfileScreen() {
   const session = useAuthStore((s) => s.session);
   const logout = useAuthStore((s) => s.logout);
   const { profile, save, saving, isComplete, completionPercent } = useClientProfile();
+  const guest = useGuestAccess();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   const email = session?.user?.email ?? (Config.isDemoMode ? 'demo@diedericksdobermanns.com' : '—');
@@ -100,6 +103,20 @@ export default function ProfileScreen() {
     <ScreenContainer>
       <PageHeader eyebrow="Account" title="My Profile" back={false} />
       <ScrollView className="px-6 pb-12">
+        <GuestAccessBanner access={guest} />
+        <Pressable
+          onPress={() => router.push('/(portal)/profile/access' as never)}
+          className="mb-4 rounded-xl border border-gold/30 bg-gold/10 p-4"
+        >
+          <Typography variant="subtitle" className="text-gold">
+            Portal access
+          </Typography>
+          <Typography variant="caption" className="mt-1 text-subtle">
+            {guest.isGuest
+              ? 'You have guest access on this portal.'
+              : 'Add a partner or handler — they get their own sign-in.'}
+          </Typography>
+        </Pressable>
         {isComplete ? (
           <View className="mb-4 rounded-xl border border-success/40 bg-success/10 p-4">
             <Typography variant="body" className="text-success">
