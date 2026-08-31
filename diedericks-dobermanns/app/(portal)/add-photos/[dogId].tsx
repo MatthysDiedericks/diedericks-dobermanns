@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { PhotoPicker } from '@/components/forms/PhotoPicker';
@@ -7,19 +7,23 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ThumbImage } from '@/components/media/ThumbImage';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useDogMedia } from '@/hooks/useDogMedia';
 import { addDogMedia, useSubmitting } from '@/hooks/useMutations';
+import {
+  mapOwnerPhotoWindow,
+  ownerPhotoWindowLabel,
+  type OwnerPhotoWindow,
+} from '@/lib/portal/ownerPhotos';
 import { resolvePhotoUrls } from '@/lib/storage';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
- * A client adding their own photos of a dog they own — inserts into
- * dog_media (not dog_timeline). is_public is always forced false here; the
- * consent tick only records whether the owner would allow a future publish,
- * which staff act on from the admin review queue.
+ * Client photos of a dog they own. Always is_public=false / client_consent=false
+ * on insert; Matt approves one photo at a time. Cap of 3 per 4-month window is
+ * enforced by RLS as well as this UI.
  */
 export default function AddPhotosScreen() {
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
@@ -28,18 +32,46 @@ export default function AddPhotosScreen() {
   const { submitting, run } = useSubmitting();
   const { media, refresh } = useDogMedia(dogId ?? '');
 
-  const [consent, setConsent] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [windowInfo, setWindowInfo] = useState<OwnerPhotoWindow>({
+    windowOpenAt: null,
+    photosInWindow: 0,
+    canUpload: false,
+    nextWindowAt: null,
+  });
+
+  const loadWindow = useCallback(async () => {
+    if (!dogId) return;
+    const { data, error: err } = await supabase.rpc('owner_photo_window', {
+      p_dog_id: dogId,
+    });
+    if (err) return;
+    const row = Array.isArray(data) ? data[0] : data;
+    setWindowInfo(mapOwnerPhotoWindow(row ?? null));
+  }, [dogId]);
+
+  useEffect(() => {
+    void loadWindow();
+  }, [loadWindow]);
 
   const myUploads = media.filter((m) => m.uploaded_by === profile?.id);
-  const canSubmit = photos.length > 0;
+  const remaining = Math.max(0, 3 - windowInfo.photosInWindow);
+  const canSubmit = photos.length > 0 && windowInfo.canUpload && photos.length <= remaining;
 
   async function submit() {
     setError(null);
     if (!dogId || photos.length === 0) return;
     if (!profile?.id) {
       setError('You must be signed in to add photos.');
+      return;
+    }
+    if (!windowInfo.canUpload) {
+      setError(ownerPhotoWindowLabel(windowInfo));
+      return;
+    }
+    if (photos.length > remaining) {
+      setError(`Only ${remaining} photo${remaining === 1 ? '' : 's'} left this window.`);
       return;
     }
 
@@ -52,16 +84,21 @@ export default function AddPhotosScreen() {
           url,
           isPublic: false,
           uploadedBy: profile?.id ?? null,
-          clientConsent: consent,
+          clientConsent: false,
         }),
       );
       if (err) {
-        setError(err);
+        setError(
+          /policy|check|violat/i.test(err)
+            ? 'This photo could not be added — the three-photo window may be full.'
+            : err,
+        );
         return;
       }
     }
     setPhotos([]);
     await refresh();
+    await loadWindow();
   }
 
   return (
@@ -69,23 +106,26 @@ export default function AddPhotosScreen() {
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow="Your Dog" title="Add Photos" />
         <View className="px-6">
-          <Typography variant="bodyMuted" className="mb-5">
-            Share your own photos. The kennel reviews everything before it appears anywhere public.
+          <Typography variant="bodyMuted" className="mb-3">
+            Up to three photos every four months. Nothing goes public until Matt approves that
+            specific photo.
+          </Typography>
+          <Typography variant="caption" className="mb-5 text-gold">
+            {ownerPhotoWindowLabel(windowInfo)}
           </Typography>
 
-          <View className="mb-4">
-            <Checkbox
-              checked={consent}
-              onChange={setConsent}
-              label="Diedericks Dobermanns may use these photos publicly."
-              description="Leave unticked (default) to keep photos private to you and the kennel. Tick only if you allow website or social use after review."
-            />
-          </View>
-
-          <Typography variant="caption" className="mb-2 text-silver">
-            Photos *
-          </Typography>
-          <PhotoPicker value={photos} onChange={setPhotos} max={3} />
+          {windowInfo.canUpload ? (
+            <>
+              <Typography variant="caption" className="mb-2 text-silver">
+                Photos * (max {remaining} this window)
+              </Typography>
+              <PhotoPicker value={photos} onChange={setPhotos} max={remaining} />
+            </>
+          ) : (
+            <Typography variant="bodyMuted" className="mb-4">
+              {ownerPhotoWindowLabel(windowInfo)}
+            </Typography>
+          )}
 
           {error ? (
             <Typography variant="caption" className="mt-3 text-danger">
@@ -93,14 +133,16 @@ export default function AddPhotosScreen() {
             </Typography>
           ) : null}
 
-          <Button
-            label="Share Photos"
-            onPress={submit}
-            loading={submitting}
-            disabled={!canSubmit}
-            fullWidth
-            className="mt-5"
-          />
+          {windowInfo.canUpload ? (
+            <Button
+              label="Share Photos"
+              onPress={submit}
+              loading={submitting}
+              disabled={!canSubmit}
+              fullWidth
+              className="mt-5"
+            />
+          ) : null}
 
           {myUploads.length > 0 ? (
             <View className="mt-6 flex-row flex-wrap gap-3">
@@ -117,7 +159,14 @@ export default function AddPhotosScreen() {
             </View>
           ) : null}
 
-          <Button label="Done" variant="ghost" onPress={() => router.back()} fullWidth className="mt-6" />
+          <Button
+            label="Report a change in health"
+            variant="ghost"
+            onPress={() => router.push(`/(portal)/report-health/${dogId}`)}
+            fullWidth
+            className="mt-6"
+          />
+          <Button label="Done" variant="ghost" onPress={() => router.back()} fullWidth className="mt-2" />
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>
