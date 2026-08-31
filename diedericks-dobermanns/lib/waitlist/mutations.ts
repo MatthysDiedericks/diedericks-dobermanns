@@ -6,6 +6,10 @@ import type { Application, WaitingListEntry } from '@/types/app.types';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 
 import { simulate, type MutationResult, type SaveResult } from '@/lib/shared/mutationTypes';
+import {
+  PAYMENT_GATE_MESSAGE,
+  isWaitlistPaymentGateError,
+} from '@/lib/waitlist/paymentGate';
 
 export interface WaitlistUpdate {
   feedback?: string | null;
@@ -72,6 +76,8 @@ export interface CreateWaitlistInput {
   preference_notes?: string | null;
   follow_up_date?: string | null;
   priority?: WaitingListEntry['priority'];
+  /** Explicit admin override when no payment is on file. Written to audit_log. */
+  override_reason?: string | null;
 }
 
 export async function createWaitlistEntry(input: CreateWaitlistInput): Promise<SaveResult> {
@@ -105,7 +111,19 @@ export async function createWaitlistEntry(input: CreateWaitlistInput): Promise<S
     status: 'active',
   };
 
+  const override = input.override_reason?.trim() ?? '';
+  if (override) {
+    const { data, error } = await supabase.rpc('waiting_list_insert_with_override' as never, {
+      p_row: row,
+      p_reason: override,
+    } as never);
+    return { error: error?.message ?? null, id: data ? String(data) : null };
+  }
+
   const { data, error } = await supabase.from('waiting_list').insert(row as TablesInsert<'waiting_list'>).select('id').single();
+  if (error && isWaitlistPaymentGateError(error.message)) {
+    return { error: PAYMENT_GATE_MESSAGE, id: null };
+  }
   return { error: error?.message ?? null, id: (data?.id as string | undefined) ?? null };
 }
 
@@ -290,5 +308,8 @@ export async function joinLitterWaitlist(
     .select('id')
     .single();
 
+  if (error && isWaitlistPaymentGateError(error.message)) {
+    return { error: PAYMENT_GATE_MESSAGE, id: null };
+  }
   return { error: error?.message ?? null, id: (data?.id as string | undefined) ?? null };
 }

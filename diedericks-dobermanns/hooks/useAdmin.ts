@@ -71,7 +71,7 @@ export function useAdminApplications(): ListResult<Application> {
   return useRemoteList<Application>(MOCK_APPLICATIONS, (client) =>
     client
       .from('applications')
-      .select('id, full_name, email, phone, status, purpose, country, created_at, admin_notes, archived_at, archived_reason, archived_by, id_type, id_check_status, id_check_note')
+      .select('id, full_name, email, phone, status, purpose, country, created_at, reviewed_at, user_id, admin_notes, archived_at, archived_reason, archived_by, id_type, id_check_status, id_check_note')
       .order('created_at', { ascending: false }),
   );
 }

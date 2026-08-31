@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
@@ -13,6 +13,8 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAdminApplications } from '@/hooks/useAdmin';
 import { formatDateTime, titleCase } from '@/lib/format';
+import { supabase } from '@/lib/supabase';
+import { awaitingPaymentLabel } from '@/lib/waitlist/paymentGate';
 import type { ApplicationStatus } from '@/types/app.types';
 
 const STATUS_TONE: Record<ApplicationStatus, BadgeTone> = {
@@ -30,6 +32,25 @@ export default function AdminApplicationsScreen() {
   const { data: applications, loading, refetch } = useAdminApplications();
   const [showArchived, setShowArchived] = useState(false);
   const [idFailedOnly, setIdFailedOnly] = useState(false);
+  const [awaitingPaymentOnly, setAwaitingPaymentOnly] = useState(false);
+  const [waitlistedAppIds, setWaitlistedAppIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase
+      .from('waiting_list')
+      .select('application_id')
+      .not('application_id', 'is', null)
+      .then(({ data }) => {
+        setWaitlistedAppIds(
+          new Set(
+            (data ?? [])
+              .map((r) => r.application_id)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        );
+      });
+  }, [applications]);
 
   const visible = useMemo(
     () =>
@@ -37,10 +58,18 @@ export default function AdminApplicationsScreen() {
         const archivedOk = showArchived ? Boolean(app.archived_at) : !app.archived_at;
         if (!archivedOk) return false;
         if (idFailedOnly && app.id_check_status !== 'failed') return false;
+        if (awaitingPaymentOnly) {
+          if (app.status !== 'approved') return false;
+          if (waitlistedAppIds.has(app.id)) return false;
+        }
         return true;
       }),
-    [applications, showArchived, idFailedOnly],
+    [applications, showArchived, idFailedOnly, awaitingPaymentOnly, waitlistedAppIds],
   );
+
+  const awaitingCount = applications.filter(
+    (a) => !a.archived_at && a.status === 'approved' && !waitlistedAppIds.has(a.id),
+  ).length;
 
   return (
     <ScreenContainer>
@@ -56,10 +85,25 @@ export default function AdminApplicationsScreen() {
             {idFailedOnly ? '← All ID checks' : 'Show failed ID checks'}
           </Typography>
         </Pressable>
+        <Pressable onPress={() => setAwaitingPaymentOnly((v) => !v)} className="mt-2">
+          <Typography variant="caption" className="text-gold">
+            {awaitingPaymentOnly
+              ? '← All applications'
+              : `Approved — awaiting payment (${awaitingCount})`}
+          </Typography>
+        </Pressable>
       </View>
       <View className="gap-3 px-6">
         {!loading && visible.length === 0 ? (
-          <EmptyState title={showArchived ? 'No archived applications' : 'No applications yet'} />
+          <EmptyState
+            title={
+              showArchived
+                ? 'No archived applications'
+                : awaitingPaymentOnly
+                  ? 'No approved applications awaiting payment'
+                  : 'No applications yet'
+            }
+          />
         ) : (
           visible.map((app) => (
             <Card key={app.id}>
@@ -82,6 +126,11 @@ export default function AdminApplicationsScreen() {
                       app.country.trim().toLowerCase() !== 'south africa' ? (
                       <Typography variant="caption" className="mt-0.5 text-gold">
                         Confirm ID — country does not match a South African ID
+                      </Typography>
+                    ) : null}
+                    {app.status === 'approved' && !waitlistedAppIds.has(app.id) ? (
+                      <Typography variant="caption" className="mt-0.5 text-gold">
+                        {awaitingPaymentLabel(app.reviewed_at ?? app.created_at)}
                       </Typography>
                     ) : null}
                     <Typography variant="caption" className="mt-0.5 opacity-60">

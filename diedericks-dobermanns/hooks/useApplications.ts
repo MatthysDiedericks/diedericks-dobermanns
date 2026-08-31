@@ -12,7 +12,6 @@ import {
   isRateLimitDbError,
 } from '@/lib/security/rateLimit';
 import { supabase } from '@/lib/supabase';
-import { ensureWaitlistOnApplicationSubmitted } from '@/lib/waitlist/syncFromApplication';
 import type { Application } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
 import { postApplicationFiles, type PickedApplicationFile } from '@/lib/uploads/applicationFiles';
@@ -176,24 +175,6 @@ export function useSubmitApplication() {
         void logEnquiry(draft, referenceId);
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user) void logClientNotification(userData.user.id, referenceId);
-        void ensureWaitlistOnApplicationSubmitted({
-          id: applicationId,
-          user_id: userData.user?.id ?? draft.user_id ?? null,
-          full_name: draft.full_name,
-          email: draft.email,
-          phone: draft.phone,
-          country: draft.country,
-          dog_interest: draft.dog_interest,
-          preferred_sex: draft.preferred_sex,
-          preferred_colour: draft.preferred_colour,
-          tail_preference: draft.tail_preference,
-          budget_range: draft.budget_range,
-          preferred_timeline: draft.preferred_timeline,
-          special_requests: draft.special_requests,
-          why_dobermann: draft.why_dobermann,
-        }).then(({ error: wlErr }) => {
-          if (wlErr) console.error('[useSubmitApplication] waitlist seed:', wlErr);
-        });
       } catch (followUpErr) {
         console.error('[useSubmitApplication] follow-up:', followUpErr);
       }

@@ -67,86 +67,20 @@ export function prefsFromApplication(
   return patch;
 }
 
-async function defaultListTypeId(): Promise<string | null> {
-  if (!supabase) return null;
-  const { data } = await supabase
-    .from('waiting_list_types')
-    .select('id')
-    .order('sort_order')
-    .limit(1)
-    .maybeSingle();
-  return data?.id ?? null;
-}
-
 /**
- * On application submit: seed waiting list at `application`. Idempotent.
- * Best-effort — public RLS may block; web apply uses the admin client instead.
+ * Submit no longer seeds the waiting list. A recorded payment is required
+ * (migration 0146). Kept as a no-op so older call sites compile.
  */
 export async function ensureWaitlistOnApplicationSubmitted(
-  app: Pick<
-    Application,
-    | 'id'
-    | 'user_id'
-    | 'full_name'
-    | 'email'
-    | 'phone'
-    | 'country'
-    | 'dog_interest'
-    | 'preferred_sex'
-    | 'preferred_colour'
-    | 'tail_preference'
-    | 'budget_range'
-    | 'preferred_timeline'
-    | 'special_requests'
-    | 'why_dobermann'
-  >,
+  _app: Pick<Application, 'id'>,
 ): Promise<{ error: string | null; waitlistId?: string }> {
-  if (!supabase) return { error: null };
-
-  const { data: existing } = await supabase
-    .from('waiting_list')
-    .select('id')
-    .eq('application_id', app.id)
-    .limit(1)
-    .maybeSingle();
-  if (existing) return { error: null, waitlistId: existing.id };
-
-  const listTypeId = await defaultListTypeId();
-  const prefs = prefsFromApplication(app, undefined);
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('waiting_list')
-    .insert({
-      list_type_id: listTypeId,
-      pipeline_stage: 'application',
-      stage_updated_at: now,
-      client_id: app.user_id,
-      application_id: app.id,
-      enquirer_name: app.full_name,
-      enquirer_email: app.email,
-      enquirer_phone: app.phone,
-      enquirer_country: app.country,
-      source: 'app',
-      preferred_category: prefs.preferred_category ?? categoryFromDogInterest(app.dog_interest),
-      preferred_sex: prefs.preferred_sex ?? app.preferred_sex ?? 'any',
-      preferred_colour: prefs.preferred_colour ?? app.preferred_colour ?? 'no_preference',
-      tail_preference: prefs.tail_preference ?? app.tail_preference ?? 'no_preference',
-      budget_range: prefs.budget_range ?? app.budget_range ?? null,
-      preferred_timeline: prefs.preferred_timeline ?? app.preferred_timeline ?? null,
-      preference_notes: prefs.preference_notes ?? null,
-      priority: 'normal',
-      status: 'active',
-      stage_change_note: 'Application submitted',
-    } as never)
-    .select('id')
-    .single();
-
-  return { error: error?.message ?? null, waitlistId: data?.id };
+  return { error: null };
 }
 
 /**
- * On approval: create or update the linked waiting-list entry at `approved`,
- * copying preferences. Visible/overridable — not a trigger.
+ * On approval: if a waitlist row already exists (legacy, or a payment already
+ * landed), copy blank preference fields forward. Never inserts — payment-time
+ * promote_waitlist_on_payment owns creation.
  */
 export async function syncWaitlistOnApplicationApproved(
   applicationId: string,
@@ -173,51 +107,20 @@ export async function syncWaitlistOnApplicationApproved(
     .limit(1)
     .maybeSingle();
 
-  const prefs = prefsFromApplication(app, existing ?? undefined);
+  if (!existing) return { error: null };
+
+  const prefs = prefsFromApplication(app, existing);
   const stagePatch = buildForwardStagePatch(
-    existing?.pipeline_stage ?? 'enquiry',
+    existing.pipeline_stage ?? 'enquiry',
     'approved',
     actorId,
     { status: 'active', stage_change_note: 'Application approved' },
   );
 
-  if (existing) {
-    const update: TablesUpdate<'waiting_list'> = {
-      ...prefs,
-      ...(stagePatch ?? {}),
-    };
-    const { error } = await supabase.from('waiting_list').update(update).eq('id', existing.id);
-    return { error: error?.message ?? null, waitlistId: existing.id };
-  }
-
-  const listTypeId = await defaultListTypeId();
-  const { data, error } = await supabase
-    .from('waiting_list')
-    .insert({
-      list_type_id: listTypeId,
-      pipeline_stage: 'approved',
-      stage_updated_at: new Date().toISOString(),
-      stage_updated_by: actorId,
-      client_id: app.user_id,
-      application_id: app.id,
-      enquirer_name: app.full_name,
-      enquirer_email: app.email,
-      enquirer_phone: app.phone,
-      enquirer_country: app.country,
-      source: 'app',
-      preferred_category: prefs.preferred_category ?? categoryFromDogInterest(app.dog_interest),
-      preferred_sex: prefs.preferred_sex ?? app.preferred_sex ?? 'any',
-      preferred_colour: prefs.preferred_colour ?? app.preferred_colour ?? 'no_preference',
-      tail_preference: prefs.tail_preference ?? app.tail_preference ?? 'no_preference',
-      budget_range: prefs.budget_range ?? app.budget_range ?? null,
-      preferred_timeline: prefs.preferred_timeline ?? app.preferred_timeline ?? null,
-      preference_notes: prefs.preference_notes ?? null,
-      priority: 'normal',
-      status: 'active',
-      stage_change_note: 'Application approved',
-    } as never)
-    .select('id')
-    .single();
-
-  return { error: error?.message ?? null, waitlistId: data?.id };
+  const update: TablesUpdate<'waiting_list'> = {
+    ...prefs,
+    ...(stagePatch ?? {}),
+  };
+  const { error } = await supabase.from('waiting_list').update(update).eq('id', existing.id);
+  return { error: error?.message ?? null, waitlistId: existing.id };
 }

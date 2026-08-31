@@ -12,6 +12,7 @@ import { useAdminApplications } from '@/hooks/useAdmin';
 import { createWaitlistEntry, createWaitlistFromApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { categoryFromDogInterest, MANUAL_SOURCES, SOURCE_LABELS } from '@/lib/waitlist/helpers';
+import { PAYMENT_GATE_MESSAGE, isWaitlistPaymentGateError } from '@/lib/waitlist/paymentGate';
 import type { Application } from '@/types/app.types';
 
 export default function NewWaitlistEntryScreen() {
@@ -35,6 +36,8 @@ export default function NewWaitlistEntryScreen() {
   const [source, setSource] = useState<string>('other');
   const [preferredSex, setPreferredSex] = useState('any');
   const [preferredColour, setPreferredColour] = useState('');
+  const [needsOverride, setNeedsOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
 
   const appResults = approved.filter((a) => {
     const q = appQuery.trim().toLowerCase();
@@ -44,8 +47,16 @@ export default function NewWaitlistEntryScreen() {
 
   async function save() {
     if (!listTypeId) return;
+    const override = needsOverride ? overrideReason.trim() : undefined;
+    if (needsOverride && (!override || override.length < 3)) return;
     if (mode === 'application' && selectedApp) {
-      const { error, id } = await run(() => createWaitlistFromApplication(selectedApp, listTypeId));
+      const { error, id } = await run(() =>
+        createWaitlistFromApplication(selectedApp, listTypeId, { override_reason: override }),
+      );
+      if (error && (isWaitlistPaymentGateError(error) || error === PAYMENT_GATE_MESSAGE)) {
+        setNeedsOverride(true);
+        return;
+      }
       if (!error && id) router.replace({ pathname: '/(admin)/waitlist/[id]', params: { id } });
       return;
     }
@@ -62,8 +73,13 @@ export default function NewWaitlistEntryScreen() {
         preference_notes: notes.trim() || null,
         follow_up_date: followUp.trim() || null,
         source,
+        override_reason: override,
       }),
     );
+    if (error && (isWaitlistPaymentGateError(error) || error === PAYMENT_GATE_MESSAGE)) {
+      setNeedsOverride(true);
+      return;
+    }
     if (!error && id) router.replace({ pathname: '/(admin)/waitlist/[id]', params: { id } });
   }
 
@@ -141,7 +157,28 @@ export default function NewWaitlistEntryScreen() {
           </>
         )}
 
-        <Button label="Save to waiting list" onPress={save} loading={submitting} disabled={!listTypeId} fullWidth className="mt-6" />
+        {needsOverride ? (
+          <View className="mb-4 rounded-xl border border-gold/40 bg-gold/5 p-3">
+            <Typography variant="caption" className="mb-2 text-gold">
+              {PAYMENT_GATE_MESSAGE} Enter a reason to override (cash deposit, arrangement made). Recorded in the audit log.
+            </Typography>
+            <Input
+              label="Override reason"
+              value={overrideReason}
+              onChangeText={setOverrideReason}
+              placeholder="Cash deposit received at the kennel"
+            />
+          </View>
+        ) : null}
+
+        <Button
+          label={needsOverride ? 'Override and add' : 'Save to waiting list'}
+          onPress={save}
+          loading={submitting}
+          disabled={!listTypeId || (needsOverride && overrideReason.trim().length < 3)}
+          fullWidth
+          className="mt-6"
+        />
       </ScrollView>
     </ScreenContainer>
   );

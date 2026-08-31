@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 
 import { InviteToPortalButton } from '@/components/admin/InviteToPortalButton';
 import { InviteStateChip } from '@/components/admin/InviteStateChip';
@@ -27,6 +27,7 @@ import { createWaitlistFromApplication, reviewApplication, useSubmitting } from 
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
 import { titleCase } from '@/lib/format';
+import { PAYMENT_GATE_MESSAGE, isWaitlistPaymentGateError } from '@/lib/waitlist/paymentGate';
 import type { Application, ApplicationStatus } from '@/types/app.types';
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
@@ -69,6 +70,8 @@ export default function ApplicationDetailScreen() {
   const [notes, setNotes] = useState('');
   const [done, setDone] = useState<ApplicationStatus | null>(null);
   const [addingWl, setAddingWl] = useState(false);
+  const [needsOverride, setNeedsOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
   const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
   const { linkedQuote, quotePending, quoteFailed, pollAfterApproval } = useLinkedQuote(id);
 
@@ -87,10 +90,27 @@ export default function ApplicationDetailScreen() {
     if (!app || !id) return;
     const listType = types.find((t) => t.slug !== 'do-not-sell') ?? types[0];
     if (!listType) return;
+    if (needsOverride && overrideReason.trim().length < 3) {
+      Alert.alert('Override reason', 'Give a reason (cash deposit, arrangement made).');
+      return;
+    }
     setAddingWl(true);
-    const { error: err, id: wlId } = await run(() => createWaitlistFromApplication(app, listType.id));
+    const { error: err, id: wlId } = await run(() =>
+      createWaitlistFromApplication(app, listType.id, {
+        override_reason: needsOverride ? overrideReason.trim() : undefined,
+      }),
+    );
     setAddingWl(false);
-    if (!err && wlId) router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: wlId } });
+    if (err && (isWaitlistPaymentGateError(err) || err === PAYMENT_GATE_MESSAGE)) {
+      setNeedsOverride(true);
+      Alert.alert('Payment required', PAYMENT_GATE_MESSAGE);
+      return;
+    }
+    if (err) {
+      Alert.alert('Could not add', err);
+      return;
+    }
+    if (wlId) router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: wlId } });
   }
 
   async function act(status: ApplicationStatus) {
@@ -276,7 +296,21 @@ export default function ApplicationDetailScreen() {
           {app.status === 'approved' || done === 'approved' ? (
             <>
               <InviteToPortalButton email={app.email} fullName={app.full_name} phone={app.phone} source="application" sourceId={app.id} initialState={inviteState} />
-              <Button label="Add to Waiting List" variant="outline" onPress={() => void addToWaitlist()} loading={addingWl} fullWidth />
+              {needsOverride ? (
+                <Input
+                  label="Override reason (required — recorded in the audit log)"
+                  value={overrideReason}
+                  onChangeText={setOverrideReason}
+                  placeholder="Cash deposit received at the kennel"
+                />
+              ) : null}
+              <Button
+                label={needsOverride ? 'Override and add to waiting list' : 'Add to Waiting List'}
+                variant="outline"
+                onPress={() => void addToWaitlist()}
+                loading={addingWl}
+                fullWidth
+              />
             </>
           ) : null}
           {ACTIONS.filter((a) => !(app.status === 'changes_pending' && a.status === 'approved')).map((a) => (
