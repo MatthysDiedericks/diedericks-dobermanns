@@ -4,6 +4,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { BreedingActionCard } from '@/components/breeding/BreedingActionCard';
 import { PairingCard } from '@/components/breeding/PairingCard';
+import { PairingSection } from '@/components/breeding/PairingSection';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -21,37 +22,6 @@ function dcSonStatusLabel(dcSon: BreedingDog | undefined): string {
   if (dcSon.status === 'prospect') return 'Prospect — not yet born';
   if (dcSon.status === 'keep' || dcSon.status === 'active') return 'Born — health tests in progress';
   return 'Ready';
-}
-
-function PairingSection({
-  title,
-  titleColor,
-  pairings,
-  onAction,
-}: {
-  title: string;
-  titleColor: string;
-  pairings: PairingRecord[];
-  onAction: (p: PairingRecord) => void;
-}) {
-  if (pairings.length === 0) return null;
-  return (
-    <>
-      <Typography variant="label" className="mb-2 mt-2" style={{ color: titleColor }}>
-        {title}
-      </Typography>
-      {pairings.map((p) => (
-        <PairingCard
-          key={p.id}
-          pairing={p}
-          actionLabel={
-            p.status === 'Completed' ? 'View' : p.status === 'Active' ? 'Record Litter' : 'Plan Mating'
-          }
-          onAction={() => onAction(p)}
-        />
-      ))}
-    </>
-  );
 }
 
 export default function BreedingProgrammeScreen() {
@@ -178,6 +148,12 @@ export default function BreedingProgrammeScreen() {
 
         <View className="mb-4 px-6">
           <BreedingActionCard
+            icon="list-outline"
+            label="PLAN TRACKER"
+            subtitle="Where each line stands, and what happens next"
+            onPress={() => router.push('/(admin)/breeding/plans' as never)}
+          />
+          <BreedingActionCard
             icon="git-network-outline"
             label="VISUAL PLANNER"
             subtitle="Lines, pairings & COI map"
@@ -207,6 +183,12 @@ export default function BreedingProgrammeScreen() {
               variant="outline"
               size="sm"
               onPress={() => router.push('/(admin)/breeding/organogram' as never)}
+            />
+            <Button
+              label="Plan tracker"
+              variant="outline"
+              size="sm"
+              onPress={() => router.push('/(admin)/breeding/plans' as never)}
             />
           </View>
         </View>

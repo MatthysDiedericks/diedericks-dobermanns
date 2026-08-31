@@ -81,6 +81,10 @@ export default function AdminLayout() {
         <Tabs.Screen name="breeding/organogram" options={{ href: null }} />
         <Tabs.Screen name="breeding/planner" options={{ href: null }} />
         <Tabs.Screen name="breeding/trial-planner" options={{ href: null }} />
+        <Tabs.Screen name="breeding/plans/index" options={{ href: null }} />
+        <Tabs.Screen name="breeding/plans/new" options={{ href: null }} />
+        <Tabs.Screen name="breeding/plans/[id]/index" options={{ href: null }} />
+        <Tabs.Screen name="breeding/plans/[id]/step" options={{ href: null }} />
         <Tabs.Screen name="health/index" options={{ href: null }} />
         <Tabs.Screen name="health/settings" options={{ href: null }} />
         <Tabs.Screen name="todos/index" options={{ href: null }} />

@@ -8,6 +8,7 @@ import { AwaitingProofsWidget } from '@/components/dashboard/AwaitingProofsWidge
 import { InvitedNotOpenedWidget } from '@/components/dashboard/InvitedNotOpenedWidget';
 import { PendingApplicationChangesWidget } from '@/components/dashboard/PendingApplicationChangesWidget';
 import { ExpiringDocumentsWidget } from '@/components/dashboard/ExpiringDocumentsWidget';
+import { BreedingPlanNextWidget } from '@/components/dashboard/BreedingPlanNextWidget';
 import { LittersByYearWidget } from '@/components/dashboard/LittersByYearWidget';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -100,6 +101,8 @@ export function AdminDashboardContent() {
 
       {/* Widget 1 — Current Litters */}
       <LittersByYearWidget currentLitters={data.currentLitters} />
+
+      <BreedingPlanNextWidget />
 
       {/* Widget — Breeding Programme */}
       <SurfaceCard title="Breeding Programme" href="/(admin)/breeding/index">
