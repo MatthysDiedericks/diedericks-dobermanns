@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -12,7 +11,9 @@ import { BarChart } from 'react-native-chart-kit';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { ExpenseAllocationBreakdown } from '@/components/finance/ExpenseAllocationBreakdown';
 import { FinanceActionChips } from '@/components/finance/FinanceActionChips';
+import { FinanceDashboardFabs } from '@/components/finance/FinanceDashboardFabs';
 import { FinanceKpiCard } from '@/components/finance/FinanceKpiCard';
+import { FinancePeriodChips } from '@/components/finance/FinancePeriodChips';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -23,26 +24,32 @@ import { Colors } from '@/constants/colors';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 import { useExpenseAllocationBreakdown } from '@/hooks/useExpenses';
 import { useFinanceReport } from '@/hooks/useFinanceReport';
+import { useFinanceYears } from '@/hooks/useFinanceYears';
 import { buildFinanceReport, yearMonthRange } from '@/lib/finance/queries';
 import { exportFinanceExcel } from '@/lib/finance/generateExcel';
 import { exportFinancePDF } from '@/lib/finance/generatePDF';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
 import { expenseGross } from '@/lib/finance/expenseGross';
-import { financeYearRange } from '@/lib/finance/years';
-
-const MONTHS = ['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const YEARS = financeYearRange();
+import {
+  financeLedgerDateSpan,
+  type FinanceYearSelection,
+} from '@/lib/finance/years';
 
 export default function FinanceDashboardScreen() {
   const router = useRouter();
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<FinanceYearSelection>(
+    new Date().getFullYear(),
+  );
   const [monthIdx, setMonthIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const years = useFinanceYears();
+  const budgetYear = selectedYear === 'all' ? new Date().getFullYear() : selectedYear;
 
   const { from, to } = useMemo(() => {
+    if (selectedYear === 'all') return financeLedgerDateSpan(years);
     if (monthIdx === 0) return yearMonthRange(selectedYear);
     return yearMonthRange(selectedYear, monthIdx - 1);
-  }, [selectedYear, monthIdx]);
+  }, [selectedYear, monthIdx, years]);
 
   const {
     invoices,
@@ -59,7 +66,7 @@ export default function FinanceDashboardScreen() {
     refresh,
   } = useFinanceReport(from, to);
 
-  const { summary: budgetSummary } = useBudgetSummary(selectedYear);
+  const { summary: budgetSummary } = useBudgetSummary(budgetYear);
   const { breakdown: allocationBreakdown } = useExpenseAllocationBreakdown(from, to);
 
   const chartWidth = Dimensions.get('window').width - 48;
@@ -92,33 +99,13 @@ export default function FinanceDashboardScreen() {
     <ScreenContainer>
       <PageHeader eyebrow="Management" title="Finance" back={false} />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-6">
-        {YEARS.map((y) => (
-          <Pressable
-            key={y}
-            onPress={() => setSelectedYear(y)}
-            className={`mr-2 rounded-full border px-4 py-2 ${
-              y === selectedYear ? 'border-gold bg-gold/15' : 'border-gold/30'
-            }`}
-          >
-            <Typography variant="label">{y}</Typography>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-6">
-        {MONTHS.map((m, idx) => (
-          <Pressable
-            key={m}
-            onPress={() => setMonthIdx(idx)}
-            className={`mr-2 rounded-full border px-3 py-1.5 ${
-              idx === monthIdx ? 'border-gold bg-gold/15' : 'border-gold/30'
-            }`}
-          >
-            <Typography variant="caption">{m}</Typography>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <FinancePeriodChips
+        years={years}
+        selectedYear={selectedYear}
+        onSelectYear={setSelectedYear}
+        monthIdx={monthIdx}
+        onSelectMonth={setMonthIdx}
+      />
 
       <Pressable onPress={() => router.push('/(admin)/finance/budget' as never)} className="mx-6 mb-4">
         <Card className="flex-row items-center justify-between">
@@ -127,7 +114,7 @@ export default function FinanceDashboardScreen() {
               Budget Tracker
             </Typography>
             <Typography variant="caption" className="text-subtle">
-              {selectedYear} · Expenses {budgetUsedPct.toFixed(0)}% of budget
+              {budgetYear} · Expenses {budgetUsedPct.toFixed(0)}% of budget
             </Typography>
           </View>
           <Typography variant="label" className="text-gold">
@@ -302,44 +289,7 @@ export default function FinanceDashboardScreen() {
         </Pressable>
       </View>
 
-      <View className="absolute bottom-6 right-6 flex-row gap-3">
-        <Pressable
-          onPress={() => router.push('/(admin)/finance/expenses/new')}
-          className="rounded-full border border-gold/40 bg-surface px-5 py-3"
-        >
-          <Typography variant="label">Log expense</Typography>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(admin)/quotes/new' as never)}
-          className="rounded-full border border-gold/40 bg-surface px-5 py-3"
-        >
-          <Typography variant="label">New Quote</Typography>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(admin)/finance/invoices/new')}
-          className="rounded-full border border-gold bg-gold px-5 py-3 flex-row items-center gap-2"
-        >
-          <Ionicons name="receipt-outline" size={16} color="#111008" />
-          <Typography variant="label" className="text-black-rich">
-            New Invoice
-          </Typography>
-        </Pressable>
-      </View>
-
-      <View className="absolute bottom-6 left-6 flex-row gap-3">
-        <Pressable
-          onPress={() => router.push('/(admin)/finance/creditors' as never)}
-          className="rounded-full border border-gold/30 bg-black-rich px-4 py-3"
-        >
-          <Ionicons name="swap-horizontal-outline" size={20} color={Colors.gold} />
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(admin)/finance/reports/index' as never)}
-          className="rounded-full border border-gold/30 bg-black-rich px-4 py-3"
-        >
-          <Ionicons name="document-text-outline" size={20} color={Colors.gold} />
-        </Pressable>
-      </View>
+      <FinanceDashboardFabs />
     </ScreenContainer>
   );
 }
