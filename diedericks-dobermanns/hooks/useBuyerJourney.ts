@@ -3,13 +3,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatRevisionBanner } from '@/lib/finance/quoteEditGuards';
 import {
   deriveBuyerJourneyStep,
+  isEarnedWaitingListPlace,
+  isWaitlistStepSkipped,
   type BuyerJourneyStep,
 } from '@/lib/portal/buyerJourney';
-import { fetchMyDogIds, fetchMyFinancialClientIds } from '@/lib/portal/memberScope';
+import { fetchMyClientIds, fetchMyDogIds, fetchMyFinancialClientIds } from '@/lib/portal/memberScope';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
 type ProofRow = { id: string; review_status: string | null };
+type DogHandoverRow = {
+  id: string;
+  handover_status: string | null;
+  delivered_at: string | null;
+};
 
 /**
  * Loads real application / quote / proof / dog rows and derives the buyer
@@ -18,6 +25,8 @@ type ProofRow = { id: string; review_status: string | null };
 export function useBuyerJourney() {
   const userId = useAuthStore((s) => s.session?.user.id);
   const [currentStep, setCurrentStep] = useState<BuyerJourneyStep>(1);
+  const [applicationApproved, setApplicationApproved] = useState(false);
+  const [skipWaitingList, setSkipWaitingList] = useState(false);
   const [quoteRevisionNote, setQuoteRevisionNote] = useState<string | null>(null);
   const [quoteRevision, setQuoteRevision] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +34,8 @@ export function useBuyerJourney() {
   const refresh = useCallback(async () => {
     if (!userId) {
       setCurrentStep(1);
+      setApplicationApproved(false);
+      setSkipWaitingList(false);
       setQuoteRevisionNote(null);
       setQuoteRevision(null);
       setLoading(false);
@@ -33,7 +44,10 @@ export function useBuyerJourney() {
     setLoading(true);
     try {
       const supabase = requireSupabase();
-      const financialIds = await fetchMyFinancialClientIds();
+      const [financialIds, clientIds] = await Promise.all([
+        fetchMyFinancialClientIds(),
+        fetchMyClientIds(),
+      ]);
       const appsRes = await supabase
         .from('applications')
         .select('id, status')
@@ -55,11 +69,44 @@ export function useBuyerJourney() {
             ? quotesQuery.eq('client_id', financialIds[0]!)
             : quotesQuery.in('client_id', financialIds);
       const dogIds = await fetchMyDogIds();
-      const [quotesRes, dogsRes] = await Promise.all([
+      const waitlistByClient =
+        clientIds.length > 0
+          ? supabase
+              .from('waiting_list')
+              .select('id, payment_status, deposit_paid_date, deposit_invoice_id')
+              .in('client_id', clientIds)
+          : Promise.resolve({
+              data: [] as {
+                id: string;
+                payment_status: string | null;
+                deposit_paid_date: string | null;
+                deposit_invoice_id: string | null;
+              }[],
+            });
+      const waitlistByApp =
+        appIds.length > 0
+          ? supabase
+              .from('waiting_list')
+              .select('id, payment_status, deposit_paid_date, deposit_invoice_id')
+              .in('application_id', appIds)
+          : Promise.resolve({
+              data: [] as {
+                id: string;
+                payment_status: string | null;
+                deposit_paid_date: string | null;
+                deposit_invoice_id: string | null;
+              }[],
+            });
+      const [quotesRes, dogsRes, waitClientRes, waitAppRes] = await Promise.all([
         quotesQuery,
         dogIds.length
-          ? supabase.from('dogs').select('id').in('id', dogIds).limit(1)
-          : Promise.resolve({ data: [] as { id: string }[] }),
+          ? supabase
+              .from('dogs')
+              .select('id, handover_status, delivered_at')
+              .in('id', dogIds)
+          : Promise.resolve({ data: [] as DogHandoverRow[] }),
+        waitlistByClient,
+        waitlistByApp,
       ]);
 
       // review_status from migration 0053 — cast until database.types catches up.
@@ -77,8 +124,11 @@ export function useBuyerJourney() {
         sent_at?: string | null;
         last_sent_revision?: number | null;
       }[];
-      const dogs = dogsRes.data ?? [];
+      const dogs = (dogsRes.data ?? []) as DogHandoverRow[];
       const proofs = (proofData ?? []) as unknown as ProofRow[];
+      const onWaitingList = [...(waitClientRes.data ?? []), ...(waitAppRes.data ?? [])].some(
+        isEarnedWaitingListPlace,
+      );
 
       const sentOrBeyond = quotes.filter((q) =>
         ['sent', 'accepted', 'converted', 'paid'].includes(q.status),
@@ -88,6 +138,10 @@ export function useBuyerJourney() {
       const paymentConfirmed =
         proofs.some((p) => p.review_status === 'cleared') ||
         quotes.some((q) => q.status === 'paid' || q.status === 'converted');
+      const approved = application?.status === 'approved';
+      const goneHome = dogs.some(
+        (d) => d.handover_status === 'delivered' || Boolean(d.delivered_at),
+      );
 
       const latest = quotes[0];
       const rev = latest?.revision ?? latest?.last_sent_revision ?? 1;
@@ -107,20 +161,27 @@ export function useBuyerJourney() {
         setQuoteRevisionNote(null);
       }
 
-      setCurrentStep(
-        deriveBuyerJourneyStep({
-          hasApplication: Boolean(application),
-          applicationStatus: application?.status ?? null,
-          hasQuoteSent: sentOrBeyond.length > 0,
-          hasQuoteAccepted: accepted.length > 0 || paymentConfirmed,
-          hasProofUploaded: anyProof,
-          paymentConfirmed,
-          dogAllocated: dogs.length > 0,
-        }),
-      );
+      const input = {
+        hasApplication: Boolean(application),
+        applicationStatus: application?.status ?? null,
+        applicationApproved: approved,
+        portalAccessed: true,
+        hasQuoteSent: sentOrBeyond.length > 0,
+        hasQuoteAccepted: accepted.length > 0 || paymentConfirmed,
+        hasProofUploaded: anyProof,
+        paymentConfirmed,
+        onWaitingList,
+        dogAllocated: dogs.length > 0,
+        goneHome,
+      };
+      setCurrentStep(deriveBuyerJourneyStep(input));
+      setApplicationApproved(approved);
+      setSkipWaitingList(isWaitlistStepSkipped(input));
     } catch (e) {
       console.error('[useBuyerJourney]', e);
       setCurrentStep(1);
+      setApplicationApproved(false);
+      setSkipWaitingList(false);
       setQuoteRevisionNote(null);
       setQuoteRevision(null);
     } finally {
@@ -132,5 +193,13 @@ export function useBuyerJourney() {
     void refresh();
   }, [refresh]);
 
-  return { currentStep, quoteRevision, quoteRevisionNote, loading, refresh };
+  return {
+    currentStep,
+    applicationApproved,
+    skipWaitingList,
+    quoteRevision,
+    quoteRevisionNote,
+    loading,
+    refresh,
+  };
 }

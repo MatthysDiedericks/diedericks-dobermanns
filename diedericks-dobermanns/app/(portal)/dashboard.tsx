@@ -50,7 +50,7 @@ export default function PortalDashboard() {
   const name = profile?.full_name?.split(' ')[0] ?? 'there';
   const { dogs, loading, error } = usePortalDogs();
   const { data: applications } = useMyApplications();
-  const { currentStep } = useBuyerJourney();
+  const { currentStep, applicationApproved, skipWaitingList } = useBuyerJourney();
   const { parents, litter, onWaitlist } = useCommittedBreeding();
   const guest = useGuestAccess();
   const isApproved = applications.some((a) => a.status === 'approved');
@@ -87,7 +87,11 @@ export default function PortalDashboard() {
       ))}
 
       <View className="mt-6 px-6">
-        <JourneyBreadcrumb currentStep={currentStep} />
+        <JourneyBreadcrumb
+          currentStep={currentStep}
+          applicationApproved={applicationApproved}
+          skipWaitingList={skipWaitingList}
+        />
       </View>
 
       <View className="mt-8 px-6">

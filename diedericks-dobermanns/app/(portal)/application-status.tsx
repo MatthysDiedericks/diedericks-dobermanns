@@ -28,7 +28,8 @@ const TONE: Record<ApplicationStatus, BadgeTone> = {
 export default function ApplicationStatusScreen() {
   const router = useRouter();
   const { data: applications, loading } = useMyApplications();
-  const { currentStep, quoteRevision, quoteRevisionNote } = useBuyerJourney();
+  const { currentStep, applicationApproved, skipWaitingList, quoteRevision, quoteRevisionNote } =
+    useBuyerJourney();
   const app = applications[0];
 
   if (!loading && !app) {
@@ -61,7 +62,11 @@ export default function ApplicationStatusScreen() {
             />
           </View>
 
-          <JourneyBreadcrumb currentStep={currentStep} />
+          <JourneyBreadcrumb
+            currentStep={currentStep}
+            applicationApproved={applicationApproved}
+            skipWaitingList={skipWaitingList}
+          />
 
           {quoteRevision || quoteRevisionNote ? (
             <Card className="mt-4">
