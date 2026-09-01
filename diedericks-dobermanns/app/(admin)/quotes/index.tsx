@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { QuoteListCard } from '@/components/finance/QuoteListCard';
+import { QuoteStatusChips, countQuoteStatuses, type QuoteStatusFilter } from '@/components/finance/QuoteStatusChips';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -28,6 +30,9 @@ export function quoteClientLabel(quote: Quote): string {
 export default function AdminQuotesScreen() {
   const router = useRouter();
   const { data: quotes, loading, refresh } = useQuotes();
+  const [status, setStatus] = useState<QuoteStatusFilter>('all');
+  const statusCounts = useMemo(() => countQuoteStatuses(quotes), [quotes]);
+  const shown = status === 'all' ? quotes : quotes.filter((q) => q.status === status);
 
   return (
     <ScreenContainer>
@@ -40,17 +45,20 @@ export default function AdminQuotesScreen() {
           fullWidth
         />
       </View>
+      <View className="px-6">
+        <QuoteStatusChips value={status} onChange={setStatus} counts={statusCounts} />
+      </View>
 
       {loading ? <CardListSkeleton count={4} /> : null}
 
       <View className="gap-3 px-6">
-        {!loading && quotes.length === 0 ? (
+        {!loading && shown.length === 0 ? (
           <EmptyState
             title="No quotes yet"
             message="Build a quote for an approved client to get started."
           />
         ) : loading ? null : (
-          quotes.map((quote) => (
+          shown.map((quote) => (
             <QuoteListCard key={quote.id} quote={quote} onChanged={() => void refresh()} />
           ))
         )}

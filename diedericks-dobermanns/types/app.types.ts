@@ -750,6 +750,14 @@ export interface Quote {
     | null;
   delivery_note?: string | null;
   quote_type?: string | null;
+  lapse_hold_until?: string | null;
+  lapse_hold_reason?: string | null;
+  lapse_hold_set_by?: string | null;
+  last_client_activity_at?: string | null;
+  reminder_first_sent_at?: string | null;
+  reminder_final_sent_at?: string | null;
+  lapsed_at?: string | null;
+  lapse_reason?: string | null;
   // Joined / derived
   client?: AppUser;
   contact?: {

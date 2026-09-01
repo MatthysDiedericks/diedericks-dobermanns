@@ -15,6 +15,8 @@ const QUOTE_SELECT =
   'notes, valid_until, converted_invoice_id, created_by, created_at, updated_at, ' +
   'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
   'delivery_decision, delivery_note, ' +
+  'lapse_hold_until, lapse_hold_reason, last_client_activity_at, ' +
+  'reminder_first_sent_at, reminder_final_sent_at, lapsed_at, lapse_reason, ' +
   'client:users!quotes_client_id_fkey(id, full_name, phone, email), ' +
   'contact:contacts!quotes_contact_id_fkey(full_name, email, phone, merged_into_contact_id), ' +
   'application:applications(email, phone), ' +

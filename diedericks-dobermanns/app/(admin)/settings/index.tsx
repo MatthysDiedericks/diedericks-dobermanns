@@ -47,6 +47,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            Quote lapse
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Reminders, expiry, and the kill switch. Validity days and lapse days are the same promise.
+          </Typography>
+          <Button
+            label="Lapse ladder"
+            variant="outline"
+            onPress={() => router.push('/(admin)/settings/quote-lapse' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Quote catalogue
           </Typography>
           <Typography variant="bodyMuted" className="mt-2">

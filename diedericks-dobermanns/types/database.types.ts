@@ -5568,9 +5568,17 @@ export type Database = {
           discount: number
           historical_client_name: string | null
           id: string
+          last_client_activity_at: string | null
           last_edit_note: string | null
           last_sent_revision: number | null
+          lapse_hold_reason: string | null
+          lapse_hold_set_by: string | null
+          lapse_hold_until: string | null
+          lapse_reason: string | null
+          lapsed_at: string | null
           notes: string | null
+          reminder_final_sent_at: string | null
+          reminder_first_sent_at: string | null
           quote_number: string
           quote_type: string
           reopen_reason: string | null
@@ -5600,9 +5608,17 @@ export type Database = {
           discount?: number
           historical_client_name?: string | null
           id?: string
+          last_client_activity_at?: string | null
           last_edit_note?: string | null
           last_sent_revision?: number | null
+          lapse_hold_reason?: string | null
+          lapse_hold_set_by?: string | null
+          lapse_hold_until?: string | null
+          lapse_reason?: string | null
+          lapsed_at?: string | null
           notes?: string | null
+          reminder_final_sent_at?: string | null
+          reminder_first_sent_at?: string | null
           quote_number: string
           quote_type?: string
           reopen_reason?: string | null
@@ -5632,9 +5648,17 @@ export type Database = {
           discount?: number
           historical_client_name?: string | null
           id?: string
+          last_client_activity_at?: string | null
           last_edit_note?: string | null
           last_sent_revision?: number | null
+          lapse_hold_reason?: string | null
+          lapse_hold_set_by?: string | null
+          lapse_hold_until?: string | null
+          lapse_reason?: string | null
+          lapsed_at?: string | null
           notes?: string | null
+          reminder_final_sent_at?: string | null
+          reminder_first_sent_at?: string | null
           quote_number?: string
           quote_type?: string
           reopen_reason?: string | null

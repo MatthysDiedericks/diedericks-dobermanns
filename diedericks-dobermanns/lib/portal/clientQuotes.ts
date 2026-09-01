@@ -99,6 +99,8 @@ export async function fetchMyClientQuoteById(
     return null;
   }
 
+  await supabase.rpc('stamp_quote_client_activity' as never, { p_quote_id: id } as never);
+
   const { data: items, error: itemsErr } = await supabase
     .from('quote_items')
     .select('description, quantity, unit_price, line_total, dog_id, litter_id, subject_kind, item_type')

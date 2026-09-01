@@ -7,6 +7,7 @@ import { QuoteResendNote } from '@/components/finance/QuoteResendNote';
 import { quoteSendLock } from '@/components/finance/QuoteDetailSendActions';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { holdChipLabel, isQuoteOnHold, reminderProgressLabel } from '@/lib/finance/quoteLapse';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { quoteBuyerDisplay, quoteListNumber } from '@/lib/finance/quoteBuyerDisplay';
@@ -111,16 +112,27 @@ export function QuoteListCard({
             <Typography variant="subtitle" numberOfLines={1} className="flex-1">
               {buyer.name}
             </Typography>
-            <Badge label={titleCase(quote.status)} tone={QUOTE_TONE[quote.status]} />
+            <Badge
+              label={quote.status === 'expired' ? 'Lapsed' : titleCase(quote.status)}
+              tone={QUOTE_TONE[quote.status]}
+            />
           </View>
           {buyer.showNoPortalMarker ? (
             <Typography variant="caption" className="mt-0.5 text-gold">
               no account yet
             </Typography>
           ) : null}
+          {isQuoteOnHold(quote.lapse_hold_until) && quote.lapse_hold_until ? (
+            <Typography variant="caption" className="mt-0.5 text-amber-300">
+              {holdChipLabel(quote.lapse_hold_until)}
+            </Typography>
+          ) : null}
           <Typography variant="caption" className="mt-0.5">
             {quoteListNumber(quote.quote_number, quote.revision)} · {quote.items?.length ?? 0}{' '}
             item{(quote.items?.length ?? 0) === 1 ? '' : 's'}
+            {quote.status === 'sent' && reminderProgressLabel(quote)
+              ? ` · ${reminderProgressLabel(quote)}`
+              : ''}
           </Typography>
           <Typography variant="label" className="mt-2">
             {formatPrice(quote.total)}

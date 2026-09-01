@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
 
 import { QuoteConvertActions } from '@/components/finance/QuoteConvertActions';
+import { QuoteLapseHoldCard } from '@/components/finance/QuoteLapseHoldCard';
 import { QuoteReopenCard } from '@/components/finance/QuoteReopenCard';
 import { QuoteResendNote } from '@/components/finance/QuoteResendNote';
 import { QuoteRevisionList } from '@/components/finance/QuoteRevisionList';
@@ -257,6 +258,13 @@ export default function QuoteDetailScreen() {
               onSelectOutstanding={goEdit}
             />
           ) : null}
+
+          <QuoteLapseHoldCard
+            quoteId={quote.id}
+            holdUntil={quote.lapse_hold_until ?? null}
+            holdReason={quote.lapse_hold_reason ?? null}
+            onSaved={() => void refresh()}
+          />
 
           <QuoteConvertActions
             quote={quote}
