@@ -21,7 +21,7 @@ export default function ContractsScreen() {
         {!loading && contracts.length === 0 ? (
           <EmptyState
             title="No contracts yet"
-            message="Documents will appear here once your reservation is confirmed."
+            message="Your agreement will appear here once a puppy has been allocated to you."
           />
         ) : (
           contracts.map((c) => {
