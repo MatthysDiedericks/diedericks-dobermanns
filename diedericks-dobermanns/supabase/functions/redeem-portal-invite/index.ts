@@ -8,6 +8,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const SITE = (Deno.env.get('SITE_URL') ?? 'https://diedericksdobermanns.com').replace(/\/$/, '');
 
+type FailReason = 'wrong-code' | 'expired' | 'used' | 'no-invite';
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -18,6 +20,40 @@ function json(data: unknown, status = 200): Response {
 async function sha256Hex(value: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function reasonFromDiagnose(row: {
+  exists?: boolean;
+  expires_at?: string | null;
+  code_redeemed_at?: string | null;
+  invited_at?: string | null;
+} | null): FailReason {
+  if (!row || row.exists === false) return 'no-invite';
+  if (row.exists !== true && !row.invited_at) return 'no-invite';
+  if (row.code_redeemed_at) return 'used';
+  if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) return 'expired';
+  return 'wrong-code';
+}
+
+function userMessage(reason: FailReason): string {
+  if (reason === 'used') return 'This code has already been used — ask Matt for a new one.';
+  if (reason === 'expired') return 'That invite has expired. Ask Matt for a new one.';
+  if (reason === 'no-invite') return 'No invite was issued for this email. Ask Matt for one.';
+  return 'That code is not right. Check the digits and try again.';
+}
+
+function logCode(reason: FailReason): string {
+  if (reason === 'used') return 'INVITE_USED';
+  if (reason === 'wrong-code') return 'INVITE_CODE_WRONG';
+  if (reason === 'no-invite') return 'INVITE_NONE_ISSUED';
+  return 'INVITE_EXPIRED';
+}
+
+function logMessage(reason: FailReason): string {
+  if (reason === 'used') return 'Invite already used';
+  if (reason === 'expired') return 'Invite has expired';
+  if (reason === 'no-invite') return 'No portal invite has been issued for this email';
+  return 'Invite code did not match';
 }
 
 serve(async (req) => {
@@ -46,45 +82,31 @@ serve(async (req) => {
   });
   const row = Array.isArray(data) ? data[0] : data;
   if (error || !row?.email) {
-    const { data: flags } = await admin.rpc('auth_invite_flags', { p_email: email });
-    const f = Array.isArray(flags) ? flags[0] : flags;
-    const { data: prior } = await admin
-      .from('portal_invites')
-      .select('expires_at, code_redeemed_at, opened_at')
-      .eq('email', email)
-      .eq('code_hash', codeHash)
-      .order('invited_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const used = Boolean(
-      prior?.code_redeemed_at || prior?.opened_at || f?.last_sign_in_at,
-    );
-    const scanner = used && Boolean(f?.email_confirmed_at && !f?.last_sign_in_at);
-    const expired =
-      !used &&
-      Boolean(prior?.expires_at && new Date(prior.expires_at as string).getTime() <= Date.now());
+    const { data: diag } = await admin.rpc('portal_invite_diagnose', { p_email: email });
+    const d = (Array.isArray(diag) ? diag[0] : diag) as {
+      exists?: boolean;
+      expires_at?: string | null;
+      code_redeemed_at?: string | null;
+    } | null;
+    const reason = reasonFromDiagnose(d);
+    if (reason !== 'no-invite') {
+      await admin.rpc('portal_invite_record_failure', {
+        p_email: email,
+        p_reason: reason,
+      });
+    }
     await admin.from('error_events').insert({
-      code: scanner ? 'INVITE_SCANNER_CONSUMED' : used ? 'INVITE_USED' : 'INVITE_EXPIRED',
+      code: logCode(reason),
       area: 'auth',
       severity: 'error',
-      message: used
-        ? 'Invite code already used'
-        : scanner
-          ? 'Invite failed after email confirmed with no sign-in (scanner-shaped)'
-          : 'Invite code missing or expired',
-      detail: { reason: scanner ? 'scanner' : used ? 'used' : expired ? 'expired' : 'missing' },
+      message: logMessage(reason),
+      detail: { reason },
       actor_role: 'anon',
       surface: 'app',
       route: '/redeem-portal-invite',
+      email_domain: email.split('@')[1] ?? null,
     });
-    return json(
-      {
-        error: used
-          ? 'This code has already been used — ask Matt for a new one.'
-          : 'That code is not right, or it has expired. Ask Matt for a new one.',
-      },
-      400,
-    );
+    return json({ error: userMessage(reason) }, 400);
   }
 
   const generated = await admin.auth.admin.generateLink({

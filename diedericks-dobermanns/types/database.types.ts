@@ -5079,9 +5079,12 @@ export type Database = {
           code_redeemed_at: string | null
           email: string
           expires_at: string
+          failed_attempts: number
           id: string
           invited_at: string
           invited_by: string
+          last_failed_at: string | null
+          last_failed_reason: string | null
           last_get_at: string | null
           last_get_ip: string | null
           last_get_user_agent: string | null
@@ -5098,9 +5101,12 @@ export type Database = {
           code_redeemed_at?: string | null
           email: string
           expires_at?: string
+          failed_attempts?: number
           id?: string
           invited_at?: string
           invited_by: string
+          last_failed_at?: string | null
+          last_failed_reason?: string | null
           last_get_at?: string | null
           last_get_ip?: string | null
           last_get_user_agent?: string | null
@@ -5117,9 +5123,12 @@ export type Database = {
           code_redeemed_at?: string | null
           email?: string
           expires_at?: string
+          failed_attempts?: number
           id?: string
           invited_at?: string
           invited_by?: string
+          last_failed_at?: string | null
+          last_failed_reason?: string | null
           last_get_at?: string | null
           last_get_ip?: string | null
           last_get_user_agent?: string | null
@@ -8110,6 +8119,15 @@ export type Database = {
         Args: { p_email: string }
         Returns: string
       }
+      portal_invite_diagnose: {
+        Args: { p_email: string }
+        Returns: {
+          code_redeemed_at: string
+          exists: boolean
+          expires_at: string
+          invited_at: string
+        }[]
+      }
       portal_invite_for_code: {
         Args: { p_code_hash: string; p_email: string }
         Returns: {
@@ -8139,6 +8157,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      portal_invite_record_failure: {
+        Args: { p_email: string; p_reason: string }
+        Returns: undefined
+      }
       portal_invite_states: {
         Args: { p_emails: string[] }
         Returns: {
@@ -8146,6 +8168,8 @@ export type Database = {
           email_confirmed_at: string
           has_account: boolean
           invited_at: string
+          last_failed_at: string
+          last_failed_reason: string
           last_get_at: string
           last_sign_in_at: string
           opened_at: string

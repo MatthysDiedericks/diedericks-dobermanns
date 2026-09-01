@@ -13,15 +13,21 @@ import { useAuth } from '@/hooks/useAuth';
 // 60s matches the "up to a minute to arrive" messaging below — stops users
 // requesting a second code (invalidating the first) before the original lands.
 const RESEND_COOLDOWN_SECS = 60;
-const WRONG_CODE_MESSAGE = "That code isn't right — check your email and try again.";
+const WRONG_CODE_MESSAGE = 'That code is not right. Check the digits and try again.';
 
 function friendlyVerifyError(message: string): string {
   const m = message.toLowerCase();
+  if (m.includes('no invite was issued')) {
+    return 'No invite was issued for this email. Ask Matt for one.';
+  }
   if (m.includes('already been used') || (m.includes('used') && !m.includes('expired'))) {
-    return 'This link has already been used — ask Matt for a new one.';
+    return 'This code has already been used — ask Matt for a new one.';
   }
   if (m.includes('expired')) {
-    return 'This link has expired. Ask Matt for a new one.';
+    return 'That invite has expired. Ask Matt for a new one.';
+  }
+  if (m.includes('not right')) {
+    return WRONG_CODE_MESSAGE;
   }
   return WRONG_CODE_MESSAGE;
 }

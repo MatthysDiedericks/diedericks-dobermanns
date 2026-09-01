@@ -10,6 +10,8 @@ export type InviteStateRow = {
   email_confirmed_at?: string | null;
   last_get_at?: string | null;
   opened_at?: string | null;
+  last_failed_at?: string | null;
+  last_failed_reason?: 'wrong-code' | 'expired' | 'used' | 'no-invite' | null;
 };
 
 export type IssueInviteResult = {
@@ -100,6 +102,75 @@ export function isInviteStuck(row: InviteStateRow | null | undefined): boolean {
   return isConfirmedNeverSignedIn(row) || isInvitedNotOpened(row);
 }
 
+export function inviteDaysWaiting(
+  row: InviteStateRow | null | undefined,
+  fallbackIso: string,
+): number {
+  const iso = row?.invited_at ?? fallbackIso;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return 0;
+  return Math.max(0, Math.floor(ms / 86_400_000));
+}
+
+export function formatCannotGetInState(row: InviteStateRow | null | undefined): string {
+  if (row?.last_failed_at && row.last_failed_reason && row.last_failed_reason !== 'no-invite') {
+    const tried = shortDate(row.last_failed_at);
+    const why =
+      row.last_failed_reason === 'wrong-code'
+        ? 'wrong code'
+        : row.last_failed_reason === 'used'
+          ? 'already used'
+          : 'expired';
+    return `Tried ${tried} — ${why}`;
+  }
+  if (isConfirmedNeverSignedIn(row)) return 'Confirmed, never signed in';
+  if (isInvitedNotOpened(row) && row?.invited_at && !row.last_get_at) {
+    return `Invited ${shortDate(row.invited_at)}, never opened`;
+  }
+  if (!row?.invited_at) return 'No invite ever issued';
+  return formatInviteState(row);
+}
+
+export type CannotGetInClient = {
+  id: string;
+  fullName: string;
+  email: string;
+  daysWaiting: number;
+  stateLabel: string;
+};
+
+export async function fetchClientsWhoCannotGetIn(): Promise<CannotGetInClient[]> {
+  const supabase = requireSupabase();
+  const { data: clients, error } = await supabase
+    .from('users')
+    .select('id, full_name, email, created_at')
+    .eq('role', 'client');
+  if (error || !clients?.length) return [];
+
+  const emails = clients.map((c) => c.email ?? '').filter(Boolean);
+  const states = await fetchInviteStates(emails);
+  if (emails.length > 0 && states.size === 0) return [];
+
+  const rows: CannotGetInClient[] = [];
+  for (const client of clients) {
+    const email = (client.email ?? '').trim().toLowerCase();
+    if (!email) continue;
+    const state = states.get(email) ?? null;
+    const cannotGetIn =
+      !state?.last_sign_in_at && (isInviteStuck(state) || !state?.invited_at);
+    if (!cannotGetIn) continue;
+    rows.push({
+      id: client.id,
+      fullName: (client.full_name ?? '').trim() || email,
+      email,
+      daysWaiting: inviteDaysWaiting(state, client.created_at),
+      stateLabel: formatCannotGetInState(state),
+    });
+  }
+  rows.sort((a, b) => b.daysWaiting - a.daysWaiting || a.fullName.localeCompare(b.fullName));
+  return rows;
+}
+
 export async function fetchInviteStates(emails: string[]): Promise<Map<string, InviteStateRow>> {
   const map = new Map<string, InviteStateRow>();
   const unique = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
@@ -168,8 +239,9 @@ export async function redeemInviteCode(
   const { data, error } = await requireSupabase().functions.invoke('redeem-portal-invite', {
     body: { email, code },
   });
-  if (error) return { error: error.message };
-  const row = data as { tokenHash?: string; error?: string };
+  const row = data as { tokenHash?: string; error?: string } | null;
   if (row?.tokenHash) return { tokenHash: row.tokenHash };
-  return { error: row?.error ?? 'That code is not right, or it has expired.' };
+  if (row?.error) return { error: row.error };
+  if (error) return { error: error.message };
+  return { error: 'That code is not right. Check the digits and try again.' };
 }
