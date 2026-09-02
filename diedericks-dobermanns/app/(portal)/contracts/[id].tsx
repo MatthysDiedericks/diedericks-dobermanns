@@ -10,6 +10,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useContracts } from '@/hooks/usePortal';
 import { useGuestAccess } from '@/hooks/useGuestAccess';
+import { BUYER_FINALISING_LINE, contractBlockers } from '@/lib/contracts/contractReadiness';
 import { signingUrl } from '@/lib/contracts/signingLink';
 import { Config } from '@/constants/config';
 
@@ -22,6 +23,14 @@ export default function ContractDetailScreen() {
   const isSigned = Boolean(
     contract?.signed_by_client || contract?.status === 'signed_client' || contract?.status === 'signed_both',
   );
+  const incomplete = contract
+    ? contractBlockers({
+        body_html: (contract as { body_html?: string | null }).body_html ?? null,
+        dog_id: contract.dog_id ?? null,
+        client_id: contract.client_id ?? null,
+        contact_id: (contract as { contact_id?: string | null }).contact_id ?? null,
+      }).length > 0
+    : false;
   const token = (contract as { esign_token?: string | null } | undefined)?.esign_token;
   const body = (contract as { body_html?: string | null } | undefined)?.body_html;
   const html = `<html><head><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -64,7 +73,11 @@ export default function ContractDetailScreen() {
               signing page as WhatsApp.
             </Typography>
           )}
-          {!isSigned && !guest.isGuest ? (
+          {incomplete && !isSigned ? (
+            <Typography variant="bodyMuted" className="mt-3">
+              {BUYER_FINALISING_LINE}
+            </Typography>
+          ) : !isSigned && !guest.isGuest ? (
             <Button label="Review & accept" onPress={() => void openSigning()} fullWidth className="mt-3" />
           ) : null}
           {guest.isGuest && !isSigned ? (

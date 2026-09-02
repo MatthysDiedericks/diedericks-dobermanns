@@ -15,6 +15,9 @@ export type ContractRow = {
   esign_token: string | null;
   esign_expires_at: string | null;
   body_html: string | null;
+  dog_id: string | null;
+  client_id: string | null;
+  contact_id: string | null;
   client?: { full_name: string } | null;
   contact?: { full_name: string } | null;
   dog?: { name: string; released_at: string | null } | null;
@@ -39,7 +42,7 @@ export function useContracts() {
         supabase
           .from('contracts')
           .select(
-            'id, created_at, signed_at, client_signed_at, client_signature_url, signed_by_client, notes, dog_id, client_id, document_url, contract_title, status, esign_token, esign_expires_at, body_html, ' +
+            'id, created_at, signed_at, client_signed_at, client_signature_url, signed_by_client, notes, dog_id, client_id, contact_id, document_url, contract_title, status, esign_token, esign_expires_at, body_html, ' +
               'client:users!contracts_client_id_fkey(full_name), ' +
               'contact:contacts!contracts_contact_id_fkey(full_name), ' +
               'dog:dogs!contracts_dog_id_fkey(name, released_at)',

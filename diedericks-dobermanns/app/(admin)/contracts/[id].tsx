@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useContracts } from '@/hooks/useContracts';
+import { ContractMissingPanel } from '@/components/contracts/ContractNotReadyChip';
 import { contractStatusChip, formatEsignExpiry, signingUrl } from '@/lib/contracts/signingLink';
 
 export default function AdminContractDetailScreen() {
@@ -37,7 +38,7 @@ export default function AdminContractDetailScreen() {
 
   async function handleSend() {
     try {
-      const res = await sendEsign(contract.id);
+      const res = await sendEsign(id!);
       if (res.link) {
         Alert.alert('Link ready — nothing emailed', res.link, [
           { text: 'Share', onPress: () => void Share.share({ message: res.link! }) },
@@ -55,6 +56,7 @@ export default function AdminContractDetailScreen() {
       <PageHeader eyebrow="Paperwork" title={contract.contract_title ?? 'Agreement'} />
       <View className="px-6 pb-4">
         <Badge label={chip.label} tone={chip.tone} />
+        <ContractMissingPanel contract={contract} />
         <Typography variant="caption" className="mt-2">
           {contract.client?.full_name ?? contract.contact?.full_name ?? '—'} · {contract.dog?.name ?? '—'}
         </Typography>

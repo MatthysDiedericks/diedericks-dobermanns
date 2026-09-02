@@ -12,6 +12,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { getSignatureSignedUrl } from '@/lib/contracts/uploadSignature';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { ContractNotReadyChip } from '@/components/contracts/ContractNotReadyChip';
 import { contractStatusChip, signingUrl } from '@/lib/contracts/signingLink';
 
 export default function ContractsScreen() {
@@ -80,6 +81,7 @@ export default function ContractsScreen() {
                   <Typography variant="subtitle">{c.contract_title ?? 'Contract'}</Typography>
                   <Badge label={chip.label} tone={chip.tone} />
                 </View>
+                <ContractNotReadyChip contract={c} />
                   <Typography variant="caption">
                     {c.client?.full_name ?? c.contact?.full_name ?? '—'} · {c.dog?.name ?? '—'} · {formatKennelDate(c.created_at)}
                   </Typography>

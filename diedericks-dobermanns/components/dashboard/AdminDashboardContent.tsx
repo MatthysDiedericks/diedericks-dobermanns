@@ -6,6 +6,7 @@ import { ErrorHealthStrip } from '@/components/admin/ErrorHealthStrip';
 import { SurfaceCard } from '@/components/admin/SurfaceCard';
 import { AwaitingProofsWidget } from '@/components/dashboard/AwaitingProofsWidget';
 import { InvitedNotOpenedWidget } from '@/components/dashboard/InvitedNotOpenedWidget';
+import { ContractsNotReadyWidget } from '@/components/dashboard/ContractsNotReadyWidget';
 import { LapsingSoonWidget } from '@/components/dashboard/LapsingSoonWidget';
 import { PendingApplicationChangesWidget } from '@/components/dashboard/PendingApplicationChangesWidget';
 import { ExpiringDocumentsWidget } from '@/components/dashboard/ExpiringDocumentsWidget';
@@ -72,6 +73,8 @@ export function AdminDashboardContent() {
       <InvitedNotOpenedWidget />
 
       <LapsingSoonWidget />
+
+      <ContractsNotReadyWidget />
 
       <ErrorHealthStrip />
 

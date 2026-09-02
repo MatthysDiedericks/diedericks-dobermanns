@@ -1,3 +1,4 @@
+import { sendBlockMessage } from '@/lib/contracts/contractReadiness';
 import { signingUrl } from '@/lib/contracts/signingLink';
 import { requireSupabase } from '@/lib/supabase';
 
@@ -159,6 +160,21 @@ export async function sendContractLink(contractId: string): Promise<{
   expiresAt?: string;
 }> {
   const supabase = requireSupabase();
+  const { data, error: loadErr } = await supabase
+    .from('contracts')
+    .select('id, body_html, dog_id, client_id, contact_id, status, signed_by_client')
+    .eq('id', contractId)
+    .maybeSingle();
+  if (loadErr) return { error: loadErr.message };
+  if (!data) return { error: 'Contract not found.' };
+  const blocked = sendBlockMessage({
+    body_html: data.body_html,
+    dog_id: data.dog_id,
+    client_id: data.client_id,
+    contact_id: data.contact_id,
+  });
+  if (blocked) return { error: blocked };
+
   const token = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
   const expires = new Date(Date.now() + 30 * 86_400_000).toISOString();
   const { error } = await supabase
