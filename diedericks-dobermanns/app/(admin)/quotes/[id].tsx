@@ -157,7 +157,7 @@ export default function QuoteDetailScreen() {
   function goEdit() {
     if (!quote) return;
     const open = () =>
-      router.push({ pathname: '/(admin)/quotes/new', params: { id: quote.id } });
+      router.push({ pathname: '/(admin)/quotes/[id]/edit', params: { id: quote.id } });
     if (quote.status === 'sent') {
       Alert.alert(
         'Editing a sent quote',

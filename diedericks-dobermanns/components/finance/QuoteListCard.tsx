@@ -54,7 +54,7 @@ export function QuoteListCard({
 
   const goEdit = () => {
     setMenuOpen(false);
-    router.push({ pathname: '/(admin)/quotes/new', params: { id: quote.id } });
+    router.push({ pathname: '/(admin)/quotes/[id]/edit', params: { id: quote.id } });
   };
 
   const sendEmail = async (note: string | null) => {
