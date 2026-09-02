@@ -94,6 +94,9 @@ export default function AdminLayout() {
         <Tabs.Screen name="contracts/index" options={{ href: null }} />
         <Tabs.Screen name="contracts/[id]" options={{ href: null }} />
         <Tabs.Screen name="documents/index" options={{ href: null }} />
+        <Tabs.Screen name="documents/unlabelled" options={{ href: null }} />
+        <Tabs.Screen name="documents/pending" options={{ href: null }} />
+        <Tabs.Screen name="media/pending" options={{ href: null }} />
         <Tabs.Screen name="quotes/index" options={{ href: null }} />
         <Tabs.Screen name="quotes/new" options={{ href: null }} />
         <Tabs.Screen name="quotes/[id]" options={{ href: null }} />
