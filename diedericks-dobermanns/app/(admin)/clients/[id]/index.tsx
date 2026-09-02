@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { InviteToPortalButton } from '@/components/admin/InviteToPortalButton';
+import { CreateSaleButton } from '@/components/contracts/CreateSaleButton';
 import { InviteStateChip } from '@/components/admin/InviteStateChip';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { RecordPaymentEntry } from '@/components/finance/RecordPaymentEntry';
@@ -40,6 +41,7 @@ export default function ClientDetailScreen() {
   const [exportingStatement, setExportingStatement] = useState(false);
   const [saleInvoiceId, setSaleInvoiceId] = useState<string | null | undefined>(undefined);
   const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
+  const [clientDogs, setClientDogs] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -55,6 +57,17 @@ export default function ClientDetailScreen() {
         const open = rows.find((r) => Number(r.amount_outstanding ?? 0) > 0);
         setSaleInvoiceId(open?.id ?? rows[0]?.id ?? null);
       });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    void requireSupabase()
+      .from('dogs')
+      .select('id, name')
+      .eq('owner_id', id)
+      .is('deceased_at', null)
+      .order('name')
+      .then(({ data }) => setClientDogs((data ?? []).map((d) => ({ id: d.id, name: d.name }))));
   }, [id]);
 
   useEffect(() => {
@@ -132,6 +145,16 @@ export default function ClientDetailScreen() {
                 initialState={inviteState}
               />
             </View>
+            {clientDogs.length > 0 ? (
+              <View className="mt-4 gap-2">
+                <Typography variant="label" className="text-gold">
+                  Sale agreement
+                </Typography>
+                {clientDogs.map((d) => (
+                  <CreateSaleButton key={d.id} dogId={d.id} label={`Agreement for ${d.name}`} />
+                ))}
+              </View>
+            ) : null}
             {saleInvoiceId !== undefined ? (
               <View className="mt-4">
                 <RecordPaymentEntry invoiceId={saleInvoiceId} />

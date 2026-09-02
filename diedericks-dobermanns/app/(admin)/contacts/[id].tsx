@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { ContactLinkedSection } from '@/components/contacts/ContactLinkedSection';
+import { CreateSaleButton } from '@/components/contracts/CreateSaleButton';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -157,6 +158,11 @@ export default function AdminContactDetailScreen() {
         <ContactLinkedSection title="Invoices" rows={links.invoices} empty="No invoices linked." />
         <ContactLinkedSection title="Contracts" rows={links.contracts} empty="No contracts linked." />
         <ContactLinkedSection title="Dogs" rows={links.dogs} empty="No dogs linked yet." />
+        {links.dogs.map((d) => (
+          <View key={`sale-${d.id}`} className="mt-2">
+            <CreateSaleButton dogId={d.id} contactId={contactId} label={`Agreement for ${d.label}`} />
+          </View>
+        ))}
         <ContactLinkedSection
           title="Applications"
           rows={links.applications}

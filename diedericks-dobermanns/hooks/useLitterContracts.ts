@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { createDraftContract, sendContractLink } from '@/lib/contracts/createDraft';
+import { bulkCreateLitterContracts } from '@/lib/contracts/createSale';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -88,18 +89,10 @@ export function useLitterContracts(litterId: string, puppyIds: string[]) {
 
   const bulkCreate = useCallback(async () => {
     if (!actorId) throw new Error('Not signed in.');
-    let created = 0;
-    let skipped = 0;
-    const errors: string[] = [];
-    for (const dogId of puppyIds) {
-      const res = await createDraftContract({ dogId, litterId, actorId });
-      if (res.skipped) skipped += 1;
-      else if (res.contractId) created += 1;
-      else errors.push(res.error ?? 'failed');
-    }
+    const res = await bulkCreateLitterContracts(litterId, actorId);
     await refresh();
-    return { created, skipped, errors };
-  }, [actorId, litterId, puppyIds, refresh]);
+    return res;
+  }, [actorId, litterId, refresh]);
 
   const sendEsign = useCallback(
     async (id: string) => {
