@@ -72,6 +72,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "parity": "node ../scripts/check-parity.mjs --strict",
+    "preflight": "node ../scripts/preflight.mjs",
     "assets": "node scripts/generate-assets.mjs",
     "build:dev": "eas build --profile development",
     "build:preview": "eas build --profile preview",

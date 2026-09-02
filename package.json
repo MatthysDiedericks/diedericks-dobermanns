@@ -1,0 +1,8 @@
+{
+  "name": "diedericks-dobermanns-workspace",
+  "private": true,
+  "scripts": {
+    "parity": "node scripts/check-parity.mjs --strict",
+    "preflight": "node scripts/preflight.mjs"
+  }
+}

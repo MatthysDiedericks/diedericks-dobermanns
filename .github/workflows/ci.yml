@@ -44,6 +44,23 @@ jobs:
       - name: Gitleaks
         run: ./gitleaks detect --source . --verbose --redact --exit-code 1
 
+  parity:
+    name: Platform parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout website
+        uses: actions/checkout@v4
+        with:
+          repository: MatthysDiedericks/diedericksdobermanns-web
+          path: diedericksdobermann-web
+          token: ${{ secrets.PARITY_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Parity check
+        run: npm run parity
+
   audit:
     name: npm audit (warning)
     runs-on: ubuntu-latest

@@ -46,12 +46,24 @@
   "webOnly": {
     "admin/finance/import": "CSV/Excel upload needs a desktop file picker and a wide preview table. Not practical on a phone.",
     "admin/finance/budget/edit": "Dense multi-row budget editing. Belongs on a large screen.",
-    "admin/settings/pricing": "Rarely changed, and changing a price is a considered act — desktop only is deliberate."
+    "admin/settings/pricing": "Rarely changed, and changing a price is a considered act — desktop only is deliberate.",
+    "admin/finance/debtors": "Shipped as DebtorsTab inside the app finance screen. A tab is not a missing feature.",
+    "admin/dogs/:id/pedigree/print": "A4 print stylesheet. Printing from a phone is not a workflow anyone has.",
+    "portal/dogs/:id/pedigree/print": "A4 print stylesheet. Printing from a phone is not a workflow anyone has.",
+    "portal/register": "The app uses native auth; this is a browser-only account-creation flow.",
+    "portal/verify-code": "The app uses native auth; email/OTP confirm is a browser-only flow.",
+    "portal/invite-expired": "Browser landing for a dead invite link. The app never opens that URL.",
+    "portal/auth/confirm": "Supabase email-confirm redirect for the website. The app handles the session natively.",
+    "admin/training/videos": "Shipped as the Videos tab on the app training dashboard. A tab is not a missing feature.",
+    "admin/finance/invoices/recurring/:id": "Pause, resume and end already live on the app recurring-invoice list. The website detail page is more room, not a missing capability."
   },
 
   "appOnly": {
     "portal/add-photos/:dogId": "Owners photograph their dog on a phone. The website equivalent is the upload control on the portal dog page, not a separate screen.",
     "admin/breeding/organogram": "Pan/zoom pedigree tree built with native gestures. A web version needs its own approach, tracked in PARITY_5.",
-    "admin/notifications": "Push notification inbox is a device concept; the website uses the same data on the dashboard."
+    "admin/notifications": "Push notification inbox is a device concept; the website uses the same data on the dashboard.",
+    "admin/settings/quote-lapse": "Shape difference, not a gap. The app gave lapse settings a dedicated screen; the website put the same fields on general Settings.",
+    "admin/finance/proofs": "Payment-proof inbox is a phone workflow. The website reviews the same rows on the dashboard and on each quote.",
+    "admin/training/:id": "Booking detail. The website TrainingManager handles it inline on the training dashboard; a phone needs its own screen."
   }
 }
