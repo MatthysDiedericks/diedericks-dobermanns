@@ -6,6 +6,7 @@ export default function AdminDogsScreen() {
       detailRoute={(id) => `/(admin)/dogs/${id}`}
       headerEyebrow="Kennel"
       headerTitle="Dogs"
+      showUnallocatedBanner
     />
   );
 }

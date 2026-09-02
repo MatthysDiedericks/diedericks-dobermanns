@@ -1,3 +1,4 @@
+import { addBuyerToLitterGroup } from '@/lib/dogs/litterGroups';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -93,6 +94,11 @@ export async function allocateDogToClient(
       status: 'confirmed',
     });
     if (error) return { error: error.message };
+  }
+
+  const group = await addBuyerToLitterGroup(dogId, clientUserId);
+  if (group.warning) {
+    console.error('[allocateDogToClient] litter group:', group.warning);
   }
 
   await writeShareAudit({

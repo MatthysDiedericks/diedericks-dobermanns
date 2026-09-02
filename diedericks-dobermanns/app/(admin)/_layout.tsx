@@ -2,11 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { Colors } from '@/constants/colors';
 import { tabBarTheme } from '@/constants/navTheme';
+import { useUnallocatedSalesCount } from '@/hooks/useUnallocatedSales';
 
 export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 
 export default function AdminLayout() {
+  const { count: unallocatedCount } = useUnallocatedSalesCount();
+
   return (
     <AuthGuard roles={['admin', 'super_admin', 'management']}>
       <Tabs screenOptions={tabBarTheme}>
@@ -21,6 +25,8 @@ export default function AdminLayout() {
           name="dogs/index"
           options={{
             title: 'Dogs',
+            tabBarBadge: unallocatedCount > 0 ? unallocatedCount : undefined,
+            tabBarBadgeStyle: { backgroundColor: Colors.gold, color: Colors.black },
             tabBarIcon: ({ color, size }) => <Ionicons name="paw" color={color} size={size} />,
           }}
         />
@@ -57,6 +63,7 @@ export default function AdminLayout() {
 
         {/* Hidden routes — reached via in-app navigation, not the tab bar. */}
         <Tabs.Screen name="dogs/new" options={{ href: null }} />
+        <Tabs.Screen name="dogs/unallocated" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/edit" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/pedigree" options={{ href: null }} />

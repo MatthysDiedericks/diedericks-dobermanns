@@ -14,6 +14,7 @@ import {
   DeceasedDogCard,
   DogDirectoryCard,
 } from '@/components/dogs/DogDirectoryCard';
+import { UnallocatedSalesBanner } from '@/components/dogs/UnallocatedSalesBanner';
 import { ExpectingBreedingRow } from '@/components/dogs/ExpectingBreedingRow';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -43,6 +44,7 @@ interface DogsDirectoryScreenProps {
   showAddButton?: boolean;
   headerEyebrow?: string;
   headerTitle?: string;
+  showUnallocatedBanner?: boolean;
 }
 
 export function DogsDirectoryScreen({
@@ -50,6 +52,7 @@ export function DogsDirectoryScreen({
   showAddButton = true,
   headerEyebrow = 'Kennel',
   headerTitle = 'Dogs',
+  showUnallocatedBanner = false,
 }: DogsDirectoryScreenProps) {
   const router = useRouter();
   const [filter, setFilter] = useState<DogFilterTab>('breeding');
@@ -97,6 +100,7 @@ export function DogsDirectoryScreen({
   return (
     <ScreenContainer scroll={false}>
       <PageHeader eyebrow={headerEyebrow} title={headerTitle} back={false} />
+      {showUnallocatedBanner ? <UnallocatedSalesBanner /> : null}
 
       <View className="mb-3 px-6">
         <Input

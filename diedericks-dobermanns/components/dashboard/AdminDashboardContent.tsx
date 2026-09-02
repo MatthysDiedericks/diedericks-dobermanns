@@ -7,6 +7,7 @@ import { SurfaceCard } from '@/components/admin/SurfaceCard';
 import { AwaitingProofsWidget } from '@/components/dashboard/AwaitingProofsWidget';
 import { ContactsWidget } from '@/components/dashboard/ContactsWidget';
 import { DocumentTriageWidget } from '@/components/dashboard/DocumentTriageWidget';
+import { UnallocatedSalesWidget } from '@/components/dashboard/UnallocatedSalesWidget';
 import { InvitedNotOpenedWidget } from '@/components/dashboard/InvitedNotOpenedWidget';
 import { ContractsNotReadyWidget } from '@/components/dashboard/ContractsNotReadyWidget';
 import { LapsingSoonWidget } from '@/components/dashboard/LapsingSoonWidget';
@@ -208,6 +209,8 @@ export function AdminDashboardContent() {
       <ContactsWidget />
 
       <DocumentTriageWidget />
+
+      <UnallocatedSalesWidget />
 
       {/* Widget 5 — Enquiries */}
       <SurfaceCard
