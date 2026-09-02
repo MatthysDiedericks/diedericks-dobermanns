@@ -279,12 +279,23 @@ export function DogOverviewTab({
       </Typography>
 
       {canEdit ? (
-        <Button
-          label="Edit Profile"
-          onPress={() => router.push(`/(admin)/dogs/${dog.id}/edit` as never)}
-          fullWidth
-          className="mb-3"
-        />
+        <>
+          <Button
+            label="Training journey"
+            onPress={() =>
+              router.push({ pathname: '/(admin)/training/journey/[dogId]', params: { dogId: dog.id } })
+            }
+            fullWidth
+            variant="outline"
+            className="mb-3"
+          />
+          <Button
+            label="Edit Profile"
+            onPress={() => router.push(`/(admin)/dogs/${dog.id}/edit` as never)}
+            fullWidth
+            className="mb-3"
+          />
+        </>
       ) : null}
     </View>
   );
