@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
@@ -23,6 +24,7 @@ const FILTERS: Array<CheckInKind | 'all'> = [
 ];
 
 export default function OwnerFollowUpsScreen() {
+  const router = useRouter();
   const [filter, setFilter] = useState<CheckInKind | 'all'>('all');
   const { items, loading, error, refresh } = useOwnerFollowUps(filter);
   const sheetRef = useRef<LogResponseSheetHandle>(null);
@@ -30,7 +32,17 @@ export default function OwnerFollowUpsScreen() {
 
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="Welfare" title="Follow-ups" />
+      <PageHeader
+        eyebrow="Welfare"
+        title="Follow-ups"
+        rightSlot={
+          <Pressable onPress={() => router.push('/(admin)/contacts' as never)}>
+            <Typography variant="label" className="text-gold">
+              Contacts
+            </Typography>
+          </Pressable>
+        }
+      />
 
       <View className="mb-3 flex-row flex-wrap gap-2 px-4">
         {FILTERS.map((k) => (

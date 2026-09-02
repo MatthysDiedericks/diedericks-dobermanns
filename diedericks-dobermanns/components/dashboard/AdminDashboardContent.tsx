@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from '
 import { ErrorHealthStrip } from '@/components/admin/ErrorHealthStrip';
 import { SurfaceCard } from '@/components/admin/SurfaceCard';
 import { AwaitingProofsWidget } from '@/components/dashboard/AwaitingProofsWidget';
+import { ContactsWidget } from '@/components/dashboard/ContactsWidget';
 import { InvitedNotOpenedWidget } from '@/components/dashboard/InvitedNotOpenedWidget';
 import { ContractsNotReadyWidget } from '@/components/dashboard/ContractsNotReadyWidget';
 import { LapsingSoonWidget } from '@/components/dashboard/LapsingSoonWidget';
@@ -202,6 +203,8 @@ export function AdminDashboardContent() {
           ))
         )}
       </SurfaceCard>
+
+      <ContactsWidget />
 
       {/* Widget 5 — Enquiries */}
       <SurfaceCard

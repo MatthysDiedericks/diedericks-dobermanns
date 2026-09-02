@@ -68,6 +68,9 @@ export default function AdminLayout() {
         <Tabs.Screen name="clients/index" options={{ href: null }} />
         <Tabs.Screen name="clients/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="clients/[id]/view-as" options={{ href: null }} />
+        <Tabs.Screen name="contacts/index" options={{ href: null }} />
+        <Tabs.Screen name="contacts/[id]" options={{ href: null }} />
+        <Tabs.Screen name="contacts/duplicates" options={{ href: null }} />
         <Tabs.Screen name="litters/new" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/register-pups" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/litter-history" options={{ href: null }} />

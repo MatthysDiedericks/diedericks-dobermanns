@@ -71,7 +71,7 @@ export function ContractMissingPanel({
       {contract.contact_id ? (
         <Pressable
           onPress={() =>
-            router.push({ pathname: '/(tabs)/contacts/[id]', params: { id: contract.contact_id! } } as never)
+            router.push({ pathname: '/(admin)/contacts/[id]', params: { id: contract.contact_id! } } as never)
           }
           className="mt-1"
         >
