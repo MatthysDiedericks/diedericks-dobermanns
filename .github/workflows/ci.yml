@@ -49,16 +49,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check PARITY_GITHUB_TOKEN
+        id: token
+        env:
+          PARITY_GITHUB_TOKEN: ${{ secrets.PARITY_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$PARITY_GITHUB_TOKEN" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Platform parity skipped"
+              echo ""
+              echo "\`PARITY_GITHUB_TOKEN\` is not set. \`GITHUB_TOKEN\` cannot read the sibling private repo, so this gate does not run in CI."
+              echo "Preflight carries the check locally until that secret is added."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "PARITY_GITHUB_TOKEN is unset — skipping CI parity. Preflight is the gate until Matt adds the secret."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Checkout website
+        if: steps.token.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           repository: MatthysDiedericks/diedericksdobermanns-web
           path: diedericksdobermann-web
-          token: ${{ secrets.PARITY_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PARITY_GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
+        if: steps.token.outputs.skip != 'true'
         with:
           node-version: 20
       - name: Parity check
+        if: steps.token.outputs.skip != 'true'
         run: npm run parity
 
   audit:

@@ -55,7 +55,15 @@
     "portal/invite-expired": "Browser landing for a dead invite link. The app never opens that URL.",
     "portal/auth/confirm": "Supabase email-confirm redirect for the website. The app handles the session natively.",
     "admin/training/videos": "Shipped as the Videos tab on the app training dashboard. A tab is not a missing feature.",
-    "admin/finance/invoices/recurring/:id": "Pause, resume and end already live on the app recurring-invoice list. The website detail page is more room, not a missing capability."
+    "admin/finance/invoices/recurring/:id": "Pause, resume and end already live on the app recurring-invoice list. The website detail page is more room, not a missing capability.",
+    "admin/marketing/pages": "Long-form marketing page writing. Drafting and previewing a page belongs on a large screen.",
+    "admin/marketing/new": "Campaign composer with page preview and a test-send. That layout is a desk job.",
+    "admin/marketing/:id": "Same campaign editor as new. Editing copy and a landing page is not a phone workflow.",
+    "admin/training/guides": "Long-form guide writing. The kennel authors these at a desk, not between runs.",
+    "admin/training/guides/new": "Blank guide editor. Same long-form decision as the guides list.",
+    "admin/training/guides/:id": "Existing guide editor. Same long-form decision as the guides list.",
+    "admin/issues": "Internal fault log. Read at a desk when something has gone wrong, not from a pocket.",
+    "admin/issues/:id": "Fault detail. Same desk-only decision as the issues list."
   },
 
   "appOnly": {
@@ -64,6 +72,11 @@
     "admin/notifications": "Push notification inbox is a device concept; the website uses the same data on the dashboard.",
     "admin/settings/quote-lapse": "Shape difference, not a gap. The app gave lapse settings a dedicated screen; the website put the same fields on general Settings.",
     "admin/finance/proofs": "Payment-proof inbox is a phone workflow. The website reviews the same rows on the dashboard and on each quote.",
-    "admin/training/:id": "Booking detail. The website TrainingManager handles it inline on the training dashboard; a phone needs its own screen."
+    "admin/training/:id": "Booking detail. The website TrainingManager handles it inline on the training dashboard; a phone needs its own screen.",
+    "portal/training/bookings": "Shape difference, not a gap. The website already books sessions on portal/training; the app split that job onto its own screen.",
+    "portal/training/request": "Shape difference, not a gap. The website already takes training requests on portal/training; the app split that job onto its own screen.",
+    "admin/settings/social": "A handful of links set once. The website keeps the same fields on general Settings.",
+    "portal/groups": "The website already surfaces group membership on the portal dashboard. A second screen is the phone's way of showing the same row.",
+    "portal/litters/:id/waitlist": "The website already shows waitlist position on the litter page. The app gave that a dedicated screen because a phone has no room beside the litter."
   }
 }
