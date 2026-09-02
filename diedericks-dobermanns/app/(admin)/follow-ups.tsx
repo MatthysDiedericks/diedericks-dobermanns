@@ -36,11 +36,18 @@ export default function OwnerFollowUpsScreen() {
         eyebrow="Welfare"
         title="Follow-ups"
         rightSlot={
-          <Pressable onPress={() => router.push('/(admin)/contacts' as never)}>
-            <Typography variant="label" className="text-gold">
-              Contacts
-            </Typography>
-          </Pressable>
+          <View className="flex-row gap-3">
+            <Pressable onPress={() => router.push('/(admin)/follow-ups/health' as never)}>
+              <Typography variant="label" className="text-gold">
+                Health
+              </Typography>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(admin)/contacts' as never)}>
+              <Typography variant="label" className="text-gold">
+                Contacts
+              </Typography>
+            </Pressable>
+          </View>
         }
       />
 
