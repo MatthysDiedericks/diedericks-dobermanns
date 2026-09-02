@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PsaDifficultyCard } from '@/components/public/PsaDifficultyCard';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -30,6 +31,7 @@ export default function AchievementsScreen() {
     <ScreenContainer>
       <PageHeader eyebrow="Our Record" title="Achievements" />
       <View className="gap-3 px-6">
+        <PsaDifficultyCard />
         {!loading && achievements.length === 0 ? (
           <EmptyState
             title="Titles coming soon"
