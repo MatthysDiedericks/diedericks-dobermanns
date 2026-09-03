@@ -25,6 +25,9 @@ export async function saveAppQuote(input: {
   applicationId: string | null;
   walkinName: string;
   walkinContact: string;
+  walkinEmail?: string;
+  walkinPhone?: string;
+  quoteType?: string;
   notes: string;
   validUntil: string;
   discountNum: number;
@@ -125,6 +128,9 @@ export async function saveAppQuote(input: {
     client_id: input.buyerKind === 'user' ? input.buyerId : null,
     contact_id: input.buyerKind === 'contact' ? input.buyerId : null,
     historical_client_name: input.buyerKind === 'walkin' ? input.walkinName.trim() || null : null,
+    walkin_email: input.walkinEmail?.trim() || null,
+    walkin_phone: input.walkinPhone?.trim() || null,
+    quote_type: input.quoteType ?? 'dog_sale',
     buyer_kind: input.buyerKind,
     buyer_id: input.buyerId,
     application_id: input.applicationId,

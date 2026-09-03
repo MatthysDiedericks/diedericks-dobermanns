@@ -9,6 +9,7 @@ import { formatPrice } from '@/lib/format';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { DraftLineItem, InvoiceListRow, InvoiceWithDetails } from '@/types/finance';
+import { defaultInvoiceTypeFromLines } from '@/lib/finance/quoteTypes';
 
 export function useInvoices(statusFilter?: string) {
   const [data, setData] = useState<InvoiceListRow[]>([]);
@@ -99,6 +100,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       total_amount,
       status: input.send ? 'sent' : 'draft',
       invoice_number: '',
+      invoice_type: defaultInvoiceTypeFromLines(input.items),
     })
     .select('id, client_id, invoice_number, total_amount')
     .single();

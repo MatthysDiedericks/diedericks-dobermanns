@@ -14,6 +14,9 @@ export type AppQuoteSnapshot = {
   buyerId: string | null;
   applicationId: string | null;
   walkinName: string;
+  walkinEmail?: string;
+  walkinPhone?: string;
+  quoteType?: string;
   notes: string;
   validUntil: string;
   discountNum: number;
@@ -94,6 +97,9 @@ export function useAppQuoteDraftSave(input: {
     input.snapshot.items,
     input.snapshot.buyerId,
     input.snapshot.walkinName,
+    input.snapshot.walkinEmail,
+    input.snapshot.walkinPhone,
+    input.snapshot.quoteType,
     input.snapshot.notes,
     input.snapshot.validUntil,
     input.snapshot.discountNum,

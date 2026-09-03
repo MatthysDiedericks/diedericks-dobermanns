@@ -13,6 +13,9 @@ export async function commitAppQuote(input: {
   buyerId: string | null;
   applicationId: string | null;
   walkinName: string;
+  walkinEmail?: string;
+  walkinPhone?: string;
+  quoteType?: string;
   notes: string;
   validUntil: string;
   discountNum: number;
@@ -42,6 +45,9 @@ export async function commitAppQuote(input: {
     applicationId: input.applicationId,
     walkinName: input.walkinName,
     walkinContact: '',
+    walkinEmail: input.walkinEmail,
+    walkinPhone: input.walkinPhone,
+    quoteType: input.quoteType,
     notes: input.notes,
     validUntil: input.validUntil,
     discountNum: input.discountNum,

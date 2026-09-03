@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
+import { RevenueTypeBadge } from '@/components/finance/RevenueTypeBadge';
+import { RevenueTypeChips } from '@/components/finance/RevenueTypeChips';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -11,6 +13,8 @@ import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useInvoices } from '@/hooks/useInvoices';
+import { useRevenueTypeFilter } from '@/hooks/useRevenueTypeFilter';
+import { matchesRevenueTypeFilter } from '@/lib/finance/quoteTypes';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
 
 const FILTERS = ['all', 'draft', 'sent', 'partially_paid', 'paid', 'overdue', 'cancelled'] as const;
@@ -19,17 +23,21 @@ export default function FinanceInvoicesListScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const { filter: typeFilter, setFilter: setTypeFilter } = useRevenueTypeFilter();
   const { data: invoices, loading } = useInvoices(filter === 'all' ? undefined : filter);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return invoices;
-    return invoices.filter(
-      (i) =>
+    return invoices.filter((i) => {
+      if (!matchesRevenueTypeFilter(i.invoice_type, typeFilter)) return false;
+      if (!q) return true;
+      return (
         i.invoice_number?.toLowerCase().includes(q) ||
-        i.client?.full_name?.toLowerCase().includes(q),
-    );
-  }, [invoices, search]);
+        i.client?.full_name?.toLowerCase().includes(q) ||
+        (i.historical_client_name ?? '').toLowerCase().includes(q)
+      );
+    });
+  }, [invoices, search, typeFilter]);
 
   return (
     <ScreenContainer>
@@ -59,6 +67,10 @@ export default function FinanceInvoicesListScreen() {
         ))}
       </ScrollView>
 
+      <View className="px-6">
+        <RevenueTypeChips value={typeFilter} onChange={setTypeFilter} />
+      </View>
+
       {loading ? <CardListSkeleton count={5} /> : null}
 
       <View className="gap-3 px-6 pb-24">
@@ -79,8 +91,11 @@ export default function FinanceInvoicesListScreen() {
                     {invoice.invoice_number}
                   </Typography>
                   <Typography variant="subtitle" className="mt-1">
-                    {invoice.client?.full_name ?? 'Unassigned'}
+                    {invoice.client?.full_name ?? invoice.historical_client_name ?? 'Unassigned'}
                   </Typography>
+                  <View className="mt-1">
+                    <RevenueTypeBadge type={invoice.invoice_type} />
+                  </View>
                   {invoice.dog?.name ? (
                     <Typography variant="caption">{invoice.dog.name}</Typography>
                   ) : null}

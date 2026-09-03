@@ -140,6 +140,17 @@ export default function FinanceReportsScreen() {
               </Typography>
             </View>
           ))}
+          {(data?.incomeByInvoiceType ?? []).length > 0 ? (
+            <View className="mt-3 pl-2">
+              <Typography variant="caption" className="mb-1 text-gold">By quote type</Typography>
+              {(data?.incomeByInvoiceType ?? []).map((line) => (
+                <View key={`type-${line.label}`} className="flex-row justify-between py-1">
+                  <Typography variant="body">{line.label}</Typography>
+                  <Typography variant="label">{formatAmount(line.amount)}</Typography>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <View className="mt-2 flex-row justify-between border-t border-gold/30 pt-2">
             <Typography variant="subtitle">Total income</Typography>
             <Typography variant="label" className="text-gold">

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Health follow-ups</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#111008; --surface:#1C1A0E; --gold:#C4A35A; --text:#F5F0E8; --subtle:#8a8378; --border:#3a3628; --danger:#c45a5a; }
+    html,body { margin:0; background:var(--bg); color:var(--text); font-family:Lato,sans-serif; }
+    .phone { width:390px; min-height:844px; padding:20px 24px; }
+    .eyebrow { font-family:Cinzel,serif; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); }
+    h1 { font-family:Cinzel,serif; font-size:22px; font-weight:400; color:var(--gold); margin:8px 0 20px; }
+    .card { background:var(--surface); border:1px solid rgba(196,163,90,.2); padding:14px 16px; margin-bottom:12px; }
+    .over { border-left:4px solid var(--danger); }
+    .gold { color:var(--gold); font-size:13px; }
+    .danger { color:var(--danger); font-size:13px; }
+    .meta { font-size:13px; color:var(--subtle); }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <p class="eyebrow">Welfare</p>
+    <h1>Health follow-ups</h1>
+    <div class="card">
+      <div class="gold">Health of our lines</div>
+      <p class="meta">5 overdue on this page. Wording is upcomingDueLabel — “Was due …”, never a second way of saying late.</p>
+    </div>
+    <div class="card over"><div>Cait</div><div class="gold">Vaccination · 5 in 1</div><div class="danger">Was due 4 February</div></div>
+    <div class="card over"><div>Cait</div><div class="gold">Vaccination · Rabies</div><div class="danger">Was due 4 February</div></div>
+    <div class="card over"><div>Cuba</div><div class="gold">Vaccination · Rabies</div><div class="danger">Was due 1 June</div></div>
+    <div class="card over"><div>Cuba</div><div class="gold">Vaccination · 5 in 1</div><div class="danger">Was due 1 June</div></div>
+    <div class="card over"><div>Chester</div><div class="gold">Vaccination · Rabies</div><div class="danger">Was due 1 June</div></div>
+  </div>
+</body>
+</html>

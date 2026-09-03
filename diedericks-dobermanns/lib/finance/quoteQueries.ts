@@ -14,7 +14,7 @@ const QUOTE_SELECT =
   'id, quote_number, client_id, contact_id, historical_client_name, application_id, status, currency, subtotal, discount, total, ' +
   'notes, valid_until, converted_invoice_id, created_by, created_at, updated_at, ' +
   'sent_at, revision, last_sent_revision, reopened_at, reopen_reason, last_edit_note, ' +
-  'delivery_decision, delivery_note, ' +
+  'delivery_decision, delivery_note, quote_type, ' +
   'lapse_hold_until, lapse_hold_reason, last_client_activity_at, ' +
   'reminder_first_sent_at, reminder_final_sent_at, lapsed_at, lapse_reason, ' +
   'client:users!quotes_client_id_fkey(id, full_name, phone, email), ' +
@@ -41,6 +41,9 @@ export interface QuoteHeaderInput {
     | 'not_applicable'
     | null;
   delivery_note?: string | null;
+  walkin_email?: string | null;
+  walkin_phone?: string | null;
+  quote_type?: string | null;
 }
 
 /** Prices line items and returns rows ready for insert, plus the subtotal. */
@@ -90,7 +93,6 @@ export async function fetchQuoteById(id: string): Promise<Quote> {
   return data as unknown as Quote;
 }
 
-/** Creates a new quote (+ line items). `quote_number` is auto-assigned by the DB trigger. */
 export async function createQuote(header: QuoteHeaderInput, items: LineItemInput[]): Promise<string> {
   const supabase = requireSupabase();
   const { rows, subtotal } = priceItems(items);
@@ -110,6 +112,8 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
     id: header.buyer_id ?? header.application_id ?? header.client_id ?? header.contact_id,
     applicationId: header.application_id,
     walkinName: header.historical_client_name,
+    walkinEmail: header.walkin_email,
+    walkinPhone: header.walkin_phone,
   });
 
   const { data, error } = await supabase
@@ -118,6 +122,7 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
       client_id: linked.clientId,
       contact_id: linked.contactId,
       historical_client_name: linked.historicalName,
+      quote_type: header.quote_type ?? 'dog_sale',
       application_id: header.application_id ?? null,
       status: header.status ?? 'draft',
       currency: 'ZAR',
@@ -142,7 +147,6 @@ export async function createQuote(header: QuoteHeaderInput, items: LineItemInput
   return quoteId;
 }
 
-/** Updates a quote's header + fully replaces its line items. Status-gated. */
 export async function updateQuote(
   id: string,
   header: QuoteHeaderInput,
@@ -153,7 +157,7 @@ export async function updateQuote(
 
   const { data: existing, error: loadErr } = await supabase
     .from('quotes')
-    .select('id, status, converted_invoice_id')
+    .select('id, status, converted_invoice_id, contact_id')
     .eq('id', id)
     .maybeSingle();
   if (loadErr) throwQuoteDb('load', loadErr);
@@ -187,6 +191,9 @@ export async function updateQuote(
     id: header.buyer_id ?? header.application_id ?? header.client_id ?? header.contact_id,
     applicationId: header.application_id,
     walkinName: header.historical_client_name,
+    walkinEmail: header.walkin_email,
+    walkinPhone: header.walkin_phone,
+    existingContactId: existing.contact_id,
   });
 
   const { error } = await supabase
@@ -195,6 +202,7 @@ export async function updateQuote(
       client_id: linked.clientId,
       contact_id: linked.contactId,
       historical_client_name: linked.historicalName,
+      quote_type: header.quote_type ?? 'dog_sale',
       application_id: header.application_id ?? null,
       status: gate.nextStatus,
       subtotal,

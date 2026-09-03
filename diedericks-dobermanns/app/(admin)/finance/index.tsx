@@ -25,7 +25,8 @@ import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 import { useExpenseAllocationBreakdown } from '@/hooks/useExpenses';
 import { useFinanceReport } from '@/hooks/useFinanceReport';
 import { useFinanceYears } from '@/hooks/useFinanceYears';
-import { buildFinanceReport, yearMonthRange } from '@/lib/finance/queries';
+import { buildFinanceReport } from '@/lib/finance/buildFinanceReport';
+import { yearMonthRange } from '@/lib/finance/queries';
 import { exportFinanceExcel } from '@/lib/finance/generateExcel';
 import { exportFinancePDF } from '@/lib/finance/generatePDF';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
@@ -130,6 +131,7 @@ export default function FinanceDashboardScreen() {
         onProofs={() => router.push('/(admin)/finance/proofs' as never)}
         onBudget={() => router.push('/(admin)/finance/budget' as never)}
         onRecurring={() => router.push('/(admin)/finance/expenses/recurring' as never)}
+        onRecurringInvoices={() => router.push('/(admin)/finance/invoices/recurring' as never)}
         onImport={() => router.push('/(admin)/finance/import' as never)}
         onExportExcel={() => void runExport('excel')}
         onExportPdf={() => void runExport('pdf')}

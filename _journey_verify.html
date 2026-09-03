@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Buyer journey verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#111008; --surface:#1C1A0E; --gold:#C4A35A; --text:#F5F0E8; --subtle:#8a8378; --border:#3a3628; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Lato,sans-serif; }
+    h1,h2 { font-family:Cinzel,serif; color:var(--gold); font-weight:400; }
+    h1 { font-size:18px; letter-spacing:.12em; text-transform:uppercase; margin:0 0 8px; }
+    h2 { font-size:13px; margin:0 0 12px; }
+    .page { padding:24px; }
+    .panel { margin-bottom:28px; }
+    nav { border:1px solid rgba(196,163,90,.2); background:var(--surface); padding:20px; border-radius:2px; }
+    .eyebrow { font-family:Cinzel,serif; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin:0 0 16px; }
+    ol { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px; }
+    li { display:flex; align-items:flex-start; gap:8px; }
+    .dot { width:28px; height:28px; border-radius:999px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:12px; flex-shrink:0; background:var(--bg); color:var(--subtle); }
+    .dot.gold { border-color:var(--gold); background:var(--gold); color:var(--bg); }
+    .dot.current { font-weight:700; box-shadow:0 0 0 1px rgba(196,163,90,.5); }
+    .label { font-size:12px; line-height:1.35; padding-top:4px; color:var(--subtle); }
+    .label.done { color:var(--text); }
+    .label.current { color:var(--gold); font-weight:700; }
+    .note { font-size:12px; color:var(--subtle); margin:8px 0 0; }
+    @media (min-width: 768px) {
+      ol.desktop { flex-direction:row; justify-content:space-between; gap:8px; }
+      ol.desktop li { flex:1; flex-direction:column; align-items:center; text-align:center; }
+      ol.desktop .label { padding-top:8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <h1>Buyer journey — live derivation</h1>
+
+  <div class="panel" id="apply-success">
+    <h2>Apply-success (public) — currentStep 1, portal not accessed</h2>
+    <div id="s-apply"></div>
+    <p class="note">Step 3 “Open your portal” is pending, not complete. This is the gap that stranded seven clients.</p>
+  </div>
+
+  <div class="panel" id="henko">
+    <h2>Henko Burden — portal dashboard — step 4</h2>
+    <div id="s-henko"></div>
+  </div>
+
+  <div class="panel" id="ronel">
+    <h2>Ronel Emmenes — live status approved — step 2 label “Application approved”</h2>
+    <div id="s-ronel"></div>
+  </div>
+
+  <div class="panel" id="jannecke">
+    <h2>Jannecke Smit — application submitted — step 2 “We review it personally”</h2>
+    <div id="s-jannecke"></div>
+  </div>
+
+  <div class="panel" id="jocelyn">
+    <h2>Jocelyn Makenzie — earned waiting-list row — step 6 reached</h2>
+    <div id="s-jocelyn"></div>
+  </div>
+
+  <div class="panel" id="skip">
+    <h2>Allocated, no earned waitlist — step 6 skipped (em-dash)</h2>
+    <div id="s-skip"></div>
+  </div>
+</div>
+<script>
+const STEPS = [
+  "Application submitted",
+  "Application approved",
+  "Open your portal",
+  "Quotation issued — pay your deposit",
+  "Upload your proof of payment",
+  "Invoiced and added to the waiting list",
+  "Your puppy is allocated",
+  "Go-home day",
+];
+function label(step, approved) {
+  if (step === 2) return approved ? "Application approved" : "We review it personally";
+  return STEPS[step - 1];
+}
+function render(el, { current, approved, skip, stacked }) {
+  const items = STEPS.map((_, i) => {
+    const step = i + 1;
+    const skipped = step === 6 && skip;
+    const done = !skipped && step < current;
+    const cur = !skipped && step === current;
+    const cls = skipped ? "" : cur ? "gold current" : done ? "gold" : "";
+    const lcls = skipped ? "" : cur ? "current" : done ? "done" : "";
+    const mark = skipped ? "—" : done ? "✓" : String(step);
+    return `<li>
+      <span class="dot ${cls}">${mark}</span>
+      <span class="label ${lcls}">${label(step, approved)}</span>
+    </li>`;
+  }).join("");
+  el.innerHTML = `<nav aria-label="Your journey">
+    <p class="eyebrow">What happens next</p>
+    <ol class="${stacked ? "" : "desktop"}">${items}</ol>
+  </nav>`;
+}
+const stacked = window.innerWidth < 768;
+render(document.getElementById("s-apply"), { current: 1, approved: false, skip: false, stacked });
+render(document.getElementById("s-henko"), { current: 4, approved: true, skip: false, stacked });
+render(document.getElementById("s-ronel"), { current: 4, approved: true, skip: false, stacked });
+render(document.getElementById("s-jannecke"), { current: 2, approved: false, skip: false, stacked });
+render(document.getElementById("s-jocelyn"), { current: 6, approved: true, skip: false, stacked });
+render(document.getElementById("s-skip"), { current: 7, approved: false, skip: true, stacked });
+</script>
+</body>
+</html>

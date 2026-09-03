@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
+import { RecurringInvoiceSourceLine } from '@/components/finance/RecurringInvoiceSourceLine';
 import { PaymentHistoryList } from '@/components/finance/PaymentHistoryList';
 import { RecordPaymentForm } from '@/components/finance/RecordPaymentForm';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -18,6 +19,8 @@ import {
   updateInvoiceStatus,
   useInvoiceDetail,
 } from '@/hooks/useInvoices';
+import { fetchRecurringInvoice } from '@/lib/finance/recurringInvoiceQueries';
+import type { RecurringInvoice } from '@/lib/finance/recurringInvoiceTypes';
 import { exportInvoicePDF } from '@/lib/finance/generatePDF';
 import { formatAmount, formatDate, humanizeItemType } from '@/lib/finance/formatters';
 
@@ -26,6 +29,16 @@ export default function FinanceInvoiceDetailScreen() {
   const { invoice, loading, refresh } = useInvoiceDetail(id ?? '');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [schedule, setSchedule] = useState<RecurringInvoice | null>(null);
+
+  useEffect(() => {
+    const sid = invoice?.recurring_invoice_id;
+    if (!sid) {
+      setSchedule(null);
+      return;
+    }
+    void fetchRecurringInvoice(sid).then(setSchedule).catch(() => setSchedule(null));
+  }, [invoice?.recurring_invoice_id]);
 
   const handleVoid = async () => {
     if (!invoice) return;
@@ -76,6 +89,14 @@ export default function FinanceInvoiceDetailScreen() {
             {invoice.invoice_number}
           </Typography>
           <InvoiceStatusBadge status={invoice.status} />
+          {schedule ? (
+            <RecurringInvoiceSourceLine
+              scheduleId={schedule.id}
+              description={schedule.description}
+              interval={schedule.recurrence_interval}
+              invoiceType={schedule.invoice_type}
+            />
+          ) : null}
           <Typography variant="caption" className="mt-3">
             Issue {formatDate(invoice.issue_date)} · Due {formatDate(invoice.due_date)}
           </Typography>

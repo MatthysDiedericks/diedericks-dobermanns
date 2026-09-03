@@ -68,8 +68,7 @@ export async function renderSaleContract(input: {
     .from('dogs')
     .select(
       `id, name, sex, colour, date_of_birth, microchip_number, registration_number,
-       programme_tier, litter_id, father_id, mother_id, price,
-       litter:litter_id(name, litter_letter)`,
+       programme_tier, litter_id, father_id, mother_id, price`,
     )
     .eq('id', input.dogId)
     .maybeSingle();
@@ -101,7 +100,15 @@ export async function renderSaleContract(input: {
     fatherName = parents?.find((p) => p.id === dog.father_id)?.name ?? null;
     motherName = parents?.find((p) => p.id === dog.mother_id)?.name ?? null;
   }
-  const litter = dog.litter as { name: string | null; litter_letter: string | null } | null;
+  let litter: { name: string | null; litter_letter: string | null } | null = null;
+  if (dog.litter_id) {
+    const { data: litterRow } = await supabase
+      .from('litters')
+      .select('name, litter_letter')
+      .eq('id', dog.litter_id)
+      .maybeSingle();
+    litter = litterRow ?? null;
+  }
 
   let quoteNumber = '—';
   let invoiceNumber = '—';

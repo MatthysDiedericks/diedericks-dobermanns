@@ -87,6 +87,9 @@ export function formFromQuote(quote: Quote) {
     deliveryDecision: quote.delivery_decision ?? null,
     deliveryNote: quote.delivery_note ?? '',
     walkinName: quote.historical_client_name ?? '',
+    walkinEmail: quote.contact?.email ?? '',
+    walkinPhone: quote.contact?.phone ?? '',
+    quoteType: quote.quote_type ?? 'dog_sale',
   };
 }
 

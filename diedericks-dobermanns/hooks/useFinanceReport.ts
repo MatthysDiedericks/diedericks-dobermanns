@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { buildFinanceReport, buildMonthlySummary } from '@/lib/finance/buildFinanceReport';
 import {
-  buildFinanceReport,
   computeKpis,
   fetchIncomeByItemType,
   fetchInvoicesInRange,
   fetchExpensesInRange,
-  buildMonthlySummary,
 } from '@/lib/finance/queries';
 import { expenseGross } from '@/lib/finance/expenseGross';
 import type { FinanceKpis, FinanceLine, FinanceReportData, MonthlySummary } from '@/types/finance';

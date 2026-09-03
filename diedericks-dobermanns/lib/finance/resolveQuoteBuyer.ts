@@ -1,3 +1,4 @@
+import { findOrCreateQuoteContact } from '@/lib/finance/findOrCreateQuoteContact';
 import { requireSupabase } from '@/lib/supabase';
 
 export type QuoteBuyerLinks = {
@@ -53,20 +54,26 @@ export async function findOrCreateContactFromApplication(applicationId: string):
 }
 
 /**
- * Live buyer → confirmed account, else a contacts row. Never a typed name.
- * Walk-in names are only for the explicit "not in the list" path.
+ * Live buyer → confirmed account, else a contacts row. New quotes never write
+ * historical_client_name — walk-ins become a contacts row (create-or-find by email).
  */
 export async function resolveQuoteBuyer(input: {
   kind: 'applicant' | 'user' | 'contact' | 'walkin';
   id?: string | null;
   applicationId?: string | null;
   walkinName?: string | null;
+  walkinEmail?: string | null;
+  walkinPhone?: string | null;
+  existingContactId?: string | null;
 }): Promise<QuoteBuyerLinks> {
   const supabase = requireSupabase();
   if (input.kind === 'walkin') {
-    const name = input.walkinName?.trim() || null;
-    if (!name) throw new Error('Enter a name for a buyer who is not in the list.');
-    return { clientId: null, contactId: null, historicalName: name };
+    return findOrCreateQuoteContact({
+      name: input.walkinName ?? '',
+      email: input.walkinEmail,
+      phone: input.walkinPhone,
+      existingContactId: input.existingContactId,
+    });
   }
 
   if (input.kind === 'user' && input.id) {

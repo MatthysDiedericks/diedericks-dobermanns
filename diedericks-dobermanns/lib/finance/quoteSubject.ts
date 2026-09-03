@@ -147,6 +147,35 @@ export function subjectStatement(input: {
   return null;
 }
 
+export function quoteDogStatements(
+  items: {
+    item_type: string;
+    subject_kind?: QuoteSubjectKind | null;
+    dog_id?: string | null;
+    litter_id?: string | null;
+    programme_tier?: string | null;
+  }[],
+  dogs: QuotePuppyOption[],
+  litters: QuoteLitterOption[],
+  tiers: { tier_key: string; display_label: string }[],
+): string[] {
+  return items
+    .filter((it) => it.item_type === 'dog')
+    .map((it) => {
+      const kind = it.subject_kind ?? (it.dog_id ? 'dog' : it.litter_id ? 'litter' : 'unallocated');
+      return subjectStatement({
+        kind,
+        puppy: it.dog_id ? dogs.find((d) => d.id === it.dog_id) ?? null : null,
+        litter: it.litter_id ? litters.find((l) => l.id === it.litter_id) ?? null : null,
+        tierLabel:
+          (it.programme_tier
+            ? tiers.find((t) => t.tier_key === it.programme_tier)?.display_label
+            : null) ?? programmeTierLabel(it.programme_tier, null),
+      });
+    })
+    .filter((s): s is string => Boolean(s));
+}
+
 export function defaultSubjectKind(input: {
   specificDogId?: string | null;
   litterInterestId?: string | null;

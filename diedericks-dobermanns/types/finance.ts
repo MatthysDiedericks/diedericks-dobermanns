@@ -45,6 +45,9 @@ export interface Invoice {
   currency: string;
   created_at: string;
   updated_at: string;
+  invoice_type?: string | null;
+  recurring_invoice_id?: string | null;
+  historical_client_name?: string | null;
 }
 
 export interface InvoiceItem {
@@ -153,6 +156,7 @@ export interface FinanceReportData {
   netProfit: number;
   profitMargin: number;
   monthlySummary: MonthlySummary[];
+  incomeByInvoiceType?: FinanceLine[];
   invoices: Array<{
     invoice_number: string;
     clientName: string;

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Parity close-the-17 — real records</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#111008; --surface:#1C1A0E; --gold:#C4A35A; --text:#F5F0E8; --subtle:#8a8378; --border:#3a3628; --danger:#c45a5a; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#0a0906; color:var(--text); font-family:Lato,sans-serif; }
+    .row { display:flex; flex-wrap:wrap; gap:24px; padding:24px; }
+    .phone { width:390px; min-height:844px; background:var(--bg); border:1px solid var(--border); padding:20px 24px 32px; }
+    .desk { width:960px; min-height:720px; background:var(--bg); border:1px solid var(--border); padding:32px 40px; }
+    .eyebrow { font-family:Cinzel,serif; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin:0 0 8px; }
+    h1 { font-family:Cinzel,serif; font-size:22px; font-weight:400; color:var(--gold); margin:0 0 20px; }
+    .btn { display:inline-block; border:1px solid var(--gold); color:var(--gold); padding:8px 12px; font-size:13px; margin-bottom:16px; }
+    .card { background:var(--surface); border:1px solid rgba(196,163,90,.2); padding:14px 16px; margin-bottom:12px; }
+    .empty { border:1px dashed var(--border); padding:28px 16px; text-align:center; color:var(--subtle); }
+    .label { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin:14px 0 6px; }
+    textarea, input, select { width:100%; background:#111008; border:1px solid var(--border); color:var(--text); padding:10px; font-family:Lato,sans-serif; }
+    textarea { min-height:72px; }
+    .meta { font-size:13px; color:var(--subtle); }
+    .gold { color:var(--gold); }
+    .danger { color:var(--danger); }
+    .save { margin-top:16px; background:var(--gold); color:#111008; border:0; padding:10px 16px; font-family:Cinzel,serif; letter-spacing:.08em; text-transform:uppercase; }
+    .note { font-size:12px; color:var(--subtle); margin-top:16px; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <section class="phone" id="journey">
+      <p class="eyebrow">Training</p>
+      <h1>Hunter-King — Journey</h1>
+      <div class="btn">+ New entry</div>
+      <div class="empty">
+        <strong>No journey entries yet</strong>
+        <p>Hunter-King is a real kennel dog (930e1c41-807d-4e3a-9e4a-50a18c008acd). training_logs for this dog is empty — no VERIFY rows were created.</p>
+      </div>
+    </section>
+
+    <section class="phone" id="health">
+      <p class="eyebrow">Welfare</p>
+      <h1>Health follow-ups</h1>
+      <div class="card">
+        <div class="gold">Health of our lines</div>
+        <p class="meta">5 overdue. Wording matches the dog health calendar — never a second way of saying late.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger)">
+        <div>Cait</div>
+        <div class="gold meta">Vaccination · 5 in 1</div>
+        <div class="danger meta">Was due 4 February</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger)">
+        <div>Cait</div>
+        <div class="gold meta">Vaccination · Rabies</div>
+        <div class="danger meta">Was due 4 February</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger)">
+        <div>Cuba</div>
+        <div class="gold meta">Vaccination · Rabies</div>
+        <div class="danger meta">Was due 1 June</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger)">
+        <div>Cuba</div>
+        <div class="gold meta">Vaccination · 5 in 1</div>
+        <div class="danger meta">Was due 1 June</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger)">
+        <div>Chester</div>
+        <div class="gold meta">Vaccination · Rabies</div>
+        <div class="danger meta">Was due 1 June</div>
+      </div>
+    </section>
+
+    <section class="desk" id="step">
+      <p class="eyebrow">Breeding</p>
+      <h1>Edit step</h1>
+      <p class="meta" style="margin-top:-12px;margin-bottom:20px;">Line A — Dharka succession</p>
+      <p><a class="gold" href="#">← Line A — Dharka succession</a></p>
+      <div class="card">
+        <h2 class="eyebrow">Edit step</h2>
+        <div class="label">What happens</div>
+        <textarea>Carry out artificial insemination of Cleopatra to Dharka, and record the first mating date.</textarea>
+        <div class="label">Status</div>
+        <select><option>In progress</option></select>
+        <div class="label">Kind of step</div>
+        <select><option>Other</option></select>
+        <button class="save" type="button">Save step</button>
+        <p class="note">Real plan 40e7e029-284f-42f8-a5d6-5d615197477a · step c941ac06-d048-4974-bcac-678a99317f43 · status in_progress. This HTML mirrors the dedicated /admin/breeding/plans/:id/step URL.</p>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

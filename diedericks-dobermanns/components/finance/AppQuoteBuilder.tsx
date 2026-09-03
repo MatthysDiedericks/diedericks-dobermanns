@@ -1,23 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, View, type TextInput } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, type TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { AppQuoteSaveFooter } from '@/components/finance/AppQuoteSaveFooter';
+import { AppQuoteBuilderView } from '@/components/finance/AppQuoteBuilderView';
 import { CatalogueItemPicker } from '@/components/finance/CatalogueItemPicker';
-import { DeliveryDecisionCard } from '@/components/finance/DeliveryDecisionCard';
-import { LineItemList } from '@/components/finance/LineItemList';
 import { type DraftLineItem } from '@/components/finance/LineItemRow';
-import { QuoteBuyerPicker } from '@/components/finance/QuoteBuyerPicker';
-import { QuoteDraftOfferBanner } from '@/components/finance/QuoteDraftOfferBanner';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Typography } from '@/components/ui/Typography';
 import { useQuoteBuilderData } from '@/hooks/useQuoteBuilderData';
 import type { CatalogueItem, DeliveryDecision } from '@/lib/finance/catalogue';
 import { fetchActiveCatalogueItems } from '@/lib/finance/catalogueQueries';
 import {
-  blankOtherLine,
   formFromQuote,
   initialBuyerKey,
   nextQuoteLineKey,
@@ -28,12 +21,12 @@ import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { parseBuyerKey } from '@/lib/finance/quoteBuyerOptions';
 import { lineFromCatalogue, syncDeliveryLine } from '@/lib/finance/quoteDelivery';
 import { commitAppQuote } from '@/lib/finance/commitAppQuote';
+import { defaultQuoteTypeFromLines, parseRevenueType, type RevenueType } from '@/lib/finance/quoteTypes';
 import { useAppQuoteDeliveryAuto } from '@/lib/finance/useAppQuoteDeliveryAuto';
 import { useAppQuoteDraftOffer } from '@/lib/finance/useAppQuoteDraftOffer';
 import { useAppQuoteDraftSave } from '@/lib/finance/useAppQuoteDraftSave';
 import { collectQuoteOutstanding, type QuoteOutstandingItem } from '@/lib/finance/quoteOutstanding';
-import { subjectStatement } from '@/lib/finance/quoteSubject';
-import { programmeTierLabel } from '@/lib/dogs/programmeTier';
+import { quoteDogStatements } from '@/lib/finance/quoteSubject';
 import type { Quote } from '@/types/app.types';
 
 export type { QuotePrefill };
@@ -55,6 +48,10 @@ export function AppQuoteBuilder({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedBuyer, setSelectedBuyer] = useState(() => initialBuyerKey(initial, prefill));
   const [walkinName, setWalkinName] = useState(prefill?.walkinName ?? initial?.historical_client_name ?? '');
+  const [walkinEmail, setWalkinEmail] = useState(initial?.contact?.email ?? '');
+  const [walkinPhone, setWalkinPhone] = useState(initial?.contact?.phone ?? '');
+  const [quoteType, setQuoteType] = useState<RevenueType>(() => parseRevenueType(initial?.quote_type));
+  const [typeTouched, setTypeTouched] = useState(Boolean(initial?.quote_type));
   const [items, setItems] = useState<DraftLineItem[]>(() => {
     const seeded = seedAppQuoteItems(initial, prefill?.application);
     const decision = initial?.delivery_decision ?? null;
@@ -86,14 +83,8 @@ export function AppQuoteBuilder({
   });
 
   useAppQuoteDeliveryAuto(
-    items,
-    dogs,
-    catalogue,
-    Boolean(initial?.delivery_decision),
-    setDeliveryDecision,
-    setDeliveryReason,
-    setExportPrompt,
-    setItems,
+    items, dogs, catalogue, Boolean(initial?.delivery_decision),
+    setDeliveryDecision, setDeliveryReason, setExportPrompt, setItems,
   );
 
   const editGate = initial
@@ -104,48 +95,28 @@ export function AppQuoteBuilder({
     void fetchActiveCatalogueItems().then(setCatalogue).catch(() => setCatalogue([]));
   }, []);
 
-  const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+  useEffect(() => {
+    if (!typeTouched) setQuoteType(defaultQuoteTypeFromLines(items));
+  }, [items, typeTouched]);
+
   const discountNum = Number(discount) || 0;
-  const total = Math.max(subtotal - discountNum, 0);
+  const total = Math.max(items.reduce((s, it) => s + it.quantity * it.unit_price, 0) - discountNum, 0);
   const { saveState, persistNow, cancelPending } = useAppQuoteDraftSave({
     enabled: !submitting && !isSentEdit && !draftOffer,
     quoteId,
     setQuoteId,
     initial,
     snapshot: {
-      items,
-      buyerKind: parsed.kind,
-      buyerId: parsed.id || null,
+      items, buyerKind: parsed.kind, buyerId: parsed.id || null,
       applicationId: parsed.kind === 'applicant' ? parsed.id : applicationId,
-      walkinName,
-      notes,
-      validUntil,
-      discountNum,
-      deliveryDecision,
-      deliveryNote,
-      changeNote,
-      waitlistId: prefill?.waitlistId,
-      total,
+      walkinName, walkinEmail, walkinPhone, quoteType, notes, validUntil, discountNum,
+      deliveryDecision, deliveryNote, changeNote, waitlistId: prefill?.waitlistId, total,
     },
     supersededDraftId: supersededId,
     onError: setFormError,
   });
   const outstanding = collectQuoteOutstanding(items, deliveryDecision);
-  const statements = items
-    .filter((it) => it.item_type === 'dog')
-    .map((it) => {
-      const kind = it.subject_kind ?? (it.dog_id ? 'dog' : it.litter_id ? 'litter' : 'unallocated');
-      return subjectStatement({
-        kind,
-        puppy: it.dog_id ? dogs.find((d) => d.id === it.dog_id) ?? null : null,
-        litter: it.litter_id ? litters.find((l) => l.id === it.litter_id) ?? null : null,
-        tierLabel:
-          (it.programme_tier
-            ? tiers.find((t) => t.tier_key === it.programme_tier)?.display_label
-            : null) ?? programmeTierLabel(it.programme_tier, null),
-      });
-    })
-    .filter((s): s is string => Boolean(s));
+  const statements = quoteDogStatements(items, dogs, litters, tiers);
 
   function focusOutstanding(item: QuoteOutstandingItem) {
     if (item.target === 'description' && item.lineKey) descRefs.current[item.lineKey]?.focus();
@@ -166,22 +137,11 @@ export function AppQuoteBuilder({
     setFormError(null);
     try {
       const res = await commitAppQuote({
-        initial,
-        quoteId,
-        items,
-        selectedBuyer,
-        buyerKind: parsed.kind,
+        initial, quoteId, items, selectedBuyer, buyerKind: parsed.kind,
         buyerId: parsed.id || null,
         applicationId: parsed.kind === 'applicant' ? parsed.id : applicationId,
-        walkinName,
-        notes,
-        validUntil,
-        discountNum,
-        deliveryDecision,
-        deliveryNote,
-        changeNote,
-        waitlistId: prefill?.waitlistId,
-        total,
+        walkinName, walkinEmail, walkinPhone, quoteType, notes, validUntil, discountNum,
+        deliveryDecision, deliveryNote, changeNote, waitlistId: prefill?.waitlistId, total,
       });
       setQuoteId(res.quoteId);
       if (res.toWaitlist) {
@@ -202,91 +162,82 @@ export function AppQuoteBuilder({
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow="Sales" title={initial ? 'Edit Quote' : 'New Quote'} />
-        <View className="gap-4 px-6 pb-8">
-          {draftOffer ? (
-            <QuoteDraftOfferBanner
-              offer={draftOffer}
-              onResume={() => {
-                void resume().then((loaded) => {
-                  if (!loaded) return;
-                  const next = formFromQuote(loaded);
-                  setQuoteId(next.quoteId);
-                  setItems(next.items);
-                  setDiscount(next.discount);
-                  setNotes(next.notes);
-                  setValidUntil(next.validUntil);
-                  setDeliveryDecision(next.deliveryDecision);
-                  setDeliveryNote(next.deliveryNote);
-                  setWalkinName(next.walkinName);
-                });
-              }}
-              onStartFresh={startFresh}
-            />
-          ) : null}
-          {prefill?.application?.priceSourceLabel ? (
-            <Typography variant="caption" className="text-gold">{prefill.application.priceSourceLabel}</Typography>
-          ) : null}
-          <QuoteBuyerPicker
-            options={buyers}
-            selectedKey={selectedBuyer}
-            onSelect={setSelectedBuyer}
-            walkinName={walkinName}
-            onWalkinChange={setWalkinName}
-          />
-          <LineItemList
-            items={items}
-            puppies={dogs}
-            litters={litters}
-            tiers={tiers}
-            applicationTier={prefill?.application?.applicationTier ?? null}
-            onUpdate={(key, patch) => setItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)))}
-            onRemove={(key) => setItems((prev) => prev.filter((it) => it.key !== key))}
-            onAdd={() => setItems((prev) => [...prev, blankOtherLine()])}
-            onAddCatalogue={() => setPickerOpen(true)}
-            bindDescription={(key, el) => {
-              descRefs.current[key] = el;
-            }}
-            bindPrice={(key, el) => {
-              priceRefs.current[key] = el;
-            }}
-          />
-          <DeliveryDecisionCard
-            decision={deliveryDecision}
-            note={deliveryNote}
-            reason={deliveryReason}
-            exportPrompt={exportPrompt}
-            onDecisionChange={(d) => {
-              setDeliveryDecision(d);
-              setItems((prev) => syncDeliveryLine(prev, d, catalogue, nextQuoteLineKey));
-            }}
-            onNoteChange={setDeliveryNote}
-            onDismissExportPrompt={() => setExportPrompt(null)}
-          />
-          <Input label="Discount (ZAR)" keyboardType="phone-pad" value={discount} onChangeText={setDiscount} />
-          <Input label="Valid until (YYYY-MM-DD)" value={validUntil} onChangeText={setValidUntil} />
-          <Input label="Notes" value={notes} onChangeText={setNotes} multiline className="h-24" />
-          {initial ? (
-            <Input
-              label={initial.status === 'sent' ? 'What changed (required)' : 'Edit note (optional)'}
-              value={changeNote}
-              onChangeText={setChangeNote}
-              multiline
-              className="h-20"
-            />
-          ) : null}
-          <AppQuoteSaveFooter
-            outstanding={outstanding}
-            onSelectOutstanding={focusOutstanding}
-            formError={formError}
-            saveState={saveState}
-            onRetry={() => void persistNow('retry')}
-            total={total}
-            statements={statements}
-            canSave={editGate.ok}
-            submitting={submitting}
-            onSave={() => void onSave()}
-          />
-        </View>
+        <AppQuoteBuilderView
+          draftOffer={draftOffer}
+          onResume={() => {
+            void resume().then((loaded) => {
+              if (!loaded) return;
+              const next = formFromQuote(loaded);
+              setQuoteId(next.quoteId);
+              setItems(next.items);
+              setDiscount(next.discount);
+              setNotes(next.notes);
+              setValidUntil(next.validUntil);
+              setDeliveryDecision(next.deliveryDecision);
+              setDeliveryNote(next.deliveryNote);
+              setWalkinName(next.walkinName);
+              setWalkinEmail(next.walkinEmail);
+              setWalkinPhone(next.walkinPhone);
+              if (next.quoteType) {
+                setQuoteType(parseRevenueType(next.quoteType));
+                setTypeTouched(true);
+              }
+            });
+          }}
+          onStartFresh={startFresh}
+          priceSourceLabel={prefill?.application?.priceSourceLabel}
+          buyers={buyers}
+          selectedBuyer={selectedBuyer}
+          setSelectedBuyer={setSelectedBuyer}
+          walkinName={walkinName}
+          setWalkinName={setWalkinName}
+          walkinEmail={walkinEmail}
+          setWalkinEmail={setWalkinEmail}
+          walkinPhone={walkinPhone}
+          setWalkinPhone={setWalkinPhone}
+          quoteType={quoteType}
+          onQuoteType={(next) => {
+            setTypeTouched(true);
+            setQuoteType(next);
+          }}
+          items={items}
+          setItems={setItems}
+          dogs={dogs}
+          litters={litters}
+          tiers={tiers}
+          applicationTier={prefill?.application?.applicationTier ?? null}
+          onAddCatalogue={() => setPickerOpen(true)}
+          descRefs={descRefs}
+          priceRefs={priceRefs}
+          deliveryDecision={deliveryDecision}
+          deliveryNote={deliveryNote}
+          deliveryReason={deliveryReason}
+          exportPrompt={exportPrompt}
+          catalogue={catalogue}
+          setDeliveryDecision={setDeliveryDecision}
+          setDeliveryNote={setDeliveryNote}
+          setExportPrompt={setExportPrompt}
+          discount={discount}
+          setDiscount={setDiscount}
+          validUntil={validUntil}
+          setValidUntil={setValidUntil}
+          notes={notes}
+          setNotes={setNotes}
+          initial={Boolean(initial)}
+          sentEdit={Boolean(initial?.status === 'sent')}
+          changeNote={changeNote}
+          setChangeNote={setChangeNote}
+          outstanding={outstanding}
+          onSelectOutstanding={focusOutstanding}
+          formError={formError}
+          saveState={saveState}
+          onRetry={() => void persistNow('retry')}
+          total={total}
+          statements={statements}
+          canSave={editGate.ok}
+          submitting={submitting}
+          onSave={() => void onSave()}
+        />
       </ScreenContainer>
       <CatalogueItemPicker
         visible={pickerOpen}

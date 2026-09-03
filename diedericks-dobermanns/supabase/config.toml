@@ -3,3 +3,6 @@ project_id = "nlmwxodvquwbjinhhbmr"
 [functions.redeem-portal-invite]
 verify_jwt = false
 
+[functions.generate-recurring-invoices]
+verify_jwt = false
+

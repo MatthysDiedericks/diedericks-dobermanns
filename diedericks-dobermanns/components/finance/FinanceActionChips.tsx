@@ -10,6 +10,7 @@ interface FinanceActionChipsProps {
   onProofs: () => void;
   onBudget: () => void;
   onRecurring: () => void;
+  onRecurringInvoices: () => void;
   onImport: () => void;
   onExportExcel: () => void;
   onExportPdf: () => void;
@@ -22,6 +23,7 @@ export function FinanceActionChips({
   onProofs,
   onBudget,
   onRecurring,
+  onRecurringInvoices,
   onImport,
   onExportExcel,
   onExportPdf,
@@ -41,7 +43,10 @@ export function FinanceActionChips({
         <Typography variant="caption">Budget</Typography>
       </Pressable>
       <Pressable onPress={onRecurring} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
-        <Typography variant="caption">Recurring</Typography>
+        <Typography variant="caption">Recurring expenses</Typography>
+      </Pressable>
+      <Pressable onPress={onRecurringInvoices} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
+        <Typography variant="caption">Recurring invoices</Typography>
       </Pressable>
       <Pressable onPress={onImport} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
         <Typography variant="caption">Import</Typography>
