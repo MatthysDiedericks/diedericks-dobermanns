@@ -14,6 +14,7 @@ import {
 export function InvitedNotOpenedWidget() {
   const router = useRouter();
   const [clients, setClients] = useState<CannotGetInClient[]>([]);
+  const [failed, setFailed] = useState(false);
   const [counts, setCounts] = useState({ unopened: 0, locked: 0 });
 
   const load = useCallback(async () => {
@@ -23,10 +24,12 @@ export function InvitedNotOpenedWidget() {
         countUnopenedInvites(),
         countConfirmedNeverSignedIn(),
       ]);
-      setClients(list);
+      setFailed(list.inviteStatesFailed);
+      setClients(list.clients);
       setCounts({ unopened, locked });
     } catch {
       setClients([]);
+      setFailed(true);
       setCounts({ unopened: 0, locked: 0 });
     }
   }, []);
@@ -39,6 +42,11 @@ export function InvitedNotOpenedWidget() {
 
   return (
     <SurfaceCard title="Clients who cannot get in" badge={badge} badgeTone="gold">
+      {failed ? (
+        <Typography variant="caption" className="text-gold">
+          Invite status could not be loaded. The list below is incomplete.
+        </Typography>
+      ) : null}
       {clients.length === 0 ? (
         <Typography variant="caption" className="text-subtle">
           Nobody is stuck. Every client with an account has signed in.

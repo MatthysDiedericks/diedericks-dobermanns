@@ -1,3 +1,4 @@
+import { fetchInviteStates } from '@/lib/portal/fetchInviteStates';
 import { requireSupabase } from '@/lib/supabase';
 
 export type InviteSource = 'application' | 'waiting_list' | 'client' | 'member';
@@ -139,17 +140,23 @@ export type CannotGetInClient = {
   stateLabel: string;
 };
 
-export async function fetchClientsWhoCannotGetIn(): Promise<CannotGetInClient[]> {
+export async function fetchClientsWhoCannotGetIn(): Promise<{
+  clients: CannotGetInClient[];
+  inviteStatesFailed: boolean;
+}> {
   const supabase = requireSupabase();
   const { data: clients, error } = await supabase
     .from('users')
     .select('id, full_name, email, created_at')
     .eq('role', 'client');
-  if (error || !clients?.length) return [];
+  if (error || !clients?.length) return { clients: [], inviteStatesFailed: false };
 
   const emails = clients.map((c) => c.email ?? '').filter(Boolean);
   const states = await fetchInviteStates(emails);
-  if (emails.length > 0 && states.size === 0) return [];
+  if (states.failed) return { clients: [], inviteStatesFailed: true };
+  if (emails.length > 0 && states.size === 0) {
+    return { clients: [], inviteStatesFailed: false };
+  }
 
   const rows: CannotGetInClient[] = [];
   for (const client of clients) {
@@ -168,22 +175,10 @@ export async function fetchClientsWhoCannotGetIn(): Promise<CannotGetInClient[]>
     });
   }
   rows.sort((a, b) => b.daysWaiting - a.daysWaiting || a.fullName.localeCompare(b.fullName));
-  return rows;
+  return { clients: rows, inviteStatesFailed: false };
 }
 
-export async function fetchInviteStates(emails: string[]): Promise<Map<string, InviteStateRow>> {
-  const map = new Map<string, InviteStateRow>();
-  const unique = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
-  if (unique.length === 0) return map;
-  const { data, error } = await requireSupabase().rpc('portal_invite_states', {
-    p_emails: unique,
-  });
-  if (error) return map;
-  for (const row of (data ?? []) as InviteStateRow[]) {
-    map.set(row.email.toLowerCase(), row);
-  }
-  return map;
-}
+export { fetchInviteStates, type InviteStateMap } from '@/lib/portal/fetchInviteStates';
 
 export async function countUnopenedInvites(): Promise<number> {
   const { data, error } = await requireSupabase().rpc('count_unopened_portal_invites');

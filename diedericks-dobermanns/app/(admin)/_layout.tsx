@@ -72,6 +72,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="breeding-stock" options={{ href: null }} />
         <Tabs.Screen name="applications/index" options={{ href: null }} />
         <Tabs.Screen name="applications/[id]" options={{ href: null }} />
+        <Tabs.Screen name="invite/index" options={{ href: null }} />
         <Tabs.Screen name="clients/index" options={{ href: null }} />
         <Tabs.Screen name="clients/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="clients/[id]/view-as" options={{ href: null }} />

@@ -24,10 +24,14 @@ interface Props {
 
 export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Props) {
   const [inviteMap, setInviteMap] = useState<Map<string, InviteStateRow>>(new Map());
+  const [inviteFailed, setInviteFailed] = useState(false);
 
   useEffect(() => {
     const emails = entries.map((e) => entryEmail(e) ?? '').filter(Boolean);
-    void fetchInviteStates(emails).then(setInviteMap);
+    void fetchInviteStates(emails).then((map) => {
+      setInviteMap(map);
+      setInviteFailed(map.failed);
+    });
   }, [entries]);
   async function shiftPosition(entry: WaitingListEntry, dir: -1 | 1) {
     const idx = entries.findIndex((e) => e.id === entry.id);
@@ -42,6 +46,11 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Pro
 
   return (
     <View className="px-4 pb-8">
+      {inviteFailed ? (
+        <Typography variant="caption" className="mb-3 text-gold">
+          Invite status could not be loaded. The list below is incomplete.
+        </Typography>
+      ) : null}
       {entries.map((entry, idx) => {
         const overdue = isFollowUpOverdue(entry.follow_up_date);
         const paid = entry.payment_status === 'deposit_paid' || entry.payment_status === 'paid_in_full';
