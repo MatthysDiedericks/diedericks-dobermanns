@@ -1,4 +1,6 @@
 import {
+  CODE_SEVERITY,
+  ERROR_CODES,
   type ErrorArea,
   type ErrorCode,
   type ErrorSeverity,
@@ -35,10 +37,11 @@ function buildRow(input: LogErrorInput, actorRole: string, actorId: string | nul
     app_version: meta.app_version,
     build: meta.build,
   });
+  const code = String(input.code).slice(0, 120);
   return {
-    code: String(input.code).slice(0, 120),
-    area: input.area,
-    severity: input.severity ?? 'error',
+    code,
+    area: code === ERROR_CODES.PAYMENT_PROOF_UPLOADED ? 'payment' : input.area,
+    severity: input.severity ?? CODE_SEVERITY[input.code as ErrorCode] ?? 'error',
     message: input.message?.slice(0, 2000) ?? null,
     detail,
     surface: input.surface ?? 'app',

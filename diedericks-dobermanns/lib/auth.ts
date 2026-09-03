@@ -90,7 +90,6 @@ export async function signUpWithEmail(
         logError({
           code: 'AUTH_REGISTRATION_BLOCKED',
           area: 'auth',
-          severity: 'error',
           message: msg,
           detail: { specific_code: specific },
           email,
@@ -143,7 +142,6 @@ export async function signUpWithEmail(
       logError({
         code: 'AUTH_REGISTRATION_BLOCKED',
         area: 'auth',
-        severity: 'error',
         message: msg,
         email,
         actorRole: 'anon',

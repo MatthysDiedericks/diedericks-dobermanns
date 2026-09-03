@@ -98,7 +98,7 @@ serve(async (req) => {
     await admin.from('error_events').insert({
       code: logCode(reason),
       area: 'auth',
-      severity: 'error',
+      severity: 'warning',
       message: logMessage(reason),
       detail: { reason },
       actor_role: 'anon',
