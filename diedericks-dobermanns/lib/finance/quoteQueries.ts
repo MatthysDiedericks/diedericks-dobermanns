@@ -2,6 +2,7 @@ import type { LineItemInput } from '@/lib/finance/mutations';
 import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { resolveQuoteBuyer } from '@/lib/finance/resolveQuoteBuyer';
 import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
+import { invoiceFieldsFromJoin } from '@/lib/finance/quoteBalance';
 import { throwQuoteDb } from '@/lib/finance/quoteErrors';
 import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
@@ -21,7 +22,8 @@ const QUOTE_SELECT =
   'client:users!quotes_client_id_fkey(id, full_name, phone, email), ' +
   'contact:contacts!quotes_contact_id_fkey(full_name, email, phone, merged_into_contact_id), ' +
   'application:applications(email, phone), ' +
-  'items:quote_items(id, item_type, dog_id, litter_id, subject_kind, description, quantity, unit_price, line_total, sort_order, catalogue_code)';
+  'items:quote_items(id, item_type, dog_id, litter_id, subject_kind, description, quantity, unit_price, line_total, sort_order, catalogue_code), ' +
+  'invoices!invoices_quote_id_fkey(amount_outstanding, amount_paid, total_amount)';
 
 export interface QuoteHeaderInput {
   client_id: string | null;
@@ -62,7 +64,8 @@ function priceItems(items: LineItemInput[]) {
   return { rows, subtotal };
 }
 
-export async function fetchAllQuotes(statusFilter?: string): Promise<Quote[]> {
+export async function fetchAllQuotes(userId: string, statusFilter?: string): Promise<Quote[]> {
+  if (!userId) throw new Error('Not signed in');
   const supabase = requireSupabase();
   let query = supabase.from('quotes').select(QUOTE_SELECT).order('created_at', { ascending: false });
   if (statusFilter && statusFilter !== 'all') {
@@ -70,7 +73,10 @@ export async function fetchAllQuotes(statusFilter?: string): Promise<Quote[]> {
   }
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Quote[];
+  return (data ?? []).map((row) => {
+    const r = row as unknown as Quote & { invoices?: unknown };
+    return { ...r, ...invoiceFieldsFromJoin(r.invoices) };
+  });
 }
 
 /** Minimal quote lookup by application_id — links an application to its auto-generated draft. */
@@ -87,11 +93,13 @@ export async function fetchQuoteByApplicationId(
   return (data?.[0] as { id: string; quote_number: string | null } | undefined) ?? null;
 }
 
-export async function fetchQuoteById(id: string): Promise<Quote> {
+export async function fetchQuoteById(id: string, userId: string): Promise<Quote> {
+  if (!userId) throw new Error('Not signed in');
   const supabase = requireSupabase();
   const { data, error } = await supabase.from('quotes').select(QUOTE_SELECT).eq('id', id).single();
   if (error) throw new Error(error.message);
-  return data as unknown as Quote;
+  const r = data as unknown as Quote & { invoices?: unknown };
+  return { ...r, ...invoiceFieldsFromJoin(r.invoices) };
 }
 
 export async function createQuote(header: QuoteHeaderInput, items: LineItemInput[]): Promise<string> {
@@ -233,9 +241,7 @@ export async function reopenQuote(id: string, reason: string): Promise<void> {
   const supabase = requireSupabase();
   const trimmed = reason.trim();
   if (!trimmed) throw new Error('A reason is required to reopen an accepted quote.');
-
   const user = await getCachedUser();
-
   const { data: existing, error: loadErr } = await supabase
     .from('quotes')
     .select('id, status, converted_invoice_id')
@@ -275,13 +281,6 @@ export async function updateQuoteStatus(id: string, status: QuoteStatus): Promis
   }
 }
 
-/**
- * Converts a sent/accepted quote into a real invoice via the
- * `convert_quote_to_invoice` RPC (migration 0039) — a single atomic function
- * so a partial failure can never leave a quote marked accepted with no
- * invoice, or an invoice with no `quote_id` back-reference. Returns the new
- * invoice id.
- */
 export async function convertQuoteToInvoice(quoteId: string): Promise<string> {
   const supabase = requireSupabase();
   const { data: quote } = await supabase

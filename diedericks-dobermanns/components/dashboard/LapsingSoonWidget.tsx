@@ -7,20 +7,26 @@ import { Typography } from '@/components/ui/Typography';
 import { fetchAllQuotes } from '@/lib/finance/quoteQueries';
 import { holdChipLabel, isLapsingSoon, isQuoteOnHold, reminderProgressLabel } from '@/lib/finance/quoteLapse';
 import { quoteBuyerDisplay, quoteListNumber } from '@/lib/finance/quoteBuyerDisplay';
+import { useAuthStore } from '@/stores/authStore';
 import type { Quote } from '@/types/app.types';
 
 export function LapsingSoonWidget() {
   const router = useRouter();
+  const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
   const [rows, setRows] = useState<Quote[]>([]);
 
   const load = useCallback(async () => {
+    if (!userId) {
+      setRows([]);
+      return;
+    }
     try {
-      const all = await fetchAllQuotes('sent');
+      const all = await fetchAllQuotes(userId, 'sent');
       setRows(all.filter((q) => isLapsingSoon(q)).slice(0, 12));
     } catch {
       setRows([]);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void load();

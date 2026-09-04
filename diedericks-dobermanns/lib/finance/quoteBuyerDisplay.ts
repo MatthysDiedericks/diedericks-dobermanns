@@ -75,3 +75,10 @@ export function quoteListNumber(
   const n = number?.trim() || 'Draft';
   return revision && revision > 1 ? `${n} · rev ${revision}` : n;
 }
+
+const STATUS_ORDER = ['draft', 'sent', 'accepted', 'declined', 'expired', 'cancelled'] as const;
+
+export function quoteStatusRank(status: string): number {
+  const i = (STATUS_ORDER as readonly string[]).indexOf(status);
+  return i < 0 ? 99 : i;
+}

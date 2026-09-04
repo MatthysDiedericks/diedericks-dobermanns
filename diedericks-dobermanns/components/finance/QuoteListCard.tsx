@@ -12,7 +12,8 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { quoteBuyerDisplay, quoteListNumber } from '@/lib/finance/quoteBuyerDisplay';
 import { sendQuoteToRecipient } from '@/lib/finance/sendQuote';
-import { formatPrice, titleCase } from '@/lib/format';
+import { formatAmount } from '@/lib/finance/formatters';
+import { titleCase } from '@/lib/format';
 import { getCachedUser } from '@/lib/auth/getCachedUser';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
@@ -132,8 +133,9 @@ export function QuoteListCard({
               : ''}
           </Typography>
           <Typography variant="label" className="mt-2">
-            {formatPrice(quote.total)}
+            {formatAmount(quote.total)}
           </Typography>
+          <QuoteCardBalance outstanding={quote.invoiceOutstanding ?? null} />
         </Pressable>
         <Pressable
           onPress={() => setMenuOpen((v) => !v)}
@@ -185,5 +187,27 @@ export function QuoteListCard({
         </View>
       ) : null}
     </Card>
+  );
+}
+
+function QuoteCardBalance({ outstanding }: { outstanding: number | null }) {
+  if (outstanding == null) {
+    return (
+      <Typography variant="caption" className="mt-0.5 text-silver">
+        Balance due —
+      </Typography>
+    );
+  }
+  if (outstanding <= 0) {
+    return (
+      <Typography variant="caption" className="mt-0.5 text-success">
+        Paid
+      </Typography>
+    );
+  }
+  return (
+    <Typography variant="caption" className="mt-0.5 text-gold">
+      Balance due {formatAmount(outstanding)}
+    </Typography>
   );
 }

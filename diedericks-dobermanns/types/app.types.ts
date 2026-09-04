@@ -768,6 +768,9 @@ export interface Quote {
   } | null;
   application?: { email?: string | null; phone?: string | null } | null;
   items?: LineItem[];
+  /** Linked invoice amount_outstanding. Null when no invoice exists — not zero. */
+  invoiceOutstanding?: number | null;
+  invoicePaid?: number | null;
 }
 
 // Real invoice types live in `types/finance.ts` (aligned with the live
