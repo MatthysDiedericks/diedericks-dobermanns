@@ -1,4 +1,5 @@
 import { deleteStorageObjects, storagePathFromPublicUrl } from '@/lib/storage';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -20,9 +21,8 @@ export type PendingMediaItem = {
 const PENDING_FILTER = { is_public: false, approved_at: null } as const;
 
 async function currentUserId(): Promise<string> {
-  const supabase = requireSupabase();
-  const { data } = await supabase.auth.getUser();
-  const id = data.user?.id ?? useAuthStore.getState().profile?.id ?? null;
+  const user = await getCachedUser();
+  const id = user?.id ?? useAuthStore.getState().profile?.id ?? null;
   if (!id) throw new Error('Not signed in.');
   return id;
 }

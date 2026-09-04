@@ -1,4 +1,5 @@
 import { callNotify } from '@/lib/functions';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
 import { categoryFromDogInterest } from '@/lib/waitlist/helpers';
 import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
@@ -86,12 +87,12 @@ export async function createWaitlistEntry(input: CreateWaitlistInput): Promise<S
     return { error: null, id: 'wl-demo' };
   }
 
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   const row = {
     list_type_id: input.list_type_id,
     pipeline_stage: input.pipeline_stage ?? 'enquiry',
     stage_updated_at: new Date().toISOString(),
-    stage_updated_by: auth.user?.id ?? null,
+    stage_updated_by: user?.id ?? null,
     client_id: input.client_id ?? null,
     application_id: input.application_id ?? null,
     enquirer_name: input.enquirer_name ?? null,
@@ -189,11 +190,11 @@ export async function updateWaitlistEntry(
       .single();
     clientId = values.pipeline_stage === 'reserved' ? (current?.client_id ?? null) : null;
 
-    const { data: auth } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     patch = {
       ...patch,
       stage_updated_at: new Date().toISOString(),
-      stage_updated_by: auth.user?.id ?? null,
+      stage_updated_by: user?.id ?? null,
     } as WaitlistUpdate;
   }
 

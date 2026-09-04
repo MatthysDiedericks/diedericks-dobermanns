@@ -23,7 +23,7 @@ import { fetchQuoteRevisions, type QuoteRevisionRow } from '@/lib/finance/quoteR
 import { quoteBuyerDisplay } from '@/lib/finance/quoteBuyerDisplay';
 import { titleCase } from '@/lib/format';
 import { QUOTE_TONE } from '@/app/(admin)/quotes/index';
-import { requireSupabase } from '@/lib/supabase';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import type { QuoteStatus } from '@/types/app.types';
 
 export default function QuoteDetailScreen() {
@@ -110,10 +110,7 @@ export default function QuoteDetailScreen() {
     }
     setBusy(true);
     try {
-      const supabase = requireSupabase();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getCachedUser();
 
       if (channel === 'whatsapp') {
         if (!phone) throw new Error('No phone number on file.');

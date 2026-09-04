@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { MATING_SELECT, type MatingRecord } from '@/lib/heats/constants';
 import { whelpWindow, goHomeWindow } from '@/lib/dogs/whelpDates';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 async function refreshCycleWhelpDates(cycleId: string) {
@@ -90,9 +91,7 @@ export function useMatings(heatCycleId: string | null) {
     }) => {
       if (!heatCycleId) throw new Error('No heat cycle');
       const client = requireSupabase();
-      const {
-        data: { user },
-      } = await client.auth.getUser();
+      const user = await getCachedUser();
       const { error: err } = await client.from('matings').insert({
         heat_cycle_id: heatCycleId,
         mated_at: input.mated_at,

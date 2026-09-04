@@ -1,3 +1,4 @@
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 export async function setQuoteLapseHold(
@@ -10,9 +11,7 @@ export async function setQuoteLapseHold(
     throw new Error('A reason is required to hold a quote. It has to outlive the person who set it.');
   }
   const supabase = requireSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   const { error } = await supabase
     .from('quotes')
     .update({

@@ -30,7 +30,7 @@ export default function ClientQuotesScreen() {
       setLoading(true);
       setError(null);
       try {
-        await claimMyRecords();
+        await claimMyRecords(userId);
         const rows = await fetchMyClientQuotes(userId);
         if (!cancelled) setQuotes(rows);
       } catch (e) {

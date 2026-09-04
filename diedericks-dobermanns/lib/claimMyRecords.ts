@@ -11,10 +11,11 @@ export type ClaimCounts = {
 
 /**
  * Links applications / quotes / waitlist / contracts raised against the
- * caller's confirmed email. Takes no arguments — never pass a user-supplied email.
+ * caller's confirmed email. Takes the already-verified user id from the
+ * caller — never call getUser() here, and never pass a user-supplied email.
  * Safe to call repeatedly; failures must not block sign-in.
  */
-export async function claimMyRecords(): Promise<ClaimCounts> {
+export async function claimMyRecords(userId: string | null | undefined): Promise<ClaimCounts> {
   const empty: ClaimCounts = {
     applications: 0,
     quotes: 0,
@@ -23,16 +24,12 @@ export async function claimMyRecords(): Promise<ClaimCounts> {
   };
   if (!supabase) return empty;
   try {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    if (!userId) {
       void logError({
         code: ERROR_CODES.PORTAL_CLAIM_FAILED,
         area: 'portal',
         severity: 'error',
-        message: userError?.message ?? 'claim_my_records called with no session',
+        message: 'claim_my_records called with no session',
         detail: { reason: 'no_session' },
         actorRole: 'anon',
         surface: 'app',
@@ -50,8 +47,7 @@ export async function claimMyRecords(): Promise<ClaimCounts> {
         message: error.message,
         detail: { reason: 'rpc_error', code: error.code },
         actorRole: 'client',
-        actorId: user.id,
-        email: user.email,
+        actorId: userId,
         surface: 'app',
         route: '/claim',
       });

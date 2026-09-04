@@ -13,7 +13,7 @@ import { Colors } from '@/constants/colors';
 import { quoteBuyerDisplay, quoteListNumber } from '@/lib/finance/quoteBuyerDisplay';
 import { sendQuoteToRecipient } from '@/lib/finance/sendQuote';
 import { formatPrice, titleCase } from '@/lib/format';
-import { requireSupabase } from '@/lib/supabase';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
 const QUOTE_TONE: Record<QuoteStatus, BadgeTone> = {
@@ -60,10 +60,7 @@ export function QuoteListCard({
   const sendEmail = async (note: string | null) => {
     setBusy(true);
     try {
-      const supabase = requireSupabase();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getCachedUser();
       const result = await sendQuoteToRecipient(quote, {
         changeNote: note,
         actorId: user?.id ?? null,

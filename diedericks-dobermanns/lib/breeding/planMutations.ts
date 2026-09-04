@@ -1,4 +1,5 @@
 import type { PlanStatus, StepWrite } from '@/lib/breeding/planTypes';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 async function bumpOrders(planId: string): Promise<{ id: string; step_order: number }[]> {
@@ -34,9 +35,7 @@ export async function createBreedingPlan(input: {
   objective: string;
 }): Promise<string> {
   const client = requireSupabase();
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const user = await getCachedUser();
   const { data, error } = await client
     .from('breeding_plans')
     .insert({

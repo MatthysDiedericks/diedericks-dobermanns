@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { fetchUserProfile, getCurrentSession, signOut } from '@/lib/auth';
+import { clearCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
 import type { AppUser, UserRole } from '@/types/app.types';
 
@@ -47,6 +48,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       supabase.auth.onAuthStateChange((_event, nextSession) => {
         void (async () => {
           if (!nextSession) {
+            clearCachedUser();
             set({ session: null, profile: null, profileLoading: false });
             return;
           }

@@ -12,6 +12,7 @@ import { prepareDocumentFromUri } from '@/lib/uploads/prepareFromUri';
 import { PORTAL_CATEGORY_GROUPS, buildCategoryGroupMap } from '@/lib/documents/portalCategories';
 import type { DocumentRecord, DocumentUploadMetadata, PickedDocumentFile } from '@/lib/documents/types';
 import { RateLimitError, assertRateLimit, blockedMessage } from '@/lib/security/rateLimit';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
@@ -19,9 +20,8 @@ import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 const BUCKET = 'documents';
 
 async function currentUserId(): Promise<string | null> {
-  const supabase = requireSupabase();
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? useAuthStore.getState().profile?.id ?? null;
+  const user = await getCachedUser();
+  return user?.id ?? useAuthStore.getState().profile?.id ?? null;
 }
 
 async function logAccess(documentId: string, action: 'view' | 'download' | 'export') {

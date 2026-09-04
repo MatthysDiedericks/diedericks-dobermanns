@@ -1,5 +1,6 @@
 import { ERROR_CODES } from '@/lib/errors/codes';
 import { logError } from '@/lib/errors/logError';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 import type { InviteStateRow } from '@/lib/portal/invite';
@@ -18,8 +19,7 @@ export async function fetchInviteStates(emails: string[]): Promise<InviteStateMa
   if (unique.length === 0) return emptyMap(false);
 
   const supabase = requireSupabase();
-  const { data: authData } = await supabase.auth.getUser();
-  const authUser = authData.user ?? null;
+  const authUser = await getCachedUser();
   let usersRole: string | null = null;
   if (authUser?.id) {
     const { data: profile } = await supabase

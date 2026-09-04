@@ -1,3 +1,4 @@
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
 import {
   buildForwardStagePatch,
@@ -22,8 +23,8 @@ export async function advanceWaitlistStage(
   if (loadErr) return { error: loadErr.message };
   if (!isForwardStage(current?.pipeline_stage, nextStage)) return { error: null };
 
-  const { data: auth } = await supabase.auth.getUser();
-  const patch = buildForwardStagePatch(current?.pipeline_stage, nextStage, auth.user?.id, extra);
+  const user = await getCachedUser();
+  const patch = buildForwardStagePatch(current?.pipeline_stage, nextStage, user?.id, extra);
   if (!patch) return { error: null };
 
   const { error } = await supabase

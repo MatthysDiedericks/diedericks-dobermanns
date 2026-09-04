@@ -1,7 +1,8 @@
 import type { Session } from '@supabase/supabase-js';
 
-import { supabase } from '@/lib/supabase';
+import { clearCachedUser, rememberVerifiedUser } from '@/lib/auth/getCachedUser';
 import { CLIENT_PROFILE_SELECT } from '@/lib/auth/profileSelect';
+import { supabase } from '@/lib/supabase';
 import type { AppUser } from '@/types/app.types';
 
 /**
@@ -14,6 +15,8 @@ import type { AppUser } from '@/types/app.types';
 
 export interface AuthResult {
   error: string | null;
+  /** Present after a successful sign-in / OTP verify — pass this to claimMyRecords. */
+  userId?: string | null;
 }
 
 const DEMO_ERROR =
@@ -34,12 +37,13 @@ export async function signInWithEmail(
       error: e instanceof RateLimitError ? e.message : await blockedMessage(),
     };
   }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     await checkRateLimit({ action: 'signin_failure', max: 10, windowSeconds: 900, hit: true });
     return { error: error.message };
   }
-  return { error: null };
+  rememberVerifiedUser(data.user);
+  return { error: null, userId: data.user?.id ?? null };
 }
 
 export async function signUpWithEmail(
@@ -156,8 +160,9 @@ export async function signUpWithEmail(
 /** Confirms a brand-new account's email using the 6-digit code from the signup email. */
 export async function verifySignupOtp(email: string, token: string): Promise<AuthResult> {
   if (!supabase) return { error: DEMO_ERROR };
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
-  return { error: error?.message ?? null };
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
+  if (!error) rememberVerifiedUser(data.user);
+  return { error: error?.message ?? null, userId: data.user?.id ?? null };
 }
 
 /** Redeems an admin-issued invite code (not a signup OTP). A scanner cannot consume it. */
@@ -166,18 +171,19 @@ export async function verifyInviteOtp(email: string, token: string): Promise<Aut
   const { redeemInviteCode } = await import('@/lib/portal/invite');
   const redeemed = await redeemInviteCode(email, token);
   if ('error' in redeemed) return { error: redeemed.error };
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     type: 'magiclink',
     token_hash: redeemed.tokenHash,
   });
   if (!error) {
+    rememberVerifiedUser(data.user);
     try {
       await supabase.rpc('mark_portal_invite_opened');
     } catch {
       /* session still stands */
     }
   }
-  return { error: error?.message ?? null };
+  return { error: error?.message ?? null, userId: data.user?.id ?? null };
 }
 
 /** Sends a fresh signup confirmation code/link to the given email. */
@@ -202,6 +208,7 @@ export async function updatePassword(newPassword: string): Promise<AuthResult> {
 }
 
 export async function signOut(): Promise<AuthResult> {
+  clearCachedUser();
   if (!supabase) return { error: null };
   const { error } = await supabase.auth.signOut();
   return { error: error?.message ?? null };

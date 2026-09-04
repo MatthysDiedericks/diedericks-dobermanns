@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { WHELP_TEMP_DROP_C, WHELP_TEMP_SELECT, type WhelpTempRecord } from '@/lib/heats/constants';
 import { validateWhelpTempC, WHELP_TEMP_RANGE_MSG } from '@/lib/heats/whelpTempLogic';
 import { sendNotification } from '@/lib/notifications';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 const STAFF_ROLES = ['admin', 'super_admin', 'management'] as const;
@@ -76,9 +77,7 @@ export function useWhelpingTemperatures(heatCycleId: string | null) {
       if (rangeError) return { error: rangeError };
 
       const client = requireSupabase();
-      const {
-        data: { user },
-      } = await client.auth.getUser();
+      const user = await getCachedUser();
       const { error: err } = await client.from('whelping_temperatures').insert({
         heat_cycle_id: heatCycleId,
         taken_at: input.taken_at,

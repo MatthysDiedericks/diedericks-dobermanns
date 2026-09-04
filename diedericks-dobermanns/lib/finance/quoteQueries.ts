@@ -3,6 +3,7 @@ import { assertQuoteEditable } from '@/lib/finance/quoteEditGuards';
 import { resolveQuoteBuyer } from '@/lib/finance/resolveQuoteBuyer';
 import { subjectColumnsForSave } from '@/lib/finance/quoteSubjectSave';
 import { throwQuoteDb } from '@/lib/finance/quoteErrors';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 import type { Quote, QuoteStatus } from '@/types/app.types';
 
@@ -233,9 +234,7 @@ export async function reopenQuote(id: string, reason: string): Promise<void> {
   const trimmed = reason.trim();
   if (!trimmed) throw new Error('A reason is required to reopen an accepted quote.');
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   const { data: existing, error: loadErr } = await supabase
     .from('quotes')

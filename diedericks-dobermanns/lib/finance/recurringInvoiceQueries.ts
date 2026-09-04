@@ -1,3 +1,4 @@
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 import type { RecurringInvoice, RecurringInvoiceInput } from '@/lib/finance/recurringInvoiceTypes';
 
@@ -45,9 +46,7 @@ export async function createRecurringInvoice(input: RecurringInvoiceInput): Prom
       clientId = (portalId as string | null) ?? null;
     }
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   const { data, error } = await supabase
     .from('recurring_invoices' as never)
     .insert({

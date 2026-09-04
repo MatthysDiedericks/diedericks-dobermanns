@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CheckInKind, DueCheckIn, OverallHealth } from '@/lib/followUps/types';
 import { dogHasKnownOwner } from '@/lib/followUps/contactability';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 function weekEnd() {
@@ -92,14 +93,14 @@ export function useCheckInMutations() {
     if (draft != null) {
       await supabase.from('check_ins').update({ draft_message: draft }).eq('id', id);
     }
-    const { data: session } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     const { error } = await supabase
       .from('check_ins')
       .update({
         status: 'sent',
         channel: 'whatsapp',
         sent_at: new Date().toISOString(),
-        handled_by: session.user?.id ?? null,
+        handled_by: user?.id ?? null,
       })
       .eq('id', id);
     if (error) {
@@ -111,14 +112,14 @@ export function useCheckInMutations() {
   const skip = useCallback(
     async (id: string, dogId: string, reason: string, doNotContact: boolean) => {
       const supabase = requireSupabase();
-      const { data: session } = await supabase.auth.getUser();
+      const user = await getCachedUser();
       const { error } = await supabase
         .from('check_ins')
         .update({
           status: 'skipped',
           response_notes: reason,
           response_at: new Date().toISOString(),
-          handled_by: session.user?.id ?? null,
+          handled_by: user?.id ?? null,
         })
         .eq('id', id);
       if (error) {
@@ -168,8 +169,8 @@ export type LogResponsePayload = {
 export function useLogCheckInResponse() {
   return useCallback(async (input: LogResponsePayload) => {
     const supabase = requireSupabase();
-    const { data: session } = await supabase.auth.getUser();
-    const userId = session.user?.id ?? null;
+    const user = await getCachedUser();
+    const userId = user?.id ?? null;
     const overall = input.overall || null;
     const diedAt = input.diedAt || null;
     const weight = input.weightKg.trim() === '' ? null : Number(input.weightKg);

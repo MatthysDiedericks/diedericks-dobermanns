@@ -4,6 +4,7 @@ import { Config } from '@/constants/config';
 import { buildContractHtml, buildContractMergeData, mergeContractTemplate } from '@/lib/contracts/generateContract';
 import { generateAndUploadContractPdf } from '@/lib/contracts/contractPdf';
 import { callNotify } from '@/lib/functions';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 
@@ -152,7 +153,7 @@ export function useContractRelease() {
             .eq('client_id', clientId)
             .maybeSingle(),
           supabase.from('contract_templates').select('body_html, contract_title').eq('id', templateId).single(),
-          supabase.auth.getUser(),
+          getCachedUser(),
         ]);
 
         const template = templateRes.data as { body_html: string; contract_title: string } | null;
@@ -222,7 +223,7 @@ export function useContractRelease() {
           contractId = (created as { id: string }).id;
         }
 
-        const uploaderId = userRes.data.user?.id ?? null;
+        const uploaderId = userRes?.id ?? null;
         const documentUrl = await generateAndUploadContractPdf(html, contractId, uploaderId);
 
         const token = genToken();

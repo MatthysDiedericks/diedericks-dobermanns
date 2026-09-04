@@ -25,9 +25,9 @@ export function useAuth() {
     async (email: string, password: string) => {
       setIsLoading(true);
       try {
-        const { error } = await signInWithEmail(email.trim(), password);
+        const { error, userId } = await signInWithEmail(email.trim(), password);
         if (error) throw new Error(error);
-        void claimMyRecords();
+        if (userId) void claimMyRecords(userId);
         await refresh();
       } finally {
         setIsLoading(false);
@@ -55,13 +55,13 @@ export function useAuth() {
       try {
         const signup = await verifySignupOtp(email.trim(), token.trim());
         if (!signup.error) {
-          void claimMyRecords();
+          if (signup.userId) void claimMyRecords(signup.userId);
           await refresh();
           return;
         }
         const invite = await verifyInviteOtp(email.trim(), token.trim());
         if (invite.error) throw new Error(invite.error);
-        void claimMyRecords();
+        if (invite.userId) void claimMyRecords(invite.userId);
         await refresh();
       } finally {
         setIsLoading(false);

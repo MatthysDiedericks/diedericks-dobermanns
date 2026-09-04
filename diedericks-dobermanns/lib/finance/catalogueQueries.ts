@@ -1,4 +1,5 @@
 import type { CatalogueItem, LastChargeRow } from '@/lib/finance/catalogue';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 const SELECT =
@@ -186,10 +187,10 @@ export async function createCatalogueItem(input: CatalogueWriteInput): Promise<{
   const priceErr = validatePrice(input);
   if (priceErr) return { error: priceErr };
   const supabase = requireSupabase();
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   const { error } = await supabase.from('catalogue_items' as never).insert({
     ...input,
-    updated_by: auth.user?.id ?? null,
+    updated_by: user?.id ?? null,
   } as never);
   if (error) {
     if (error.message.includes('catalogue_price_consistent')) {
@@ -208,10 +209,10 @@ export async function updateCatalogueItem(
     return { error: 'Turn off “price varies” only when you set a default price.' };
   }
   const supabase = requireSupabase();
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   const { error } = await supabase
     .from('catalogue_items' as never)
-    .update({ ...input, updated_by: auth.user?.id ?? null } as never)
+    .update({ ...input, updated_by: user?.id ?? null } as never)
     .eq('id' as never, id);
   if (error) {
     if (error.message.includes('catalogue_price_consistent')) {

@@ -11,6 +11,7 @@ import {
   blockedMessage,
   isRateLimitDbError,
 } from '@/lib/security/rateLimit';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
 import type { Application } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
@@ -173,8 +174,8 @@ export function useSubmitApplication() {
       // seeing their reference number — the application already saved above.
       try {
         void logEnquiry(draft, referenceId);
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) void logClientNotification(userData.user.id, referenceId);
+        const user = await getCachedUser();
+        if (user) void logClientNotification(user.id, referenceId);
       } catch (followUpErr) {
         console.error('[useSubmitApplication] follow-up:', followUpErr);
       }

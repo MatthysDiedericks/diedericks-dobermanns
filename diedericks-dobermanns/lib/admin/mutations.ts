@@ -3,6 +3,7 @@ import { createDraftQuoteFromApplication } from '@/lib/finance/autoQuoteFromAppl
 import { callCreateVideoRoom, callNotify } from '@/lib/functions';
 import { formatDateTime } from '@/lib/format';
 import { SOCIAL_SETTING_KEYS } from '@/lib/social';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
 import { syncWaitlistOnApplicationApproved } from '@/lib/waitlist/syncFromApplication';
 import type {
@@ -251,8 +252,8 @@ export async function reviewApplication(
       if (qErr) console.error('[reviewApplication] auto-quote:', qErr);
     });
 
-    const { data: auth } = await supabase.auth.getUser();
-    void syncWaitlistOnApplicationApproved(id, auth.user?.id ?? null).then(({ error: wlErr }) => {
+    const user = await getCachedUser();
+    void syncWaitlistOnApplicationApproved(id, user?.id ?? null).then(({ error: wlErr }) => {
       if (wlErr) console.error('[reviewApplication] waitlist sync:', wlErr);
     });
 

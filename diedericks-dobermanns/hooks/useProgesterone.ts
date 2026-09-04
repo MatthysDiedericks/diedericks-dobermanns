@@ -4,6 +4,7 @@ import { goHomeWindow, whelpWindow } from '@/lib/dogs/whelpDates';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { PROG_TEST_SELECT, type ProgTestRecord } from '@/lib/heats/constants';
 import type { ProgUnit } from '@/lib/heats/progesterone';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 export function useProgesterone(heatCycleId: string | null, dogId?: string) {
@@ -74,9 +75,7 @@ export function useProgesterone(heatCycleId: string | null, dogId?: string) {
     }) => {
       if (!heatCycleId) throw new Error('No heat cycle');
       const client = requireSupabase();
-      const {
-        data: { user },
-      } = await client.auth.getUser();
+      const user = await getCachedUser();
       const { error: err } = await client.from('progesterone_tests').insert({
         heat_cycle_id: heatCycleId,
         tested_at: input.tested_at,
