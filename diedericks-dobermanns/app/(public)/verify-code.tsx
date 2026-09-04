@@ -17,6 +17,9 @@ const WRONG_CODE_MESSAGE = 'That code is not right. Check the digits and try aga
 
 function friendlyVerifyError(message: string): string {
   const m = message.toLowerCase();
+  if (m.includes('already registered')) {
+    return "You're already registered — sign in.";
+  }
   if (m.includes('no invite was issued')) {
     return 'No invite was issued for this email. Ask Matt for one.';
   }
@@ -139,6 +142,16 @@ export default function VerifyCodeScreen() {
               <Typography variant="caption" className="text-red-400">
                 {error}
               </Typography>
+              {error.includes('already registered') ? (
+                <Pressable
+                  onPress={() => router.replace('/(public)/login')}
+                  className="mt-3 items-center"
+                >
+                  <Typography variant="label" className="text-gold">
+                    Sign in
+                  </Typography>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
           {info ? (

@@ -230,13 +230,13 @@ export async function emailPortalInvite(input: {
 export async function redeemInviteCode(
   email: string,
   code: string,
-): Promise<{ tokenHash: string } | { error: string }> {
+): Promise<{ tokenHash: string } | { error: string; alreadyRegistered?: boolean }> {
   const { data, error } = await requireSupabase().functions.invoke('redeem-portal-invite', {
     body: { email, code },
   });
-  const row = data as { tokenHash?: string; error?: string } | null;
+  const row = data as { tokenHash?: string; error?: string; alreadyRegistered?: boolean } | null;
   if (row?.tokenHash) return { tokenHash: row.tokenHash };
-  if (row?.error) return { error: row.error };
+  if (row?.error) return { error: row.error, alreadyRegistered: row.alreadyRegistered };
   if (error) return { error: error.message };
   return { error: 'That code is not right. Check the digits and try again.' };
 }

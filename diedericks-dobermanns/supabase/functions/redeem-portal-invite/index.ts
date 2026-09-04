@@ -35,21 +35,36 @@ function reasonFromDiagnose(row: {
   return 'wrong-code';
 }
 
-function userMessage(reason: FailReason): string {
+async function isAlreadyRegistered(
+  admin: ReturnType<typeof createClient>,
+  email: string,
+): Promise<boolean> {
+  const { data } = await admin.rpc('auth_invite_flags', { p_email: email });
+  const flags = (Array.isArray(data) ? data[0] : data) as {
+    email_confirmed_at?: string | null;
+    last_sign_in_at?: string | null;
+  } | null;
+  return !!(flags?.email_confirmed_at && flags?.last_sign_in_at);
+}
+
+function userMessage(reason: FailReason, alreadyRegistered: boolean): string {
+  if (alreadyRegistered) return "You're already registered — sign in.";
   if (reason === 'used') return 'This code has already been used — ask Matt for a new one.';
   if (reason === 'expired') return 'That invite has expired. Ask Matt for a new one.';
   if (reason === 'no-invite') return 'No invite was issued for this email. Ask Matt for one.';
   return 'That code is not right. Check the digits and try again.';
 }
 
-function logCode(reason: FailReason): string {
+function logCode(reason: FailReason, alreadyRegistered: boolean): string {
+  if (alreadyRegistered) return 'INVITE_ALREADY_REGISTERED';
   if (reason === 'used') return 'INVITE_USED';
   if (reason === 'wrong-code') return 'INVITE_CODE_WRONG';
   if (reason === 'no-invite') return 'INVITE_NONE_ISSUED';
   return 'INVITE_EXPIRED';
 }
 
-function logMessage(reason: FailReason): string {
+function logMessage(reason: FailReason, alreadyRegistered: boolean): string {
+  if (alreadyRegistered) return 'Invite re-clicked after registration';
   if (reason === 'used') return 'Invite already used';
   if (reason === 'expired') return 'Invite has expired';
   if (reason === 'no-invite') return 'No portal invite has been issued for this email';
@@ -89,24 +104,31 @@ serve(async (req) => {
       code_redeemed_at?: string | null;
     } | null;
     const reason = reasonFromDiagnose(d);
-    if (reason !== 'no-invite') {
+    const alreadyRegistered = reason === 'used' && (await isAlreadyRegistered(admin, email));
+    if (reason !== 'no-invite' && !alreadyRegistered) {
       await admin.rpc('portal_invite_record_failure', {
         p_email: email,
         p_reason: reason,
       });
     }
     await admin.from('error_events').insert({
-      code: logCode(reason),
+      code: logCode(reason, alreadyRegistered),
       area: 'auth',
       severity: 'warning',
-      message: logMessage(reason),
-      detail: { reason },
+      message: logMessage(reason, alreadyRegistered),
+      detail: { reason: alreadyRegistered ? 'already-registered' : reason },
       actor_role: 'anon',
       surface: 'app',
       route: '/redeem-portal-invite',
       email_domain: email.split('@')[1] ?? null,
     });
-    return json({ error: userMessage(reason) }, 400);
+    return json(
+      {
+        error: userMessage(reason, alreadyRegistered),
+        alreadyRegistered,
+      },
+      400,
+    );
   }
 
   const generated = await admin.auth.admin.generateLink({

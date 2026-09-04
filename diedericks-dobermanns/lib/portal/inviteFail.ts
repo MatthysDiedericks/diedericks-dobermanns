@@ -1,6 +1,12 @@
 /** Shared invite-failure labels. Keep identical to diedericksdobermann-web/src/lib/portal/inviteFail.ts. */
 
-export type InviteFailReason = 'wrong-code' | 'expired' | 'used' | 'no-invite' | 'signed-in';
+export type InviteFailReason =
+  | 'wrong-code'
+  | 'expired'
+  | 'used'
+  | 'already-registered'
+  | 'no-invite'
+  | 'signed-in';
 
 export type InviteDiagnoseRow = {
   exists: boolean;
@@ -20,6 +26,7 @@ export function reasonFromDiagnose(
 }
 
 export function inviteFailUserMessage(reason: InviteFailReason): string {
+  if (reason === 'already-registered') return "You're already registered — sign in.";
   if (reason === 'used') return 'This code has already been used — ask Matt for a new one.';
   if (reason === 'expired') return 'That invite has expired. Ask Matt for a new one.';
   if (reason === 'no-invite') return 'No invite was issued for this email. Ask Matt for one.';
@@ -28,6 +35,7 @@ export function inviteFailUserMessage(reason: InviteFailReason): string {
 }
 
 export function inviteFailLogMessage(reason: InviteFailReason): string {
+  if (reason === 'already-registered') return 'Invite re-clicked after registration';
   if (reason === 'used') return 'Invite already used';
   if (reason === 'expired') return 'Invite has expired';
   if (reason === 'no-invite') return 'No portal invite has been issued for this email';

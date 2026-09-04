@@ -42,6 +42,8 @@ export const ERROR_CODES = {
   INVITE_EXPIRED_USED: "INVITE_EXPIRED_USED",
   INVITE_EXPIRED: "INVITE_EXPIRED",
   INVITE_USED: "INVITE_USED",
+  /** Re-click after email confirmed and at least one sign-in — not a registration failure. */
+  INVITE_ALREADY_REGISTERED: "INVITE_ALREADY_REGISTERED",
   INVITE_CODE_WRONG: "INVITE_CODE_WRONG",
   INVITE_NONE_ISSUED: "INVITE_NONE_ISSUED",
   INVITE_SCANNER_CONSUMED: "INVITE_SCANNER_CONSUMED",
@@ -118,6 +120,7 @@ export const CODE_SEVERITY: Record<ErrorCode, ErrorSeverity> = {
   INVITE_EXPIRED_USED: "warning",
   INVITE_EXPIRED: "warning",
   INVITE_USED: "warning",
+  INVITE_ALREADY_REGISTERED: "warning",
   INVITE_CODE_WRONG: "warning",
   INVITE_NONE_ISSUED: "warning",
   INVITE_SCANNER_CONSUMED: "warning",

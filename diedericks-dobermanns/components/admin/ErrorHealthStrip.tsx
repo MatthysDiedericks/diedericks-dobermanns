@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
+import { ERROR_CODES } from '@/lib/errors/codes';
 import { requireSupabase } from '@/lib/supabase';
 
 type Strip = {
@@ -38,10 +39,11 @@ export function ErrorHealthStrip() {
       }[];
       const reg = rows.filter(
         (r) =>
-          r.area === 'auth' ||
-          r.code === 'AUTH_REGISTRATION_BLOCKED' ||
-          r.code === 'AUTH_SIGNUP_PHANTOM' ||
-          r.code === 'AUTH_PASSWORD_POLICY',
+          r.code !== ERROR_CODES.INVITE_ALREADY_REGISTERED &&
+          (r.area === 'auth' ||
+            r.code === 'AUTH_REGISTRATION_BLOCKED' ||
+            r.code === 'AUTH_SIGNUP_PHANTOM' ||
+            r.code === 'AUTH_PASSWORD_POLICY'),
       );
       const people = new Set(reg.map((r) => r.session_ref || r.email_domain || `id:${r.id}`));
       const openCritical = rows.filter((r) => r.severity === 'critical').length;
