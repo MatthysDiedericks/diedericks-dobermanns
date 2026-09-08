@@ -72,11 +72,22 @@ export function Step6Review({ getValues, control }: StepProps) {
       <ReviewSection title="Dog Preference">
         <ReviewRow label="Interest" value={labelFor('dog_interest', v.dog_interest)} />
         <ReviewRow label="Purpose" value={labelFor('purpose', v.purpose)} />
+        <ReviewRow label="Dogs requested" value={String(v.dogs_requested ?? 1)} />
         <ReviewRow label="Sex" value={labelFor('preferred_sex', v.preferred_sex)} />
         <ReviewRow label="Colour" value={labelFor('preferred_colour', v.preferred_colour)} />
         <ReviewRow label="Tail" value={labelFor('tail_preference', v.tail_preference)} />
         <ReviewRow label="Timeline" value={labelFor('preferred_timeline', v.preferred_timeline)} />
         <ReviewRow label="Budget" value={labelFor('budget_range', v.budget_range)} />
+        {(v.extra_dog_requests ?? []).slice(0, Math.max(0, (v.dogs_requested ?? 1) - 1)).map((r, i) => (
+          <View key={i} className="mt-3">
+            <Typography variant="caption" className="text-gold">Dog {i + 2}</Typography>
+            <ReviewRow label="Sex" value={labelFor('preferred_sex', r.preferred_sex)} />
+            <ReviewRow label="Colour" value={labelFor('preferred_colour', r.preferred_colour)} />
+            <ReviewRow label="Tail" value={labelFor('tail_preference', r.tail_preference)} />
+            <ReviewRow label="Timeline" value={labelFor('preferred_timeline', r.preferred_timeline)} />
+            <ReviewRow label="Budget" value={labelFor('budget_range', r.budget_range)} />
+          </View>
+        ))}
       </ReviewSection>
 
       <ReviewSection title="Legal Agreements">

@@ -11,19 +11,20 @@ import { Input } from "@/components/ui/Input";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Typography } from "@/components/ui/Typography";
 import { Colors } from "@/constants/colors";
-import { updateWaitlistEntry, useSubmitting } from "@/hooks/useMutations";
+import { updateWaitlistEntry, addDogToApplication, useSubmitting } from "@/hooks/useMutations";
 import { useWaitlistEntry } from "@/hooks/useWaitingList";
-import { WAITLIST_HISTORY_SELECT } from "@/lib/waitlist/queries";
+import { WAITLIST_HISTORY_SELECT, WAITLIST_SELECT } from "@/lib/waitlist/queries";
 import { daysWaiting, stageLabel } from "@/lib/waitlist/constants";
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from "@/lib/waitlist/helpers";
+import { dogOfNLabel, outstandingSiblingCount } from "@/lib/waitlist/siblings";
 import { supabase } from "@/lib/supabase";
 import { fetchInviteStates, type InviteStateRow } from "@/lib/portal/invite";
 import { formatPrice } from "@/lib/format";
-import type { WaitingListHistoryRow } from "@/types/app.types";
+import type { WaitingListEntry, WaitingListHistoryRow } from "@/types/app.types";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, View } from "react-native";
 
 type Tab = "overview" | "preferences" | "history" | "notes";
 
@@ -38,12 +39,28 @@ export default function WaitlistEntryDetailScreen() {
   const [followUp, setFollowUp] = useState("");
   const [history, setHistory] = useState<WaitingListHistoryRow[]>([]);
   const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
+  const [siblings, setSiblings] = useState<WaitingListEntry[]>([]);
 
   useEffect(() => {
     if (entry) {
       setAdminNotes(entry.admin_notes ?? "");
       setFollowUp(entry.follow_up_date ?? "");
     }
+  }, [entry]);
+
+  useEffect(() => {
+    void (async () => {
+      if (!entry || !supabase) return;
+      let q = supabase.from("waiting_list").select(WAITLIST_SELECT as never);
+      if (entry.sibling_group_id) q = q.eq("sibling_group_id", entry.sibling_group_id);
+      else if (entry.application_id) q = q.eq("application_id", entry.application_id);
+      else {
+        setSiblings([entry]);
+        return;
+      }
+      const { data } = await q.order("request_index" as never, { ascending: true });
+      setSiblings((data as unknown as WaitingListEntry[]) ?? [entry]);
+    })();
   }, [entry]);
 
   useEffect(() => {
@@ -105,6 +122,9 @@ export default function WaitlistEntryDetailScreen() {
       <PageHeader eyebrow="Waiting List" title={entryDisplayName(entry)} back={false} />
       <View className="mb-3 flex-row flex-wrap gap-2 px-4">
         <Badge label={stageLabel(effectiveStage(entry))} tone="gold" />
+        {dogOfNLabel(entry.request_index, siblings.length || 1) ? (
+          <Badge label={dogOfNLabel(entry.request_index, siblings.length || 1)!} tone="gold" />
+        ) : null}
         <Badge label={entry.priority} tone="muted" />
         <InviteStateChip state={inviteState} />
         <Typography variant="subtitle" className={days >= 180 ? "text-danger" : days >= 90 ? "text-warning" : "text-gold"}>
@@ -119,7 +139,43 @@ export default function WaitlistEntryDetailScreen() {
           <Button label="Email" size="sm" variant="outline" onPress={() => Linking.openURL(`mailto:${entryEmail(entry)}`)} />
         ) : null}
         <Button label="Move stage" size="sm" onPress={() => setStageOpen(true)} />
+        {entry.application_id ? (
+          <Button
+            label="Add another dog"
+            size="sm"
+            variant="outline"
+            onPress={() => {
+              Alert.alert(
+                "Add another dog",
+                "This adds a request line on the same application. It does not create a second application.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Add",
+                    onPress: () => {
+                      void run(async () => {
+                        const res = await addDogToApplication(entry.application_id!);
+                        if (res.error) Alert.alert("Could not add", res.error);
+                        else refresh();
+                        return res;
+                      });
+                    },
+                  },
+                ],
+              );
+            }}
+          />
+        ) : null}
       </View>
+      {outstandingSiblingCount(entry, siblings) > 0 ? (
+        <View className="mb-3 px-4">
+          <Typography variant="caption" className="text-gold">
+            Allocating this line fills Dog {entry.request_index ?? 1} only.{" "}
+            {outstandingSiblingCount(entry, siblings)} other request
+            {outstandingSiblingCount(entry, siblings) === 1 ? "" : "s"} still outstanding.
+          </Typography>
+        </View>
+      ) : null}
       <View className="mb-4 px-4">
         <InviteToPortalButton
           email={entryEmail(entry)}

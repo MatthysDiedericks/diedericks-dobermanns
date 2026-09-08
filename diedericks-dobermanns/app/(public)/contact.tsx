@@ -108,6 +108,19 @@ export default function ContactScreen() {
             className="mt-4"
           />
         </Card>
+        <Card className="mt-4">
+          <Typography variant="display">Equipment</Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Collars, crates and kit. Enquire for a quote — not an order.
+          </Typography>
+          <Button
+            label="Open shop"
+            variant="outline"
+            onPress={() => router.push('/shop' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
 
         <View className="mt-6 flex-row flex-wrap gap-x-4 gap-y-2">
           <Pressable onPress={() => router.push('/privacy')}>

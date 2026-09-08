@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { type FieldErrors, useForm } from 'react-hook-form';
+import { type FieldErrors, useForm, type Resolver } from 'react-hook-form';
 import { Modal, Pressable, View, Linking } from 'react-native';
 
 import { buildApplicationDraft } from '@/components/forms/ApplicationForm/buildDraft';
+import { dogRequestsFromForm } from '@/lib/applications/dogRequests';
 import { Step1Personal } from '@/components/forms/ApplicationForm/Step1Personal';
 import { Step2Lifestyle } from '@/components/forms/ApplicationForm/Step2Lifestyle';
 import { Step3Experience } from '@/components/forms/ApplicationForm/Step3Experience';
@@ -65,8 +66,8 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
   const [companyUrl, setCompanyUrl] = useState('');
   const openedAt = useFormOpenedAt();
 
-  const { control, handleSubmit, trigger, getValues } = useForm<ApplicationFormValues>({
-    resolver: zodResolver(applicationSchema),
+  const { control, handleSubmit, trigger, getValues, setValue } = useForm<ApplicationFormValues>({
+    resolver: zodResolver(applicationSchema) as Resolver<ApplicationFormValues>,
     defaultValues: defaultApplicationValues,
     mode: 'onTouched',
     shouldUnregister: false,
@@ -110,6 +111,10 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
     setSubmitError(null);
     const valid = await trigger(STEP_FIELDS[step], { shouldFocus: true });
     if (!valid) return;
+    if (step === 3) {
+      const extraOk = await trigger('extra_dog_requests' as keyof ApplicationFormValues);
+      if (!extraOk) return;
+    }
     if (step === CHILDREN_STEP_INDEX && getValues('children_ages')) {
       setShowChildSafetyNotice(true);
       return;
@@ -154,6 +159,7 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
       buildApplicationDraft(values),
       values.marketing_opt_in,
       files,
+      dogRequestsFromForm(values),
     );
     if (error) setSubmitError(error);
     else if (referenceId) onSubmitted(referenceId);
@@ -164,7 +170,15 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
       <CompanyUrlField value={companyUrl} onChange={setCompanyUrl} />
       <ProgressBar step={step} total={STEP_FIELDS.length} />
 
-      {StepBody ? <StepBody control={control} /> : <Step6Review getValues={getValues} control={control} />}
+      {StepBody ? (
+        step === 3 ? (
+          <Step4Preferences control={control} setValue={setValue} />
+        ) : (
+          <StepBody control={control} />
+        )
+      ) : (
+        <Step6Review getValues={getValues} control={control} />
+      )}
 
       {step === lastStep ? (
         <ApplicationFilesPicker

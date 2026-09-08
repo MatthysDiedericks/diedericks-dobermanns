@@ -155,7 +155,7 @@ export function scoreMatch(
   const sex = scoreSex(entry, dog);
   const colour = scoreColour(entry, dog);
   const tail = scoreTail(entry, dog);
-  const waitDays = daysWaiting(entry.date_added ?? entry.created_at);
+  const waitDays = daysWaiting(entry.queue_anchor_at ?? entry.date_added ?? entry.created_at);
   const criteria: MatchCriterion[] = [
     {
       key: 'sex',
@@ -203,7 +203,7 @@ export function scoreMatch(
 function waitPointsForQueue(entries: WaitingListEntry[]): Map<string, number> {
   const waits = entries.map((e) => ({
     id: e.id,
-    days: daysWaiting(e.date_added ?? e.created_at),
+    days: daysWaiting(e.queue_anchor_at ?? e.date_added ?? e.created_at),
   }));
   const max = Math.max(...waits.map((w) => w.days), 1);
   const map = new Map<string, number>();
@@ -228,8 +228,8 @@ export function rankBuyersForDog(
       const pb = PRIORITY_RANK[b.entry.priority ?? 'normal'] ?? 1;
       if (pa !== pb) return pa - pb;
       if (b.score !== a.score) return b.score - a.score;
-      const da = a.entry.date_added ?? a.entry.created_at;
-      const db = b.entry.date_added ?? b.entry.created_at;
+      const da = a.entry.queue_anchor_at ?? a.entry.date_added ?? a.entry.created_at;
+      const db = b.entry.queue_anchor_at ?? b.entry.date_added ?? b.entry.created_at;
       return da.localeCompare(db);
     });
 }

@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 
+import { MediaUploader } from '@/components/forms/MediaUploader';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { equipmentImageUrl } from '@/lib/equipment/display';
 import {
   CATALOGUE_CATEGORIES,
+  STOCK_STATUSES,
   codeFromLabel,
   isStarterCatalogueItem,
   type CatalogueCategory,
   type CatalogueItem,
+  type StockStatus,
 } from '@/lib/finance/catalogue';
 import {
   createCatalogueItem,
@@ -32,6 +36,10 @@ type Draft = {
   description_template: string;
   notes: string;
   sort_order: string;
+  short_description: string;
+  is_client_visible: boolean;
+  stock_status: StockStatus;
+  image_path: string;
 };
 
 const blank = (): Draft => ({
@@ -43,6 +51,10 @@ const blank = (): Draft => ({
   description_template: '',
   notes: '',
   sort_order: '0',
+  short_description: '',
+  is_client_visible: false,
+  stock_status: 'in_stock',
+  image_path: '',
 });
 
 export default function CatalogueSettingsScreen() {
@@ -95,6 +107,10 @@ export default function CatalogueSettingsScreen() {
       notes: draft.notes.trim() || null,
       is_active: true,
       sort_order: Number(draft.sort_order) || 0,
+      short_description: draft.short_description.trim() || null,
+      is_client_visible: draft.is_client_visible,
+      stock_status: draft.stock_status,
+      image_path: draft.image_path.trim() || null,
     };
     const res =
       editingId === 'new'
@@ -161,7 +177,8 @@ export default function CatalogueSettingsScreen() {
                 <Typography variant="caption" className="mt-1 text-ink-muted">
                   {it.item_type.replace(/_/g, ' ')} ·{' '}
                   {it.price_varies ? 'price varies' : formatPrice(it.default_price ?? 0)} · on{' '}
-                  {usage[it.code] ?? 0} quotes{!it.is_active ? ' · inactive' : ''}
+                  {usage[it.code] ?? 0} quotes{it.is_client_visible ? ' · shop' : ' · internal'}
+                  {!it.is_active ? ' · inactive' : ''}
                 </Typography>
                 <View className="mt-3 flex-row gap-3">
                   <Pressable
@@ -176,6 +193,10 @@ export default function CatalogueSettingsScreen() {
                         description_template: it.description_template ?? '',
                         notes: it.notes ?? '',
                         sort_order: String(it.sort_order),
+                        short_description: it.short_description ?? '',
+                        is_client_visible: it.is_client_visible,
+                        stock_status: it.stock_status,
+                        image_path: it.image_path ?? '',
                       });
                     }}
                   >
@@ -234,6 +255,7 @@ function Editor({
           ['Label', 'label'],
           ['Item type', 'item_type'],
           ['Category', 'category'],
+          ['Shop short description', 'short_description'],
           ['Description template', 'description_template'],
           ['Sort order', 'sort_order'],
           ['Notes', 'notes'],
@@ -266,6 +288,48 @@ function Editor({
           className="rounded-lg border border-gold/20 bg-background px-3 py-2 text-ink"
         />
       ) : null}
+      <Pressable
+        onPress={() => setDraft({ ...draft, is_client_visible: !draft.is_client_visible })}
+      >
+        <Typography variant="bodyMuted">
+          Show in shop: {draft.is_client_visible ? 'yes' : 'no'} (tap to toggle)
+        </Typography>
+      </Pressable>
+      <View className="flex-row flex-wrap gap-2">
+        {STOCK_STATUSES.map((s) => (
+          <Pressable
+            key={s.value}
+            onPress={() => setDraft({ ...draft, stock_status: s.value })}
+            className={`rounded-lg border px-3 py-2 ${
+              draft.stock_status === s.value ? 'border-gold bg-gold/15' : 'border-gold/20'
+            }`}
+          >
+            <Typography variant="caption">{s.label}</Typography>
+          </Pressable>
+        ))}
+      </View>
+      <Typography variant="caption" className="mt-1 text-silver">
+        Shop image
+      </Typography>
+      <MediaUploader
+        bucket="equipment"
+        folder="catalogue"
+        max={1}
+        value={
+          draft.image_path
+            ? [{ url: equipmentImageUrl(draft.image_path) ?? draft.image_path, kind: 'image' }]
+            : []
+        }
+        onChange={(items) => {
+          const url = items[0]?.url ?? '';
+          const marker = '/object/public/equipment/';
+          const idx = url.indexOf(marker);
+          setDraft({
+            ...draft,
+            image_path: idx === -1 ? url : url.slice(idx + marker.length),
+          });
+        }}
+      />
       <View className="mt-2 flex-row gap-2">
         <Button label="Save" onPress={onSave} loading={busy} />
         <Button label="Cancel" variant="outline" onPress={onCancel} />

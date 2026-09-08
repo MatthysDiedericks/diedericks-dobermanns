@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { daysWaiting, isFollowUpOverdue } from '@/lib/waitlist/constants';
 import { entryDisplayName, effectiveStage } from '@/lib/waitlist/helpers';
+import { dogOfNLabel } from '@/lib/waitlist/siblings';
 import type { WaitingListEntry } from '@/types/app.types';
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -18,9 +19,10 @@ interface Props {
   entry: WaitingListEntry;
   onPress: () => void;
   onLongPress?: () => void;
+  siblingCount?: number;
 }
 
-export function EntryCard({ entry, onPress, onLongPress }: Props) {
+export function EntryCard({ entry, onPress, onLongPress, siblingCount = 1 }: Props) {
   const overdue = isFollowUpOverdue(entry.follow_up_date);
   const paid = entry.payment_status === 'deposit_paid' || entry.payment_status === 'paid_in_full';
 
@@ -31,7 +33,12 @@ export function EntryCard({ entry, onPress, onLongPress }: Props) {
           <Typography variant="subtitle" className="flex-1 font-cinzel" numberOfLines={1}>
             {PRIORITY_DOT[entry.priority] ?? '⚪'} {entryDisplayName(entry)}
           </Typography>
-          <Badge label={paid ? 'Deposit Paid' : 'Not Paid'} tone={paid ? 'success' : 'muted'} />
+          <View className="items-end gap-1">
+            {dogOfNLabel(entry.request_index, siblingCount) ? (
+              <Badge label={dogOfNLabel(entry.request_index, siblingCount)!} tone="gold" />
+            ) : null}
+            <Badge label={paid ? 'Deposit Paid' : 'Not Paid'} tone={paid ? 'success' : 'muted'} />
+          </View>
         </View>
         <View className="mt-2">
           <PreferenceBadges entry={entry} />

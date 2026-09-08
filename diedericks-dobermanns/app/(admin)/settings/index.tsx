@@ -77,6 +77,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            Equipment enquiries
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Shop enquiries convert into quotes. Separate from the dog pipeline.
+          </Typography>
+          <Button
+            label="View enquiries"
+            variant="outline"
+            onPress={() => router.push('/(admin)/equipment' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Notifications
           </Typography>
           <Button

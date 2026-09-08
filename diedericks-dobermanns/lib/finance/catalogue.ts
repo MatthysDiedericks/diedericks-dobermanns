@@ -16,6 +16,14 @@ export type DeliveryDecision =
   | 'to_be_confirmed'
   | 'not_applicable';
 
+export type StockStatus = 'in_stock' | 'made_to_order' | 'sold_out';
+
+export const STOCK_STATUSES: { value: StockStatus; label: string }[] = [
+  { value: 'in_stock', label: 'In stock' },
+  { value: 'made_to_order', label: 'Made to order' },
+  { value: 'sold_out', label: 'Sold out' },
+];
+
 export type CatalogueItem = {
   id: string;
   code: string;
@@ -28,6 +36,10 @@ export type CatalogueItem = {
   notes: string | null;
   is_active: boolean;
   sort_order: number;
+  image_path: string | null;
+  short_description: string | null;
+  is_client_visible: boolean;
+  stock_status: StockStatus;
 };
 
 export type LastChargeRow = {

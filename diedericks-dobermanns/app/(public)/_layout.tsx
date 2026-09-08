@@ -73,6 +73,7 @@ export default function PublicLayout() {
       <Tabs.Screen name="terms-of-sale" options={{ href: null }} />
       <Tabs.Screen name="privacy" options={{ href: null }} />
       <Tabs.Screen name="apply" options={{ href: null }} />
+      <Tabs.Screen name="shop" options={{ href: null }} />
       <Tabs.Screen name="dogs/[id]" options={{ href: null }} />
       <Tabs.Screen name="puppies/[id]" options={{ href: null }} />
       <Tabs.Screen

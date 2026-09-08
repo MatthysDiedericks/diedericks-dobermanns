@@ -314,3 +314,25 @@ export async function joinLitterWaitlist(
   }
   return { error: error?.message ?? null, id: (data?.id as string | undefined) ?? null };
 }
+
+export async function addDogToApplication(
+  applicationId: string,
+  prefs?: {
+    preferred_sex?: string | null;
+    preferred_colour?: string | null;
+    tail_preference?: string | null;
+    preferred_timeline?: string | null;
+    budget_range?: string | null;
+    notes?: string | null;
+  },
+): Promise<SaveResult> {
+  if (!supabase) {
+    await simulate();
+    return { error: null, id: 'req-demo' };
+  }
+  const { data, error } = await supabase.rpc('add_dog_to_application' as never, {
+    p_application_id: applicationId,
+    p_prefs: prefs ?? {},
+  } as never);
+  return { error: error?.message ?? null, id: data != null ? String(data) : null };
+}

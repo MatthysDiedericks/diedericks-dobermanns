@@ -93,6 +93,29 @@ export const applicationSchema = z.object({
   budget_range: z.enum(['standard', 'elite', 'open'], {
     message: 'Select your budget range',
   }),
+  dogs_requested: z.coerce.number().int().min(1).max(4),
+  extra_dog_requests: z
+    .array(
+      z.object({
+        preferred_sex: z.enum(['male', 'female', 'no_preference'], {
+          message: 'Select preferred sex',
+        }),
+        preferred_colour: z.enum(['black_tan', 'brown_tan', 'no_preference'], {
+          message: 'Select preferred colour',
+        }),
+        tail_preference: z.enum(['docked', 'natural', 'no_preference'], {
+          message: 'Select tail preference — this must be decided before whelping',
+        }),
+        preferred_timeline: z.enum(['asap', '3_months', '6_months', 'next_litter', 'flexible'], {
+          message: 'Select your preferred timeline',
+        }),
+        budget_range: z.enum(['standard', 'elite', 'open'], {
+          message: 'Select your budget range',
+        }),
+        notes: z.string().optional().or(z.literal('')),
+      }),
+    )
+    .max(3),
   training_planned: z.boolean(),
   security_requirements: z.string().optional().or(z.literal('')),
   delivery_acknowledged: z.boolean().refine((v) => v === true, {
@@ -136,6 +159,7 @@ export const STEP_FIELDS: (keyof ApplicationFormValues)[][] = [
     'tail_preference',
     'preferred_timeline',
     'budget_range',
+    'dogs_requested',
     'delivery_acknowledged',
   ],
   [
@@ -191,6 +215,8 @@ export const defaultApplicationValues: Partial<ApplicationFormValues> = {
   personal_reference_name: '',
   personal_reference_phone: '',
   security_requirements: '',
+  dogs_requested: 1,
+  extra_dog_requests: [],
   training_planned: false,
   special_requests: '',
   delivery_acknowledged: false,

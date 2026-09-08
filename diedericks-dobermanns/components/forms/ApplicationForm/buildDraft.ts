@@ -58,6 +58,7 @@ export function buildApplicationDraft(values: ApplicationFormValues): Applicatio
     tail_preference: values.tail_preference,
     preferred_timeline: values.preferred_timeline,
     budget_range: values.budget_range,
+    dogs_requested: values.dogs_requested,
     training_planned: values.training_planned,
     security_requirements: values.security_requirements || null,
     delivery_acknowledged: values.delivery_acknowledged,
@@ -68,5 +69,6 @@ export function buildApplicationDraft(values: ApplicationFormValues): Applicatio
     agreed_welfare_commitment: values.agreed_welfare_commitment,
     agreed_microchip_policy: values.agreed_microchip_policy,
     agreed_to_terms: values.agreed_to_terms,
+    marketing_opt_in: Boolean(values.marketing_opt_in),
   };
 }

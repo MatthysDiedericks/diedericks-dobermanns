@@ -81,6 +81,9 @@ export default function HomeScreen() {
               className="flex-1"
             />
           </View>
+          <Pressable onPress={() => router.push('/shop' as never)} className="mt-4">
+            <Typography variant="label">Equipment shop →</Typography>
+          </Pressable>
         </View>
       </View>
 

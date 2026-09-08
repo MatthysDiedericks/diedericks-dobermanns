@@ -9,7 +9,6 @@ import { PortalHealthDueCard } from '@/components/portal/PortalHealthDueCard';
 import { JourneyBreadcrumb } from '@/components/portal/JourneyBreadcrumb';
 import {
   CommittedLitterPanel,
-  WaitingListPlainMessage,
 } from '@/components/portal/CommittedLitterPanel';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -22,9 +21,13 @@ import { Colors } from '@/constants/colors';
 import { useBuyerJourney } from '@/hooks/useBuyerJourney';
 import { useCommittedBreeding } from '@/hooks/useCommittedBreeding';
 import { useGuestAccess } from '@/hooks/useGuestAccess';
-import { useMyApplications, usePortalDogs } from '@/hooks/usePortal';
+import { useMyApplications, usePortalDogs, usePortalWaitlistEntries } from '@/hooks/usePortal';
 import { canApplyAgain } from '@/lib/applications/applyAgain';
 import { ageFromDob, birthdayAgeWords, isBirthdayToday } from '@/lib/format';
+import { dogOfNLabel, siblingTotal } from '@/lib/waitlist/siblings';
+import { queueAnchorAt } from '@/lib/waitlist/queue';
+import { stageLabel } from '@/lib/waitlist/constants';
+import { effectiveStage } from '@/lib/waitlist/helpers';
 import { useAuthStore } from '@/stores/authStore';
 
 const BASE_QUICK_LINKS: { href: Href; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
@@ -49,9 +52,10 @@ export default function PortalDashboard() {
   const profile = useAuthStore((s) => s.profile);
   const name = profile?.full_name?.split(' ')[0] ?? 'there';
   const { dogs, loading, error } = usePortalDogs();
+  const { entries: waitlistEntries } = usePortalWaitlistEntries();
   const { data: applications } = useMyApplications();
   const { currentStep, applicationApproved, skipWaitingList } = useBuyerJourney();
-  const { parents, litter, onWaitlist } = useCommittedBreeding();
+  const { parents, litter } = useCommittedBreeding();
   const guest = useGuestAccess();
   const isApproved = applications.some((a) => a.status === 'approved');
   const quickLinks = [
@@ -105,8 +109,26 @@ export default function PortalDashboard() {
         {!loading && dogs.length === 0 ? (
           parents.length > 0 && litter ? (
             <CommittedLitterPanel litter={litter} parents={parents} />
-          ) : onWaitlist ? (
-            <WaitingListPlainMessage />
+          ) : waitlistEntries.length > 0 ? (
+            waitlistEntries.map((entry) => (
+              <Card key={entry.id} className="mb-3 p-4">
+                <Typography variant="subtitle" className="text-gold">
+                  {dogOfNLabel(entry.request_index, siblingTotal(entry, waitlistEntries)) ??
+                    'Waiting list'}
+                </Typography>
+                <Typography variant="body" className="mt-1">
+                  {stageLabel(effectiveStage(entry))}
+                  {entry.assigned_dog?.name ? ` · ${entry.assigned_dog.name}` : ''}
+                </Typography>
+                <Typography variant="caption" className="mt-1">
+                  {entry.payment_status === 'deposit_paid' || entry.payment_status === 'paid_in_full'
+                    ? 'Deposit paid'
+                    : 'Deposit outstanding'}
+                  {' · Place held from '}
+                  {queueAnchorAt(entry).slice(0, 10)}
+                </Typography>
+              </Card>
+            ))
           ) : (
             <EmptyState
               title="No dogs linked"
@@ -138,6 +160,30 @@ export default function PortalDashboard() {
               </Pressable>
             </Link>
           ))}
+        {waitlistEntries.length > 0 && dogs.length > 0 ? (
+          <View className="mt-4">
+            <SectionHeader eyebrow="Placement" title="Dogs you are waiting for" />
+            {waitlistEntries.map((entry) => (
+              <Card key={entry.id} className="mb-3 p-4">
+                <Typography variant="subtitle" className="text-gold">
+                  {dogOfNLabel(entry.request_index, siblingTotal(entry, waitlistEntries)) ??
+                    'Waiting list'}
+                </Typography>
+                <Typography variant="body" className="mt-1">
+                  {stageLabel(effectiveStage(entry))}
+                  {entry.assigned_dog?.name ? ` · ${entry.assigned_dog.name}` : ''}
+                </Typography>
+                <Typography variant="caption" className="mt-1">
+                  {entry.payment_status === 'deposit_paid' || entry.payment_status === 'paid_in_full'
+                    ? 'Deposit paid'
+                    : 'Deposit outstanding'}
+                  {' · Place held from '}
+                  {queueAnchorAt(entry).slice(0, 10)}
+                </Typography>
+              </Card>
+            ))}
+          </View>
+        ) : null}
           {primaryDog ? (
           <>
             <Link href={'/(portal)/training/request' as never} asChild>
@@ -259,9 +305,9 @@ export default function PortalDashboard() {
           <Link href={'/(portal)/application-another' as Href} asChild>
             <Pressable>
               <Card className="mb-3">
-                <Typography variant="subtitle">Apply for another dog</Typography>
+                <Typography variant="subtitle">Add another dog</Typography>
                 <Typography variant="caption" className="mt-1 text-subtle">
-                  A new application. Your previous approval stays as it is.
+                  Adds a request line on your existing application. Your approval date stays.
                 </Typography>
               </Card>
             </Pressable>

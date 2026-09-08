@@ -40,6 +40,15 @@ export async function createDraftQuoteFromApplication(
           quantity: 1,
           unit_price: prefill.unitPrice ?? 0,
         },
+        ...(prefill.extraLines ?? []).map((line) => ({
+          item_type: 'dog' as const,
+          dog_id: null,
+          litter_id: null,
+          subject_kind: 'unallocated' as const,
+          description: line.description,
+          quantity: 1,
+          unit_price: line.unitPrice ?? 0,
+        })),
       ],
     );
 

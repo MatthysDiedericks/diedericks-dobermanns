@@ -11,6 +11,7 @@ import { assignWaitlistMatch, useSubmitting } from '@/hooks/useMutations';
 import { allocateDogToClient } from '@/lib/dogs/allocation';
 import { colourLabel } from '@/lib/colours/dogColours';
 import { entryDisplayName, entryPhone } from '@/lib/waitlist/helpers';
+import { dogOfNLabel, outstandingSiblingCount } from '@/lib/waitlist/siblings';
 import { supabase } from '@/lib/supabase';
 
 export default function WaitlistMatchScreen() {
@@ -31,12 +32,23 @@ export default function WaitlistMatchScreen() {
   const { submitting, run } = useSubmitting();
 
   async function allocate(entryId: string, dogId: string, dogName: string) {
-    const name = entryDisplayName(
-      matchable.find((r) => r.id === entryId) ?? ({ enquirer_name: 'buyer' } as never),
-    );
+    const buyer = matchable.find((r) => r.id === entryId);
+    const name = entryDisplayName(buyer ?? ({ enquirer_name: 'buyer' } as never));
+    const outstanding = buyer ? outstandingSiblingCount(buyer, matchable) : 0;
+    const line = buyer
+      ? dogOfNLabel(buyer.request_index, matchable.filter((e) => {
+          return (
+            (e.sibling_group_id && e.sibling_group_id === buyer.sibling_group_id) ||
+            (e.application_id && e.application_id === buyer.application_id) ||
+            e.id === buyer.id
+          );
+        }).length)
+      : null;
     Alert.alert(
       'Confirm allocation',
-      `${dogName} → ${name}. This sets the puppy to reserved and moves the buyer to matched.`,
+      `${dogName} → ${name}${line ? ` (${line})` : ''}. This fills this request line only${
+        outstanding ? ` — ${outstanding} other dog(s) still outstanding` : ''
+      }. The puppy is reserved and this buyer moves to matched.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {

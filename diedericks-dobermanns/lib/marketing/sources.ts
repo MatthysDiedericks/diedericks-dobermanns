@@ -2,7 +2,7 @@
  *  diedericksdobermann-web/src/lib/marketing/sources.ts */
 
 export const MARKETING_CONSENT_LABEL =
-  'Send me news about upcoming litters and training.';
+  'Send me news about upcoming litters, available dogs and equipment. You can stop this at any time.';
 
 export const MARKETING_SOURCES = {
   applicationForm: 'application_form',

@@ -556,6 +556,7 @@ export interface Application {
   tail_preference: string | null;
   preferred_timeline: string | null;
   budget_range: string | null;
+  dogs_requested?: number;
   training_planned: boolean;
   delivery_acknowledged: boolean;
   special_requests: string | null;
@@ -575,6 +576,7 @@ export interface Application {
   agreed_welfare_commitment: boolean;
   agreed_microchip_policy: boolean;
   agreed_to_terms: boolean;
+  marketing_opt_in?: boolean;
   archived_at?: string | null;
   archived_by?: string | null;
   archived_reason?: string | null;
@@ -668,6 +670,9 @@ export interface WaitingListEntry {
   do_not_sell_reason: string | null;
   hold_reason?: string | null;
   position: number | null;
+  request_index?: number | null;
+  sibling_group_id?: string | null;
+  queue_anchor_at?: string | null;
   status: WaitingListStatus;
   pipeline_stage: string | null;
   stage_updated_at?: string | null;

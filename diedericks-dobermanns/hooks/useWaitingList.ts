@@ -4,7 +4,7 @@ import { MOCK_WAITING_LIST } from '@/lib/mockData';
 import { supabase } from '@/lib/supabase';
 import { isFollowUpOverdue } from '@/lib/waitlist/constants';
 import { effectiveStage } from '@/lib/waitlist/helpers';
-import { stageRank } from '@/lib/waitlist/pipeline';
+import { compareQueueOrder } from '@/lib/waitlist/queue';
 import { WAITLIST_SELECT, WAITLIST_TYPE_SELECT } from '@/lib/waitlist/queries';
 import type { WaitingListEntry, WaitingListType } from '@/types/app.types';
 
@@ -23,9 +23,9 @@ export function useWaitingList() {
       }
       const { data: rows, error: err } = await supabase
         .from('waiting_list')
-        .select(WAITLIST_SELECT)
-        .order('position', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: true });
+        .select(WAITLIST_SELECT as never)
+        .order('queue_anchor_at' as never, { ascending: true })
+        .order('request_index' as never, { ascending: true });
       if (err) throw new Error(err.message);
       setData((rows ?? []) as unknown as WaitingListEntry[]);
     } catch (e) {
@@ -84,7 +84,7 @@ export function useWaitlistEntry(id: string) {
       setLoading(false);
       return;
     }
-    const { data } = await supabase.from('waiting_list').select(WAITLIST_SELECT).eq('id', id).single();
+    const { data } = await supabase.from('waiting_list').select(WAITLIST_SELECT as never).eq('id', id).single();
     setEntry((data as unknown as WaitingListEntry) ?? null);
     setLoading(false);
   }, [id]);
@@ -142,14 +142,7 @@ export function filterWaitlistEntries(
   });
 }
 
-/** Sort by pipeline stage order, then longest waiting first. */
+/** Sort by queue standing so sibling lines stay grouped under one client. */
 export function sortWaitlistEntries(entries: WaitingListEntry[]): WaitingListEntry[] {
-  return [...entries].sort((a, b) => {
-    const ra = stageRank(effectiveStage(a));
-    const rb = stageRank(effectiveStage(b));
-    if (ra !== rb) return ra - rb;
-    const da = a.date_added ?? a.created_at;
-    const db = b.date_added ?? b.created_at;
-    return da.localeCompare(db);
-  });
+  return [...entries].sort(compareQueueOrder);
 }

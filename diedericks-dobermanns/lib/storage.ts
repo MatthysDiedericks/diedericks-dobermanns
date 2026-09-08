@@ -19,7 +19,8 @@ export type StorageBucket =
   | 'avatars'
   | 'testimonials'
   | 'receipts'
-  | 'litter-media';
+  | 'litter-media'
+  | 'equipment';
 
 export interface UploadOptions {
   bucket: StorageBucket;

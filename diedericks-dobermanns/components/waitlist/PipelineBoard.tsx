@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Typography } from '@/components/ui/Typography';
 import { KANBAN_STAGES, stageLabel, TERMINAL_STAGES } from '@/lib/waitlist/constants';
 import { effectiveStage } from '@/lib/waitlist/helpers';
+import { siblingTotal } from '@/lib/waitlist/siblings';
 import type { WaitingListEntry } from '@/types/app.types';
 
 interface Props {
@@ -39,6 +40,7 @@ export function PipelineBoard({ entries, onSelect, onLongPress }: Props) {
             renderItem={({ item: entry }) => (
               <EntryCard
                 entry={entry}
+                siblingCount={siblingTotal(entry, entries)}
                 onPress={() => onSelect(entry)}
                 onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
               />

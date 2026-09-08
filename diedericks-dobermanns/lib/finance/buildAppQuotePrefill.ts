@@ -30,6 +30,7 @@ export type AppQuotePrefill = {
   litterInterestId: string | null;
   applicationTier: string | null;
   existingQuoteId: string | null;
+  extraLines?: { description: string; unitPrice: number | null }[];
 };
 
 function quoteLabel(field: keyof ApplicationFormValues, value: string): string {
@@ -141,6 +142,24 @@ export async function buildAppQuotePrefill(
         ? `${unallocatedLineDescription(tierLabel)}${prefs}`
         : `${tierLabel}${prefs}`;
 
+  const { data: dogReqs } = await supabase
+    .from('application_dog_requests' as never)
+    .select('request_index, preferred_sex, preferred_colour, tail_preference, budget_range')
+    .eq('application_id', applicationId)
+    .order('request_index');
+  const reqRows = (dogReqs ?? []) as {
+    request_index: number;
+    preferred_sex: string | null;
+    preferred_colour: string | null;
+    tail_preference: string | null;
+  }[];
+  const extraLines = reqRows
+    .filter((r) => r.request_index > 1)
+    .map((r) => ({
+      description: `Dog ${r.request_index} of ${Math.max(reqRows.length, 2)} — future placement (litter TBC)${preferenceSummary(r)}`,
+      unitPrice: resolved.unitPrice,
+    }));
+
   return {
     applicationId,
     clientId: app.user_id,
@@ -156,5 +175,6 @@ export async function buildAppQuotePrefill(
     litterInterestId: app.litter_interest_id,
     applicationTier: app.dog_interest,
     existingQuoteId: existing?.id ?? null,
+    extraLines,
   };
 }

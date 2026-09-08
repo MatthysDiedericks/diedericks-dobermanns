@@ -3,9 +3,12 @@ import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase } from '@/lib/supabase';
 
 const SELECT =
-  'id, code, label, item_type, category, default_price, price_varies, description_template, notes, is_active, sort_order';
+  'id, code, label, item_type, category, default_price, price_varies, description_template, notes, is_active, sort_order, image_path, short_description, is_client_visible, stock_status';
 
 function mapRow(r: Record<string, unknown>): CatalogueItem {
+  const stock = r.stock_status === 'made_to_order' || r.stock_status === 'sold_out'
+    ? r.stock_status
+    : 'in_stock';
   return {
     id: String(r.id),
     code: String(r.code),
@@ -18,7 +21,24 @@ function mapRow(r: Record<string, unknown>): CatalogueItem {
     notes: (r.notes as string | null) ?? null,
     is_active: Boolean(r.is_active),
     sort_order: Number(r.sort_order ?? 0),
+    image_path: (r.image_path as string | null) ?? null,
+    short_description: (r.short_description as string | null) ?? null,
+    is_client_visible: Boolean(r.is_client_visible),
+    stock_status: stock,
   };
+}
+
+/** Shop grid: active and client-visible. Both flags must be true. */
+export async function fetchShopCatalogueItems(): Promise<CatalogueItem[]> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('catalogue_items' as never)
+    .select(SELECT)
+    .eq('is_active' as never, true)
+    .eq('is_client_visible' as never, true)
+    .order('sort_order' as never);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, unknown>[]).map(mapRow);
 }
 
 export async function fetchActiveCatalogueItems(): Promise<CatalogueItem[]> {
@@ -174,6 +194,10 @@ export type CatalogueWriteInput = {
   notes: string | null;
   is_active: boolean;
   sort_order: number;
+  image_path?: string | null;
+  short_description?: string | null;
+  is_client_visible?: boolean;
+  stock_status?: CatalogueItem['stock_status'];
 };
 
 function validatePrice(input: CatalogueWriteInput): string | null {

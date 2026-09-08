@@ -35,7 +35,7 @@ const ADMIN_DOG_SELECT =
   'id, name, breed, colour, sex, status, date_of_birth, category, price, is_public, is_featured, created_at, media:dog_media!dog_media_dog_id_fkey(id, dog_id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
 
 const WAITING_LIST_SELECT =
-  'id, client_id, litter_id, preference_notes, position, status, pipeline_stage, follow_up_date, feedback, expected_delivery_date, created_at, client:users(id, full_name, phone)';
+  'id, client_id, litter_id, preference_notes, position, request_index, sibling_group_id, queue_anchor_at, status, pipeline_stage, follow_up_date, feedback, expected_delivery_date, created_at, client:users(id, full_name, phone)';
 
 const BROADCAST_SELECT =
   'id, group_id, title, body, image_url, channels, status, scheduled_for, sent_at, sent_by, recipient_count, created_at, group:client_groups(id, name, type, colour, member_count, litter_id, created_at)';
@@ -108,7 +108,7 @@ export function useEnquiries(): ListResult<Enquiry> {
 
 export function useWaitingList(): ListResult<WaitingListEntry> {
   return useRemoteList<WaitingListEntry>(MOCK_WAITING_LIST, (client) =>
-    client.from('waiting_list').select(WAITING_LIST_SELECT).order('position'),
+    client.from('waiting_list').select(WAITING_LIST_SELECT as never).order('queue_anchor_at' as never).order('request_index' as never),
   );
 }
 

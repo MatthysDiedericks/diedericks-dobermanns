@@ -97,15 +97,15 @@ export function usePortalDogs(forUserId?: string) {
 const RESERVATION_SELECT =
   'id, status, deposit_paid, deposit_amount, total_price, expected_pickup_date, dog:dogs(id, name, colour, sex, date_of_birth, microchip_number, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at))';
 
-export function usePortalReservation() {
+export function usePortalReservations() {
   const userId = useAuthStore((s) => s.session?.user.id);
-  const [reservation, setReservation] = useState<PortalReservation | null>(null);
+  const [reservations, setReservations] = useState<PortalReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!userId) {
-      setReservation(null);
+      setReservations([]);
       setLoading(false);
       return;
     }
@@ -119,31 +119,31 @@ export function usePortalReservation() {
         .select(RESERVATION_SELECT)
         .in('client_id', ids)
         .eq('status', 'confirmed')
-        .maybeSingle();
+        .order('created_at', { ascending: false });
       if (err) throw new Error(err.message);
-      if (!data) {
-        setReservation(null);
-      } else {
-        const r = data as Record<string, unknown>;
-        const dogRaw = r.dog as Record<string, unknown> | null;
-        let dog: Dog | null = null;
-        if (dogRaw) {
-          const media = (dogRaw.dog_media as Dog['media']) ?? [];
-          dog = { ...(dogRaw as unknown as Dog), media };
-        }
-        setReservation({
-          id: r.id as string,
-          status: r.status as string,
-          deposit_paid: r.deposit_paid as boolean,
-          deposit_amount: r.deposit_amount as number | null,
-          total_price: r.total_price as number | null,
-          expected_pickup_date: r.expected_pickup_date as string | null,
-          dog,
-        });
-      }
+      setReservations(
+        (data ?? []).map((row) => {
+          const r = row as Record<string, unknown>;
+          const dogRaw = r.dog as Record<string, unknown> | null;
+          let dog: Dog | null = null;
+          if (dogRaw) {
+            const media = (dogRaw.dog_media as Dog['media']) ?? [];
+            dog = { ...(dogRaw as unknown as Dog), media };
+          }
+          return {
+            id: r.id as string,
+            status: r.status as string,
+            deposit_paid: r.deposit_paid as boolean,
+            deposit_amount: r.deposit_amount as number | null,
+            total_price: r.total_price as number | null,
+            expected_pickup_date: r.expected_pickup_date as string | null,
+            dog,
+          };
+        }),
+      );
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load reservation');
-      setReservation(null);
+      setError(e instanceof Error ? e.message : 'Failed to load reservations');
+      setReservations([]);
     } finally {
       setLoading(false);
     }
@@ -153,7 +153,12 @@ export function usePortalReservation() {
     refresh();
   }, [refresh]);
 
-  return { reservation, loading, error, refresh };
+  return { reservations, loading, error, refresh };
+}
+
+export function usePortalReservation() {
+  const { reservations, loading, error, refresh } = usePortalReservations();
+  return { reservation: reservations[0] ?? null, loading, error, refresh };
 }
 
 export interface PortalGroupRow {
@@ -204,15 +209,15 @@ export function usePortalGroups() {
   return { groups, loading, error, refresh };
 }
 
-export function usePortalWaitlistEntry() {
+export function usePortalWaitlistEntries() {
   const userId = useAuthStore((s) => s.profile?.id);
-  const [entry, setEntry] = useState<WaitingListEntry | null>(null);
+  const [entries, setEntries] = useState<WaitingListEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!userId) {
-      setEntry(null);
+      setEntries([]);
       setLoading(false);
       return;
     }
@@ -223,17 +228,16 @@ export function usePortalWaitlistEntry() {
       const ids = await fetchMyClientIds();
       const { data, error: err } = await supabase
         .from('waiting_list')
-        .select(WAITLIST_SELECT)
+        .select(WAITLIST_SELECT as never)
         .in('client_id', ids)
         .neq('pipeline_stage', 'withdrawn')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('queue_anchor_at' as never, { ascending: true })
+        .order('request_index' as never, { ascending: true });
       if (err) throw new Error(err.message);
-      setEntry((data as unknown as WaitingListEntry) ?? null);
+      setEntries((data as unknown as WaitingListEntry[]) ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load waitlist');
-      setEntry(null);
+      setEntries([]);
     } finally {
       setLoading(false);
     }
@@ -243,7 +247,13 @@ export function usePortalWaitlistEntry() {
     refresh();
   }, [refresh]);
 
-  return { entry, loading, error, refresh };
+  return { entries, loading, error, refresh };
+}
+
+/** @deprecated Use usePortalWaitlistEntries — a client can have more than one line. */
+export function usePortalWaitlistEntry() {
+  const { entries, loading, error, refresh } = usePortalWaitlistEntries();
+  return { entry: entries[0] ?? null, loading, error, refresh };
 }
 
 export function useLitterWaitlistStatus(litterId: string) {

@@ -23,7 +23,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useApplicationDetail } from '@/hooks/useAdmin';
 import { useLinkedQuote, type LinkedQuote } from '@/hooks/useLinkedQuote';
-import { createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
+import { addDogToApplication, createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
 import { titleCase } from '@/lib/format';
@@ -253,6 +253,7 @@ export default function ApplicationDetailScreen() {
 
         <Card className="mt-4">
           <Typography variant="label" className="mb-2 text-gold">Puppy Preferences</Typography>
+          <Field label="Dogs requested" value={String(app.dogs_requested ?? 1)} />
           <EnumField label="Interest" field="dog_interest" value={app.dog_interest} />
           <EnumField label="Purpose" field="purpose" value={app.purpose} />
           <EnumField label="Sex" field="preferred_sex" value={app.preferred_sex} />
@@ -309,6 +310,31 @@ export default function ApplicationDetailScreen() {
                 variant="outline"
                 onPress={() => void addToWaitlist()}
                 loading={addingWl}
+                fullWidth
+              />
+              <Button
+                label="Add another dog to this application"
+                variant="outline"
+                onPress={() => {
+                  Alert.alert(
+                    'Add another dog',
+                    'This inserts a second request line on this application. It does not create a second application or reset their date.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Add',
+                        onPress: () => {
+                          void run(async () => {
+                            const res = await addDogToApplication(app.id);
+                            if (res.error) Alert.alert('Could not add', res.error);
+                            else refresh();
+                            return res;
+                          });
+                        },
+                      },
+                    ],
+                  );
+                }}
                 fullWidth
               />
             </>

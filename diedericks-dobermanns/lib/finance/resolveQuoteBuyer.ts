@@ -33,8 +33,15 @@ export async function findOrCreateContactFromApplication(applicationId: string):
     throw new Error('This application has no email, so a contact cannot be created.');
   }
 
+  const { propagateApplicationMarketingConsent } = await import(
+    '@/lib/marketing/propagateApplicationConsent'
+  );
+
   const existing = await findActiveContactIdByEmail(app.email);
-  if (existing) return existing;
+  if (existing) {
+    await propagateApplicationMarketingConsent(applicationId, existing);
+    return existing;
+  }
 
   const { data, error: insertErr } = await supabase
     .from('contacts')
@@ -50,6 +57,7 @@ export async function findOrCreateContactFromApplication(applicationId: string):
     .select('id')
     .single();
   if (insertErr || !data) throw new Error(insertErr?.message ?? 'Could not create contact.');
+  await propagateApplicationMarketingConsent(applicationId, data.id);
   return data.id;
 }
 

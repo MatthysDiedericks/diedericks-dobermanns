@@ -60,6 +60,17 @@ export function seedAppQuoteItems(
         unit_price: application.unitPrice ?? 0,
         priceSourceLabel: application.priceSourceLabel,
       },
+      ...(application.extraLines ?? []).map((line) => ({
+        key: nextQuoteLineKey(),
+        item_type: 'dog' as const,
+        dog_id: null,
+        litter_id: null,
+        subject_kind: 'unallocated' as const,
+        programme_tier: application.applicationTier,
+        description: line.description,
+        quantity: 1,
+        unit_price: line.unitPrice ?? 0,
+      })),
     ];
   }
   return [

@@ -97,30 +97,35 @@ export async function syncWaitlistOnApplicationApproved(
     .single();
   if (appErr || !app) return { error: appErr?.message ?? 'Application not found' };
 
-  const { data: existing } = await supabase
+  const { data: existingRows } = await supabase
     .from('waiting_list')
     .select(
       'id, pipeline_stage, preferred_sex, preferred_colour, tail_preference, budget_range, preferred_timeline, preferred_category, preference_notes',
     )
     .eq('application_id', applicationId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+      .order('request_index' as never, { ascending: true });
 
-  if (!existing) return { error: null };
+  if (!existingRows?.length) return { error: null };
 
-  const prefs = prefsFromApplication(app, existing);
-  const stagePatch = buildForwardStagePatch(
-    existing.pipeline_stage ?? 'enquiry',
-    'approved',
-    actorId,
-    { status: 'active', stage_change_note: 'Application approved' },
-  );
-
-  const update: TablesUpdate<'waiting_list'> = {
-    ...prefs,
-    ...(stagePatch ?? {}),
-  };
-  const { error } = await supabase.from('waiting_list').update(update).eq('id', existing.id);
-  return { error: error?.message ?? null, waitlistId: existing.id };
+  const locked = new Set(['deposit_paid', 'matched', 'reserved', 'handover_complete', 'withdrawn']);
+  let lastId: string | undefined;
+  for (const existing of existingRows) {
+    const prefs = prefsFromApplication(app, existing);
+    const stagePatch = locked.has(existing.pipeline_stage ?? '')
+      ? null
+      : buildForwardStagePatch(
+          existing.pipeline_stage ?? 'enquiry',
+          'approved',
+          actorId,
+          { status: 'active', stage_change_note: 'Application approved' },
+        );
+    const update: TablesUpdate<'waiting_list'> = {
+      ...prefs,
+      ...(stagePatch ?? {}),
+    };
+    const { error } = await supabase.from('waiting_list').update(update).eq('id', existing.id);
+    if (error) return { error: error.message, waitlistId: existing.id };
+    lastId = existing.id;
+  }
+  return { error: null, waitlistId: lastId };
 }

@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import type { Application } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
 import { postApplicationFiles, type PickedApplicationFile } from '@/lib/uploads/applicationFiles';
+import type { DogRequestPayload } from '@/lib/applications/dogRequests';
 
 export type ApplicationDraft = Omit<
   Application,
@@ -84,6 +85,7 @@ export function useSubmitApplication() {
     draft: ApplicationDraft,
     marketingOptIn?: boolean,
     files: PickedApplicationFile[] = [],
+    dogRequests: DogRequestPayload[] = [],
   ): Promise<SubmitResult> {
     setSubmitting(true);
     try {
@@ -138,6 +140,16 @@ export function useSubmitApplication() {
           referenceId: null,
           error: limited ? await blockedMessage() : applyCouldNot(safeDbReason(error)),
         };
+      }
+
+      if (dogRequests.length > 0) {
+        const { error: reqErr } = await supabase.rpc('save_application_dog_requests' as never, {
+          p_application_id: applicationId,
+          p_requests: dogRequests,
+        } as never);
+        if (reqErr) {
+          console.error('[useSubmitApplication] dog requests:', reqErr.message);
+        }
       }
 
       if (files.length > 0) {

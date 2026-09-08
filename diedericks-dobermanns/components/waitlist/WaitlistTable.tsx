@@ -10,6 +10,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { daysWaiting, isFollowUpOverdue, stageLabel } from '@/lib/waitlist/constants';
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from '@/lib/waitlist/helpers';
+import { dogOfNLabel, siblingTotal } from '@/lib/waitlist/siblings';
 import { reorderWaitlistPosition } from '@/lib/waitlist/mutations';
 import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
 import { formatPrice } from '@/lib/format';
@@ -74,6 +75,11 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Pro
                     {entryDisplayName(entry)}
                   </Typography>
                 </Pressable>
+                {dogOfNLabel(entry.request_index, siblingTotal(entry, entries)) ? (
+                  <Typography variant="caption" className="text-gold">
+                    {dogOfNLabel(entry.request_index, siblingTotal(entry, entries))}
+                  </Typography>
+                ) : null}
                 {entryPhone(entry) ? (
                   <Pressable onPress={() => Linking.openURL(`tel:${entryPhone(entry)}`)}>
                     <Typography variant="caption" className="text-gold">{entryPhone(entry)}</Typography>

@@ -11,6 +11,7 @@ import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 import { simulate, type MutationResult, type SaveResult } from '@/lib/shared/mutationTypes';
 
 export {
+  addDogToApplication,
   assignWaitlistMatch,
   createWaitlistEntry,
   createWaitlistFromApplication,
