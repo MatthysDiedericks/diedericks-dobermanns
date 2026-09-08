@@ -366,7 +366,7 @@ begin
       if v_opt_out is null and v_email is not null then
         perform public.quote_lapse_send_email(v_email,
           'Your quotation is still open',
-          v_html || '<p>Your quotation is still open. Your place is held until we hear from you, and a deposit is what secures it. If anything has changed, tell me and I will hold it or release it — no hard feelings either way.</p>'
+          v_html || '<p>Your quotation is still open and we are in no hurry. A deposit is what holds your place on the waiting list and secures the puppy — until then he stays on the available list. If anything has changed, just tell me and I will hold him for you or release him — no hard feelings either way.</p>'
           || '<p><a href="' || v_site || '/portal/quotes/' || q.id || '" style="color:#C4A35A">Open your quotation →</a></p></div>');
         insert into public.notifications_log (recipient_id, type, subject, body, status)
         values (v_uid, 'quote_reminder_first', 'Your quotation is still open', q.quote_number, 'sent');
