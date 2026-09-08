@@ -16,6 +16,7 @@ import { Colors } from '@/constants/colors';
 import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { usePublicLitterDetail } from '@/hooks/usePublicLitterDetail';
 import { titleCase } from '@/lib/format';
+import { publicLitterKind } from '@/lib/litters/publicPlacement';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -53,18 +54,30 @@ export default function LitterDetailScreen() {
     );
   }
 
+  const kind = publicLitterKind(litter, puppies);
+  const placed = kind === 'placed';
+
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="Litter" title={litter.name ?? 'Upcoming Litter'} />
+      <PageHeader
+        eyebrow={placed ? 'Recent litter' : 'Litter'}
+        title={litter.name ?? 'Upcoming Litter'}
+      />
       <View className="px-6">
         <View className="mb-4 flex-row">
-          <Badge label={titleCase(litter.status)} tone="gold" />
+          <Badge label={placed ? 'All placed' : titleCase(litter.status)} tone="gold" />
         </View>
+        {placed ? (
+          <Typography variant="bodyMuted" className="mb-4">
+            Every puppy in this litter has gone home. This is a showcase, not a
+            listing of dogs for sale.
+          </Typography>
+        ) : null}
 
         <View className="flex-row rounded-2xl border border-gold/15 bg-black-rich py-4">
-          <Stat label="Expected" value={litter.expected_date ?? 'TBC'} />
+          <Stat label={litter.actual_date ? 'Born' : 'Expected'} value={litter.actual_date ?? litter.expected_date ?? 'TBC'} />
           <Stat label="Puppies" value={String(litter.puppy_count ?? '—')} />
-          <Stat label="Available" value={String(litter.available_count ?? '—')} />
+          <Stat label={placed ? 'Status' : 'Available'} value={placed ? 'All placed' : String(litter.available_count ?? '—')} />
         </View>
 
         {litter.description ? (
@@ -90,7 +103,7 @@ export default function LitterDetailScreen() {
 
         <View className="mt-6">
           <Typography variant="label" className="mb-3">
-            PUPPIES
+            {placed ? 'THE PUPPIES — ALL PLACED' : 'PUPPIES'}
           </Typography>
           {puppies.length === 0 ? (
             <EmptyState title="No puppies listed yet" message="Check back soon for updates." />

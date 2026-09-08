@@ -15,7 +15,7 @@ import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 export default function EditDogScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { dog, loading, error } = useDog(id);
+  const { dog, loading, error } = useDog(id, { staff: true });
   const { submitting, run } = useSubmitting();
 
   async function onDelete() {

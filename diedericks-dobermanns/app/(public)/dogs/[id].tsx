@@ -18,7 +18,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDog } from '@/hooks/useDogs';
 import { useDogTimeline } from '@/hooks/useRecords';
-import { formatAge, formatPrice, titleCase } from '@/lib/format';
+import { formatAge, titleCase } from '@/lib/format';
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -96,9 +96,6 @@ export default function DogProfileScreen() {
           registeredName={dog.registered_name}
           wrightsCoi={dog.wrights_coi}
         />
-        <Typography variant="label" className="mt-2">
-          {formatPrice(dog.price)}
-        </Typography>
 
         {/* Key stats */}
         <View className="mt-6 flex-row rounded-2xl border border-gold/15 bg-black-rich py-4">

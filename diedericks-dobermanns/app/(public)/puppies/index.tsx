@@ -12,6 +12,7 @@ import { Typography } from '@/components/ui/Typography';
 import { useLitters } from '@/hooks/useContent';
 import { useDogs } from '@/hooks/useDogs';
 import { titleCase } from '@/lib/format';
+import { publicLitterKind } from '@/lib/litters/publicPlacement';
 
 function formatExpected(value: string | null): string {
   if (!value) return 'Date to be confirmed';
@@ -23,12 +24,12 @@ export default function PuppiesScreen() {
   const { dogs: puppies, loading: puppiesLoading } = useDogs({ category: 'puppy' });
   const { data: litters, loading: littersLoading } = useLitters();
 
-  // Only show litters that haven't been fully placed yet — this is the
-  // "next due dates / forecasted litters" view, not a historical record.
-  const upcomingLitters = litters.filter((l) => l.status !== 'placed');
+  const placedLitters = litters.filter((l) => publicLitterKind(l) === 'placed');
+  const upcomingLitters = litters.filter((l) => publicLitterKind(l) === 'upcoming');
 
   const loading = puppiesLoading || littersLoading;
-  const nothingToShow = !loading && puppies.length === 0 && upcomingLitters.length === 0;
+  const nothingToShow =
+    !loading && puppies.length === 0 && placedLitters.length === 0 && upcomingLitters.length === 0;
 
   return (
     <ScreenContainer>
@@ -56,6 +57,35 @@ export default function PuppiesScreen() {
               <SectionHeader eyebrow="On Hand" title="Available Puppies" />
               {puppies.map((dog) => (
                 <DogCard key={dog.id} dog={dog} />
+              ))}
+            </View>
+          ) : null}
+
+          {placedLitters.length > 0 ? (
+            <View className={`${puppies.length > 0 ? 'mt-10' : ''} gap-4 px-6`}>
+              <SectionHeader eyebrow="Recent Litter" title="Just Placed" />
+              <Typography variant="bodyMuted">
+                Every puppy in this litter has gone home. Join the waiting list for a coming pairing.
+              </Typography>
+              {placedLitters.map((litter) => (
+                <Pressable key={litter.id} onPress={() => router.push(`/litters/${litter.id}`)}>
+                  <Card>
+                    <View className="flex-row items-center justify-between">
+                      <Typography variant="title" className="flex-1">
+                        {litter.name ?? 'Recent litter'}
+                      </Typography>
+                      <Badge label="All placed" tone="gold" />
+                    </View>
+                    <Typography variant="caption" className="mt-2">
+                      Born {formatExpected(litter.actual_date)}
+                    </Typography>
+                    {litter.description ? (
+                      <Typography variant="bodyMuted" className="mt-3">
+                        {litter.description}
+                      </Typography>
+                    ) : null}
+                  </Card>
+                </Pressable>
               ))}
             </View>
           ) : null}

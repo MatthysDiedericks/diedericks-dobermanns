@@ -20,7 +20,7 @@ const TABS = ['Profile', 'Health', 'Training', 'Litter', 'Documents', 'Gallery']
 export default function DogProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { dog, loading, error } = useDog(id ?? '');
+  const { dog, loading, error } = useDog(id ?? '', { staff: true });
   const [tab, setTab] = useState<typeof TABS[number]>('Profile');
 
   if (loading) return <ScreenContainer><CardListSkeleton count={3} /></ScreenContainer>;

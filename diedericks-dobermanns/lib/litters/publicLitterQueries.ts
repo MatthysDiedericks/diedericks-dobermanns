@@ -96,6 +96,8 @@ export async function fetchPublicLitterPuppies(litterId: string): Promise<Public
     .select(PUPPY_SELECT)
     .eq('litter_id', litterId)
     .eq('is_public', true)
+    .neq('status', 'deceased')
+    .is('deceased_at', null)
     .order('name');
   if (error) throw new Error(error.message);
   return (data as unknown as PublicPuppyRow[]) ?? [];

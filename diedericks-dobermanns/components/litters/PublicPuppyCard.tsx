@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { ThumbImage } from '@/components/media/ThumbImage';
+import { Badge } from '@/components/ui/Badge';
 import { Typography } from '@/components/ui/Typography';
 import { titleCase } from '@/lib/format';
 import { CollarDot } from '@/lib/litters/collarColours';
@@ -26,6 +27,7 @@ export function PublicPuppyCard({
   photoUrl,
   latestWeightKg,
 }: PublicPuppyCardProps) {
+  const placed = status === 'sold' || status === 'gifted';
   return (
     <View className="w-[48%] overflow-hidden rounded-2xl border border-gold/15 bg-black-rich">
       <View className="h-32 w-full items-center justify-center bg-surface">
@@ -46,7 +48,11 @@ export function PublicPuppyCard({
           {titleCase(sex)}
         </Typography>
         <View className="mt-2 flex-row items-center justify-between">
-          <DogStatusBadge status={status as DogStatus} />
+          {placed ? (
+            <Badge label="Placed" tone="gold" />
+          ) : (
+            <DogStatusBadge status={status as DogStatus} />
+          )}
           {latestWeightKg != null ? (
             <Typography variant="caption" className="text-gold">
               {formatWeightGrams(latestWeightKg)}

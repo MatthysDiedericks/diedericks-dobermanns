@@ -9,6 +9,8 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { useLitters } from '@/hooks/useContent';
 import { titleCase } from '@/lib/format';
+import { publicLitterKind } from '@/lib/litters/publicPlacement';
+import type { Litter } from '@/types/app.types';
 
 function formatDate(value: string | null): string {
   if (!value) return 'TBC';
@@ -18,40 +20,55 @@ function formatDate(value: string | null): string {
   });
 }
 
-export default function LittersScreen() {
+function LitterCard({ litter, placed }: { litter: Litter; placed: boolean }) {
   const router = useRouter();
+  return (
+    <Pressable onPress={() => router.push(`/litters/${litter.id}`)}>
+      <Card>
+        <View className="flex-row items-center justify-between">
+          <Typography variant="title" className="flex-1">
+            {litter.name ?? 'Upcoming Litter'}
+          </Typography>
+          <Badge label={placed ? 'All placed' : titleCase(litter.status)} tone="gold" />
+        </View>
+        <Typography variant="caption" className="mt-2">
+          {placed ? `Born ${formatDate(litter.actual_date)}` : `Expected ${formatDate(litter.expected_date)}`}
+          {placed
+            ? ''
+            : litter.available_count != null
+              ? ` · ${litter.available_count} spots`
+              : ''}
+        </Typography>
+        {litter.description ? (
+          <Typography variant="bodyMuted" className="mt-3">
+            {litter.description}
+          </Typography>
+        ) : null}
+      </Card>
+    </Pressable>
+  );
+}
+
+export default function LittersScreen() {
   const { data: litters, loading } = useLitters();
+  const placedLitters = litters.filter((l) => publicLitterKind(l) === 'placed');
+  const upcomingLitters = litters.filter((l) => publicLitterKind(l) !== 'placed');
 
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="Planned Pairings" title="Expected Litters" />
+      <PageHeader eyebrow="The Next Generation" title="Our Litters" />
       <View className="gap-4 px-6">
         {!loading && litters.length === 0 ? (
           <EmptyState title="No litters announced yet" />
         ) : (
-          litters.map((litter) => (
-            <Pressable key={litter.id} onPress={() => router.push(`/litters/${litter.id}`)}>
-              <Card>
-                <View className="flex-row items-center justify-between">
-                  <Typography variant="title" className="flex-1">
-                    {litter.name ?? 'Upcoming Litter'}
-                  </Typography>
-                  <Badge label={titleCase(litter.status)} tone="gold" />
-                </View>
-                <Typography variant="caption" className="mt-2">
-                  Expected {formatDate(litter.expected_date)}
-                  {litter.available_count != null
-                    ? ` · ${litter.available_count} spots`
-                    : ''}
-                </Typography>
-                {litter.description ? (
-                  <Typography variant="bodyMuted" className="mt-3">
-                    {litter.description}
-                  </Typography>
-                ) : null}
-              </Card>
-            </Pressable>
-          ))
+          <>
+            {placedLitters.map((litter) => (
+              <LitterCard key={litter.id} litter={litter} placed />
+            ))}
+            {upcomingLitters.map((litter) => (
+              <LitterCard key={litter.id} litter={litter} placed={false} />
+            ))}
+          </>
         )}
       </View>
     </ScreenContainer>

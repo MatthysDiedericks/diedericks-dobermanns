@@ -7,10 +7,11 @@ export type ClaimCounts = {
   quotes: number;
   waitlist: number;
   contracts: number;
+  dogs: number;
 };
 
 /**
- * Links applications / quotes / waitlist / contracts raised against the
+ * Links applications / quotes / waitlist / contracts / dogs raised against the
  * caller's confirmed email. Takes the already-verified user id from the
  * caller — never call getUser() here, and never pass a user-supplied email.
  * Safe to call repeatedly; failures must not block sign-in.
@@ -21,6 +22,7 @@ export async function claimMyRecords(userId: string | null | undefined): Promise
     quotes: 0,
     waitlist: 0,
     contracts: 0,
+    dogs: 0,
   };
   if (!supabase) return empty;
   try {
@@ -55,11 +57,14 @@ export async function claimMyRecords(userId: string | null | undefined): Promise
     }
 
     const row = Array.isArray(data) ? data[0] : data;
+    // `dogs` lands after Matt applies 0154; do not hand-edit database.types.ts.
+    const extra = row as { dogs?: number } | null | undefined;
     return {
       applications: Number(row?.applications ?? 0) || 0,
       quotes: Number(row?.quotes ?? 0) || 0,
       waitlist: Number(row?.waitlist ?? 0) || 0,
       contracts: Number(row?.contracts ?? 0) || 0,
+      dogs: Number(extra?.dogs ?? 0) || 0,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'claim failed';

@@ -35,7 +35,7 @@ export default function PedigreeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const dogId = id ?? '';
-  const { dog, loading, error } = useDog(dogId);
+  const { dog, loading, error } = useDog(dogId, { staff: true });
   const [tab, setTab] = useState<TabId>('chart');
 
   if (loading) {

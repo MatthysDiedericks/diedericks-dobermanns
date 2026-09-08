@@ -21,7 +21,7 @@ import { profileCoverHint } from '@/lib/dogs/profilePhoto';
 export default function DogPhotosScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { dog, loading: dogLoading } = useDog(id);
+  const { dog, loading: dogLoading } = useDog(id, { staff: true });
   const {
     media,
     loading: photosLoading,

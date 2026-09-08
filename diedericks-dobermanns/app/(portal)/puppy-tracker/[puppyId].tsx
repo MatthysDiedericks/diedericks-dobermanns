@@ -33,7 +33,7 @@ export default function PuppyTrackerScreen() {
   const router = useRouter();
   const id = puppyId ?? '';
   const userId = useAuthStore((s) => s.session?.user.id);
-  const { dog, loading, error, refresh: refreshDog } = useDog(id);
+  const { dog, loading, error, refresh: refreshDog } = useDog(id, { staff: true });
   const { data: vaccinations, refetch: refetchVax } = useVaccinations(id);
   const { data: logs, refetch: refetchLogs } = useTrainingLogs(id);
   const { notes, saving, save, refresh: refreshNotes } = useClientDogNotes(id);

@@ -23,10 +23,32 @@ export interface UseDogsOptions {
 /** Statuses that mean a dog is no longer part of the active, marketable kennel. */
 const INACTIVE_STATUSES = ['sold', 'deceased', 'retired', 'donated', 'gifted'];
 
+/** Public list — omit microchip and price from the anon payload. */
 const DOG_LIST_SELECT =
-  'id, name, breed, colour, sex, status, date_of_birth, microchip_number, category, price, is_public, is_featured, dog_media!dog_media_dog_id_fkey(url, is_primary, type, sort_order, id, dog_id, thumbnail_url, caption, uploaded_at)';
+  'id, name, breed, colour, sex, status, date_of_birth, category, is_public, is_featured, dog_media!dog_media_dog_id_fkey(url, is_primary, type, sort_order, id, dog_id, thumbnail_url, caption, uploaded_at)';
 
+/** Public detail — omit microchip and price; useDog is reachable without a login. */
 const DOG_DETAIL_SELECT =
+  'id, name, call_name, breed, colour, sex, date_of_birth, location, ' +
+  'tattoo_number, passport_number, dna_number, insurance_number, ' +
+  'registration_number, registration_type, ' +
+  'bloodline, description, temperament_notes, training_notes, ' +
+  'health_tested, hip_score, elbow_score, dcm_status, ' +
+  'coat_type, height_cm, body_length_cm, chest_depth_cm, chest_girth_cm, ear_type, eye_colour, ' +
+  'standard, bloodline_type, ' +
+  'is_spayed_neutered, wrights_coi, registered_name, ' +
+  'genetics_b_locus, genetics_d_locus, genetics_vwd_status, genetics_dcm1_status, genetics_dcm2_status, genetics_notes, ' +
+  'status, category, is_public, is_featured, programme_tier, ' +
+  'father_id, mother_id, litter_id, owner_id, handover_status, handover_date, ' +
+  'owner_contact_id, buyer_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
+  'deceased_at, deceased_cause, ' +
+  'pedigree_photo_media_id, ' +
+  'new_owner_name, reserved_for_name, ' +
+  'owner_contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone, whatsapp_number, email), ' +
+  'dog_media!dog_media_dog_id_fkey(id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
+
+/** Admin / portal only. Pass `{ staff: true }` to useDog. */
+const DOG_STAFF_DETAIL_SELECT =
   'id, name, call_name, breed, colour, sex, date_of_birth, location, ' +
   'microchip_number, tattoo_number, passport_number, dna_number, insurance_number, ' +
   'registration_number, registration_type, ' +
@@ -89,10 +111,11 @@ export function useDogs(options?: UseDogsOptions) {
   };
 }
 
-export function useDog(id: string) {
+export function useDog(id: string, options?: { staff?: boolean }) {
   const [dog, setDog] = useState<Dog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const staff = options?.staff === true;
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -107,7 +130,7 @@ export function useDog(id: string) {
       const client = requireSupabase();
       const { data, error: err } = await client
         .from('dogs')
-        .select(DOG_DETAIL_SELECT)
+        .select(staff ? DOG_STAFF_DETAIL_SELECT : DOG_DETAIL_SELECT)
         .eq('id', id)
         .single();
       if (err) throw new Error(err.message);
@@ -118,7 +141,7 @@ export function useDog(id: string) {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, staff]);
 
   useEffect(() => {
     refresh();

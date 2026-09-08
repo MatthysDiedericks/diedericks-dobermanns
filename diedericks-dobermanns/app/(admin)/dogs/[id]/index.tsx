@@ -13,7 +13,7 @@ import { useDog } from '@/hooks/useDogs';
 export default function DogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dogId = id ?? '';
-  const { dog, loading, error, refresh } = useDog(dogId);
+  const { dog, loading, error, refresh } = useDog(dogId, { staff: true });
 
   if (loading) {
     return (

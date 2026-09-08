@@ -13,7 +13,7 @@ export default function PortalDogProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const dogId = id ?? '';
-  const { dog, loading, error, refresh } = useDog(dogId);
+  const { dog, loading, error, refresh } = useDog(dogId, { staff: true });
 
   if (loading) {
     return (

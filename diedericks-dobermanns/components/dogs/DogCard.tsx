@@ -5,7 +5,7 @@ import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { ThumbImage } from '@/components/media/ThumbImage';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
-import { formatPrice } from '@/lib/format';
+import { titleCase } from '@/lib/format';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import type { Dog } from '@/types/app.types';
 
@@ -16,6 +16,7 @@ interface DogCardProps {
 
 export function DogCard({ dog, variant = 'default' }: DogCardProps) {
   const photo = profilePhotoUrl(dog.media);
+  const subtitle = [titleCase(dog.sex), titleCase(dog.colour)].filter(Boolean).join(' · ');
 
   if (variant === 'carousel') {
     return (
@@ -27,7 +28,9 @@ export function DogCard({ dog, variant = 'default' }: DogCardProps) {
             ) : null}
           </View>
           <Typography variant="subtitle" className="mt-3 text-gold">{dog.name}</Typography>
-          <Typography variant="caption" className="text-subtle">{formatPrice(dog.price)}</Typography>
+          {subtitle ? (
+            <Typography variant="caption" className="text-subtle">{subtitle}</Typography>
+          ) : null}
         </Pressable>
       </Link>
     );
@@ -44,9 +47,11 @@ export function DogCard({ dog, variant = 'default' }: DogCardProps) {
           </View>
           <View className="ml-4 flex-1">
             <Typography variant="subtitle">{dog.name}</Typography>
-            <Typography variant="caption" className="mt-0.5">
-              {formatPrice(dog.price)}
-            </Typography>
+            {subtitle ? (
+              <Typography variant="caption" className="mt-0.5">
+                {subtitle}
+              </Typography>
+            ) : null}
             <View className="mt-2">
               <DogStatusBadge status={dog.status} />
             </View>

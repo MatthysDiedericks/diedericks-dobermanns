@@ -38,7 +38,7 @@ function showWhelpWatch(cycle: HeatCycleRecord | null): boolean {
 export default function DogHeatDetailScreen() {
   const { dogId } = useLocalSearchParams<{ dogId: string }>();
   const id = dogId ?? '';
-  const { dog, loading: dogLoading } = useDog(id);
+  const { dog, loading: dogLoading } = useDog(id, { staff: true });
   const { cycles, loading: cyclesLoading, refresh } = useHeatCyclesForDog(id);
   const [tab, setTab] = useState<TabId>('current');
   const [refreshing, setRefreshing] = useState(false);

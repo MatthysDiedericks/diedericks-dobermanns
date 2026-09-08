@@ -26,7 +26,7 @@ function today() {
 export default function AdminDogStoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { dog, loading, error } = useDog(id);
+  const { dog, loading, error } = useDog(id, { staff: true });
   const { data: entries, refetch } = useDogTimeline(id ?? '');
   const { submitting, run } = useSubmitting();
 
