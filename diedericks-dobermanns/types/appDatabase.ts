@@ -38,6 +38,10 @@ export type AppDatabase = {
         Returns: string;
       };
       client_owns_a_dog: { Args: Record<string, never>; Returns: boolean };
+      client_already_confirmed_delivery: {
+        Args: { p_dog_id: string };
+        Returns: boolean;
+      };
       client_can_watch_training_video: {
         Args: { p_video_id: string };
         Returns: boolean;
