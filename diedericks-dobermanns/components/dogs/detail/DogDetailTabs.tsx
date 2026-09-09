@@ -6,6 +6,7 @@ import { DogBreedingTab } from '@/components/dogs/detail/DogBreedingTab';
 import { DogHealthTab } from '@/components/dogs/detail/DogHealthTab';
 import { DogLinksTab } from '@/components/dogs/detail/DogLinksTab';
 import { DogTemperamentTab } from '@/components/dogs/detail/DogTemperamentTab';
+import { ProtectionListingTab } from '@/components/dogs/detail/ProtectionListingTab';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { MicrochipQuickAttach } from '@/components/documents/MicrochipQuickAttach';
 import { DogOverviewTab } from '@/components/dogs/detail/DogOverviewTab';
@@ -16,6 +17,7 @@ import type { Dog } from '@/types/app.types';
 
 const BASE_TABS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'protection', label: 'Protection Listing' },
   { id: 'health', label: 'Health' },
   { id: 'pedigree', label: 'Pedigree' },
   { id: 'breeding', label: 'Breeding' },
@@ -36,7 +38,13 @@ interface DogDetailTabsProps {
 export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTabsProps) {
   const [active, setActive] = useState<TabId>('overview');
   const isAdmin = useAuthStore((s) => s.hasRole('admin'));
-  const tabs = clientView ? BASE_TABS.filter((t) => t.id !== 'breeding') : BASE_TABS;
+  const tabs = BASE_TABS.filter((t) => {
+    if (clientView && t.id === 'breeding') return false;
+    if (t.id === 'protection' && (clientView || dog.programme_tier !== 'protection_dog')) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <View className="flex-1">
@@ -67,6 +75,9 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
             {clientView ? <ReceivedPuppyCard dog={dog} /> : null}
             <DogOverviewTab dog={dog} onRefresh={onRefresh} canEdit={isAdmin && !clientView} />
           </>
+        ) : null}
+        {active === 'protection' && !clientView ? (
+          <ProtectionListingTab dog={dog} onRefresh={onRefresh} />
         ) : null}
         {active === 'health' ? <DogHealthTab dogId={dogId} dog={dog} /> : null}
         {active === 'breeding' && !clientView ? <DogBreedingTab dog={dog} /> : null}

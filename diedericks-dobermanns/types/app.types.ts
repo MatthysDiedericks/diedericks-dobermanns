@@ -253,6 +253,9 @@ export interface Dog {
   description: string | null;
   temperament_notes: string | null;
   training_notes: string | null;
+  training_exclusions?: string | null;
+  scenario_exclusions?: string | null;
+  temperament?: { area: string; body: string }[] | null;
   call_name?: string | null;
   coat_type?: string | null;
   height_cm?: number | null;

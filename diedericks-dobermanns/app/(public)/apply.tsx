@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
@@ -7,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 
 export default function ApplyScreen() {
+  const { dog_id } = useLocalSearchParams<{ dog_id?: string }>();
   const [reference, setReference] = useState<string | null>(null);
 
   if (reference) {
@@ -21,7 +23,10 @@ export default function ApplyScreen() {
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <PageHeader eyebrow="Join the Programme" title="Apply" back={false} />
         <View className="px-6">
-          <ApplicationForm onSubmitted={setReference} />
+          <ApplicationForm
+            onSubmitted={setReference}
+            initialDogId={typeof dog_id === 'string' ? dog_id : undefined}
+          />
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>

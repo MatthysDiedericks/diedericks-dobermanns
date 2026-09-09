@@ -62,6 +62,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            Skill library
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Disciplines and skills for protection dog listings.
+          </Typography>
+          <Button
+            label="Manage skill library"
+            variant="outline"
+            onPress={() => router.push('/(admin)/settings/skill-library' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Quote catalogue
           </Typography>
           <Typography variant="bodyMuted" className="mt-2">

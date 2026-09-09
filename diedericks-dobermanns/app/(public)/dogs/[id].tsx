@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicPhotoGallery } from '@/components/dogs/PublicPhotoGallery';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { DogStory } from '@/components/dogs/DogStory';
+import { PublicProtectionSections } from '@/components/dogs/PublicProtectionSections';
 import { DogRegisteredNameBlock } from '@/components/dogs/DogRegisteredNameBlock';
 import { PedigreeTree } from '@/components/dogs/PedigreeTree';
 import { Pedigree, hasPedigree } from '@/components/dogs/Pedigree';
@@ -138,6 +139,8 @@ export default function DogProfileScreen() {
             </Collapsible>
           ) : null}
 
+          <PublicProtectionSections dog={dog} />
+
           {showImportedPedigree ? (
             <Collapsible title="Pedigree" defaultOpen>
               <PedigreeTree
@@ -163,7 +166,13 @@ export default function DogProfileScreen() {
 
         <Button
           label={`Enquire About ${dog.name.split(' ')[0]}`}
-          onPress={() => router.push('/apply')}
+          onPress={() =>
+            router.push(
+              dog.programme_tier === 'protection_dog'
+                ? (`/apply?dog_id=${dog.id}` as never)
+                : '/apply',
+            )
+          }
           fullWidth
           className="mt-8"
         />

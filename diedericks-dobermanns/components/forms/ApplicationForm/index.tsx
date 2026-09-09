@@ -29,6 +29,7 @@ import type { PickedApplicationFile } from '@/lib/uploads/applicationFiles';
 
 interface ApplicationFormProps {
   onSubmitted: (referenceId: string) => void;
+  initialDogId?: string;
 }
 
 function ProgressBar({ step, total }: { step: number; total: number }) {
@@ -56,7 +57,7 @@ const CONTROLLED_STEPS = [
 
 const CHILDREN_STEP_INDEX = 1; // Step2Lifestyle — index into CONTROLLED_STEPS
 
-export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
+export function ApplicationForm({ onSubmitted, initialDogId }: ApplicationFormProps) {
   const [step, setStep] = useState(0);
   const { submit, submitting } = useSubmitApplication();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -155,8 +156,10 @@ export function ApplicationForm({ onSubmitted }: ApplicationFormProps) {
       setSubmitError(applyCouldNot('it was submitted too quickly. Please wait a moment'));
       return;
     }
+    const draft = buildApplicationDraft(values);
+    if (initialDogId) draft.specific_dog_id = initialDogId;
     const { referenceId, error } = await submit(
-      buildApplicationDraft(values),
+      draft,
       values.marketing_opt_in,
       files,
       dogRequestsFromForm(values),

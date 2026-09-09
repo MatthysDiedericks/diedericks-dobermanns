@@ -2611,13 +2611,16 @@ export type Database = {
           registration_type: string | null
           released_at: string | null
           reserved_for_name: string | null
+          scenario_exclusions: string | null
           sex: string | null
           standard: string | null
           status: string
           tail_docked_date: string | null
           tail_type: string | null
           tattoo_number: string | null
+          temperament: Json | null
           temperament_notes: string | null
+          training_exclusions: string | null
           training_notes: string | null
           updated_at: string
           urgency_flag: boolean
@@ -2713,13 +2716,16 @@ export type Database = {
           registration_type?: string | null
           released_at?: string | null
           reserved_for_name?: string | null
+          scenario_exclusions?: string | null
           sex?: string | null
           standard?: string | null
           status?: string
           tail_docked_date?: string | null
           tail_type?: string | null
           tattoo_number?: string | null
+          temperament?: Json | null
           temperament_notes?: string | null
+          training_exclusions?: string | null
           training_notes?: string | null
           updated_at?: string
           urgency_flag?: boolean
@@ -2815,13 +2821,16 @@ export type Database = {
           registration_type?: string | null
           released_at?: string | null
           reserved_for_name?: string | null
+          scenario_exclusions?: string | null
           sex?: string | null
           standard?: string | null
           status?: string
           tail_docked_date?: string | null
           tail_type?: string | null
           tattoo_number?: string | null
+          temperament?: Json | null
           temperament_notes?: string | null
+          training_exclusions?: string | null
           training_notes?: string | null
           updated_at?: string
           urgency_flag?: boolean

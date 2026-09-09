@@ -32,7 +32,7 @@ const DOG_DETAIL_SELECT =
   'id, name, call_name, breed, colour, sex, date_of_birth, location, ' +
   'tattoo_number, passport_number, dna_number, insurance_number, ' +
   'registration_number, registration_type, ' +
-  'bloodline, description, temperament_notes, training_notes, ' +
+  'bloodline, description, temperament_notes, training_notes, training_exclusions, scenario_exclusions, temperament, ' +
   'health_tested, hip_score, elbow_score, dcm_status, ' +
   'coat_type, height_cm, body_length_cm, chest_depth_cm, chest_girth_cm, ear_type, eye_colour, ' +
   'standard, bloodline_type, ' +
@@ -52,7 +52,7 @@ const DOG_STAFF_DETAIL_SELECT =
   'id, name, call_name, breed, colour, sex, date_of_birth, location, ' +
   'microchip_number, tattoo_number, passport_number, dna_number, insurance_number, ' +
   'registration_number, registration_type, ' +
-  'bloodline, description, temperament_notes, training_notes, ' +
+  'bloodline, description, temperament_notes, training_notes, training_exclusions, scenario_exclusions, temperament, ' +
   'health_tested, hip_score, elbow_score, dcm_status, ' +
   'coat_type, height_cm, body_length_cm, chest_depth_cm, chest_girth_cm, ear_type, eye_colour, ' +
   'standard, bloodline_type, ' +
