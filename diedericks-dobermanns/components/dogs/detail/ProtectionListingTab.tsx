@@ -1,30 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, TextInput, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
+import { DisciplineList } from '@/components/dogs/protection/DisciplineList';
+import { ProtectionFreeText } from '@/components/dogs/protection/ProtectionFreeText';
+import { SkillRows } from '@/components/dogs/protection/SkillRows';
+import { TemperamentBlock } from '@/components/dogs/protection/TemperamentBlock';
 import { SectionCard } from '@/components/dogs/detail/SectionCard';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { showSaved } from '@/lib/dogDetail/feedback';
 import {
-  SKILL_LEVELS,
   collectDisciplines,
-  disciplineLabel,
-  isScenario,
   librarySkillsFor,
   parseTemperament,
 } from '@/lib/protection/constants';
 import {
-  addCustomSkill,
-  addSkillToLibrary,
   copyFromProtectionDog,
   deleteDogSkill,
-  fetchDogSkills,
-  fetchOtherProtectionDogs,
-  fetchSkillLibrary,
+  reorderDogSkills,
   saveListingFields,
   tickLibrarySkill,
   updateDogSkill,
-} from '@/lib/protection/queries';
+} from '@/lib/protection/dogWrites';
+import { fetchDogSkills, fetchOtherProtectionDogs, fetchSkillLibrary } from '@/lib/protection/queries';
 import type {
   DogSkillRow,
   ProtectionDogOption,
@@ -42,8 +40,6 @@ export function ProtectionListingTab({ dog, onRefresh }: { dog: Dog; onRefresh: 
   const [areas, setAreas] = useState<TemperamentArea[]>(() => parseTemperament(dog.temperament));
   const [trainingExclusions, setTrainingExclusions] = useState(dog.training_exclusions ?? '');
   const [scenarioExclusions, setScenarioExclusions] = useState(dog.scenario_exclusions ?? '');
-  const [customLabel, setCustomLabel] = useState('');
-  const [offerId, setOfferId] = useState<string | null>(null);
   const [copyId, setCopyId] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,6 +59,11 @@ export function ProtectionListingTab({ dog, onRefresh }: { dog: Dog; onRefresh: 
   }, [reload]);
 
   const disciplines = useMemo(() => collectDisciplines(library, skills), [library, skills]);
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const s of skills) map[s.discipline] = (map[s.discipline] ?? 0) + 1;
+    return map;
+  }, [skills]);
   const libRows = useMemo(() => librarySkillsFor(library, discipline), [library, discipline]);
   const ticked = useMemo(
     () => skills.filter((s) => s.discipline === discipline),
@@ -114,163 +115,83 @@ export function ProtectionListingTab({ dog, onRefresh }: { dog: Dog; onRefresh: 
         </SectionCard>
       ) : null}
 
-      <View className="flex-row flex-wrap gap-2">
-        {disciplines.map((d) => {
-          const count = skills.filter((s) => s.discipline === d).length;
-          return (
-            <Pressable
-              key={d}
-              onPress={() => setDiscipline(d)}
-              className={`rounded-full border px-3 py-1.5 ${
-                discipline === d ? 'border-gold bg-gold/15' : 'border-gold/25'
-              }`}
-            >
-              <Typography variant="caption">
-                {disciplineLabel(d)} ({count})
-              </Typography>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {libRows.map((lib) => {
-        const skill = ticked.find((s) => s.library_id === lib.id);
-        return (
-          <Pressable
-            key={lib.id}
-            onPress={() => {
-              if (skill) {
-                void deleteDogSkill(dog.id, skill.id)
-                  .then(() => setSkills((prev) => prev.filter((s) => s.id !== skill.id)))
-                  .then(() => showSaved('Saved'))
-                  .catch((e) => Alert.alert('Could not save', e.message));
-              } else {
-                void tickLibrarySkill(dog.id, lib.id)
-                  .then(() => reload())
-                  .then(() => showSaved('Saved'))
-                  .catch((e) => Alert.alert('Could not save', e.message));
-              }
-            }}
-            className="flex-row items-center justify-between rounded-sm border border-gold/20 bg-surface px-3 py-3"
-          >
-            <Typography>{skill ? '☑' : '☐'} {lib.label}</Typography>
-            {skill && !isScenario(lib.discipline) ? (
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  const idx = SKILL_LEVELS.indexOf(skill.level ?? 'solid');
-                  const next = SKILL_LEVELS[(idx + 1) % SKILL_LEVELS.length] as SkillLevel;
-                  void updateDogSkill(dog.id, skill.id, { level: next })
-                    .then(() =>
-                      setSkills((prev) =>
-                        prev.map((s) => (s.id === skill.id ? { ...s, level: next } : s)),
-                      ),
-                    );
-                }}
-              >
-                <Typography variant="caption" className="text-gold">
-                  {skill.level ?? 'solid'}
-                </Typography>
-              </Pressable>
-            ) : null}
-          </Pressable>
-        );
-      })}
-
-      {ticked
-        .filter((s) => !s.library_id)
-        .map((skill) => (
-          <View key={skill.id} className="rounded-sm border border-gold/30 bg-surface px-3 py-3">
-            <Typography>{skill.label}</Typography>
-            <Pressable
-              onPress={() =>
-                void deleteDogSkill(dog.id, skill.id).then(() =>
-                  setSkills((prev) => prev.filter((s) => s.id !== skill.id)),
-                )
-              }
-            >
-              <Typography variant="caption" className="mt-2 text-red-300">
-                Delete
-              </Typography>
-            </Pressable>
-          </View>
-        ))}
-
-      <TextInput
-        className="rounded-sm border border-gold/25 px-3 py-2 text-text"
-        placeholder="Skill not in the library"
-        placeholderTextColor="#A8A090"
-        value={customLabel}
-        onChangeText={setCustomLabel}
+      <DisciplineList
+        disciplines={disciplines}
+        counts={counts}
+        selected={discipline}
+        onSelect={setDiscipline}
       />
-      <Button
-        label="Add"
-        variant="outline"
-        onPress={() => {
-          void addCustomSkill({ dogId: dog.id, discipline, label: customLabel })
-            .then((id) => {
-              setOfferId(id);
-              setCustomLabel('');
-              return reload();
-            })
-            .then(() => showSaved('Saved'))
-            .catch((e) => Alert.alert('Could not add', e.message));
+
+      <SkillRows
+        library={libRows}
+        ticked={ticked}
+        onToggle={(lib, next) => {
+          if (next) {
+            void tickLibrarySkill(dog.id, lib.id)
+              .then(() => reload())
+              .then(() => showSaved('Saved'))
+              .catch((e) => Alert.alert('Could not save', e.message));
+          } else {
+            const skill = ticked.find((s) => s.library_id === lib.id);
+            if (!skill) return;
+            void deleteDogSkill(dog.id, skill.id)
+              .then(() => setSkills((prev) => prev.filter((s) => s.id !== skill.id)))
+              .then(() => showSaved('Saved'))
+              .catch((e) => Alert.alert('Could not save', e.message));
+          }
+        }}
+        onLevel={(skill, level: SkillLevel) => {
+          void updateDogSkill(dog.id, skill.id, { level })
+            .then(() =>
+              setSkills((prev) => prev.map((s) => (s.id === skill.id ? { ...s, level } : s))),
+            );
+        }}
+        onPublic={(skill, is_public) => {
+          void updateDogSkill(dog.id, skill.id, { is_public })
+            .then(() =>
+              setSkills((prev) =>
+                prev.map((s) => (s.id === skill.id ? { ...s, is_public } : s)),
+              ),
+            );
+        }}
+        onDelete={(skill) => {
+          void deleteDogSkill(dog.id, skill.id).then(() =>
+            setSkills((prev) => prev.filter((s) => s.id !== skill.id)),
+          );
+        }}
+        onReorder={(ids) => {
+          setSkills((prev) =>
+            prev.map((s) => (ids.includes(s.id) ? { ...s, sort_order: ids.indexOf(s.id) } : s)),
+          );
+          void reorderDogSkills(dog.id, ids).then(() => showSaved('Saved'));
         }}
       />
-      {offerId ? (
-        <Pressable
-          onPress={() =>
-            void addSkillToLibrary(dog.id, offerId)
-              .then(() => {
-                setOfferId(null);
-                return reload();
-              })
-              .then(() => showSaved('Added to library'))
-          }
-        >
-          <Typography className="text-gold">Add to library?</Typography>
-        </Pressable>
-      ) : null}
 
-      <SectionCard title="Temperament">
-        {areas.map((area, i) => (
-          <View key={area.area} className="mb-3">
-            <Typography variant="caption">{area.area}</Typography>
-            <TextInput
-              multiline
-              className="mt-1 min-h-[72px] rounded-sm border border-gold/25 px-3 py-2 text-text"
-              value={area.body}
-              onChangeText={(body) => {
-                const next = areas.map((a, idx) => (idx === i ? { ...a, body } : a));
-                setAreas(next);
-                queueFields({ areas: next });
-              }}
-            />
-          </View>
-        ))}
-        <Typography variant="caption">What the sale does not include</Typography>
-        <TextInput
-          multiline
-          className="mt-1 min-h-[64px] rounded-sm border border-gold/25 px-3 py-2 text-text"
-          value={trainingExclusions}
-          onChangeText={(v) => {
-            setTrainingExclusions(v);
-            queueFields({ training: v });
-          }}
-        />
-        <Typography variant="caption" className="mt-3">
-          What he has not been worked in
-        </Typography>
-        <TextInput
-          multiline
-          className="mt-1 min-h-[64px] rounded-sm border border-gold/25 px-3 py-2 text-text"
-          value={scenarioExclusions}
-          onChangeText={(v) => {
-            setScenarioExclusions(v);
-            queueFields({ scenario: v });
-          }}
-        />
-      </SectionCard>
+      <ProtectionFreeText
+        dogId={dog.id}
+        discipline={discipline}
+        onAdded={() => void reload()}
+        onLibrary={(row) => setLibrary((prev) => [...prev, row])}
+      />
+
+      <TemperamentBlock
+        areas={areas}
+        trainingExclusions={trainingExclusions}
+        scenarioExclusions={scenarioExclusions}
+        onArea={(i, body) => {
+          const next = areas.map((a, idx) => (idx === i ? { ...a, body } : a));
+          setAreas(next);
+          queueFields({ areas: next });
+        }}
+        onTrainingExclusions={(v) => {
+          setTrainingExclusions(v);
+          queueFields({ training: v });
+        }}
+        onScenarioExclusions={(v) => {
+          setScenarioExclusions(v);
+          queueFields({ scenario: v });
+        }}
+      />
     </View>
   );
 }

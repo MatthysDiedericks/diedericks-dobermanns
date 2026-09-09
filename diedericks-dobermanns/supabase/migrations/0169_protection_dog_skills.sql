@@ -142,3 +142,20 @@ grant all on table public.dog_skills    to service_role;
 
 select public.enable_audit('skill_library');
 select public.enable_audit('dog_skills');
+
+-- 0159 replaced table-level SELECT on dogs with an explicit column list so
+-- anon cannot read microchip_number or price. New columns are invisible until
+-- that grant is rebuilt. Without this, /dogs/[slug] 404s for every public dog.
+do $$
+declare cols text;
+begin
+  select string_agg(quote_ident(column_name), ', ' order by ordinal_position)
+    into cols
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name   = 'dogs'
+    and column_name not in ('microchip_number', 'price');
+
+  revoke select on public.dogs from anon;
+  execute format('grant select (%s) on public.dogs to anon', cols);
+end $$;

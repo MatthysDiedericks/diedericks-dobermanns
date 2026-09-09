@@ -40,3 +40,17 @@ export async function renameLibrarySkill(id: string, label: string): Promise<voi
     .eq('id' as never, id);
   if (error) throw new Error(error.message);
 }
+
+export async function reorderLibrarySkills(ids: string[]): Promise<void> {
+  const supabase = requireSupabase();
+  const results = await Promise.all(
+    ids.map((id, i) =>
+      supabase
+        .from('skill_library' as never)
+        .update({ sort_order: i } as never)
+        .eq('id' as never, id),
+    ),
+  );
+  const first = results.find((r) => r.error);
+  if (first?.error) throw new Error(first.error.message);
+}

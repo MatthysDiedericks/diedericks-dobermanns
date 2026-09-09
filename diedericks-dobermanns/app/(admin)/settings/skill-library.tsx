@@ -15,6 +15,7 @@ import {
   addDiscipline,
   addLibrarySkill,
   renameLibrarySkill,
+  reorderLibrarySkills,
   retireLibrarySkill,
 } from '@/lib/protection/libraryWrites';
 import { fetchSkillLibrary } from '@/lib/protection/queries';
@@ -97,7 +98,7 @@ export default function SkillLibrarySettingsScreen() {
               {rows.length === 0 ? (
                 <Typography variant="bodyMuted">No skills yet.</Typography>
               ) : (
-                rows.map((row) => (
+                rows.map((row, i) => (
                   <View
                     key={row.id}
                     className="flex-row items-center justify-between rounded-sm border border-gold/15 p-3"
@@ -115,6 +116,30 @@ export default function SkillLibrarySettingsScreen() {
                         }
                       }}
                     />
+                    <Pressable
+                      onPress={() => {
+                        if (i === 0) return;
+                        const ids = rows.map((r) => r.id);
+                        const swap = ids[i - 1]!;
+                        ids[i - 1] = row.id;
+                        ids[i] = swap;
+                        void reorderLibrarySkills(ids).then(reload);
+                      }}
+                    >
+                      <Typography variant="caption">↑</Typography>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        if (i === rows.length - 1) return;
+                        const ids = rows.map((r) => r.id);
+                        const swap = ids[i + 1]!;
+                        ids[i + 1] = row.id;
+                        ids[i] = swap;
+                        void reorderLibrarySkills(ids).then(reload);
+                      }}
+                    >
+                      <Typography variant="caption">↓</Typography>
+                    </Pressable>
                     <Pressable
                       onPress={() =>
                         void retireLibrarySkill(row.id, !row.is_active)

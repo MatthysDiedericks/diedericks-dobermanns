@@ -11,7 +11,7 @@ import {
   hasLevel,
   parseTemperament,
 } from '@/lib/protection/constants';
-import { fetchDogSkills } from '@/lib/protection/queries';
+import { fetchPublicDogSkills } from '@/lib/protection/queries';
 import type { DogSkillRow } from '@/lib/protection/types';
 import type { Dog } from '@/types/app.types';
 
@@ -19,7 +19,7 @@ export function PublicProtectionSections({ dog }: { dog: Dog }) {
   const [skills, setSkills] = useState<DogSkillRow[]>([]);
 
   useEffect(() => {
-    void fetchDogSkills(dog.id)
+    void fetchPublicDogSkills(dog.id)
       .then(setSkills)
       .catch(() => setSkills([]));
   }, [dog.id]);
