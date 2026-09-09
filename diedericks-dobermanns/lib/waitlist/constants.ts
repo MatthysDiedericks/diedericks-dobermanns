@@ -15,15 +15,17 @@ export const TERMINAL_STAGES = ['on_hold', 'do_not_sell', 'withdrawn'] as const;
 
 export type TerminalStage = (typeof TERMINAL_STAGES)[number];
 
-export const KANBAN_STAGES: PipelineStage[] = [
-  'enquiry',
-  'application',
-  'approved',
-  'quote_sent',
-  'deposit_paid',
-  'matched',
-  'reserved',
-];
+/** Paid queue only — this is who belongs on the admin waiting list. */
+export const WAITING_LIST_QUEUE_STAGES = ['deposit_paid', 'matched', 'reserved'] as const;
+export type WaitingListQueueStage = (typeof WAITING_LIST_QUEUE_STAGES)[number];
+
+export function isWaitingListQueueStage(
+  stage: string | null | undefined,
+): stage is WaitingListQueueStage {
+  return (WAITING_LIST_QUEUE_STAGES as readonly string[]).includes(stage ?? '');
+}
+
+export const KANBAN_STAGES: PipelineStage[] = [...WAITING_LIST_QUEUE_STAGES];
 
 export const STAGE_LABELS: Record<string, string> = {
   enquiry: 'Enquiry',

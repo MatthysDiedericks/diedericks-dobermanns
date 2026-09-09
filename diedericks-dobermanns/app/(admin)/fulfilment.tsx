@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { updateDogHandover } from '@/lib/fulfilment/updateHandover';
+import { realDogName } from '@/lib/dogs/placeholderName';
 import { supabase } from '@/lib/supabase';
 
 type Tab = 'waiting' | 'allocated' | 'delivered';
@@ -24,9 +27,12 @@ type AllocatedRow = {
   id: string;
   name: string;
   dogName: string;
+  dogCallName: string | null;
   dogId: string;
   goHome: string | null;
+  handoverStatus: string | null;
   overdue: boolean;
+  clientConfirmed: boolean;
 };
 
 /**
@@ -43,6 +49,10 @@ export default function FulfilmentScreen() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [scheduleDates, setScheduleDates] = useState<Record<string, string>>({});
+  const [delivering, setDelivering] = useState<AllocatedRow | null>(null);
+  const [buyerCallName, setBuyerCallName] = useState('');
 
   const load = useCallback(async () => {
     if (!supabase) {
@@ -84,7 +94,7 @@ export default function FulfilmentScreen() {
       .from('waiting_list')
       .select(
         `id, enquirer_name, client:users!waiting_list_client_id_fkey(full_name),
-         dog:dogs!waiting_list_assigned_dog_id_fkey(id, name, handover_status, handover_date, delivered_at),
+         dog:dogs!waiting_list_assigned_dog_id_fkey(id, name, call_name, handover_status, handover_date, delivered_at),
          litter:litters!waiting_list_assigned_litter_id_fkey(go_home_date)`,
       )
       .not('assigned_dog_id', 'is', null)
@@ -101,6 +111,7 @@ export default function FulfilmentScreen() {
       const dog = r.dog as unknown as {
         id: string;
         name: string;
+        call_name: string | null;
         handover_status: string | null;
         handover_date: string | null;
         delivered_at: string | null;
@@ -114,10 +125,28 @@ export default function FulfilmentScreen() {
         id: r.id,
         name: client?.full_name ?? r.enquirer_name ?? 'Unknown',
         dogName: dog.name,
+        dogCallName: dog.call_name,
         dogId: dog.id,
         goHome,
+        handoverStatus: dog.handover_status,
         overdue,
+        clientConfirmed: false,
       });
+    }
+    const dogIds = rows.map((row) => row.dogId);
+    if (dogIds.length) {
+      const { data: confirms } = await supabase
+        .from('error_events')
+        .select('entity_id')
+        .eq('code', 'DELIVERY_CONFIRMED_BY_CLIENT')
+        .is('resolved_at', null)
+        .in('entity_id', dogIds);
+      const confirmed = new Set(
+        (confirms ?? []).map((e) => e.entity_id).filter((id): id is string => Boolean(id)),
+      );
+      for (const row of rows) {
+        row.clientConfirmed = confirmed.has(row.dogId);
+      }
     }
     setAllocated(rows);
 
@@ -145,6 +174,23 @@ export default function FulfilmentScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const runHandover = async (
+    dogId: string,
+    patch: Parameters<typeof updateDogHandover>[0],
+    then?: () => void,
+  ) => {
+    setBusyId(dogId);
+    setError(null);
+    const res = await updateDogHandover(patch);
+    setBusyId(null);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    then?.();
+    await load();
+  };
 
   if (loading) {
     return (
@@ -213,24 +259,69 @@ export default function FulfilmentScreen() {
           <EmptyState title="None pending" message="No allocated dogs awaiting handover." />
         ) : null}
         {tab === 'allocated'
-          ? allocated.map((r) => (
-              <Pressable
-                key={r.id}
-                onPress={() => router.push(`/(admin)/dogs/${r.dogId}`)}
-                className="mb-3 rounded-sm border border-gold/20 bg-surface p-4"
-              >
-                <Typography variant="body" className="text-cream">
-                  {r.name} → {r.dogName}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  className={r.overdue ? 'text-danger' : 'text-silver'}
+          ? allocated.map((r) => {
+              const date = scheduleDates[r.dogId] ?? r.goHome?.slice(0, 10) ?? '';
+              return (
+                <View
+                  key={r.id}
+                  className="mb-3 rounded-sm border border-gold/20 bg-surface p-4"
                 >
-                  Go-home {formatKennelDate(r.goHome)}
-                  {r.overdue ? ' · OVERDUE' : ''}
-                </Typography>
-              </Pressable>
-            ))
+                  <Pressable onPress={() => router.push(`/(admin)/dogs/${r.dogId}` as never)}>
+                    <Typography variant="body" className="text-cream">
+                      {r.name} → {r.dogName}
+                    </Typography>
+                  </Pressable>
+                  <Typography
+                    variant="caption"
+                    className={r.overdue ? 'text-danger' : 'text-silver'}
+                  >
+                    {statusLabel(r.handoverStatus, r.goHome)}
+                    {r.overdue ? ' · OVERDUE' : ''}
+                    {r.clientConfirmed ? ' · Client confirmed' : ''}
+                  </Typography>
+                  <View className="mt-3 flex-row flex-wrap gap-2">
+                    <Button
+                      label="Ready"
+                      variant="ghost"
+                      disabled={busyId === r.dogId}
+                      onPress={() =>
+                        void runHandover(r.dogId, { dogId: r.dogId, handover_status: 'ready' })
+                      }
+                    />
+                    <TextInput
+                      value={date}
+                      onChangeText={(v) =>
+                        setScheduleDates((prev) => ({ ...prev, [r.dogId]: v }))
+                      }
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={Colors.silver}
+                      className="min-w-[120px] rounded-sm border border-gold/30 px-2 py-1 text-cream"
+                    />
+                    <Button
+                      label="Scheduled"
+                      variant="ghost"
+                      disabled={busyId === r.dogId || !date}
+                      onPress={() =>
+                        void runHandover(r.dogId, {
+                          dogId: r.dogId,
+                          handover_status: 'scheduled',
+                          handover_date: date,
+                        })
+                      }
+                    />
+                    <Button
+                      label="Mark delivered"
+                      disabled={busyId === r.dogId}
+                      onPress={() => {
+                        setError(null);
+                        setBuyerCallName(realDogName(r.dogCallName, r.dogName) ?? '');
+                        setDelivering(r);
+                      }}
+                    />
+                  </View>
+                </View>
+              );
+            })
           : null}
 
         {tab === 'delivered' && delivered.length === 0 ? (
@@ -253,6 +344,59 @@ export default function FulfilmentScreen() {
             ))
           : null}
       </View>
+      {delivering ? (
+        <View className="mx-6 mb-8 rounded-sm border border-gold/30 bg-surface p-4">
+          <Typography variant="subtitle" className="text-gold">
+            Name the buyer uses
+          </Typography>
+          <TextInput
+            value={buyerCallName}
+            onChangeText={setBuyerCallName}
+            placeholder="Ade"
+            placeholderTextColor={Colors.silver}
+            className="mt-3 rounded-sm border border-gold/30 px-3 py-2 text-cream"
+          />
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            <Button
+              label="Mark delivered"
+              loading={busyId === delivering.dogId}
+              onPress={() =>
+                void runHandover(
+                  delivering.dogId,
+                  {
+                    dogId: delivering.dogId,
+                    handover_status: 'delivered',
+                    delivery_method: 'collected',
+                    buyerCallName,
+                  },
+                  () => {
+                    setDelivering(null);
+                    setTab('delivered');
+                  },
+                )
+              }
+            />
+            <Button
+              label="Cancel"
+              variant="ghost"
+              onPress={() => {
+                setDelivering(null);
+                setError(null);
+              }}
+            />
+          </View>
+        </View>
+      ) : null}
     </ScreenContainer>
   );
+}
+
+function statusLabel(status: string | null, goHome: string | null): string {
+  const s = status ?? 'awaiting_go_home';
+  if (s === 'ready') return 'Ready';
+  if (s === 'scheduled') {
+    const when = goHome ? formatKennelDate(goHome) : null;
+    return when && when !== '—' ? `Scheduled — ${when}` : 'Scheduled';
+  }
+  return 'Awaiting go-home';
 }

@@ -3,7 +3,7 @@ import { FlatList, ScrollView, View } from 'react-native';
 import { EntryCard } from '@/components/waitlist/EntryCard';
 import { Badge } from '@/components/ui/Badge';
 import { Typography } from '@/components/ui/Typography';
-import { KANBAN_STAGES, stageLabel, TERMINAL_STAGES } from '@/lib/waitlist/constants';
+import { KANBAN_STAGES, stageLabel } from '@/lib/waitlist/constants';
 import { effectiveStage } from '@/lib/waitlist/helpers';
 import { siblingTotal } from '@/lib/waitlist/siblings';
 import type { WaitingListEntry } from '@/types/app.types';
@@ -19,9 +19,7 @@ export function PipelineBoard({ entries, onSelect, onLongPress }: Props) {
   for (const stage of KANBAN_STAGES) grouped[stage] = [];
   for (const entry of entries) {
     const stage = effectiveStage(entry);
-    if ((TERMINAL_STAGES as readonly string[]).includes(stage)) continue;
     if (grouped[stage]) grouped[stage].push(entry);
-    else grouped.enquiry.push(entry);
   }
 
   return (

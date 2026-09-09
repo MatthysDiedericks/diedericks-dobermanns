@@ -9,6 +9,7 @@ import { DogTemperamentTab } from '@/components/dogs/detail/DogTemperamentTab';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { MicrochipQuickAttach } from '@/components/documents/MicrochipQuickAttach';
 import { DogOverviewTab } from '@/components/dogs/detail/DogOverviewTab';
+import { ReceivedPuppyCard } from '@/components/portal/ReceivedPuppyCard';
 import { Typography } from '@/components/ui/Typography';
 import { useAuthStore } from '@/stores/authStore';
 import type { Dog } from '@/types/app.types';
@@ -62,7 +63,10 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
 
       <ScrollView className="px-4 pb-12" keyboardShouldPersistTaps="handled">
         {active === 'overview' ? (
-          <DogOverviewTab dog={dog} onRefresh={onRefresh} canEdit={isAdmin && !clientView} />
+          <>
+            {clientView ? <ReceivedPuppyCard dog={dog} /> : null}
+            <DogOverviewTab dog={dog} onRefresh={onRefresh} canEdit={isAdmin && !clientView} />
+          </>
         ) : null}
         {active === 'health' ? <DogHealthTab dogId={dogId} dog={dog} /> : null}
         {active === 'breeding' && !clientView ? <DogBreedingTab dog={dog} /> : null}

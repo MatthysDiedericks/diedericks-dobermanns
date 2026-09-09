@@ -18,8 +18,8 @@ import { useFinanceAccess } from '@/hooks/useFinanceAccess';
 import { useFollowUps } from '@/hooks/useFollowUps';
 import { filterWaitlistEntries, sortWaitlistEntries, useWaitingList, useWaitlistTypes } from '@/hooks/useWaitingList';
 import { createWaitlistType } from '@/hooks/useMutations';
-import { PIPELINE_STAGES, stageLabel } from '@/lib/waitlist/constants';
-import { effectiveStage, entryEmail, entryDisplayName } from '@/lib/waitlist/helpers';
+import { isWaitingListQueueStage, stageLabel, WAITING_LIST_QUEUE_STAGES } from '@/lib/waitlist/constants';
+import { effectiveStage, entryEmail } from '@/lib/waitlist/helpers';
 import type { WaitingListEntry } from '@/types/app.types';
 
 type ViewMode = 'pipeline' | 'list';
@@ -27,18 +27,11 @@ const CATEGORY_FILTERS = ['any', 'standard', 'elite', 'protection'] as const;
 
 function SummaryStrip({ entries }: { entries: WaitingListEntry[] }) {
   const today = new Date().toISOString().slice(0, 10);
-  const year = new Date().getFullYear();
-  const active = entries.filter((e) => ['deposit_paid', 'matched', 'reserved'].includes(effectiveStage(e))).length;
+  const active = entries.filter((e) => isWaitingListQueueStage(effectiveStage(e))).length;
   const followUpToday = entries.filter((e) => e.follow_up_date === today).length;
-  const awaitingDeposit = entries.filter((e) => effectiveStage(e) === 'quote_sent').length;
-  const completed = entries.filter(
-    (e) => effectiveStage(e) === 'handover_complete' && new Date(e.created_at).getFullYear() === year,
-  ).length;
   const chips = [
     { label: 'Active', value: active, tone: 'text-gold' },
     { label: 'Follow-up today', value: followUpToday, tone: 'text-warning' },
-    { label: 'Awaiting deposit', value: awaitingDeposit, tone: 'text-info' },
-    { label: 'Completed YTD', value: completed, tone: 'text-success' },
   ];
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-4">
@@ -66,22 +59,24 @@ export default function WaitlistHomeScreen() {
   const [unmetOnly, setUnmetOnly] = useState(false);
   const [stagePickerFor, setStagePickerFor] = useState<WaitingListEntry | null>(null);
 
+  const queue = useMemo(
+    () => data.filter((e) => isWaitingListQueueStage(effectiveStage(e))),
+    [data],
+  );
+
   const filtered = useMemo(
     () =>
       sortWaitlistEntries(
-        filterWaitlistEntries(data, {
+        filterWaitlistEntries(queue, {
           listTypeId,
           search,
           stage: stageFilter,
           category: categoryFilter,
           unmetOnly,
-          excludeDoNotSell: !listTypeId,
         }),
       ),
-    [data, listTypeId, search, stageFilter, categoryFilter, unmetOnly],
+    [queue, listTypeId, search, stageFilter, categoryFilter, unmetOnly],
   );
-
-  const doNotSell = useMemo(() => data.filter((e) => effectiveStage(e) === 'do_not_sell'), [data]);
 
   if (!hasAccess) {
     return (
@@ -123,6 +118,9 @@ export default function WaitlistHomeScreen() {
         <Pressable onPress={() => router.push('/(admin)/waitlist/match')} className="rounded-lg border border-gold/20 px-3 py-1.5">
           <Typography variant="caption" className="text-gold">Match</Typography>
         </Pressable>
+        <Pressable onPress={() => router.push('/(admin)/fulfilment')} className="rounded-lg border border-gold/20 px-3 py-1.5">
+          <Typography variant="caption" className="text-gold">Fulfilment</Typography>
+        </Pressable>
         <Pressable onPress={copyEmails} className="ml-auto flex-row items-center gap-1">
           <Ionicons name="copy-outline" size={16} color={Colors.gold} />
           <Typography variant="caption" className="text-gold">Emails</Typography>
@@ -131,14 +129,13 @@ export default function WaitlistHomeScreen() {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 px-4">
         <Pressable onPress={() => setListTypeId(null)} className={`mr-2 rounded-full border px-3 py-1.5 ${!listTypeId ? 'border-gold bg-gold/15' : 'border-gold/20'}`}>
-          <Typography variant="caption">All ({data.length})</Typography>
+          <Typography variant="caption">All ({queue.length})</Typography>
         </Pressable>
-        {types.map((t) => {
-          const count = data.filter((e) => e.list_type_id === t.id).length;
-          const isDns = t.slug === 'do-not-sell';
+        {types.filter((t) => t.slug !== 'do-not-sell').map((t) => {
+          const count = queue.filter((e) => e.list_type_id === t.id).length;
           return (
-            <Pressable key={t.id} onPress={() => setListTypeId(t.id)} className={`mr-2 rounded-full border px-3 py-1.5 ${listTypeId === t.id ? 'border-gold bg-gold/15' : 'border-gold/20'} ${isDns ? 'bg-danger/20' : ''}`}>
-              <Typography variant="caption" className={isDns ? 'text-danger' : ''}>{t.name} ({count})</Typography>
+            <Pressable key={t.id} onPress={() => setListTypeId(t.id)} className={`mr-2 rounded-full border px-3 py-1.5 ${listTypeId === t.id ? 'border-gold bg-gold/15' : 'border-gold/20'}`}>
+              <Typography variant="caption">{t.name} ({count})</Typography>
             </Pressable>
           );
         })}
@@ -150,7 +147,7 @@ export default function WaitlistHomeScreen() {
       <View className="mb-3 px-4">
         <Input placeholder="Search clients…" value={search} onChangeText={setSearch} autoCapitalize="none" />
         <Typography variant="caption" className="mt-2 text-silver">
-          Showing {filtered.length} of {data.length}
+          Showing {filtered.length} of {queue.length} paid
         </Typography>
       </View>
 
@@ -159,9 +156,9 @@ export default function WaitlistHomeScreen() {
           onPress={() => setStageFilter(null)}
           className={`mr-2 rounded-full border px-3 py-1.5 ${!stageFilter ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
         >
-          <Typography variant="caption">All stages</Typography>
+          <Typography variant="caption">All paid</Typography>
         </Pressable>
-        {PIPELINE_STAGES.map((s) => (
+        {WAITING_LIST_QUEUE_STAGES.map((s) => (
           <Pressable
             key={s}
             onPress={() => setStageFilter(s)}
@@ -224,7 +221,7 @@ export default function WaitlistHomeScreen() {
       {loading ? <CardListSkeleton count={3} /> : null}
 
       {!loading && filtered.length === 0 ? (
-        <EmptyState title="Waiting list is empty" message="Add from an approved application or create a manual entry." />
+        <EmptyState title="No one waiting" message="Only deposit-paid, matched and reserved clients appear here." />
       ) : loading ? null : viewMode === 'pipeline' ? (
         <PipelineBoard
           entries={filtered}
@@ -239,17 +236,6 @@ export default function WaitlistHomeScreen() {
           onMoveStage={setStagePickerFor}
         />
       )}
-
-      {doNotSell.length > 0 ? (
-        <View className="mt-4 bg-danger/10 px-4 py-4">
-          <Typography variant="label" className="mb-2 text-danger">Do Not Sell</Typography>
-          {doNotSell.map((e) => (
-            <Typography key={e.id} variant="caption" className="text-danger">
-              {entryDisplayName(e)} — {e.do_not_sell_reason ?? 'No reason'}
-            </Typography>
-          ))}
-        </View>
-      ) : null}
 
       <StageSelector visible={!!stagePickerFor} entry={stagePickerFor} onClose={() => setStagePickerFor(null)} onSaved={refresh} />
     </ScreenContainer>
