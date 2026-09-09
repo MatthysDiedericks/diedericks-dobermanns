@@ -1,24 +1,16 @@
 import * as DocumentPicker from 'expo-document-picker';
 
 import { uploadFile } from '@/lib/storage';
-import { requireSupabase } from '@/lib/supabase';
 import { ACCEPT_DOCUMENT_MIME } from '@/lib/uploads/constants';
 
-function newFileId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
 export interface ReceiptUploadResult {
-  /** Storage path inside the documents bucket (prefix with user id for RLS). */
+  /** Storage path inside the private receipts bucket. */
   path: string;
   fileName: string;
 }
 
-/** Picks a PDF/image receipt and uploads to the private documents bucket. */
-export async function pickAndUploadReceipt(userId: string): Promise<ReceiptUploadResult | null> {
+/** Picks a PDF/image receipt and uploads to the private receipts bucket. */
+export async function pickAndUploadReceipt(): Promise<ReceiptUploadResult | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: [...ACCEPT_DOCUMENT_MIME],
     copyToCacheDirectory: true,
@@ -30,10 +22,10 @@ export async function pickAndUploadReceipt(userId: string): Promise<ReceiptUploa
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
-  const path = `${userId}/expenses/${year}/${month}/${newFileId()}.${ext === 'pdf' ? 'pdf' : 'jpg'}`;
+  const path = `expenses/${year}/${month}/receipt.${ext === 'pdf' ? 'pdf' : 'jpg'}`;
 
   const upload = await uploadFile({
-    bucket: 'documents',
+    bucket: 'receipts',
     path,
     uri: file.uri,
     fileName: file.name,
@@ -44,6 +36,5 @@ export async function pickAndUploadReceipt(userId: string): Promise<ReceiptUploa
     throw new Error(upload.error ?? 'Receipt upload failed.');
   }
 
-  requireSupabase();
   return { path: upload.path, fileName: file.name };
 }

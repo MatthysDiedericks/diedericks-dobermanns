@@ -1,22 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { resolveReceiptViewUrl } from '@/lib/finance/receiptRef';
 import { pickAndUploadReceipt } from '@/lib/finance/receiptUpload';
 
 export type ReceiptIntent = 'keep' | 'replace' | 'remove';
 
 export function ExpenseReceiptControl({
-  userId,
   existingPath,
   receiptName,
   intent,
   onIntent,
   onUploaded,
 }: {
-  userId: string | undefined;
   existingPath: string | null;
   receiptName: string | null;
   intent: ReceiptIntent;
@@ -24,14 +23,14 @@ export function ExpenseReceiptControl({
   onUploaded: (path: string, fileName: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pick = async () => {
-    if (!userId) return;
     setUploading(true);
     setError(null);
     try {
-      const result = await pickAndUploadReceipt(userId);
+      const result = await pickAndUploadReceipt();
       if (result) {
         onUploaded(result.path, result.fileName);
         onIntent('replace');
@@ -40,6 +39,24 @@ export function ExpenseReceiptControl({
       setError(e instanceof Error ? e.message : 'Upload failed — original receipt kept.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const openExisting = async () => {
+    if (!existingPath) return;
+    setOpening(true);
+    setError(null);
+    try {
+      const url = await resolveReceiptViewUrl(existingPath);
+      if (!url) {
+        setError('Could not open receipt.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not open receipt.');
+    } finally {
+      setOpening(false);
     }
   };
 
@@ -90,9 +107,12 @@ export function ExpenseReceiptControl({
         ))}
       </View>
       {intent === 'keep' ? (
-        <Typography variant="caption" className="text-subtle">
-          {receiptName ?? 'Receipt attached'}
-        </Typography>
+        <Pressable onPress={() => void openExisting()} className="flex-row items-center gap-2">
+          {opening ? <ActivityIndicator size="small" color={Colors.gold} /> : null}
+          <Typography variant="caption" className="text-gold">
+            Current receipt →
+          </Typography>
+        </Pressable>
       ) : null}
       {intent === 'replace' ? (
         <Pressable

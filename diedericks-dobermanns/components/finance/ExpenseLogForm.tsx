@@ -17,13 +17,11 @@ import { useEmployees } from '@/hooks/useEmployees';
 import { useExpenseForm } from '@/hooks/useExpenseForm';
 import { useExpenseCategories } from '@/hooks/useExpenses';
 import { isStaffCategory } from '@/lib/finance/staffCategory';
-import { useAuthStore } from '@/stores/authStore';
 
 const INTERVALS = ['monthly', 'quarterly', 'annual'] as const;
 
 export function ExpenseLogForm() {
   const router = useRouter();
-  const userId = useAuthStore((s) => s.session?.user?.id);
   const { categories } = useExpenseCategories();
   const { data: employees, refresh: refreshEmployees } = useEmployees(true);
   const form = useExpenseForm();
@@ -186,7 +184,6 @@ export function ExpenseLogForm() {
       ) : null}
 
       <ExpenseReceiptControl
-        userId={userId}
         existingPath={form.originalReceiptPath}
         receiptName={form.receiptName}
         intent={form.receiptIntent}

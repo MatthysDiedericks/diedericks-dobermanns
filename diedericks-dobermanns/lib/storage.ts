@@ -1,5 +1,8 @@
+import { ERROR_CODES } from '@/lib/errors/codes';
+import { logError } from '@/lib/errors/logError';
 import { requireSupabase, supabase } from '@/lib/supabase';
 import {
+  EQUIPMENT_MAX_BYTES,
   MAX_UPLOAD_BYTES,
   STAFF_MEDIA_MAX_BYTES,
   tooLargeMessage,
@@ -53,7 +56,13 @@ export function buildObjectPath(folder: string, extension: string): string {
 /** Validates size/type then uploads a local file to a Storage bucket. */
 export async function uploadFile(opts: UploadOptions): Promise<UploadResult> {
   const isVideo = opts.contentType.startsWith('video/');
-  const maxBytes = opts.maxBytes ?? (isVideo ? STAFF_MEDIA_MAX_BYTES : MAX_UPLOAD_BYTES);
+  const maxBytes =
+    opts.maxBytes ??
+    (opts.bucket === 'equipment'
+      ? EQUIPMENT_MAX_BYTES
+      : isVideo
+        ? STAFF_MEDIA_MAX_BYTES
+        : MAX_UPLOAD_BYTES);
 
   try {
     const supabase = requireSupabase();
@@ -108,10 +117,29 @@ export async function uploadFile(opts: UploadOptions): Promise<UploadResult> {
       contentType = prepared.mime;
     }
 
+    if (opts.bucket === 'equipment') {
+      const ok =
+        contentType === 'image/jpeg' ||
+        contentType === 'image/png' ||
+        contentType === 'image/webp';
+      if (!ok) {
+        return { path: null, error: 'Use a JPEG, PNG or WebP image, up to 5 MB.' };
+      }
+    }
+
     const { error } = await supabase.storage
       .from(opts.bucket)
       .upload(path, bytes, { contentType, upsert: false });
-    if (error) return { path: null, error: error.message };
+    if (error) {
+      void logError({
+        code: ERROR_CODES.UPLOAD_FAILED,
+        area: 'upload',
+        message: error.message,
+        detail: { bucket: opts.bucket },
+        route: 'upload',
+      });
+      return { path: null, error: error.message };
+    }
     return { path, error: null };
   } catch (e) {
     if (e instanceof UploadValidationError) return { path: null, error: e.message };
