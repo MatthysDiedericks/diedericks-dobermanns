@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
 
+import { EmployeePicker } from '@/components/finance/EmployeePicker';
 import { ExpenseAllocationSection } from '@/components/finance/ExpenseAllocationSection';
+import { LinkExpenseEmployee } from '@/components/finance/LinkExpenseEmployee';
 import { ExpensePaymentSection } from '@/components/finance/ExpensePaymentSection';
 import { ExpenseReceiptControl } from '@/components/finance/ExpenseReceiptControl';
 import { ExpenseVatSection } from '@/components/finance/ExpenseVatSection';
@@ -11,8 +13,10 @@ import { DateField } from '@/components/ui/DateField';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useEmployees } from '@/hooks/useEmployees';
 import { useExpenseForm } from '@/hooks/useExpenseForm';
 import { useExpenseCategories } from '@/hooks/useExpenses';
+import { isStaffCategory } from '@/lib/finance/staffCategory';
 import { useAuthStore } from '@/stores/authStore';
 
 const INTERVALS = ['monthly', 'quarterly', 'annual'] as const;
@@ -21,6 +25,7 @@ export function ExpenseLogForm() {
   const router = useRouter();
   const userId = useAuthStore((s) => s.session?.user?.id);
   const { categories } = useExpenseCategories();
+  const { data: employees, refresh: refreshEmployees } = useEmployees(true);
   const form = useExpenseForm();
 
   const handleSave = async (andReset: boolean) => {
@@ -68,6 +73,17 @@ export function ExpenseLogForm() {
           </Pressable>
         ))}
       </View>
+
+      <EmployeePicker
+        categoryId={form.categoryId}
+        employeeId={form.employeeId}
+        employees={employees}
+        onSelect={({ employeeId, description, amount }) => {
+          form.setEmployeeId(employeeId);
+          if (description) form.setDescription(description);
+          if (amount) form.setPriceExclVat(amount);
+        }}
+      />
 
       <Input value={form.description} onChangeText={form.setDescription} placeholder="Description" className="mb-3" />
 
@@ -187,6 +203,30 @@ export function ExpenseLogForm() {
         <Typography variant="caption" className="mb-3 text-danger">
           {form.error}
         </Typography>
+      ) : null}
+
+      {form.editingId && isStaffCategory(form.categoryId) && !form.employeeId ? (
+        <LinkExpenseEmployee
+          expenseId={form.editingId}
+          employees={employees}
+          onLinked={(id) => {
+            form.setEmployeeId(id);
+            void refreshEmployees();
+          }}
+        />
+      ) : null}
+      {form.editingId && form.employeeId ? (
+        <Button
+          label="Create payslip"
+          variant="outline"
+          className="mb-3"
+          onPress={() =>
+            router.push({
+              pathname: '/(admin)/finance/payslips/new',
+              params: { expenseId: form.editingId },
+            } as never)
+          }
+        />
       ) : null}
 
       {form.editingId ? (

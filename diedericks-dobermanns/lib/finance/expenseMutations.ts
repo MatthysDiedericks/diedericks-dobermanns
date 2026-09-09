@@ -32,6 +32,7 @@ export interface CreateExpenseInput {
   payable_due_date?: string | null;
   payable_paid_date?: string | null;
   creditor_name?: string | null;
+  employee_id?: string | null;
 }
 
 function mapExpenseRow(r: Record<string, unknown>): ExpenseWithCategory {
@@ -69,6 +70,7 @@ function expenseWritePayload(input: CreateExpenseInput) {
     payable_due_date: input.payable_due_date ?? null,
     payable_paid_date: input.payable_paid_date ?? null,
     creditor_name: input.creditor_name ?? null,
+    employee_id: input.employee_id ?? null,
   };
 }
 

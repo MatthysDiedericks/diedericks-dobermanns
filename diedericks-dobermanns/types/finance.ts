@@ -109,6 +109,7 @@ export interface Expense {
   creditor_name: string | null;
   recorded_by: string | null;
   source?: string | null;
+  employee_id?: string | null;
   created_at: string;
   updated_at: string;
 }

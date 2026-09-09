@@ -12,6 +12,7 @@ interface FinanceActionChipsProps {
   onRecurring: () => void;
   onRecurringInvoices: () => void;
   onImport: () => void;
+  onEmployees: () => void;
   onExportExcel: () => void;
   onExportPdf: () => void;
 }
@@ -25,6 +26,7 @@ export function FinanceActionChips({
   onRecurring,
   onRecurringInvoices,
   onImport,
+  onEmployees,
   onExportExcel,
   onExportPdf,
 }: FinanceActionChipsProps) {
@@ -47,6 +49,9 @@ export function FinanceActionChips({
       </Pressable>
       <Pressable onPress={onRecurringInvoices} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
         <Typography variant="caption">Recurring invoices</Typography>
+      </Pressable>
+      <Pressable onPress={onEmployees} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
+        <Typography variant="caption">Employees</Typography>
       </Pressable>
       <Pressable onPress={onImport} className="mr-2 rounded-full border border-gold/30 px-4 py-2">
         <Typography variant="caption">Import</Typography>

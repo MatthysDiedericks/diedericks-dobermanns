@@ -132,6 +132,7 @@ export default function FinanceDashboardScreen() {
         onBudget={() => router.push('/(admin)/finance/budget' as never)}
         onRecurring={() => router.push('/(admin)/finance/expenses/recurring' as never)}
         onRecurringInvoices={() => router.push('/(admin)/finance/invoices/recurring' as never)}
+        onEmployees={() => router.push('/(admin)/finance/employees' as never)}
         onImport={() => router.push('/(admin)/finance/import' as never)}
         onExportExcel={() => void runExport('excel')}
         onExportPdf={() => void runExport('pdf')}

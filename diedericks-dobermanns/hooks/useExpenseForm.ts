@@ -32,6 +32,7 @@ export function useExpenseForm() {
   const lockedLitter = typeof params.litterId === 'string' ? params.litterId : undefined;
 
   const [categoryId, setCategoryId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [description, setDescription] = useState('');
   const [priceExclVat, setPriceExclVat] = useState('');
   const [vatAmountText, setVatAmountText] = useState('');
@@ -101,6 +102,7 @@ export function useExpenseForm() {
         const exp = await fetchExpenseById(editingId);
         if (!exp) return;
         setCategoryId(exp.category_id);
+        setEmployeeId(exp.employee_id ?? '');
         setDescription(exp.description);
         setPriceExclVat(String(exp.price_excl_vat ?? exp.amount));
         setVatAmountText(exp.vat_amount ? String(exp.vat_amount) : '');
@@ -146,7 +148,7 @@ export function useExpenseForm() {
       categoryId, description, priceNum, vatNum, expenseDate, supplier, invoiceRef,
       allocationType, selectedDogId, selectedLitterId, paymentAccountId,
       paymentAccountName, customAccount, isRecurring, interval, recurringEnd,
-      notes, isPayable, payableDueDate, creditorName,
+      notes, isPayable, payableDueDate, creditorName, employeeId,
       receiptUrl: !editingId
         ? receiptPath
         : receiptIntent === 'remove'
@@ -226,6 +228,8 @@ export function useExpenseForm() {
     lockLabel,
     categoryId,
     setCategoryId,
+    employeeId,
+    setEmployeeId,
     description,
     setDescription,
     priceExclVat,

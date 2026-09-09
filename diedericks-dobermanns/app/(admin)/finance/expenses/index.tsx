@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
+import { LinkExpenseEmployee } from '@/components/finance/LinkExpenseEmployee';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -9,7 +10,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useEmployees } from '@/hooks/useEmployees';
 import { deleteExpense, useExpenseCategories, useExpenses } from '@/hooks/useExpenses';
+import { isStaffCategory } from '@/lib/finance/staffCategory';
 import {
   deleteExpenseConfirmText,
   expenseGross,
@@ -24,6 +27,7 @@ export default function FinanceExpensesListScreen() {
   const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState('all');
   const { categories } = useExpenseCategories();
+  const { data: employees, refresh: refreshEmployees } = useEmployees(true);
   const { data: expenses, loading, refresh } = useExpenses(
     categoryFilter === 'all' ? undefined : categoryFilter,
   );
@@ -124,6 +128,7 @@ export default function FinanceExpensesListScreen() {
           renderItem={({ item: exp }) => {
             const vat = expenseVatNote(exp.vat_amount);
             return (
+              <View>
               <Pressable
                 onPress={() =>
                   router.push({
@@ -166,6 +171,17 @@ export default function FinanceExpensesListScreen() {
                   </View>
                 </Card>
               </Pressable>
+              {isStaffCategory(exp.category_id) && !exp.employee_id ? (
+                <LinkExpenseEmployee
+                  expenseId={exp.id}
+                  employees={employees}
+                  onLinked={() => {
+                    refresh();
+                    void refreshEmployees();
+                  }}
+                />
+              ) : null}
+              </View>
             );
           }}
         />

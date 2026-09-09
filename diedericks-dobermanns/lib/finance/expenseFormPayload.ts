@@ -55,6 +55,7 @@ export function buildExpensePayload(input: {
   isPayable: boolean;
   payableDueDate: string;
   creditorName: string;
+  employeeId?: string;
 }): CreateExpenseInput {
   const resolvedPaymentName =
     input.paymentAccountId === OTHER_ACCOUNT
@@ -86,5 +87,6 @@ export function buildExpensePayload(input: {
     is_payable: input.isPayable,
     payable_due_date: input.isPayable && input.payableDueDate ? input.payableDueDate : null,
     creditor_name: input.isPayable && input.creditorName ? input.creditorName : null,
+    employee_id: input.employeeId || null,
   };
 }
