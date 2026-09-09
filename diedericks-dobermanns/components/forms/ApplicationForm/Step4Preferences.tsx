@@ -37,7 +37,7 @@ export function Step4Preferences({ control, setValue }: StepProps) {
         options={[
           { value: 'puppy', label: 'Standard Puppy' },
           { value: 'elite_developed', label: 'Elite Developed Puppy (6 months in-kennel development)' },
-          { value: 'protection_dog', label: 'Fully Trained Protection Dog' },
+          { value: 'protection_dog', label: 'Elite Family Protection Dog' },
         ]}
       />
       <Pressable onPress={() => router.push('/(public)/elite-developed' as Href)} className="mb-4">

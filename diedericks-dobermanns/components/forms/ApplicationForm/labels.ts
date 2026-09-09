@@ -70,7 +70,7 @@ const LABELS: Partial<Record<keyof ApplicationFormValues, Record<string, string>
   dog_interest: {
     puppy: 'Standard Puppy',
     elite_developed: 'Elite Developed Puppy',
-    protection_dog: 'Fully Trained Protection Dog',
+    protection_dog: 'Elite Family Protection Dog',
   },
   purpose: {
     family: 'Family Companion',
