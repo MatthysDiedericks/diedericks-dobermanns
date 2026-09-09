@@ -15,7 +15,7 @@ const INVITE_MAX = 10;
 const INVITE_WINDOW_SECS = 3600;
 const TTL_DAYS = 7;
 
-type Source = 'application' | 'waiting_list' | 'client' | 'member';
+type Source = 'application' | 'waiting_list' | 'client' | 'member' | 'registration';
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {

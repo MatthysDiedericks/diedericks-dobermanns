@@ -47,6 +47,8 @@ export const ERROR_CODES = {
   INVITE_ALREADY_REGISTERED: "INVITE_ALREADY_REGISTERED",
   INVITE_CODE_WRONG: "INVITE_CODE_WRONG",
   INVITE_NONE_ISSUED: "INVITE_NONE_ISSUED",
+  /** Client asked for a fresh portal link from the expired/used page. */
+  INVITE_REISSUE_REQUESTED: "INVITE_REISSUE_REQUESTED",
   INVITE_SCANNER_CONSUMED: "INVITE_SCANNER_CONSUMED",
   INVITE_UNHANDLED: "INVITE_UNHANDLED",
   /**
@@ -125,6 +127,7 @@ export const CODE_SEVERITY: Record<ErrorCode, ErrorSeverity> = {
   INVITE_ALREADY_REGISTERED: "warning",
   INVITE_CODE_WRONG: "warning",
   INVITE_NONE_ISSUED: "warning",
+  INVITE_REISSUE_REQUESTED: "warning",
   INVITE_SCANNER_CONSUMED: "warning",
   INVITE_UNHANDLED: "error",
   SIGNIN_LINK_EXPIRED: "warning",
@@ -143,6 +146,7 @@ export const IMMEDIATE_ALERT_CODES: ReadonlySet<string> = new Set([
   ERROR_CODES.APPLY_UNHANDLED,
   ERROR_CODES.QUOTE_SAVE_FAILED,
   ERROR_CODES.QUOTE_UNHANDLED,
+  ERROR_CODES.INVITE_REISSUE_REQUESTED,
 ]);
 
 /** Rate-limit events alert only when more than this many land in one hour. */

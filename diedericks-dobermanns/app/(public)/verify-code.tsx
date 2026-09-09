@@ -20,8 +20,8 @@ function friendlyVerifyError(message: string): string {
   if (m.includes('already registered')) {
     return "You're already registered — sign in.";
   }
-  if (m.includes('no invite was issued')) {
-    return 'No invite was issued for this email. Ask Matt for one.';
+  if (m.includes('no invite was issued') || m.includes('request a new one')) {
+    return 'This link did not work. Request a new one and we will send it.';
   }
   if (m.includes('already been used') || (m.includes('used') && !m.includes('expired'))) {
     return 'This code has already been used — ask Matt for a new one.';

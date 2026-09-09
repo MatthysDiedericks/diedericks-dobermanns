@@ -51,7 +51,7 @@ function userMessage(reason: FailReason, alreadyRegistered: boolean): string {
   if (alreadyRegistered) return "You're already registered — sign in.";
   if (reason === 'used') return 'This code has already been used — ask Matt for a new one.';
   if (reason === 'expired') return 'That invite has expired. Ask Matt for a new one.';
-  if (reason === 'no-invite') return 'No invite was issued for this email. Ask Matt for one.';
+  if (reason === 'no-invite') return 'This link did not work. Request a new one and we will send it.';
   return 'That code is not right. Check the digits and try again.';
 }
 

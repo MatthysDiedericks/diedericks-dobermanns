@@ -1,7 +1,7 @@
 import { fetchInviteStates } from '@/lib/portal/fetchInviteStates';
 import { requireSupabase } from '@/lib/supabase';
 
-export type InviteSource = 'application' | 'waiting_list' | 'client' | 'member';
+export type InviteSource = 'application' | 'waiting_list' | 'client' | 'member' | 'registration';
 
 export type InviteStateRow = {
   email: string;

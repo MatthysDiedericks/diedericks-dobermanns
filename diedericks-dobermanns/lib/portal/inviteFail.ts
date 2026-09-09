@@ -8,12 +8,32 @@ export type InviteFailReason =
   | 'no-invite'
   | 'signed-in';
 
+export type LinkKind = 'invite' | 'signin';
+
 export type InviteDiagnoseRow = {
   exists: boolean;
   expires_at: string | null;
   code_redeemed_at: string | null;
   invited_at: string | null;
 };
+
+export function inviteFailPath(
+  reason: InviteFailReason,
+  linkKind: LinkKind = 'invite',
+  email?: string,
+): string {
+  const params = new URLSearchParams();
+  if (reason === 'signed-in') params.set('reason', 'signed-in');
+  else if (reason === 'already-registered') params.set('reason', 'already-registered');
+  else if (reason === 'used') params.set('reason', 'used');
+  else if (reason === 'wrong-code') params.set('reason', 'wrong-code');
+  else if (reason === 'no-invite') params.set('reason', 'no-invite');
+  if (linkKind === 'signin') params.set('link', 'signin');
+  const trimmed = email?.trim().toLowerCase() ?? '';
+  if (trimmed.includes('@')) params.set('email', trimmed);
+  const qs = params.toString();
+  return qs ? `/portal/invite-expired?${qs}` : '/portal/invite-expired';
+}
 
 export function reasonFromDiagnose(
   row: InviteDiagnoseRow | null | undefined,
@@ -29,7 +49,7 @@ export function inviteFailUserMessage(reason: InviteFailReason): string {
   if (reason === 'already-registered') return "You're already registered — sign in.";
   if (reason === 'used') return 'This code has already been used — ask Matt for a new one.';
   if (reason === 'expired') return 'That invite has expired. Ask Matt for a new one.';
-  if (reason === 'no-invite') return 'No invite was issued for this email. Ask Matt for one.';
+  if (reason === 'no-invite') return 'This link did not work. Request a new one and we will send it.';
   if (reason === 'wrong-code') return 'That code is not right. Check the digits and try again.';
   return 'You are already signed in.';
 }
