@@ -9,8 +9,11 @@ import { z } from 'zod';
  * Every z.literal(true) field is a mandatory individual agreement —
  * partial agreement is not accepted.
  */
-export const applicationSchema = z.object({
+const applicationFields = z.object({
   // ── STEP 1: Personal Information ─────────────────────────────────────────
+  buyer_location_type: z.enum(['sa', 'sadc', 'international'], {
+    message: 'Select where you are buying from',
+  }),
   full_name: z.string().min(2, 'Please enter your full name'),
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter your date of birth'),
   id_type: z.enum(['sa_id', 'passport', 'other_national_id']),
@@ -121,6 +124,7 @@ export const applicationSchema = z.object({
   delivery_acknowledged: z.boolean().refine((v) => v === true, {
     message: 'You must acknowledge the Pretoria collection / delivery requirement',
   }),
+  export_terms_acknowledged: z.boolean(),
   special_requests: z.string().optional().or(z.literal('')),
 
   // ── STEP 5: Legal Agreements (ALL individually mandatory) ─────────────────
@@ -145,10 +149,23 @@ export const applicationSchema = z.object({
   marketing_opt_in: z.boolean().optional(),
 });
 
+export const applicationSchema = applicationFields.superRefine((data, ctx) => {
+  if (
+    (data.buyer_location_type === 'sadc' || data.buyer_location_type === 'international') &&
+    data.export_terms_acknowledged !== true
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['export_terms_acknowledged'],
+      message: 'I understand that export costs are not included in the quoted price.',
+    });
+  }
+});
+
 export type ApplicationFormValues = z.infer<typeof applicationSchema>;
 
 export const STEP_FIELDS: (keyof ApplicationFormValues)[][] = [
-  ['full_name', 'date_of_birth', 'id_type', 'id_number', 'email', 'phone', 'occupation', 'country', 'address'],
+  ['buyer_location_type', 'export_terms_acknowledged', 'full_name', 'date_of_birth', 'id_type', 'id_number', 'email', 'phone', 'occupation', 'country', 'address'],
   ['home_type', 'has_secure_yard', 'yard_size', 'sleeping_arrangement', 'hours_alone_per_day', 'exercise_level'],
   ['why_dobermann', 'dobermann_experience_level', 'aware_of_dcm', 'aware_of_commitment', 'aware_of_costs'],
   [
@@ -220,6 +237,7 @@ export const defaultApplicationValues: Partial<ApplicationFormValues> = {
   training_planned: false,
   special_requests: '',
   delivery_acknowledged: false,
+  export_terms_acknowledged: false,
   agreed_no_breeding_rights: false,
   agreed_right_of_recall: false,
   agreed_no_resale: false,

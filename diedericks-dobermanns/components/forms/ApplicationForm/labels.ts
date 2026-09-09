@@ -2,6 +2,11 @@ import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/s
 import { COLOUR_LABELS } from '@/lib/colours/dogColours';
 
 const LABELS: Partial<Record<keyof ApplicationFormValues, Record<string, string>>> = {
+  buyer_location_type: {
+    sa: 'South Africa',
+    sadc: 'SADC',
+    international: 'International',
+  },
   home_type: {
     house: 'House',
     apartment: 'Apartment',

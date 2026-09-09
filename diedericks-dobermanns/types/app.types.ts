@@ -281,6 +281,7 @@ export interface Dog {
   collar_colour?: string | null;
   handover_date?: string | null;
   handover_status?: string | null;
+  delivered_at?: string | null;
   birth_weight_grams?: number | null;
   standard?: 'fci_kusa' | 'akc' | null;
   bloodline_type?: 'european' | 'american' | 'mixed' | null;
@@ -531,6 +532,9 @@ export interface Application {
   province: string | null;
   city: string | null;
   address: string | null;
+  buyer_location_type?: 'sa' | 'sadc' | 'international' | null;
+  export_terms_acknowledged?: boolean;
+  export_terms_acknowledged_at?: string | null;
   instagram_handle: string | null;
   facebook_profile: string | null;
   dog_interest: DogInterest | null;

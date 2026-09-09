@@ -14,6 +14,7 @@ import { Colors } from '@/constants/colors';
 import { useAdminApplications } from '@/hooks/useAdmin';
 import { formatDateTime, titleCase } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
+import { locationBadge } from '@/lib/apply/buyerLocation';
 import { awaitingPaymentLabel } from '@/lib/waitlist/paymentGate';
 import type { ApplicationStatus } from '@/types/app.types';
 
@@ -33,6 +34,7 @@ export default function AdminApplicationsScreen() {
   const [showArchived, setShowArchived] = useState(false);
   const [idFailedOnly, setIdFailedOnly] = useState(false);
   const [awaitingPaymentOnly, setAwaitingPaymentOnly] = useState(false);
+  const [locationFilter, setLocationFilter] = useState<'all' | 'sadc' | 'international'>('all');
   const [waitlistedAppIds, setWaitlistedAppIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -62,9 +64,13 @@ export default function AdminApplicationsScreen() {
           if (app.status !== 'approved') return false;
           if (waitlistedAppIds.has(app.id)) return false;
         }
+        if (locationFilter === 'sadc' && app.buyer_location_type !== 'sadc') return false;
+        if (locationFilter === 'international' && app.buyer_location_type !== 'international') {
+          return false;
+        }
         return true;
       }),
-    [applications, showArchived, idFailedOnly, awaitingPaymentOnly, waitlistedAppIds],
+    [applications, showArchived, idFailedOnly, awaitingPaymentOnly, locationFilter, waitlistedAppIds],
   );
 
   const awaitingCount = applications.filter(
@@ -92,6 +98,22 @@ export default function AdminApplicationsScreen() {
               : `Approved — awaiting payment (${awaitingCount})`}
           </Typography>
         </Pressable>
+        <Pressable
+          onPress={() =>
+            setLocationFilter((v) =>
+              v === 'all' ? 'sadc' : v === 'sadc' ? 'international' : 'all',
+            )
+          }
+          className="mt-2"
+        >
+          <Typography variant="caption" className="text-gold">
+            {locationFilter === 'all'
+              ? 'Filter: SADC / International'
+              : locationFilter === 'sadc'
+                ? 'Showing SADC — tap for International'
+                : 'Showing International — tap to clear'}
+          </Typography>
+        </Pressable>
       </View>
       <View className="gap-3 px-6">
         {!loading && visible.length === 0 ? (
@@ -114,6 +136,11 @@ export default function AdminApplicationsScreen() {
                       <Typography variant="subtitle">{app.full_name}</Typography>
                       <Badge label={titleCase(app.status)} tone={STATUS_TONE[app.status]} />
                     </View>
+                    {locationBadge(app.buyer_location_type) ? (
+                      <Typography variant="caption" className="mt-1 text-gold">
+                        {locationBadge(app.buyer_location_type)}
+                      </Typography>
+                    ) : null}
                     <Typography variant="caption" className="mt-1">
                       {titleCase(app.dog_interest)} · {titleCase(app.purpose)}
                     </Typography>

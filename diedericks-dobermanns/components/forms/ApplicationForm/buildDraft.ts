@@ -9,6 +9,9 @@ import {
 
 /** Maps validated form values to a Supabase applications insert row. */
 export function buildApplicationDraft(values: ApplicationFormValues): ApplicationDraft {
+  const exportBuyer =
+    values.buyer_location_type === 'sadc' || values.buyer_location_type === 'international';
+  const exportAcked = exportBuyer && Boolean(values.export_terms_acknowledged);
   const idType = (values.id_type ?? defaultIdType(values.country)) as IdType;
   const idNumber = normalizeIdNumber(values.id_number, idType);
   const idCheck = checkIdNumber({ type: idType, number: idNumber, country: values.country });
@@ -28,6 +31,9 @@ export function buildApplicationDraft(values: ApplicationFormValues): Applicatio
     province: values.province || null,
     city: values.city || null,
     address: values.address,
+    buyer_location_type: values.buyer_location_type,
+    export_terms_acknowledged: exportAcked,
+    export_terms_acknowledged_at: exportAcked ? new Date().toISOString() : null,
     instagram_handle: values.instagram_handle || null,
     facebook_profile: values.facebook_profile || null,
     home_type: values.home_type,

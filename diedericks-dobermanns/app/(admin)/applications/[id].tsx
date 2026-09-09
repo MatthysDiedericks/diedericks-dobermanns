@@ -26,7 +26,8 @@ import { useLinkedQuote, type LinkedQuote } from '@/hooks/useLinkedQuote';
 import { addDogToApplication, createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
-import { titleCase } from '@/lib/format';
+import { locationLabel } from '@/lib/apply/buyerLocation';
+import { formatDateTime, titleCase } from '@/lib/format';
 import { PAYMENT_GATE_MESSAGE, isWaitlistPaymentGateError } from '@/lib/waitlist/paymentGate';
 import type { Application, ApplicationStatus } from '@/types/app.types';
 
@@ -222,6 +223,15 @@ export default function ApplicationDetailScreen() {
           <Field label="Employer" value={app.employer} />
           <Field label="Address" value={app.address} />
           <Field label="Location" value={[app.city, app.province, app.country].filter(Boolean).join(', ')} />
+          <Field label="Buying from" value={locationLabel(app.buyer_location_type)} />
+          <Field
+            label="Export costs acknowledged"
+            value={
+              app.export_terms_acknowledged
+                ? `Yes${app.export_terms_acknowledged_at ? ` · ${formatDateTime(app.export_terms_acknowledged_at)}` : ''}`
+                : 'No'
+            }
+          />
           <Field label="Instagram" value={app.instagram_handle} />
           <Field label="Facebook" value={app.facebook_profile} />
         </Card>
