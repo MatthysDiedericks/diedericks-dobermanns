@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useCategoryLabel } from '@/hooks/useDocumentCategories';
 import { useGetSignedUrl } from '@/hooks/useDocuments';
 import { expiryLabel, expiryStatus, expiryColor } from '@/lib/documents/expiry';
 import type { DocumentRecord } from '@/lib/documents/types';
@@ -20,6 +21,7 @@ interface DocumentViewerProps {
 
 export function DocumentViewer({ document, visible, onClose }: DocumentViewerProps) {
   const { getSignedUrl } = useGetSignedUrl();
+  const categoryLabel = useCategoryLabel(document?.category ?? '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function DocumentViewer({ document, visible, onClose }: DocumentViewerPro
     <>
       <Modal visible={visible && !imageUrl} onClose={onClose} title={document.document_name}>
         <Typography variant="caption" className="text-ink-muted">
-          {document.category}
+          {categoryLabel}
           {document.date_of_document ? ` · ${formatKennelDate(document.date_of_document)}` : ''}
         </Typography>
         {document.issued_by ? (

@@ -18,6 +18,8 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAllDocuments } from '@/hooks/useDocuments';
+import { useDocumentCategories } from '@/hooks/useDocumentCategories';
+import { labelForCategory } from '@/lib/documents/categories';
 import { callCheckDocumentExpiry } from '@/lib/functions';
 import {
   KENNEL_DOCUMENT_ENTITY_ID,
@@ -62,6 +64,7 @@ export default function KennelDocumentsScreen() {
   );
 
   const { documents, loading, error, refresh } = useAllDocuments(filters);
+  const { rows: categoryRows } = useDocumentCategories();
 
   const categories = useMemo(() => {
     const set = new Set(documents.map((d) => d.category));
@@ -138,7 +141,7 @@ export default function KennelDocumentsScreen() {
               onPress={() => setCategory(c)}
               className={`mr-2 rounded-full border px-3 py-1.5 ${category === c ? 'border-gold bg-gold/15' : 'border-gold/30'}`}
             >
-              <Typography variant="caption">{c === 'all' ? 'All categories' : c}</Typography>
+              <Typography variant="caption">{c === 'all' ? 'All categories' : labelForCategory(c, categoryRows)}</Typography>
             </Pressable>
           ))}
         </ScrollView>

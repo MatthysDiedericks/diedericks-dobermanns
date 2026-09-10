@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
+import { CatalogueManager } from '@/components/equipment/CatalogueManager';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -18,10 +19,18 @@ const TONE: Record<EquipmentEnquiryStatus, BadgeTone> = {
   closed: 'muted',
 };
 
-export default function EquipmentEnquiriesScreen() {
+const STATUS_FILTERS: { key: EquipmentEnquiryStatus | 'all'; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'new', label: 'New' },
+  { key: 'quoted', label: 'Quoted' },
+  { key: 'closed', label: 'Closed' },
+];
+
+export default function EquipmentAdminScreen() {
   const router = useRouter();
   const [rows, setRows] = useState<EquipmentEnquiry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<EquipmentEnquiryStatus | 'all'>('all');
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -38,36 +47,76 @@ export default function EquipmentEnquiriesScreen() {
     void reload();
   }, [reload]);
 
+  const visible = useMemo(
+    () => (status === 'all' ? rows : rows.filter((r) => r.status === status)),
+    [rows, status],
+  );
+
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="Retail" title="Equipment enquiries" />
-      <View className="gap-3 px-6 pb-10">
-        {!loading && rows.length === 0 ? (
-          <EmptyState title="No equipment enquiries yet" />
-        ) : (
-          rows.map((enq) => (
-            <Pressable key={enq.id} onPress={() => router.push(`/(admin)/equipment/${enq.id}` as never)}>
-              <Card>
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1 pr-3">
-                    <Typography variant="subtitle">{enq.full_name}</Typography>
-                    <Typography variant="caption" className="mt-0.5">
-                      {enq.email} · {enq.phone}
-                    </Typography>
-                    <Typography variant="caption" className="mt-1 capitalize">
-                      {enq.fulfilment}
-                      {enq.items.length ? ` · ${enq.items.map((it) => `${it.label} × ${it.quantity}`).join(', ')}` : ''}
-                    </Typography>
-                    <Typography variant="caption" className="mt-1">
-                      {formatDate(enq.created_at)}
-                    </Typography>
+      <PageHeader eyebrow="Retail" title="Equipment shop" />
+      <View className="gap-6 px-6 pb-10">
+        <Typography variant="bodyMuted">
+          Shop enquiries convert into the existing quote builder. They never touch the dog
+          pipeline.
+        </Typography>
+
+        <View className="gap-3">
+          <Typography variant="subtitle" className="text-gold">
+            Catalogue
+          </Typography>
+          <CatalogueManager />
+        </View>
+
+        <View className="gap-3">
+          <Typography variant="subtitle" className="text-gold">
+            Enquiries
+          </Typography>
+          <View className="flex-row flex-wrap gap-2">
+            {STATUS_FILTERS.map((f) => (
+              <Pressable
+                key={f.key}
+                onPress={() => setStatus(f.key)}
+                className={`rounded-lg border px-3 py-2 ${
+                  status === f.key ? 'border-gold bg-gold/15' : 'border-gold/20'
+                }`}
+              >
+                <Typography variant="caption">{f.label}</Typography>
+              </Pressable>
+            ))}
+          </View>
+          {!loading && visible.length === 0 ? (
+            <EmptyState title="No equipment enquiries yet" />
+          ) : (
+            visible.map((enq) => (
+              <Pressable
+                key={enq.id}
+                onPress={() => router.push(`/(admin)/equipment/${enq.id}` as never)}
+              >
+                <Card>
+                  <View className="flex-row items-start justify-between">
+                    <View className="flex-1 pr-3">
+                      <Typography variant="subtitle">{enq.full_name}</Typography>
+                      <Typography variant="caption" className="mt-0.5">
+                        {enq.email} · {enq.phone}
+                      </Typography>
+                      <Typography variant="caption" className="mt-1 capitalize">
+                        {enq.fulfilment}
+                        {enq.items.length
+                          ? ` · ${enq.items.map((it) => `${it.label} × ${it.quantity}`).join(', ')}`
+                          : ''}
+                      </Typography>
+                      <Typography variant="caption" className="mt-1">
+                        {formatDate(enq.created_at)}
+                      </Typography>
+                    </View>
+                    <Badge label={enq.status} tone={TONE[enq.status]} />
                   </View>
-                  <Badge label={enq.status} tone={TONE[enq.status]} />
-                </View>
-              </Card>
-            </Pressable>
-          ))
-        )}
+                </Card>
+              </Pressable>
+            ))
+          )}
+        </View>
       </View>
     </ScreenContainer>
   );

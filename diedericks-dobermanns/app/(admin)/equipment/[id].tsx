@@ -9,9 +9,10 @@ import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { convertEquipmentEnquiryToQuote } from '@/lib/equipment/convertToQuote';
+import { shopPriceLabel } from '@/lib/equipment/display';
 import { fetchEquipmentEnquiry, updateEquipmentEnquiryStatus } from '@/lib/equipment/queries';
 import type { EquipmentEnquiry, EquipmentEnquiryStatus } from '@/lib/equipment/types';
-import { formatAmount, formatDate } from '@/lib/finance/formatters';
+import { formatDate } from '@/lib/finance/formatters';
 
 const TONE: Record<EquipmentEnquiryStatus, BadgeTone> = {
   new: 'gold',
@@ -107,7 +108,7 @@ export default function EquipmentEnquiryDetailScreen() {
                 {it.label} × {it.quantity}
               </Typography>
               <Typography variant="caption">
-                {it.price_varies ? 'Price on request' : formatAmount(it.default_price)}
+                {shopPriceLabel(it)}
               </Typography>
             </View>
           ))}

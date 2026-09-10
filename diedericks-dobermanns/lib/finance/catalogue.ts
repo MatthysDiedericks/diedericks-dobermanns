@@ -24,6 +24,12 @@ export const STOCK_STATUSES: { value: StockStatus; label: string }[] = [
   { value: 'sold_out', label: 'Sold out' },
 ];
 
+export type EquipmentTypeRow = {
+  key: string;
+  label: string;
+  sort_order: number;
+};
+
 export type CatalogueItem = {
   id: string;
   code: string;
@@ -40,6 +46,7 @@ export type CatalogueItem = {
   short_description: string | null;
   is_client_visible: boolean;
   stock_status: StockStatus;
+  equipment_type: string | null;
 };
 
 export type LastChargeRow = {

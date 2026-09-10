@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { DocumentCard } from '@/components/documents/DocumentCard';
@@ -15,6 +15,7 @@ import { useDocumentsForEntity, useUpdateDocument } from '@/hooks/useDocuments';
 import { isClientVisibleCategory } from '@/lib/dogs/clientVisibleDocs';
 import type { DocumentEntityType } from '@/lib/documents/constants';
 import type { DocumentRecord } from '@/lib/documents/types';
+import { requireSupabase } from '@/lib/supabase';
 
 type FileFilter = 'all' | 'pdf' | 'images' | 'certificates' | 'other';
 type SortMode = 'newest' | 'oldest' | 'az' | 'expiry';
@@ -89,10 +90,12 @@ export function DocumentList({
   const { documents, loading, error, refresh } = useDocumentsForEntity(entityType, entityId);
   const { update } = useUpdateDocument();
   const uploadRef = useRef<UploadDocumentSheetHandle>(null);
+  const lockPrivate = entityType === 'employee';
 
   const [fileFilter, setFileFilter] = useState<FileFilter>('all');
   const [sort, setSort] = useState<SortMode>('newest');
   const [viewerDoc, setViewerDoc] = useState<DocumentRecord | null>(null);
+  const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => {
     const scoped = clientVisibleOnly
@@ -100,6 +103,35 @@ export function DocumentList({
       : documents;
     return sortDocuments(scoped.filter((d) => matchesFilter(d, fileFilter)), sort);
   }, [documents, fileFilter, sort, clientVisibleOnly]);
+
+  useEffect(() => {
+    if (!lockPrivate) {
+      setUploaderNames({});
+      return;
+    }
+    const ids = [...new Set(documents.map((d) => d.uploaded_by).filter(Boolean))] as string[];
+    if (ids.length === 0) {
+      setUploaderNames({});
+      return;
+    }
+    let cancelled = false;
+    void requireSupabase()
+      .from('users')
+      .select('id, full_name')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const next: Record<string, string> = {};
+        for (const row of data ?? []) {
+          const name = (row.full_name as string | null)?.trim();
+          if (name) next[row.id as string] = name;
+        }
+        setUploaderNames(next);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [documents, lockPrivate]);
 
   function handleShare(doc: DocumentRecord) {
     Alert.alert('Share with client', 'Make this document visible in the client portal?', [
@@ -177,8 +209,10 @@ export function DocumentList({
             readOnly={readOnly}
             onView={setViewerDoc}
             onEdit={(d) => uploadRef.current?.open(d)}
-            onShare={handleShare}
+            onShare={lockPrivate ? undefined : handleShare}
             onDeleted={refresh}
+            showUploadMeta={lockPrivate}
+            uploaderName={doc.uploaded_by ? uploaderNames[doc.uploaded_by] ?? null : null}
           />
         ))
       )}

@@ -5,17 +5,18 @@ import {
 } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { DateField } from '@/components/ui/DateField';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { useUploadDocument, useUpdateDocument } from '@/hooks/useDocuments';
+import { DOCUMENT_CATEGORY_KEYS } from '@/lib/documents/categories';
 import {
   ACCEPTED_MIME_TYPES,
-  categoriesForEntity,
   type DocumentEntityType,
   MAX_DOCUMENT_BYTES,
 } from '@/lib/documents/constants';
@@ -75,14 +76,15 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
   function UploadDocumentSheet({ entityType, entityId, onSaved }, ref) {
     const sheetRef = useRef<BottomSheetModal>(null);
     const snapPoints = useMemo(() => ['92%'], []);
-    const categories = categoriesForEntity(entityType);
+    const { categories } = useDocumentCategories(entityType);
+    const defaultCategory = categories[0]?.key ?? DOCUMENT_CATEGORY_KEYS.other;
 
     const { upload, uploading } = useUploadDocument(entityType, entityId);
     const { update, updating } = useUpdateDocument();
 
     const [editId, setEditId] = useState<string | null>(null);
     const [name, setName] = useState('');
-    const [category, setCategory] = useState(categories[0] ?? 'Other');
+    const [category, setCategory] = useState(defaultCategory);
     const [dateOfDocument, setDateOfDocument] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
     const [documentNumber, setDocumentNumber] = useState('');
@@ -95,7 +97,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
     const reset = useCallback(() => {
       setEditId(null);
       setName('');
-      setCategory(categories[0] ?? 'Other');
+      setCategory(categories[0]?.key ?? DOCUMENT_CATEGORY_KEYS.other);
       setDateOfDocument('');
       setExpiryDate('');
       setDocumentNumber('');
@@ -105,6 +107,13 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
       setFile(null);
       setPreviewUri(null);
     }, [categories]);
+
+    useEffect(() => {
+      if (editId) return;
+      if (categories.length === 0) return;
+      if (categories.some((c) => c.key === category)) return;
+      setCategory(categories[0].key);
+    }, [categories, category, editId]);
 
     const open = useCallback(
       (editDoc?: DocumentRecord) => {
@@ -118,7 +127,8 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
           setDocumentNumber(editDoc.document_number ?? '');
           setIssuedBy(editDoc.issued_by ?? '');
           setDescription(editDoc.description ?? '');
-          if (editDoc.is_public) setVisibility('public');
+          if (entityType === 'employee') setVisibility('admin');
+          else if (editDoc.is_public) setVisibility('public');
           else if (editDoc.client_visible) setVisibility('client');
           else setVisibility('admin');
         }
@@ -160,7 +170,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
         Alert.alert('Required fields', 'Document name and category are required.');
         return;
       }
-      if (visibility === 'public') {
+      if (entityType !== 'employee' && visibility === 'public') {
         Alert.alert(
           'Public document',
           'This document will be visible on the public website. Continue?',
@@ -176,6 +186,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
 
     async function doSubmit() {
       try {
+        const lockedPrivate = entityType === 'employee';
         const meta = {
           name: name.trim(),
           category,
@@ -184,8 +195,8 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
           documentNumber: documentNumber.trim() || null,
           issuedBy: issuedBy.trim() || null,
           description: description.trim() || null,
-          clientVisible: visibility === 'client',
-          isPublic: visibility === 'public',
+          clientVisible: lockedPrivate ? false : visibility === 'client',
+          isPublic: lockedPrivate ? false : visibility === 'public',
         };
 
         if (editId) {
@@ -248,7 +259,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
 
           <ChipPicker
             label="Category *"
-            options={categories.map((c) => ({ value: c, label: c }))}
+            options={categories.map((c) => ({ value: c.key, label: c.label }))}
             value={category}
             onChange={setCategory}
           />
@@ -298,29 +309,37 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
             style={{ borderWidth: 1, borderColor: 'rgba(196,163,90,0.3)', borderRadius: 4, padding: 12, color: '#F5F0E8', marginBottom: 16, minHeight: 80, textAlignVertical: 'top' }}
           />
 
-          <Typography variant="label" className="mb-2">
-            Who can see this document?
-          </Typography>
-          <View className="mb-4 flex-row flex-wrap gap-2">
-            {(
-              [
-                { v: 'admin' as const, l: 'Admin only' },
-                { v: 'client' as const, l: 'Share with client' },
-                { v: 'trainer' as const, l: 'Share with trainer' },
-                { v: 'public' as const, l: 'Public' },
-              ] as const
-            ).map((o) => (
-              <Pressable
-                key={o.v}
-                onPress={() => setVisibility(o.v)}
-                className={`rounded-full border px-3 py-1.5 ${visibility === o.v ? 'border-gold bg-gold/15' : 'border-gold/25'}`}
-              >
-                <Typography variant="caption" className={visibility === o.v ? 'text-gold' : ''}>
-                  {o.l}
-                </Typography>
-              </Pressable>
-            ))}
-          </View>
+          {entityType === 'employee' ? (
+            <Typography variant="caption" className="mb-4 text-ink-muted">
+              Employee files are admin-only. They are never shown in the client portal or on the public site.
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="label" className="mb-2">
+                Who can see this document?
+              </Typography>
+              <View className="mb-4 flex-row flex-wrap gap-2">
+                {(
+                  [
+                    { v: 'admin' as const, l: 'Admin only' },
+                    { v: 'client' as const, l: 'Share with client' },
+                    { v: 'trainer' as const, l: 'Share with trainer' },
+                    { v: 'public' as const, l: 'Public' },
+                  ] as const
+                ).map((o) => (
+                  <Pressable
+                    key={o.v}
+                    onPress={() => setVisibility(o.v)}
+                    className={`rounded-full border px-3 py-1.5 ${visibility === o.v ? 'border-gold bg-gold/15' : 'border-gold/25'}`}
+                  >
+                    <Typography variant="caption" className={visibility === o.v ? 'text-gold' : ''}>
+                      {o.l}
+                    </Typography>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
 
           {!editId ? (
             <>

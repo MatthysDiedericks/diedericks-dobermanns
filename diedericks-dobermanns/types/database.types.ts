@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       achievements: {
@@ -123,6 +148,59 @@ export type Database = {
           value?: string | null
         }
         Relationships: []
+      }
+      application_dog_requests: {
+        Row: {
+          application_id: string
+          budget_range: string | null
+          created_at: string
+          ear_preference: string | null
+          id: string
+          notes: string | null
+          preferred_category: string | null
+          preferred_colour: string | null
+          preferred_sex: string | null
+          preferred_timeline: string | null
+          request_index: number
+          tail_preference: string | null
+        }
+        Insert: {
+          application_id: string
+          budget_range?: string | null
+          created_at?: string
+          ear_preference?: string | null
+          id?: string
+          notes?: string | null
+          preferred_category?: string | null
+          preferred_colour?: string | null
+          preferred_sex?: string | null
+          preferred_timeline?: string | null
+          request_index: number
+          tail_preference?: string | null
+        }
+        Update: {
+          application_id?: string
+          budget_range?: string | null
+          created_at?: string
+          ear_preference?: string | null
+          id?: string
+          notes?: string | null
+          preferred_category?: string | null
+          preferred_colour?: string | null
+          preferred_sex?: string | null
+          preferred_timeline?: string | null
+          request_index?: number
+          tail_preference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_dog_requests_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       application_events: {
         Row: {
@@ -238,6 +316,7 @@ export type Database = {
           aware_of_costs: string | null
           aware_of_dcm: string | null
           budget_range: string | null
+          buyer_location_type: string | null
           children_ages: string | null
           city: string | null
           country: string
@@ -247,10 +326,13 @@ export type Database = {
           delivery_acknowledged: boolean | null
           dobermann_experience_level: string | null
           dog_interest: string | null
+          dogs_requested: number
           email: string
           employer: string | null
           exercise_level: string | null
           experience_with_dobermanns: string | null
+          export_terms_acknowledged: boolean
+          export_terms_acknowledged_at: string | null
           facebook_profile: string | null
           full_name: string
           has_secure_yard: string | null
@@ -264,6 +346,7 @@ export type Database = {
           instagram_handle: string | null
           last_reminder_sent_at: string | null
           litter_interest_id: string | null
+          marketing_opt_in: boolean
           occupation: string | null
           personal_reference_name: string | null
           personal_reference_phone: string | null
@@ -284,6 +367,7 @@ export type Database = {
           special_requests: string | null
           specific_dog_id: string | null
           status: string
+          submission_id: string | null
           tail_preference: string | null
           training_planned: boolean | null
           updated_at: string
@@ -310,6 +394,7 @@ export type Database = {
           aware_of_costs?: string | null
           aware_of_dcm?: string | null
           budget_range?: string | null
+          buyer_location_type?: string | null
           children_ages?: string | null
           city?: string | null
           country: string
@@ -319,10 +404,13 @@ export type Database = {
           delivery_acknowledged?: boolean | null
           dobermann_experience_level?: string | null
           dog_interest?: string | null
+          dogs_requested?: number
           email: string
           employer?: string | null
           exercise_level?: string | null
           experience_with_dobermanns?: string | null
+          export_terms_acknowledged?: boolean
+          export_terms_acknowledged_at?: string | null
           facebook_profile?: string | null
           full_name: string
           has_secure_yard?: string | null
@@ -336,6 +424,7 @@ export type Database = {
           instagram_handle?: string | null
           last_reminder_sent_at?: string | null
           litter_interest_id?: string | null
+          marketing_opt_in?: boolean
           occupation?: string | null
           personal_reference_name?: string | null
           personal_reference_phone?: string | null
@@ -356,6 +445,7 @@ export type Database = {
           special_requests?: string | null
           specific_dog_id?: string | null
           status?: string
+          submission_id?: string | null
           tail_preference?: string | null
           training_planned?: boolean | null
           updated_at?: string
@@ -382,6 +472,7 @@ export type Database = {
           aware_of_costs?: string | null
           aware_of_dcm?: string | null
           budget_range?: string | null
+          buyer_location_type?: string | null
           children_ages?: string | null
           city?: string | null
           country?: string
@@ -391,10 +482,13 @@ export type Database = {
           delivery_acknowledged?: boolean | null
           dobermann_experience_level?: string | null
           dog_interest?: string | null
+          dogs_requested?: number
           email?: string
           employer?: string | null
           exercise_level?: string | null
           experience_with_dobermanns?: string | null
+          export_terms_acknowledged?: boolean
+          export_terms_acknowledged_at?: string | null
           facebook_profile?: string | null
           full_name?: string
           has_secure_yard?: string | null
@@ -408,6 +502,7 @@ export type Database = {
           instagram_handle?: string | null
           last_reminder_sent_at?: string | null
           litter_interest_id?: string | null
+          marketing_opt_in?: boolean
           occupation?: string | null
           personal_reference_name?: string | null
           personal_reference_phone?: string | null
@@ -428,6 +523,7 @@ export type Database = {
           special_requests?: string | null
           specific_dog_id?: string | null
           status?: string
+          submission_id?: string | null
           tail_preference?: string | null
           training_planned?: boolean | null
           updated_at?: string
@@ -1140,13 +1236,18 @@ export type Database = {
           created_at: string
           default_price: number | null
           description_template: string | null
+          equipment_type: string | null
           id: string
+          image_path: string | null
           is_active: boolean
+          is_client_visible: boolean
           item_type: string
           label: string
           notes: string | null
           price_varies: boolean
+          short_description: string | null
           sort_order: number
+          stock_status: string
           updated_at: string
           updated_by: string | null
         }
@@ -1156,13 +1257,18 @@ export type Database = {
           created_at?: string
           default_price?: number | null
           description_template?: string | null
+          equipment_type?: string | null
           id?: string
+          image_path?: string | null
           is_active?: boolean
+          is_client_visible?: boolean
           item_type: string
           label: string
           notes?: string | null
           price_varies?: boolean
+          short_description?: string | null
           sort_order?: number
+          stock_status?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1172,17 +1278,30 @@ export type Database = {
           created_at?: string
           default_price?: number | null
           description_template?: string | null
+          equipment_type?: string | null
           id?: string
+          image_path?: string | null
           is_active?: boolean
+          is_client_visible?: boolean
           item_type?: string
           label?: string
           notes?: string | null
           price_varies?: boolean
+          short_description?: string | null
           sort_order?: number
+          stock_status?: string
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_items_equipment_type_fkey"
+            columns: ["equipment_type"]
+            isOneToOne: false
+            referencedRelation: "equipment_types"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       check_ins: {
         Row: {
@@ -2168,6 +2287,33 @@ export type Database = {
           },
         ]
       }
+      document_categories: {
+        Row: {
+          created_at: string
+          entity_types: string[]
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          entity_types?: string[]
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          entity_types?: string[]
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           allowed_user_ids: string[] | null
@@ -2263,6 +2409,13 @@ export type Database = {
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_category_fkey"
+            columns: ["category"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["key"]
+          },
           {
             foreignKeyName: "documents_related_invoice_id_fkey"
             columns: ["related_invoice_id"]
@@ -2394,6 +2547,63 @@ export type Database = {
             columns: ["dog_id"]
             isOneToOne: false
             referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dog_skills: {
+        Row: {
+          conditions: string[]
+          created_at: string
+          detail: string | null
+          discipline: string
+          dog_id: string
+          id: string
+          is_public: boolean
+          label: string
+          level: string | null
+          library_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          conditions?: string[]
+          created_at?: string
+          detail?: string | null
+          discipline: string
+          dog_id: string
+          id?: string
+          is_public?: boolean
+          label: string
+          level?: string | null
+          library_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          conditions?: string[]
+          created_at?: string
+          detail?: string | null
+          discipline?: string
+          dog_id?: string
+          id?: string
+          is_public?: boolean
+          label?: string
+          level?: string | null
+          library_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dog_skills_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dog_skills_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "skill_library"
             referencedColumns: ["id"]
           },
         ]
@@ -2916,6 +3126,87 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          created_at: string
+          currency: string
+          email: string | null
+          end_date: string | null
+          enpf_member: boolean
+          full_name: string
+          id: string
+          is_active: boolean
+          job_title: string | null
+          monthly_salary: number | null
+          national_id: string | null
+          notes: string | null
+          payment_reference: string | null
+          phone: string | null
+          preferred_name: string | null
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          email?: string | null
+          end_date?: string | null
+          enpf_member?: boolean
+          full_name: string
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          monthly_salary?: number | null
+          national_id?: string | null
+          notes?: string | null
+          payment_reference?: string | null
+          phone?: string | null
+          preferred_name?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          email?: string | null
+          end_date?: string | null
+          enpf_member?: boolean
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          monthly_salary?: number | null
+          national_id?: string | null
+          notes?: string | null
+          payment_reference?: string | null
+          phone?: string | null
+          preferred_name?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enpf_settings: {
+        Row: {
+          rate: number
+          updated_at: string
+          wage_ceiling: number
+          year: number
+        }
+        Insert: {
+          rate: number
+          updated_at?: string
+          wage_ceiling: number
+          year: number
+        }
+        Update: {
+          rate?: number
+          updated_at?: string
+          wage_ceiling?: number
+          year?: number
+        }
+        Relationships: []
+      }
       enquiries: {
         Row: {
           admin_notes: string | null
@@ -2978,6 +3269,139 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      equipment_enquiries: {
+        Row: {
+          client_id: string | null
+          contact_id: string | null
+          created_at: string
+          delivery_address: string | null
+          email: string
+          fulfilment: string
+          full_name: string
+          id: string
+          message: string | null
+          phone: string
+          quote_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          delivery_address?: string | null
+          email: string
+          fulfilment?: string
+          full_name: string
+          id?: string
+          message?: string | null
+          phone: string
+          quote_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          delivery_address?: string | null
+          email?: string
+          fulfilment?: string
+          full_name?: string
+          id?: string
+          message?: string | null
+          phone?: string
+          quote_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_enquiries_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_enquiries_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_enquiries_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_enquiry_items: {
+        Row: {
+          catalogue_item_id: string
+          enquiry_id: string
+          id: string
+          note: string | null
+          quantity: number
+        }
+        Insert: {
+          catalogue_item_id: string
+          enquiry_id: string
+          id?: string
+          note?: string | null
+          quantity?: number
+        }
+        Update: {
+          catalogue_item_id?: string
+          enquiry_id?: string
+          id?: string
+          note?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_enquiry_items_catalogue_item_id_fkey"
+            columns: ["catalogue_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_enquiry_items_enquiry_id_fkey"
+            columns: ["enquiry_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_enquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_types: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       error_events: {
         Row: {
@@ -3086,6 +3510,7 @@ export type Database = {
           currency: string
           description: string
           dog_id: string | null
+          employee_id: string | null
           expense_date: string
           id: string
           invoice_reference: string | null
@@ -3120,6 +3545,7 @@ export type Database = {
           currency?: string
           description: string
           dog_id?: string | null
+          employee_id?: string | null
           expense_date?: string
           id?: string
           invoice_reference?: string | null
@@ -3154,6 +3580,7 @@ export type Database = {
           currency?: string
           description?: string
           dog_id?: string | null
+          employee_id?: string | null
           expense_date?: string
           id?: string
           invoice_reference?: string | null
@@ -3191,6 +3618,13 @@ export type Database = {
             columns: ["dog_id"]
             isOneToOne: false
             referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -5025,6 +5459,78 @@ export type Database = {
           },
         ]
       }
+      payslips: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          deductions: Json
+          employee_id: string
+          employer_enpf: number | null
+          expense_id: string | null
+          gross: number
+          hours_worked: number | null
+          id: string
+          net: number
+          notes: string | null
+          payment_date: string
+          period_end: string
+          period_start: string
+          rate_of_pay: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deductions?: Json
+          employee_id: string
+          employer_enpf?: number | null
+          expense_id?: string | null
+          gross: number
+          hours_worked?: number | null
+          id?: string
+          net: number
+          notes?: string | null
+          payment_date: string
+          period_end: string
+          period_start: string
+          rate_of_pay?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deductions?: Json
+          employee_id?: string
+          employer_enpf?: number | null
+          expense_id?: string | null
+          gross?: number
+          hours_worked?: number | null
+          id?: string
+          net?: number
+          notes?: string | null
+          payment_date?: string
+          period_end?: string
+          period_start?: string
+          rate_of_pay?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedigree_ancestors: {
         Row: {
           created_at: string
@@ -5577,19 +6083,19 @@ export type Database = {
           discount: number
           historical_client_name: string | null
           id: string
-          last_client_activity_at: string | null
-          last_edit_note: string | null
-          last_sent_revision: number | null
           lapse_hold_reason: string | null
           lapse_hold_set_by: string | null
           lapse_hold_until: string | null
           lapse_reason: string | null
           lapsed_at: string | null
+          last_client_activity_at: string | null
+          last_edit_note: string | null
+          last_sent_revision: number | null
           notes: string | null
-          reminder_final_sent_at: string | null
-          reminder_first_sent_at: string | null
           quote_number: string
           quote_type: string
+          reminder_final_sent_at: string | null
+          reminder_first_sent_at: string | null
           reopen_reason: string | null
           reopened_at: string | null
           reopened_by: string | null
@@ -5617,19 +6123,19 @@ export type Database = {
           discount?: number
           historical_client_name?: string | null
           id?: string
-          last_client_activity_at?: string | null
-          last_edit_note?: string | null
-          last_sent_revision?: number | null
           lapse_hold_reason?: string | null
           lapse_hold_set_by?: string | null
           lapse_hold_until?: string | null
           lapse_reason?: string | null
           lapsed_at?: string | null
+          last_client_activity_at?: string | null
+          last_edit_note?: string | null
+          last_sent_revision?: number | null
           notes?: string | null
-          reminder_final_sent_at?: string | null
-          reminder_first_sent_at?: string | null
           quote_number: string
           quote_type?: string
+          reminder_final_sent_at?: string | null
+          reminder_first_sent_at?: string | null
           reopen_reason?: string | null
           reopened_at?: string | null
           reopened_by?: string | null
@@ -5657,19 +6163,19 @@ export type Database = {
           discount?: number
           historical_client_name?: string | null
           id?: string
-          last_client_activity_at?: string | null
-          last_edit_note?: string | null
-          last_sent_revision?: number | null
           lapse_hold_reason?: string | null
           lapse_hold_set_by?: string | null
           lapse_hold_until?: string | null
           lapse_reason?: string | null
           lapsed_at?: string | null
+          last_client_activity_at?: string | null
+          last_edit_note?: string | null
+          last_sent_revision?: number | null
           notes?: string | null
-          reminder_final_sent_at?: string | null
-          reminder_first_sent_at?: string | null
           quote_number?: string
           quote_type?: string
+          reminder_final_sent_at?: string | null
+          reminder_first_sent_at?: string | null
           reopen_reason?: string | null
           reopened_at?: string | null
           reopened_by?: string | null
@@ -5734,6 +6240,13 @@ export type Database = {
           {
             foreignKeyName: "quotes_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_lapse_hold_set_by_fkey"
+            columns: ["lapse_hold_set_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -5986,6 +6499,39 @@ export type Database = {
           email_domain?: string
           error_code?: string
           id?: never
+        }
+        Relationships: []
+      }
+      skill_library: {
+        Row: {
+          created_at: string
+          default_conditions: string[]
+          detail: string | null
+          discipline: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          default_conditions?: string[]
+          detail?: string | null
+          discipline: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          default_conditions?: string[]
+          detail?: string | null
+          discipline?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -7190,11 +7736,14 @@ export type Database = {
           preferred_sex: string | null
           preferred_timeline: string | null
           priority: string
+          queue_anchor_at: string
           quote_expires_date: string | null
           quote_id: string | null
           quote_sent_date: string | null
           quoted_price: number | null
           registration_type: string | null
+          request_index: number
+          sibling_group_id: string | null
           source: string | null
           stage_change_note: string | null
           stage_updated_at: string | null
@@ -7239,11 +7788,14 @@ export type Database = {
           preferred_sex?: string | null
           preferred_timeline?: string | null
           priority?: string
+          queue_anchor_at: string
           quote_expires_date?: string | null
           quote_id?: string | null
           quote_sent_date?: string | null
           quoted_price?: number | null
           registration_type?: string | null
+          request_index?: number
+          sibling_group_id?: string | null
           source?: string | null
           stage_change_note?: string | null
           stage_updated_at?: string | null
@@ -7288,11 +7840,14 @@ export type Database = {
           preferred_sex?: string | null
           preferred_timeline?: string | null
           priority?: string
+          queue_anchor_at?: string
           quote_expires_date?: string | null
           quote_id?: string | null
           quote_sent_date?: string | null
           quoted_price?: number | null
           registration_type?: string | null
+          request_index?: number
+          sibling_group_id?: string | null
           source?: string | null
           stage_change_note?: string | null
           stage_updated_at?: string | null
@@ -7782,6 +8337,7 @@ export type Database = {
       v_cash_expected_in: {
         Row: {
           amount: number | null
+          amount_received: number | null
           basis_label: string | null
           buyer_name: string | null
           client_id: string | null
@@ -7792,8 +8348,11 @@ export type Database = {
           expected_date: string | null
           invoice_id: string | null
           invoice_number: string | null
+          invoice_total: number | null
+          litter_go_home_date: string | null
           litter_id: string | null
           litter_label: string | null
+          programme_tier: string | null
           quote_id: string | null
         }
         Relationships: [
@@ -7874,6 +8433,14 @@ export type Database = {
     }
     Functions: {
       accept_quote: { Args: { p_quote_id: string }; Returns: undefined }
+      add_dog_to_application: {
+        Args: { p_application_id: string; p_prefs?: Json }
+        Returns: number
+      }
+      app_setting_int: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
+      }
       application_field_tier: { Args: { p_field: string }; Returns: string }
       apply_marketing_opt_out: {
         Args: { p_allow_expired?: boolean; p_token: string }
@@ -7957,9 +8524,14 @@ export type Database = {
         Returns: {
           applications: number
           contracts: number
+          dogs: number
           quotes: number
           waitlist: number
         }[]
+      }
+      client_already_confirmed_delivery: {
+        Args: { p_dog_id: string }
+        Returns: boolean
       }
       client_can_watch_training_video: {
         Args: { p_video_id: string }
@@ -8012,6 +8584,10 @@ export type Database = {
       }
       enable_audit: { Args: { p_table: string }; Returns: undefined }
       ensure_backup_restore_reminder: { Args: never; Returns: undefined }
+      ensure_waitlist_lines_for_application: {
+        Args: { p_application_id: string; p_invoice_id?: string }
+        Returns: undefined
+      }
       evaluate_pairing: {
         Args: { p_dam_id: string; p_sire_id: string }
         Returns: {
@@ -8043,6 +8619,7 @@ export type Database = {
       get_app_secret: { Args: { p_name: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_trainer_or_above: { Args: never; Returns: boolean }
+      lapse_one_quote: { Args: { p_quote_id: string }; Returns: string }
       log_security_event: {
         Args: {
           p_area?: string
@@ -8208,6 +8785,15 @@ export type Database = {
           opened_at: string
         }[]
       }
+      process_quote_lapse_ladder: {
+        Args: never
+        Returns: {
+          action: string
+          detail: string
+          quote_id: string
+          quote_number: string
+        }[]
+      }
       promote_waitlist_on_payment: {
         Args: {
           p_client_id: string
@@ -8218,6 +8804,27 @@ export type Database = {
       }
       purge_old_audit_log: { Args: never; Returns: undefined }
       purge_old_error_events: { Args: never; Returns: undefined }
+      quote_has_paid_or_reserved_sibling: {
+        Args: { p_quote_id: string }
+        Returns: boolean
+      }
+      quote_has_unverified_or_any_proof: {
+        Args: { p_quote_id: string }
+        Returns: boolean
+      }
+      quote_lapse_clock: {
+        Args: { p_activity: string; p_sent: string }
+        Returns: string
+      }
+      quote_lapse_due_date: {
+        Args: { p_activity: string; p_sent: string; p_valid: string }
+        Returns: string
+      }
+      quote_lapse_enabled: { Args: never; Returns: boolean }
+      quote_lapse_send_email: {
+        Args: { p_html: string; p_subject: string; p_to: string }
+        Returns: undefined
+      }
       rate_limit_blocked_message: { Args: never; Returns: string }
       rate_limit_client_key: {
         Args: { p_action: string; p_client_ip: string; p_user_agent: string }
@@ -8263,6 +8870,13 @@ export type Database = {
         Args: { p_dog_id: string }
         Returns: undefined
       }
+      release_dogs_from_lapsed_quote: {
+        Args: { p_quote_id: string }
+        Returns: {
+          dog_id: string
+          dog_name: string
+        }[]
+      }
       resolve_confirmed_user_id: { Args: { p_email: string }; Returns: string }
       resolve_error_events: {
         Args: { p_ids: number[]; p_note?: string }
@@ -8272,6 +8886,10 @@ export type Database = {
       save_application_amendment: {
         Args: { p_application_id: string; p_patch: Json }
         Returns: Json
+      }
+      save_application_dog_requests: {
+        Args: { p_application_id: string; p_requests: Json }
+        Returns: undefined
       }
       security_require_admin: { Args: { p_fn: string }; Returns: undefined }
       set_app_secret: {
@@ -8291,6 +8909,23 @@ export type Database = {
           p_signature_url: string
         }
         Returns: undefined
+      }
+      stamp_quote_client_activity: {
+        Args: { p_quote_id: string }
+        Returns: undefined
+      }
+      submit_equipment_enquiry: {
+        Args: {
+          p_address: string
+          p_email: string
+          p_fulfilment: string
+          p_full_name: string
+          p_items: Json
+          p_marketing: boolean
+          p_message: string
+          p_phone: string
+        }
+        Returns: string
       }
       sweep_error_consistency: { Args: never; Returns: number }
       training_owner_client_count: { Args: never; Returns: number }
@@ -8336,12 +8971,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8365,11 +9000,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8390,11 +9025,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8415,11 +9050,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8432,11 +9067,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8446,6 +9081,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

@@ -63,7 +63,10 @@
     "admin/training/guides/new": "Blank guide editor. Same long-form decision as the guides list.",
     "admin/training/guides/:id": "Existing guide editor. Same long-form decision as the guides list.",
     "admin/issues": "Internal fault log. Read at a desk when something has gone wrong, not from a pocket.",
-    "admin/issues/:id": "Fault detail. Same desk-only decision as the issues list."
+    "admin/issues/:id": "Fault detail. Same desk-only decision as the issues list.",
+    "site/shop": "app shop pending CURSOR_PROMPT_EQUIPMENT_SHOP_IN_APP",
+    "admin/equipment": "app shop pending CURSOR_PROMPT_EQUIPMENT_SHOP_IN_APP",
+    "admin/equipment/:id": "app shop pending CURSOR_PROMPT_EQUIPMENT_SHOP_IN_APP"
   },
 
   "appOnly": {

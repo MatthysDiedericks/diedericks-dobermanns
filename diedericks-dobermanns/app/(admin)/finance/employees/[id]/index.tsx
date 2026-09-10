@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
+import { DocumentSection } from '@/components/documents/DocumentList';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -140,6 +141,10 @@ export default function EmployeeDetailScreen() {
           <Typography variant="caption" className="text-subtle">
             No payslips yet. Create one from a linked Staff expense.
           </Typography>
+        ) : null}
+
+        {employeeId ? (
+          <DocumentSection entityType="employee" entityId={employeeId} />
         ) : null}
       </ScrollView>
     </ScreenContainer>

@@ -29,18 +29,25 @@ export function applyUnallocatedSalesFilter<
 
 export async function fetchUnallocatedDogs(): Promise<UnallocatedDog[]> {
   const supabase = requireSupabase();
-  const { data, error } = await applyUnallocatedSalesFilter(
-    supabase.from('dogs').select('id, name, status, created_at, programme_tier'),
-  ).order('created_at', { ascending: false });
+  const { data, error } = await supabase
+    .from('dogs')
+    .select('id, name, status, created_at, programme_tier')
+    .eq('status', 'sold')
+    .is('owner_id', null)
+    .eq('ownership_status', 'unknown')
+    .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as UnallocatedDog[];
 }
 
 export async function countUnallocatedDogs(): Promise<number> {
   const supabase = requireSupabase();
-  const { count, error } = await applyUnallocatedSalesFilter(
-    supabase.from('dogs').select('id', { count: 'exact', head: true }),
-  );
+  const { count, error } = await supabase
+    .from('dogs')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sold')
+    .is('owner_id', null)
+    .eq('ownership_status', 'unknown');
   if (error) throw new Error(error.message);
   return count ?? 0;
 }

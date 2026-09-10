@@ -27,7 +27,7 @@ import type {
   VetVisitRecord,
 } from '@/lib/health/types';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
-import { applyActiveKennelStockFilter } from '@/lib/dogs/status';
+import { KENNEL_STOCK_FILTER } from '@/lib/dogs/status';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { requireSupabase } from '@/lib/supabase';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
@@ -196,13 +196,13 @@ export function useBreedingDogsForHealth() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await applyActiveKennelStockFilter(
-        requireSupabase()
-          .from('dogs')
-          .select(
-            'id, name, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)' as typeof HEALTH_DOG_SELECT,
-          ),
-      ).order('name');
+      const { data, error } = await requireSupabase()
+        .from('dogs')
+        .select(HEALTH_DOG_SELECT)
+        .or(KENNEL_STOCK_FILTER)
+        .neq('status', 'deceased')
+        .is('deceased_at', null)
+        .order('name');
       if (error) throw error;
       setDogs((data ?? []).map((r) => mapHealthDog(r as unknown as Record<string, unknown>)));
     } catch {
@@ -511,9 +511,9 @@ export function useHealthSummaries() {
         client.from('vaccinations').select(`${VACCINATION_SELECT}`).order('date_administered', { ascending: false }),
         client.from('deworming_records').select(DEWORMING_SELECT).order('date_treated', { ascending: false }),
         client.from('vet_visits').select(VET_VISIT_SELECT).order('visit_date', { ascending: false }),
-        applyActiveKennelStockFilter(client.from('dogs').select(
+        client.from('dogs').select(
             'id, name, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)' as typeof HEALTH_DOG_SELECT,
-          )).order('name'),
+          ).or(KENNEL_STOCK_FILTER).neq('status', 'deceased').is('deceased_at', null).order('name'),
       ]);
 
       const dogList = (dogsRes.data ?? []).map((r) => mapHealthDog(r as Record<string, unknown>));
@@ -638,9 +638,9 @@ export function useUpcomingHealthEvents(daysAhead = 30) {
       }
 
       const [dogsRes, vacs, deworms, visits] = await Promise.all([
-        applyActiveKennelStockFilter(client.from('dogs').select(
+        client.from('dogs').select(
             'id, name, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)' as typeof HEALTH_DOG_SELECT,
-          )),
+          ).or(KENNEL_STOCK_FILTER).neq('status', 'deceased').is('deceased_at', null),
         client.from('vaccinations').select(`${VACCINATION_SELECT}`).not('next_due_date', 'is', null).lte('next_due_date', end),
         client.from('deworming_records').select(DEWORMING_SELECT).not('next_due_date', 'is', null).lte('next_due_date', end),
         client.from('vet_visits').select(VET_VISIT_SELECT).not('follow_up_date', 'is', null).lte('follow_up_date', end),

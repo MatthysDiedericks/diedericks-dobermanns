@@ -1,20 +1,5 @@
+import { DOCUMENT_CATEGORY_KEYS, fetchDocumentCategories } from '@/lib/documents/categories';
 import { requireSupabase } from '@/lib/supabase';
-
-/** Same list the website unlabelled screen assigns. Do not invent values. */
-export const LABELLABLE_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'pedigree', label: 'Pedigree' },
-  { value: 'registration', label: 'Registration' },
-  { value: 'dna_test', label: 'DNA test' },
-  { value: 'hip_elbow_score', label: 'Hip & elbow score' },
-  { value: 'vaccination_record', label: 'Vaccination record' },
-  { value: 'health_certificate', label: 'Health certificate' },
-  { value: 'microchip', label: 'Microchip' },
-  { value: 'eye_test', label: 'Eye test' },
-  { value: 'heart_test', label: 'Heart test' },
-  { value: 'export_permit', label: 'Export papers' },
-  { value: 'import_permit', label: 'Import permit' },
-  { value: 'other', label: 'Other (keep unlabelled)' },
-];
 
 const MEANINGLESS_NAMES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] as const;
 
@@ -43,7 +28,7 @@ export function isMeaninglessName(name: string | null | undefined): boolean {
 }
 
 function isOtherCategory(category: string): boolean {
-  return category === 'other' || category === 'Other';
+  return category === DOCUMENT_CATEGORY_KEYS.other;
 }
 
 async function attachDogNames(rows: RawRow[]): Promise<UnlabelledDocument[]> {
@@ -65,7 +50,7 @@ export async function fetchUnlabelledDocuments(): Promise<UnlabelledDocument[]> 
   const { data, error } = await supabase
     .from('documents')
     .select(SELECT)
-    .or(`category.in.(other,Other),document_name.in.(${MEANINGLESS_NAMES.join(',')})`)
+    .or(`category.eq.${DOCUMENT_CATEGORY_KEYS.other},document_name.in.(${MEANINGLESS_NAMES.join(',')})`)
     .order('uploaded_at', { ascending: false });
   if (error) throw new Error(error.message);
   const rows = ((data ?? []) as RawRow[]).filter(
@@ -86,7 +71,8 @@ export async function labelDocument(
 ): Promise<{ error?: string }> {
   const name = documentName.trim();
   if (!name) return { error: 'Give it a real name.' };
-  const allowed = LABELLABLE_CATEGORIES.some((c) => c.value === category);
+  const rows = await fetchDocumentCategories();
+  const allowed = rows.some((c) => c.is_active && c.key === category);
   if (!allowed) return { error: 'Pick a category from the existing list.' };
   const supabase = requireSupabase();
   const { error } = await supabase

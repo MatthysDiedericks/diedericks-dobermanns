@@ -10,9 +10,10 @@ import { Colors } from '@/constants/colors';
 
 interface Props {
   reference: string;
+  warning?: string | null;
 }
 
-export function ApplySuccessView({ reference }: Props) {
+export function ApplySuccessView({ reference, warning }: Props) {
   const router = useRouter();
   const [seconds, setSeconds] = useState(5);
 
@@ -48,6 +49,13 @@ export function ApplySuccessView({ reference }: Props) {
           {reference}
         </Typography>
       </View>
+      {warning ? (
+        <View className="mt-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-5 py-3">
+          <Typography variant="body" className="text-center text-amber-200">
+            {warning}
+          </Typography>
+        </View>
+      ) : null}
       <Button label="Back to Home" onPress={goHome} className="mt-8" />
       <Typography variant="caption" className="mt-4 text-subtle">
         Returning to home in {seconds}s…

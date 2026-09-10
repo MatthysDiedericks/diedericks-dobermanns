@@ -100,6 +100,16 @@ export async function fetchEquipmentEnquiry(id: string): Promise<EquipmentEnquir
   return mapEnquiry(data as unknown as Record<string, unknown>);
 }
 
+export async function fetchNewEquipmentEnquiryCount(): Promise<number> {
+  const supabase = requireSupabase();
+  const { count, error } = await supabase
+    .from('equipment_enquiries' as never)
+    .select('id', { count: 'exact', head: true })
+    .eq('status' as never, 'new');
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function updateEquipmentEnquiryStatus(
   id: string,
   status: EquipmentEnquiryStatus,

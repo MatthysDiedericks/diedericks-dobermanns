@@ -13,6 +13,8 @@ export const VIDEO_UPLOAD_EXT_WHITELIST = ["mp4", "mov", "m4v", "webm"] as const
 export type VideoUploadExt = (typeof VIDEO_UPLOAD_EXT_WHITELIST)[number];
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+/** Equipment bucket cap — jpeg/png/webp only. Matches the live storage limit. */
+export const EQUIPMENT_MAX_BYTES = 5 * 1024 * 1024;
 export const STAFF_MEDIA_MAX_BYTES = 50 * 1024 * 1024;
 export const MAX_TRAINING_VIDEO_BYTES = 512 * 1024 * 1024;
 export const MAX_APPLICATION_FILES = 5;

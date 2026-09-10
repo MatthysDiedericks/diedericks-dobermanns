@@ -11,6 +11,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'url';
 
 /**
@@ -30,6 +31,9 @@ const ALIASES = {
   'admin/preview/clients/:id/view-as/:rest': 'admin/clients/:id/view-as',
   // Broadcast composer — website calls it messaging.
   'admin/broadcast/new': 'admin/messaging',
+  // Public shop — website (site)/shop vs app (public)/shop.
+  'public/shop': 'site/shop',
+  'site/shop': 'site/shop',
   // App reuses the log-expense form with ?expenseId= instead of a /:id URL.
   'admin/finance/expenses/:id': 'admin/finance/expenses/new',
   // Guide reader is the list row until the kennel publishes articles.
@@ -38,6 +42,9 @@ const ALIASES = {
 
 const SKIP_FILE = /^(?:_layout|layout|loading|error|not-found|template)$/;
 const SURFACES = ['admin', 'portal'];
+/** Public shop lives under (site) on the website and (public) in the app.
+ *  The checker used to skip both, so a one-sided shop passed as "in parity". */
+const SHOP_KEYS = /^(?:site|public)\/shop(?:\/|$)/;
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
@@ -98,7 +105,7 @@ function collect(base, kind) {
     if (!isRouteFile(file, kind)) continue;
     const key = routeKey(file, base);
     if (!key || SKIP_FILE.test(key.split('/').pop() ?? '')) continue;
-    if (!SURFACES.some((s) => key === s || key.startsWith(`${s}/`))) continue;
+    if (!SURFACES.some((s) => key === s || key.startsWith(`${s}/`)) && !SHOP_KEYS.test(key)) continue;
     keys.add(key);
   }
   return keys;
@@ -221,6 +228,18 @@ function run() {
       'Build the other side, or record why not in scripts/parity-exceptions.json.',
     );
     process.exit(1);
+  }
+
+  const catScript = path.join(scriptDir, 'check-document-categories.mjs');
+  if (fs.existsSync(catScript)) {
+    const cat = spawnSync(process.execPath, [catScript], { stdio: 'inherit' });
+    if (cat.status !== 0) process.exit(cat.status ?? 1);
+  }
+
+  const migScript = path.join(scriptDir, 'check-migration-numbers.mjs');
+  if (fs.existsSync(migScript)) {
+    const mig = spawnSync(process.execPath, [migScript], { stdio: 'inherit' });
+    if (mig.status !== 0) process.exit(mig.status ?? 1);
   }
 }
 

@@ -5,6 +5,7 @@ import { PhotoPicker } from '@/components/forms/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { fileTypeFromName } from '@/lib/documents/constants';
+import { DOCUMENT_CATEGORY_KEYS } from '@/lib/documents/categories';
 import { uploadFile } from '@/lib/storage';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -39,7 +40,7 @@ export function MicrochipQuickAttach({ dogId, dogName, onSaved }: { dogId: strin
       original_filename: uploaded.path.split('/').pop() ?? 'microchip.jpg',
       storage_path: uploaded.path,
       file_type: fileTypeFromName(uploaded.path),
-      category: 'microchip',
+      category: DOCUMENT_CATEGORY_KEYS.microchip,
       client_visible: true,
       is_public: false,
       provided_by: 'staff',

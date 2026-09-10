@@ -24,7 +24,7 @@ export async function saveMyApplicationAmendment(
 
   const { data, error } = await requireSupabase().rpc('save_application_amendment', {
     p_application_id: applicationId,
-    p_patch: patch,
+    p_patch: patch as never,
   });
   if (error) return { error: error.message };
   const row = data as {

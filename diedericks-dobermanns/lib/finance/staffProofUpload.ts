@@ -1,5 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 
+import { DOCUMENT_CATEGORY_KEYS } from "@/lib/documents/categories";
 import { uploadFile } from "@/lib/storage";
 import { staffProofOwnerScope } from "@/lib/finance/proofSource";
 import { useAuthStore } from "@/stores/authStore";
@@ -82,7 +83,7 @@ export async function uploadStaffPaymentProof(input: {
       original_filename: input.proof.fileName,
       storage_path: uploaded.path,
       file_type: uploaded.path.split(".").pop() ?? "jpg",
-      category: "proof_of_payment",
+      category: DOCUMENT_CATEGORY_KEYS.proofOfPayment,
       description: "Added by staff",
       client_visible: false,
       is_public: false,
@@ -93,7 +94,7 @@ export async function uploadStaffPaymentProof(input: {
       related_invoice_id: input.invoiceId,
       review_status: "verified",
       provided_by: "staff",
-    } as never)
+    })
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);

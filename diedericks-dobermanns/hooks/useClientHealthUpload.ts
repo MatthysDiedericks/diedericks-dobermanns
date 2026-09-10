@@ -89,7 +89,7 @@ export function useClientHealthUploads() {
           uploaded_by: userId,
           review_status: 'pending',
           provided_by: 'client',
-        } as never);
+        });
         if (insErr) return { error: insErr.message };
         await refresh();
         return {};

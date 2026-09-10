@@ -7,6 +7,7 @@ import { SurfaceCard } from '@/components/admin/SurfaceCard';
 import { AwaitingProofsWidget } from '@/components/dashboard/AwaitingProofsWidget';
 import { ContactsWidget } from '@/components/dashboard/ContactsWidget';
 import { DocumentTriageWidget } from '@/components/dashboard/DocumentTriageWidget';
+import { EquipmentShopWidget } from '@/components/dashboard/EquipmentShopWidget';
 import { UnallocatedSalesWidget } from '@/components/dashboard/UnallocatedSalesWidget';
 import { InvitedNotOpenedWidget } from '@/components/dashboard/InvitedNotOpenedWidget';
 import { ContractsNotReadyWidget } from '@/components/dashboard/ContractsNotReadyWidget';
@@ -235,6 +236,14 @@ export function AdminDashboardContent() {
             </Pressable>
           ))
         )}
+      </SurfaceCard>
+
+      <EquipmentShopWidget />
+
+      <SurfaceCard title="Stock list" href="/(admin)/stock">
+        <Typography variant="caption" className="text-subtle">
+          What is loaded, and whether it is actually reaching the shop.
+        </Typography>
       </SurfaceCard>
 
       {/* Widget 6 — To-Do */}

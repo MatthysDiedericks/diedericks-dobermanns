@@ -21,21 +21,12 @@ export interface ContractSignaturePayload {
 export async function signContract(id: string, signature: ContractSignaturePayload): Promise<MutationResult> {
   if (!supabase) return simulate();
   // p_ip is optional; omit rather than passing null/undefined (merged RPC types disagree).
-  const { error } = await supabase.rpc(
-    'sign_contract_as_client',
-    signature.ip
-      ? {
-          p_contract_id: id,
-          p_signature_url: signature.signatureStoragePath,
-          p_device: signature.device,
-          p_ip: signature.ip,
-        }
-      : {
-          p_contract_id: id,
-          p_signature_url: signature.signatureStoragePath,
-          p_device: signature.device,
-        },
-  );
+  const { error } = await supabase.rpc('sign_contract_as_client', {
+    p_contract_id: id,
+    p_signature_url: signature.signatureStoragePath,
+    p_device: signature.device,
+    p_ip: signature.ip ?? '',
+  } as never);
   if (error) {
     void import('@/lib/errors/logError').then(({ logError }) =>
       logError({

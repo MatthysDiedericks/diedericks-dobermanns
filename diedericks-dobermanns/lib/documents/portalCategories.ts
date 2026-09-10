@@ -1,6 +1,6 @@
 /**
- * Maps portal display sections to the category strings used in the documents table.
- * Admin uploads use these category strings when setting client_visible=true.
+ * Maps portal display sections to the category keys stored on documents.
+ * Admin uploads write these keys when setting client_visible = true.
  */
 
 export interface PortalCategoryGroup {
@@ -18,11 +18,11 @@ export const PORTAL_CATEGORY_GROUPS: PortalCategoryGroup[] = [
     icon: 'heart-circle-outline',
     description: 'Vaccinations, health certificates, and vet records',
     categories: [
-      'Health Certificate',
-      'Vaccination Record',
-      'Hip/Elbow Score',
-      'Eye Test',
-      'Heart Test',
+      'health_certificate',
+      'vaccination_record',
+      'hip_elbow_score',
+      'eye_test',
+      'heart_test',
     ],
   },
   {
@@ -30,14 +30,14 @@ export const PORTAL_CATEGORY_GROUPS: PortalCategoryGroup[] = [
     label: 'Pedigree & Registration',
     icon: 'git-network-outline',
     description: 'Pedigree certificates, registration papers, and DNA tests',
-    categories: ['Pedigree', 'Registration', 'DNA Test', 'Microchip'],
+    categories: ['pedigree', 'registration', 'dna_test', 'microchip'],
   },
   {
     id: 'parents',
     label: "Parents' Health",
     icon: 'people-outline',
     description: 'Health clearances and test results for sire and dam',
-    categories: ['Parent Health Records'],
+    categories: ['parent_health_records'],
   },
   {
     id: 'legal',
@@ -45,11 +45,11 @@ export const PORTAL_CATEGORY_GROUPS: PortalCategoryGroup[] = [
     icon: 'document-text-outline',
     description: 'Purchase agreements, guarantees, and ownership transfers',
     categories: [
-      'Purchase Agreement',
-      'Puppy Guarantee',
-      'Health Warranty',
-      'Transfer of Ownership',
-      'NDA',
+      'purchase_agreement',
+      'puppy_guarantee',
+      'health_warranty',
+      'transfer_of_ownership',
+      'nda',
     ],
   },
   {
@@ -58,10 +58,10 @@ export const PORTAL_CATEGORY_GROUPS: PortalCategoryGroup[] = [
     icon: 'ribbon-outline',
     description: 'Training reports, certificates, and assessments',
     categories: [
-      'Training Report',
-      'Completion Certificate',
-      'PSA Certificate',
-      'Training Certificate',
+      'training_report',
+      'completion_certificate',
+      'psa_certificate',
+      'training_certificate',
     ],
   },
   {
@@ -69,7 +69,7 @@ export const PORTAL_CATEGORY_GROUPS: PortalCategoryGroup[] = [
     label: 'Show & Sport',
     icon: 'trophy-outline',
     description: 'Show certificates and sport achievements',
-    categories: ['Show Certificate'],
+    categories: ['show_certificate'],
   },
 ];
 

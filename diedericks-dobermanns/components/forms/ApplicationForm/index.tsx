@@ -28,7 +28,7 @@ import { APPLICATION_MIN_MS, isTooFast, trapFilled } from '@/lib/security/botDef
 import type { PickedApplicationFile } from '@/lib/uploads/applicationFiles';
 
 interface ApplicationFormProps {
-  onSubmitted: (referenceId: string) => void;
+  onSubmitted: (referenceId: string, warning?: string | null) => void;
   initialDogId?: string;
 }
 
@@ -66,6 +66,15 @@ export function ApplicationForm({ onSubmitted, initialDogId }: ApplicationFormPr
   const [showChildSafetyNotice, setShowChildSafetyNotice] = useState(false);
   const [companyUrl, setCompanyUrl] = useState('');
   const openedAt = useFormOpenedAt();
+  const [submissionId] = useState(() =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        }),
+  );
 
   const { control, handleSubmit, trigger, getValues, setValue } = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationSchema) as Resolver<ApplicationFormValues>,
@@ -158,14 +167,15 @@ export function ApplicationForm({ onSubmitted, initialDogId }: ApplicationFormPr
     }
     const draft = buildApplicationDraft(values);
     if (initialDogId) draft.specific_dog_id = initialDogId;
-    const { referenceId, error } = await submit(
+    const { referenceId, error, warning } = await submit(
       draft,
       values.marketing_opt_in,
       files,
       dogRequestsFromForm(values),
+      submissionId,
     );
     if (error) setSubmitError(error);
-    else if (referenceId) onSubmitted(referenceId);
+    else if (referenceId) onSubmitted(referenceId, warning ?? null);
   }
 
   return (
@@ -213,9 +223,8 @@ export function ApplicationForm({ onSubmitted, initialDogId }: ApplicationFormPr
           <Button label="Continue" onPress={next} className="flex-1" />
         ) : (
           <Button
-            label="Submit Application"
+            label={submitting ? 'Sending…' : 'Submit Application'}
             onPress={() => void handleSubmit(onValid, onInvalid)()}
-            loading={submitting}
             disabled={submitting}
             className="flex-1"
           />

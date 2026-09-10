@@ -32,6 +32,7 @@ export default function ReportHealthScreen() {
       return;
     }
     const { error: err } = await run(async () => {
+      if (!supabase) return { error: 'Not connected.' };
       const { error: reportErr } = await supabase.from('owner_health_reports').insert({
         dog_id: dogId,
         overall: 'deceased',
@@ -40,7 +41,8 @@ export default function ReportHealthScreen() {
         notes: notes.trim() || null,
         recorded_by: profile.id,
       });
-      if (reportErr) throw new Error(reportErr.message);
+      if (reportErr) return { error: reportErr.message };
+      return { error: null };
     });
     if (err) {
       setError(err);

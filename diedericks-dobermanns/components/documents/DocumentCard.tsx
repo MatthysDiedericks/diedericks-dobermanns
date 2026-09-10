@@ -5,10 +5,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useCategoryLabel } from '@/hooks/useDocumentCategories';
 import { useDeleteDocument, useGetSignedUrl } from '@/hooks/useDocuments';
-import { expiryLabel, expiryStatus, expiryColor } from '@/lib/documents/expiry';
+import { expiryLabel, expiryStatus } from '@/lib/documents/expiry';
 import type { DocumentRecord } from '@/lib/documents/types';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { formatBytes } from '@/lib/uploads/constants';
 
 import { exportDocumentFile } from './DocumentViewer';
 
@@ -27,6 +29,9 @@ interface DocumentCardProps {
   onShare?: (doc: DocumentRecord) => void;
   onDeleted?: () => void;
   readOnly?: boolean;
+  /** Upload date, size, and uploader — required on the employee file. */
+  showUploadMeta?: boolean;
+  uploaderName?: string | null;
 }
 
 export function DocumentCard({
@@ -36,9 +41,12 @@ export function DocumentCard({
   onShare,
   onDeleted,
   readOnly = false,
+  showUploadMeta = false,
+  uploaderName,
 }: DocumentCardProps) {
   const { getSignedUrl } = useGetSignedUrl();
   const { remove } = useDeleteDocument();
+  const categoryLabel = useCategoryLabel(document.category);
   const exp = expiryStatus(document.expiry_date);
   const expText = expiryLabel(document.expiry_date);
 
@@ -95,7 +103,7 @@ export function DocumentCard({
         <View className="mt-1 flex-row flex-wrap items-center gap-2">
           <View className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5">
             <Typography variant="caption" className="text-gold">
-              {document.category}
+              {categoryLabel}
             </Typography>
           </View>
           {document.client_visible ? (
@@ -110,6 +118,13 @@ export function DocumentCard({
         {document.issued_by ? (
           <Typography variant="caption" className="text-ink-muted">
             {document.issued_by}
+          </Typography>
+        ) : null}
+        {showUploadMeta ? (
+          <Typography variant="caption" className="mt-1 text-ink-muted">
+            Uploaded {formatKennelDate(document.uploaded_at)}
+            {document.file_size_bytes != null ? ` · ${formatBytes(document.file_size_bytes)}` : ''}
+            {uploaderName ? ` · ${uploaderName}` : ''}
           </Typography>
         ) : null}
         {expText && exp !== 'ok' && exp !== 'none' ? (

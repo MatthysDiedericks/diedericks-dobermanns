@@ -42,14 +42,14 @@ export default function AddPhotosScreen() {
   });
 
   const loadWindow = useCallback(async () => {
-    if (!dogId) return;
+    if (!dogId || !supabase) return;
     const { data, error: err } = await supabase.rpc('owner_photo_window', {
       p_dog_id: dogId,
     });
     if (err) return;
     const row = Array.isArray(data) ? data[0] : data;
     setWindowInfo(mapOwnerPhotoWindow(row ?? null));
-  }, [dogId]);
+  }, [dogId, supabase]);
 
   useEffect(() => {
     void loadWindow();

@@ -125,6 +125,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="enquiries" options={{ href: null }} />
         <Tabs.Screen name="equipment/index" options={{ href: null }} />
         <Tabs.Screen name="equipment/[id]" options={{ href: null }} />
+        <Tabs.Screen name="stock" options={{ href: null }} />
         <Tabs.Screen name="gallery" options={{ href: null }} />
         <Tabs.Screen name="testimonials" options={{ href: null }} />
         <Tabs.Screen name="faq" options={{ href: null }} />

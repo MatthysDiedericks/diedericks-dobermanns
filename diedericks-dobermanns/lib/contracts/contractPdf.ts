@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 
 import { requireSupabase } from '@/lib/supabase';
+import { DOCUMENT_CATEGORY_KEYS } from '@/lib/documents/categories';
 import type { TablesInsert } from '@/types/database.types';
 
 const BUCKET = 'documents';
@@ -45,11 +46,11 @@ export async function generateAndUploadContractPdf(
     file_type: 'pdf',
     file_size_bytes: arrayBuffer.byteLength,
     mime_type: 'application/pdf',
-    category: 'Other',
+    category: DOCUMENT_CATEGORY_KEYS.other,
     client_visible: true,
     is_public: false,
     uploaded_by: uploadedBy,
-  } as TablesInsert<'documents'>;
+  };
   const { error: docError } = await supabase.from('documents').insert(documentPayload);
   if (docError) throw new Error(docError.message);
 

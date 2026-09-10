@@ -1,20 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { PhotoPicker } from '@/components/forms/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { fileTypeFromName } from '@/lib/documents/constants';
+import { useDocumentCategories } from '@/hooks/useDocumentCategories';
+import { DOCUMENT_CATEGORY_KEYS } from '@/lib/documents/categories';
 import { requireSupabase } from '@/lib/supabase';
 import { uploadFile } from '@/lib/storage';
 import { useAuthStore } from '@/stores/authStore';
-
-const CATEGORIES = [
-  { value: 'vaccination_record', label: 'Vaccination record' },
-  { value: 'health_certificate', label: 'Health certificate' },
-  { value: 'microchip', label: 'Microchip certificate' },
-  { value: 'other', label: 'Other vet paperwork' },
-] as const;
 
 export function VetPaperworkCard({
   dogs,
@@ -24,12 +19,20 @@ export function VetPaperworkCard({
   onSaved: () => void;
 }) {
   const userId = useAuthStore((s) => s.session?.user.id);
+  const { categories } = useDocumentCategories('health');
   const [dogId, setDogId] = useState(dogs[0]?.id ?? '');
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]['value']>('vaccination_record');
+  const [category, setCategory] = useState<string>(DOCUMENT_CATEGORY_KEYS.other);
   const [photos, setPhotos] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (categories.length === 0) return;
+    if (categories.some((c) => c.key === category)) return;
+    const preferred = categories.find((c) => c.key !== DOCUMENT_CATEGORY_KEYS.other);
+    setCategory(preferred?.key ?? categories[0].key);
+  }, [categories, category]);
 
   if (!userId || dogs.length === 0) return null;
 
@@ -95,13 +98,13 @@ export function VetPaperworkCard({
         ))}
       </View>
       <View className="mt-3 flex-row flex-wrap gap-2">
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <Button
-            key={c.value}
+            key={c.key}
             label={c.label}
             size="sm"
-            variant={category === c.value ? 'solid' : 'outline'}
-            onPress={() => setCategory(c.value)}
+            variant={category === c.key ? 'solid' : 'outline'}
+            onPress={() => setCategory(c.key)}
           />
         ))}
       </View>

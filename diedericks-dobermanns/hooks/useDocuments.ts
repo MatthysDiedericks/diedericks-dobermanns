@@ -183,8 +183,8 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
           document_number: metadata.documentNumber ?? null,
           issued_by: metadata.issuedBy ?? null,
           description: metadata.description ?? null,
-          client_visible: metadata.clientVisible ?? false,
-          is_public: metadata.isPublic ?? false,
+          client_visible: entityType === 'employee' ? false : (metadata.clientVisible ?? false),
+          is_public: entityType === 'employee' ? false : (metadata.isPublic ?? false),
           allowed_user_ids: metadata.allowedUserIds ?? null,
           uploaded_by: uid,
         };

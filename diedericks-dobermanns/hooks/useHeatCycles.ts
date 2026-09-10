@@ -18,7 +18,7 @@ import {
 import { recordActualHeat } from '@/lib/heats/recordHeat';
 import { buildFemaleHeatSummary, sortBreedingFemales } from '@/lib/heats/summaries';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
-import { applyActiveKennelStockFilter } from '@/lib/dogs/status';
+import { KENNEL_STOCK_FILTER } from '@/lib/dogs/status';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { requireSupabase } from '@/lib/supabase';
 import type { Json, TablesUpdate } from '@/types/database.types';
@@ -120,12 +120,14 @@ export function useFemaleHeatSummaries() {
     setError(null);
     try {
       const client = requireSupabase();
-      const { data: dogs, error: dErr } = await applyActiveKennelStockFilter(
-        client
+      const { data: dogs, error: dErr } = await client
           .from('dogs')
           .select('id, name, date_of_birth, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)')
-          .eq('sex', 'female'),
-      ).order('name');
+          .eq('sex', 'female')
+          .or(KENNEL_STOCK_FILTER)
+          .neq('status', 'deceased')
+          .is('deceased_at', null)
+          .order('name');
       if (dErr) throw new Error(dErr.message);
 
       const ids = (dogs ?? []).map((d) => d.id);

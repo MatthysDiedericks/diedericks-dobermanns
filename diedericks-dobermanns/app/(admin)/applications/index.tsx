@@ -12,6 +12,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useAdminApplications } from '@/hooks/useAdmin';
+import {
+  emailsWithDuplicates,
+  groupApplicationsForList,
+  isPossibleDuplicate,
+} from '@/lib/applications/duplicateFlag';
 import { formatDateTime, titleCase } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import { locationBadge } from '@/lib/apply/buyerLocation';
@@ -73,6 +78,12 @@ export default function AdminApplicationsScreen() {
     [applications, showArchived, idFailedOnly, awaitingPaymentOnly, locationFilter, waitlistedAppIds],
   );
 
+  const dupEmails = useMemo(() => emailsWithDuplicates(applications), [applications]);
+  const grouped = useMemo(
+    () => groupApplicationsForList(visible, dupEmails),
+    [visible, dupEmails],
+  );
+
   const awaitingCount = applications.filter(
     (a) => !a.archived_at && a.status === 'approved' && !waitlistedAppIds.has(a.id),
   ).length;
@@ -116,7 +127,7 @@ export default function AdminApplicationsScreen() {
         </Pressable>
       </View>
       <View className="gap-3 px-6">
-        {!loading && visible.length === 0 ? (
+        {!loading && grouped.length === 0 ? (
           <EmptyState
             title={
               showArchived
@@ -127,7 +138,7 @@ export default function AdminApplicationsScreen() {
             }
           />
         ) : (
-          visible.map((app) => (
+          grouped.map((app) => (
             <Card key={app.id}>
               <Pressable onPress={() => router.push(`/(admin)/applications/${app.id}`)}>
                 <View className="flex-row items-center">
@@ -136,6 +147,11 @@ export default function AdminApplicationsScreen() {
                       <Typography variant="subtitle">{app.full_name}</Typography>
                       <Badge label={titleCase(app.status)} tone={STATUS_TONE[app.status]} />
                     </View>
+                    {isPossibleDuplicate(app, dupEmails) ? (
+                      <View className="mt-1">
+                        <Badge label="Possible duplicate" tone="gold" />
+                      </View>
+                    ) : null}
                     {locationBadge(app.buyer_location_type) ? (
                       <Typography variant="caption" className="mt-1 text-gold">
                         {locationBadge(app.buyer_location_type)}

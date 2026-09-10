@@ -111,7 +111,7 @@ export function HandoverPackActions({
       if (item.id === 'cover' || item.locked) return [item.label];
       if (item.id === 'sire' || item.id === 'dam') {
         return (item.children ?? [])
-          .filter((c) => includesCert(choice, c.id, item.id))
+          .filter((c) => includesCert(choice, c.id, item.id as 'sire' | 'dam'))
           .map((c) => c.label);
       }
       return hasGroup(choice, item.id as PackGroupKey) ? [item.label] : [];

@@ -11,13 +11,6 @@ export const CLIENT_VISIBLE_DOC_CATEGORIES = [
   'rabies_titre',
   'health_certificate',
   'microchip',
-  'DNA Test',
-  'Hip/Elbow Score',
-  'Pedigree',
-  'Registration',
-  'Vaccination Record',
-  'Health Certificate',
-  'Microchip',
 ] as const;
 
 export function isClientVisibleCategory(category: string | null | undefined): boolean {

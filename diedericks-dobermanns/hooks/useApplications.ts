@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { applyCouldNot, ERROR_CODES, logApplyFailure, safeDbReason, stackFrom } from '@/lib/applications/applyErrors';
 import { MARKETING_SOURCES } from '@/lib/marketing/sources';
@@ -35,6 +35,7 @@ export type ApplicationDraft = Omit<
 interface SubmitResult {
   referenceId: string | null;
   error: string | null;
+  warning?: string | null;
 }
 
 function newId(): string {
@@ -80,12 +81,16 @@ async function logClientNotification(userId: string, referenceId: string) {
 /** Handles public application submission. */
 export function useSubmitApplication() {
   const [submitting, setSubmitting] = useState(false);
+  const applicationIdRef = useRef<string | null>(null);
+  const referenceIdRef = useRef<string | null>(null);
+  const insertedRef = useRef(false);
 
   async function submit(
     draft: ApplicationDraft,
     marketingOptIn?: boolean,
     files: PickedApplicationFile[] = [],
     dogRequests: DogRequestPayload[] = [],
+    submissionId?: string,
   ): Promise<SubmitResult> {
     setSubmitting(true);
     try {
@@ -115,8 +120,12 @@ export function useSubmitApplication() {
       // (admin-only read policy), so reading the row back would be blocked by RLS
       // and reported as "new row violates row-level security policy" — which is
       // exactly why submissions silently failed before. Insert-only avoids that.
-      const referenceId = `DD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
-      const applicationId = newId();
+      const referenceId = applicationIdRef.current
+        ? referenceIdRef.current!
+        : `DD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+      const applicationId = applicationIdRef.current ?? newId();
+      applicationIdRef.current = applicationId;
+      referenceIdRef.current = referenceId;
 
       // Cast: reference_code was just added to the table; regenerate
       // database.types.ts (npm run gen:types) to drop this cast.
@@ -124,9 +133,14 @@ export function useSubmitApplication() {
         ...draft,
         id: applicationId,
         reference_code: referenceId,
+        ...(submissionId ? { submission_id: submissionId } : {}),
       } as TablesInsert<'applications'>;
       const { error } = await supabase.from('applications').insert(insertRow);
       if (error) {
+        if (error.code === '23505') {
+          insertedRef.current = true;
+          return { referenceId, error: null };
+        }
         console.error('[useSubmitApplication] insert:', error);
         const limited = isRateLimitDbError(error);
         await logApplyFailure({
@@ -142,6 +156,9 @@ export function useSubmitApplication() {
         };
       }
 
+      insertedRef.current = true;
+      let warning: string | null = null;
+
       if (dogRequests.length > 0) {
         const { error: reqErr } = await supabase.rpc('save_application_dog_requests' as never, {
           p_application_id: applicationId,
@@ -149,6 +166,13 @@ export function useSubmitApplication() {
         } as never);
         if (reqErr) {
           console.error('[useSubmitApplication] dog requests:', reqErr.message);
+          await logApplyFailure({
+            code: ERROR_CODES.APPLY_DOG_REQUESTS_FAILED,
+            message: 'App apply dog requests failed after insert',
+            body: draft,
+            extra: { step_reached: 'dog_requests', reason: reqErr.message, reference_present: true },
+            severity: 'warning',
+          });
         }
       }
 
@@ -167,6 +191,8 @@ export function useSubmitApplication() {
             extra: { step_reached: 'file_store', reason: uploaded.error, reference_present: true },
             severity: 'warning',
           });
+          warning =
+            'We could not attach your file. Your application is safe — we will ask for the document by email.';
         }
       }
 
@@ -192,11 +218,14 @@ export function useSubmitApplication() {
         console.error('[useSubmitApplication] follow-up:', followUpErr);
       }
 
-      return { referenceId, error: null };
+      return { referenceId, error: null, warning };
     } catch (e) {
       // Previously uncaught — any thrown error here (network failure, etc.)
       // vanished silently: the spinner stopped but nothing else happened.
       console.error('[useSubmitApplication] submit threw:', e);
+      if (insertedRef.current && referenceIdRef.current) {
+        return { referenceId: referenceIdRef.current, error: null };
+      }
       await logApplyFailure({
         code: ERROR_CODES.APPLY_UNHANDLED,
         message: 'App apply unhandled exception',
