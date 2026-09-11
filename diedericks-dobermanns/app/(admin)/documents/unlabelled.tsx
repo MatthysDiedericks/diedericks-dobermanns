@@ -16,8 +16,8 @@ export default function UnlabelledDocumentsScreen() {
     <ScreenContainer scroll={false}>
       <PageHeader eyebrow="Documents" title="Unlabelled" />
       <Typography variant="caption" className="mb-3 px-6 text-subtle">
-        {items.length} file{items.length === 1 ? '' : 's'} still in Other. Name them once so a
-        handover pack never prints a divider that says “a”.
+        {items.length} dog file{items.length === 1 ? '' : 's'} with a name nobody can use. Name
+        them here.
       </Typography>
 
       {loading && items.length === 0 ? (
@@ -37,8 +37,8 @@ export default function UnlabelledDocumentsScreen() {
       {!loading && !error && items.length === 0 ? (
         <View className="px-6">
           <EmptyState
-            title="Every document has a real name and category."
-            message="Nothing left in Other, and no files named 1–4."
+            title="Every dog document has a real name."
+            message="Nothing left that is just a number, a scanner filename, or “to be labelled”."
           />
         </View>
       ) : (

@@ -13,6 +13,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useContactSummary, useContacts } from '@/hooks/useContacts';
 import { useOpenDuplicateCount } from '@/hooks/useContactDuplicates';
+import { useUnreachableCount } from '@/hooks/useUnreachableContacts';
 import { contactMatches } from '@/lib/contacts/search';
 
 export default function AdminContactsScreen() {
@@ -23,6 +24,7 @@ export default function AdminContactsScreen() {
   const { data, loading, error, refresh } = useContacts();
   const { summary } = useContactSummary();
   const { count: openDupes, refresh: refreshDupes } = useOpenDuplicateCount();
+  const { count: unreachableCount, refresh: refreshUnreachable } = useUnreachableCount();
 
   const typed = useMemo(() => {
     if (typeFilter === 'all') return data;
@@ -37,6 +39,7 @@ export default function AdminContactsScreen() {
   const onRefresh = () => {
     void refresh();
     void refreshDupes();
+    void refreshUnreachable();
   };
 
   return (
@@ -46,6 +49,17 @@ export default function AdminContactsScreen() {
       <Typography variant="caption" className="mb-3 px-6 text-subtle">
         {summary.client} clients · {summary.prospect} prospects · {summary.other} other
       </Typography>
+
+      {unreachableCount > 0 ? (
+        <Pressable
+          onPress={() => router.push('/(admin)/contacts/unreachable' as never)}
+          className="mx-6 mb-3 rounded-sm border border-gold/30 bg-gold/10 px-4 py-3"
+        >
+          <Typography variant="label" className="text-gold">
+            {unreachableCount} cannot be reached
+          </Typography>
+        </Pressable>
+      ) : null}
 
       {openDupes > 0 ? (
         <Pressable

@@ -1,4 +1,5 @@
 import { requireSupabase } from '@/lib/supabase';
+import { requirePhone } from '@/lib/phone';
 
 export type QuoteContactLinks = {
   clientId: string | null;
@@ -87,7 +88,7 @@ export async function findOrCreateQuoteContact(input: {
   const name = input.name.trim();
   if (!name) throw new Error('Enter a name for a buyer who is not in the list.');
   const email = input.email?.trim() || null;
-  const phone = input.phone?.trim() || null;
+  const phone = input.phone?.trim() ? requirePhone(input.phone) : null;
   const supabase = requireSupabase();
 
   if (email) {
@@ -103,6 +104,7 @@ export async function findOrCreateQuoteContact(input: {
         historicalName: null,
       };
     }
+    if (!phone) throw new Error('A phone number is required.');
     const { data, error } = await supabase
       .from('contacts')
       .insert({
@@ -130,12 +132,13 @@ export async function findOrCreateQuoteContact(input: {
     return { clientId: null, contactId: input.existingContactId, historicalName: null };
   }
 
+  const storedPhone = requirePhone(phone);
   const { data, error } = await supabase
     .from('contacts')
     .insert({
       full_name: name,
       email: null,
-      phone,
+      phone: storedPhone,
       contact_type: 'prospect',
       source: 'manual',
       first_contact_date: new Date().toISOString(),

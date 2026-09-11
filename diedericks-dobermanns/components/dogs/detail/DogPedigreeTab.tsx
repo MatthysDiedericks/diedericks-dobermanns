@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
 import { PedigreeTree } from '@/components/dogs/PedigreeTree';
+import { BehindThisDog } from '@/components/dogs/BehindThisDog';
 import { Typography } from '@/components/ui/Typography';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useInheritedPedigree } from '@/hooks/useInheritedPedigree';
@@ -42,15 +43,18 @@ export function DogPedigreeTab({
         </Typography>
       ) : null}
       {hasPedigreeAncestors(ped.ancestors) ? (
-        <PedigreeTree
-          dogId={dogId}
-          displayName={displayName}
-          profileRoutePrefix={profileRoutePrefix}
-          ancestors={ped.ancestors}
-          registeredName={ped.registeredName}
-          wrightsCoi={null}
-          disableAncestorLinks={disableAncestorLinks}
-        />
+        <>
+          <PedigreeTree
+            dogId={dogId}
+            displayName={displayName}
+            profileRoutePrefix={profileRoutePrefix}
+            ancestors={ped.ancestors}
+            registeredName={ped.registeredName}
+            wrightsCoi={null}
+            disableAncestorLinks={disableAncestorLinks}
+          />
+          <BehindThisDog ancestors={ped.ancestors} />
+        </>
       ) : (
         <Typography variant="bodyMuted">Pedigree not yet recorded</Typography>
       )}

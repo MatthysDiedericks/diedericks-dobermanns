@@ -1,17 +1,20 @@
+import { requirePhone } from '@/lib/phone';
+import { withCannotTraceTag } from '@/lib/contacts/reachable';
 import { requireSupabase } from '@/lib/supabase';
 import type { TablesUpdate } from '@/types/database.types';
 import type { ContactInput } from '@/types/phase10';
 
 export async function createContact(input: ContactInput): Promise<string> {
   const supabase = requireSupabase();
+  const phone = requirePhone(input.phone);
   const marketing = input.marketing_opt_in ?? false;
   const { data, error } = await supabase
     .from('contacts')
     .insert({
       full_name: input.full_name.trim(),
       email: input.email?.trim() || null,
-      phone: input.phone?.trim() || null,
-      whatsapp_number: input.whatsapp_number?.trim() || null,
+      phone,
+      whatsapp_number: input.whatsapp_number?.trim() || phone,
       address: input.address?.trim() || null,
       city: input.city?.trim() || null,
       country: input.country?.trim() || null,
@@ -34,11 +37,18 @@ export async function createContact(input: ContactInput): Promise<string> {
 
 export async function updateContact(id: string, input: Partial<ContactInput>): Promise<void> {
   const supabase = requireSupabase();
-  const { data: existing } = await supabase.from('contacts').select('user_id').eq('id', id).maybeSingle();
-  const patch: TablesUpdate<'contacts'> = { updated_at: new Date().toISOString() };
+  const { data: existing } = await supabase
+    .from('contacts')
+    .select('user_id, phone')
+    .eq('id', id)
+    .maybeSingle();
+  const phone = requirePhone(input.phone !== undefined ? input.phone : existing?.phone);
+  const patch: TablesUpdate<'contacts'> = {
+    updated_at: new Date().toISOString(),
+    phone,
+  };
   if (input.full_name != null) patch.full_name = input.full_name.trim();
   if (input.email !== undefined) patch.email = input.email?.trim() || null;
-  if (input.phone !== undefined) patch.phone = input.phone?.trim() || null;
   if (input.whatsapp_number !== undefined) patch.whatsapp_number = input.whatsapp_number?.trim() || null;
   if (input.address !== undefined) patch.address = input.address?.trim() || null;
   if (input.city !== undefined) patch.city = input.city?.trim() || null;
@@ -57,5 +67,25 @@ export async function updateContact(id: string, input: Partial<ContactInput>): P
     patch.popia_consent_date = input.marketing_opt_in ? new Date().toISOString() : null;
   }
   const { error } = await supabase.from('contacts').update(patch).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/** Drops a contact off the unreachable worklist. Does not unlock saving without a phone. */
+export async function markContactCannotTrace(id: string): Promise<void> {
+  const supabase = requireSupabase();
+  const { data: existing, error: loadErr } = await supabase
+    .from('contacts')
+    .select('tags')
+    .eq('id', id)
+    .maybeSingle();
+  if (loadErr) throw new Error(loadErr.message);
+  if (!existing) throw new Error('Contact not found.');
+  const { error } = await supabase
+    .from('contacts')
+    .update({
+      tags: withCannotTraceTag(existing.tags),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
   if (error) throw new Error(error.message);
 }

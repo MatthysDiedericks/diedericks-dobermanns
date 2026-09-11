@@ -16,6 +16,7 @@ import { Colors } from '@/constants/colors';
 import { Config } from '@/constants/config';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useDogs } from '@/hooks/useDogs';
+import { useBehindSummaries } from '@/hooks/useBehindThisDog';
 import { useTestimonials } from '@/hooks/useContent';
 import { sortByDailySeed } from '@/lib/dogs/dailyOrder';
 import { openUrl } from '@/lib/social';
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { dogs: featuredDogs } = useDogs({ featuredOnly: true });
   const dogs = useMemo(() => sortByDailySeed(featuredDogs), [featuredDogs]);
+  const behindSummaries = useBehindSummaries(dogs.map((d) => d.id));
   const { data: testimonials } = useTestimonials();
   const { settings } = useAppSettings();
 
@@ -97,7 +99,13 @@ export default function HomeScreen() {
         keyExtractor={(d) => d.id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}
-        renderItem={({ item }) => <DogCard dog={item} variant="carousel" />}
+        renderItem={({ item }) => (
+          <DogCard
+            dog={item}
+            variant="carousel"
+            bloodlineSummary={behindSummaries.get(item.id) ?? null}
+          />
+        )}
       />
 
       {/* About snippet */}

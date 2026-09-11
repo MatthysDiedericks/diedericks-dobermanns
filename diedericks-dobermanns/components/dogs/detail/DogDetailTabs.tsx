@@ -90,6 +90,7 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
             <DocumentList
               entityType="dog"
               entityId={dogId}
+              entityLabel={dog.name}
               readOnly={clientView}
               showUpload={!clientView}
               clientVisibleOnly={clientView}

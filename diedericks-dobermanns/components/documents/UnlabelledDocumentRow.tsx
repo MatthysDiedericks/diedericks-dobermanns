@@ -7,6 +7,10 @@ import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { DOCUMENT_CATEGORY_KEYS } from '@/lib/documents/categories';
+import {
+  isMeaninglessDocumentName,
+  MEANINGLESS_DOCUMENT_NAME_MESSAGE,
+} from '@/lib/documents/documentName';
 import { type UnlabelledDocument } from '@/lib/documents/unlabelled';
 
 type Props = {
@@ -50,6 +54,11 @@ export function UnlabelledDocumentRow({ item, onSave }: Props) {
             onChangeText={setName}
             containerClassName="mt-3 mb-0"
           />
+          {isMeaninglessDocumentName(name) ? (
+            <Typography variant="caption" className="mt-2 text-danger">
+              {MEANINGLESS_DOCUMENT_NAME_MESSAGE}
+            </Typography>
+          ) : null}
         </View>
       </View>
 

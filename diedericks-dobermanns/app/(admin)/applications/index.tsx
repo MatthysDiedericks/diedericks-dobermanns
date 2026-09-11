@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { ApplicationArchiveBlock } from '@/components/applications/ApplicationArchiveBlock';
+import { ApplicationFunnel } from '@/components/applications/ApplicationFunnel';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -91,6 +92,7 @@ export default function AdminApplicationsScreen() {
   return (
     <ScreenContainer>
       <PageHeader eyebrow="Review" title="Applications" back={false} />
+      <ApplicationFunnel />
       <View className="px-6 pb-3">
         <Pressable onPress={() => setShowArchived((v) => !v)}>
           <Typography variant="caption" className="text-gold">
@@ -185,6 +187,21 @@ export default function AdminApplicationsScreen() {
                   <Ionicons name="chevron-forward" size={18} color={Colors.silver} />
                 </View>
               </Pressable>
+              {isPossibleDuplicate(app, dupEmails) ? (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(admin)/applications/merge',
+                      params: { email: app.email },
+                    } as never)
+                  }
+                  className="mt-3"
+                >
+                  <Typography variant="caption" className="text-gold">
+                    Merge duplicates
+                  </Typography>
+                </Pressable>
+              ) : null}
               <ApplicationArchiveBlock
                 applicationId={app.id}
                 archivedAt={app.archived_at}

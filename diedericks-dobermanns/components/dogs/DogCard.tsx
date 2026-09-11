@@ -12,9 +12,10 @@ import type { Dog } from '@/types/app.types';
 interface DogCardProps {
   dog: Dog;
   variant?: 'default' | 'carousel';
+  bloodlineSummary?: string | null;
 }
 
-export function DogCard({ dog, variant = 'default' }: DogCardProps) {
+export function DogCard({ dog, variant = 'default', bloodlineSummary }: DogCardProps) {
   const photo = profilePhotoUrl(dog.media);
   const subtitle = [titleCase(dog.sex), titleCase(dog.colour)].filter(Boolean).join(' · ');
 
@@ -30,6 +31,11 @@ export function DogCard({ dog, variant = 'default' }: DogCardProps) {
           <Typography variant="subtitle" className="mt-3 text-gold">{dog.name}</Typography>
           {subtitle ? (
             <Typography variant="caption" className="text-subtle">{subtitle}</Typography>
+          ) : null}
+          {bloodlineSummary ? (
+            <Typography variant="caption" className="mt-1 leading-4 text-muted" numberOfLines={2}>
+              {bloodlineSummary}
+            </Typography>
           ) : null}
         </Pressable>
       </Link>
@@ -50,6 +56,11 @@ export function DogCard({ dog, variant = 'default' }: DogCardProps) {
             {subtitle ? (
               <Typography variant="caption" className="mt-0.5">
                 {subtitle}
+              </Typography>
+            ) : null}
+            {bloodlineSummary ? (
+              <Typography variant="caption" className="mt-1 leading-4 text-muted" numberOfLines={2}>
+                {bloodlineSummary}
               </Typography>
             ) : null}
             <View className="mt-2">

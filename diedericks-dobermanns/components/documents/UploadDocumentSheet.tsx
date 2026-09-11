@@ -16,6 +16,11 @@ import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { useUploadDocument, useUpdateDocument } from '@/hooks/useDocuments';
 import { DOCUMENT_CATEGORY_KEYS } from '@/lib/documents/categories';
 import {
+  isMeaninglessDocumentName,
+  MEANINGLESS_DOCUMENT_NAME_MESSAGE,
+  suggestedDocumentName,
+} from '@/lib/documents/documentName';
+import {
   ACCEPTED_MIME_TYPES,
   type DocumentEntityType,
   MAX_DOCUMENT_BYTES,
@@ -31,6 +36,7 @@ export interface UploadDocumentSheetHandle {
 interface UploadDocumentSheetProps {
   entityType: DocumentEntityType;
   entityId: string;
+  entityLabel?: string;
   onSaved: () => void;
 }
 
@@ -73,7 +79,7 @@ function ChipPicker({
 }
 
 export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadDocumentSheetProps>(
-  function UploadDocumentSheet({ entityType, entityId, onSaved }, ref) {
+  function UploadDocumentSheet({ entityType, entityId, entityLabel, onSaved }, ref) {
     const sheetRef = useRef<BottomSheetModal>(null);
     const snapPoints = useMemo(() => ['92%'], []);
     const { categories } = useDocumentCategories(entityType);
@@ -93,6 +99,20 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
     const [visibility, setVisibility] = useState<Visibility>('admin');
     const [file, setFile] = useState<PickedDocumentFile | null>(null);
     const [previewUri, setPreviewUri] = useState<string | null>(null);
+    const [nameError, setNameError] = useState<string | null>(null);
+
+    const categoryLabel = categories.find((c) => c.key === category)?.label ?? category;
+
+    useEffect(() => {
+      if (editId) return;
+      if (!entityLabel || !categoryLabel) return;
+      setName((current) => {
+        if (!current.trim() || isMeaninglessDocumentName(current)) {
+          return suggestedDocumentName(entityLabel, categoryLabel);
+        }
+        return current;
+      });
+    }, [entityLabel, categoryLabel, editId]);
 
     const reset = useCallback(() => {
       setEditId(null);
@@ -106,6 +126,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
       setVisibility('admin');
       setFile(null);
       setPreviewUri(null);
+      setNameError(null);
     }, [categories]);
 
     useEffect(() => {
@@ -157,9 +178,16 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
         mimeType: asset.mimeType ?? 'application/octet-stream',
         size: asset.size ?? 0,
       } satisfies PickedDocumentFile);
-      if (!name.trim()) {
-        const base = asset.name.replace(/\.[^.]+$/, '');
-        setName(base);
+      if (!name.trim() || isMeaninglessDocumentName(asset.name.replace(/\.[^.]+$/, ''))) {
+        const suggestion =
+          entityLabel && categoryLabel
+            ? suggestedDocumentName(entityLabel, categoryLabel)
+            : asset.name.replace(/\.[^.]+$/, '');
+        setName(
+          isMeaninglessDocumentName(asset.name) && entityLabel
+            ? suggestion
+            : name.trim() || suggestion,
+        );
       }
       if (asset.mimeType?.startsWith('image/')) setPreviewUri(asset.uri);
       else setPreviewUri(null);
@@ -170,6 +198,11 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
         Alert.alert('Required fields', 'Document name and category are required.');
         return;
       }
+      if (isMeaninglessDocumentName(name)) {
+        setNameError(MEANINGLESS_DOCUMENT_NAME_MESSAGE);
+        return;
+      }
+      setNameError(null);
       if (entityType !== 'employee' && visibility === 'public') {
         Alert.alert(
           'Public document',
@@ -251,11 +284,21 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
           </Typography>
           <BottomSheetTextInput
             value={name}
-            onChangeText={setName}
+            onChangeText={(v) => {
+              setName(v);
+              setNameError(isMeaninglessDocumentName(v) ? MEANINGLESS_DOCUMENT_NAME_MESSAGE : null);
+            }}
             placeholder="Display name"
             placeholderTextColor={Colors.silver}
-            style={{ borderWidth: 1, borderColor: 'rgba(196,163,90,0.3)', borderRadius: 4, padding: 12, color: '#F5F0E8', marginBottom: 16 }}
+            style={{ borderWidth: 1, borderColor: 'rgba(196,163,90,0.3)', borderRadius: 4, padding: 12, color: '#F5F0E8', marginBottom: 8 }}
           />
+          {nameError ? (
+            <Typography variant="caption" className="mb-3 text-danger">
+              {nameError}
+            </Typography>
+          ) : (
+            <View className="mb-3" />
+          )}
 
           <ChipPicker
             label="Category *"
@@ -263,6 +306,11 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
             value={category}
             onChange={setCategory}
           />
+          {categories.length === 0 ? (
+            <Typography variant="caption" className="mb-4 text-danger">
+              document_categories is missing. Apply migration 0173, then reload.
+            </Typography>
+          ) : null}
 
           {entityType === 'dog' || entityType === 'client' ? (
             <Typography variant="caption" className="mt-1 text-ink-muted">
@@ -369,10 +417,11 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
           ) : null}
 
           <Button
-            label={editId ? 'Save changes' : 'Upload document'}
+            label={editId ? 'Save changes' : 'Add document'}
             onPress={submit}
             loading={busy}
             className="mt-2"
+            disabled={categories.length === 0}
           />
         </BottomSheetScrollView>
       </BottomSheetModal>

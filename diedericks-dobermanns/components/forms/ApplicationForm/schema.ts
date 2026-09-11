@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { phoneField } from '@/lib/phone';
+
 /**
  * Diedericks Dobermanns — Puppy Application Schema
  *
@@ -19,7 +21,7 @@ const applicationFields = z.object({
   id_type: z.enum(['sa_id', 'passport', 'other_national_id']),
   id_number: z.string().min(6, 'ID or passport number is required'),
   email: z.string().email('Enter a valid email address'),
-  phone: z.string().min(7, 'Enter a valid phone number'),
+  phone: phoneField,
   occupation: z.string().min(2, 'Occupation is required'),
   employer: z.string().optional().or(z.literal('')),
   country: z.string().min(2, 'Country is required'),

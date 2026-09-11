@@ -63,7 +63,7 @@ function needsFollowUp(app: Application) {
 }
 
 export default function ApplicationDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, kept } = useLocalSearchParams<{ id: string; kept?: string }>();
   const router = useRouter();
   const { application: app, loading, error, refresh } = useApplicationDetail(id);
   const { types } = useWaitlistTypes();
@@ -75,6 +75,15 @@ export default function ApplicationDetailScreen() {
   const [overrideReason, setOverrideReason] = useState('');
   const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
   const { linkedQuote, quotePending, quoteFailed, pollAfterApproval } = useLinkedQuote(id);
+
+  useEffect(() => {
+    if (!app?.merged_into_application_id) return;
+    if (app.merged_into_application_id === app.id) return;
+    router.replace({
+      pathname: '/(admin)/applications/[id]',
+      params: { id: app.merged_into_application_id, kept: '1' },
+    });
+  }, [app, router]);
 
   useEffect(() => {
     if (!app?.email) return;
@@ -137,13 +146,42 @@ export default function ApplicationDetailScreen() {
     );
   }
 
-  if (error || !app) {
+  if (error) {
     return (
       <ScreenContainer scroll={false} className="items-center justify-center px-6">
         <Typography variant="subtitle" className="text-danger">
-          {error ?? 'Application not found.'}
+          {error}
         </Typography>
         <Button label="Back" variant="outline" onPress={() => router.back()} className="mt-4" />
+      </ScreenContainer>
+    );
+  }
+
+  if (!app) {
+    return (
+      <ScreenContainer>
+        <PageHeader eyebrow="Application" title="This application is no longer available." />
+        <View className="px-6">
+          <Typography variant="bodyMuted">
+            It may have been merged with another application from the same person, or removed. If you
+            followed a link from an email, that email may be out of date.
+          </Typography>
+          <Button
+            label="Back to applications"
+            variant="outline"
+            onPress={() => router.replace('/(admin)/applications')}
+            className="mt-6"
+            fullWidth
+          />
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (app.merged_into_application_id && app.merged_into_application_id !== app.id) {
+    return (
+      <ScreenContainer scroll={false} className="items-center justify-center">
+        <ActivityIndicator color={Colors.gold} />
       </ScreenContainer>
     );
   }
@@ -152,6 +190,14 @@ export default function ApplicationDetailScreen() {
     <ScreenContainer>
       <PageHeader eyebrow="Application" title={app.full_name} />
       <View className="px-6">
+        {kept === '1' ? (
+          <Card className="mb-4 border border-gold/40 bg-gold/10">
+            <Typography variant="body">
+              You followed a link to an earlier duplicate of this application. This is the record we
+              kept.
+            </Typography>
+          </Card>
+        ) : null}
         <View className="mb-4 flex-row flex-wrap gap-2">
           <Badge label={titleCase(done ?? app.status)} tone="gold" />
           {app.status === 'approved' || done === 'approved' ? (

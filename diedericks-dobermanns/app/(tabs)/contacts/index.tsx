@@ -13,6 +13,7 @@ import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { CONTACT_TAGS, useContactSummary, useContacts } from '@/hooks/useContacts';
+import { useUnreachableCount } from '@/hooks/useUnreachableContacts';
 import { contactMatches, matchedAliasName } from '@/lib/contacts/search';
 import { openWhatsApp } from '@/lib/social';
 import { useAuthStore } from '@/stores/authStore';
@@ -46,6 +47,7 @@ export default function ContactsScreen() {
     segment,
   );
   const { summary } = useContactSummary();
+  const { count: unreachableCount } = useUnreachableCount();
   const rows = useMemo(
     () => data.filter((c) => contactMatches(c, search)),
     [data, search],
@@ -58,6 +60,17 @@ export default function ContactsScreen() {
       <Typography variant="caption" className="mb-3 px-6 text-subtle">
         {summary.client} clients · {summary.prospect} prospects · {summary.other} other
       </Typography>
+
+      {unreachableCount > 0 ? (
+        <Pressable
+          onPress={() => router.push('/(admin)/contacts/unreachable' as never)}
+          className="mx-6 mb-3 rounded-sm border border-gold/30 bg-gold/10 px-4 py-3"
+        >
+          <Typography variant="label" className="text-gold">
+            {unreachableCount} cannot be reached
+          </Typography>
+        </Pressable>
+      ) : null}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 px-6">
         {SEGMENTS.map((s) => (

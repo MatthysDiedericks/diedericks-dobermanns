@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRef } from 'react';
 import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
+import { AddContactSheet, type AddContactSheetHandle } from '@/components/contacts/AddContactSheet';
 import { ContactLinkedSection } from '@/components/contacts/ContactLinkedSection';
 import { CreateSaleButton } from '@/components/contracts/CreateSaleButton';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -29,6 +31,7 @@ export default function AdminContactDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const contactId = id ?? '';
+  const editRef = useRef<AddContactSheetHandle>(null);
   const { contact, loading, error, refresh } = useContact(contactId);
   const { links, loading: linksLoading, error: linksError, refresh: refreshLinks } =
     useContactLinks(contactId, {
@@ -66,7 +69,16 @@ export default function AdminContactDetailScreen() {
 
   return (
     <ScreenContainer scroll={false}>
-      <PageHeader title={contact.full_name} eyebrow="Contact" />
+      <View className="flex-row items-center justify-between px-6">
+        <View className="flex-1">
+          <PageHeader title={contact.full_name} eyebrow="Contact" />
+        </View>
+        <Pressable onPress={() => editRef.current?.open(contact)} hitSlop={8} className="pb-2">
+          <Typography variant="label" className="text-gold">
+            Edit
+          </Typography>
+        </Pressable>
+      </View>
       <ScrollView
         className="px-6 pb-12"
         refreshControl={
@@ -169,6 +181,7 @@ export default function AdminContactDetailScreen() {
           empty="No applications linked."
         />
       </ScrollView>
+      <AddContactSheet ref={editRef} onSaved={() => void refresh()} />
     </ScreenContainer>
   );
 }

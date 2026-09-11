@@ -13,6 +13,7 @@ import { Colors } from '@/constants/colors';
 import { equipmentImageUrl, shopPriceLabel, stockStatusLabel } from '@/lib/equipment/display';
 import { fetchShopContactPrefill } from '@/lib/equipment/prefill';
 import { submitEquipmentEnquiry } from '@/lib/equipment/submit';
+import { parsePhone } from '@/lib/phone';
 import type { EquipmentFulfilment, ShopContactPrefill } from '@/lib/equipment/types';
 import { fetchShopCatalogueItems } from '@/lib/finance/catalogueQueries';
 import type { CatalogueItem } from '@/lib/finance/catalogue';
@@ -97,11 +98,16 @@ export default function PublicShopScreen() {
       setError('Add at least one item.');
       return;
     }
+    const parsedPhone = parsePhone(phone);
+    if (!parsedPhone.ok) {
+      setError(parsedPhone.error);
+      return;
+    }
     setBusy(true);
     const res = await submitEquipmentEnquiry({
       full_name: fullName,
       email,
-      phone,
+      phone: parsedPhone.value,
       fulfilment,
       delivery_address: fulfilment === 'delivery' ? address : null,
       message,

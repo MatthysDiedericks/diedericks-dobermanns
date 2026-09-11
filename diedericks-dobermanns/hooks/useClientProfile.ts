@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 
 import { CLIENT_PROFILE_SELECT } from '@/lib/auth/profileSelect';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
+import { parsePhone } from '@/lib/phone';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { AppUser } from '@/types/app.types';
@@ -69,6 +70,15 @@ export function useClientProfile() {
       setSaving(true);
       setError(null);
       try {
+        if (patch.phone !== undefined) {
+          const parsed = parsePhone(patch.phone);
+          if (!parsed.ok) {
+            setError(parsed.error);
+            showError(parsed.error);
+            return;
+          }
+          patch = { ...patch, phone: parsed.value };
+        }
         const merged = { ...profile, ...patch };
         const isComplete =
           !!merged.full_name && !!merged.phone && !!merged.address && !!merged.dog_experience;

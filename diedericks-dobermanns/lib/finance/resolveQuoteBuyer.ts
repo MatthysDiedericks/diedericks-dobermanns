@@ -1,4 +1,5 @@
 import { findOrCreateQuoteContact } from '@/lib/finance/findOrCreateQuoteContact';
+import { requirePhone } from '@/lib/phone';
 import { requireSupabase } from '@/lib/supabase';
 
 export type QuoteBuyerLinks = {
@@ -48,7 +49,7 @@ export async function findOrCreateContactFromApplication(applicationId: string):
     .insert({
       full_name: app.full_name,
       email: app.email.trim(),
-      phone: app.phone?.trim() || null,
+      phone: requirePhone(app.phone),
       country: app.country?.trim() || null,
       contact_type: 'prospect',
       source: 'enquiry',

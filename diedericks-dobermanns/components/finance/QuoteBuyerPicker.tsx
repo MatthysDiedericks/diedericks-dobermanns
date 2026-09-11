@@ -128,7 +128,12 @@ export function QuoteBuyerPicker({
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          <Input placeholder="Phone (optional)" value={walkinPhone} onChangeText={onWalkinPhoneChange} />
+          <Input
+            placeholder="Phone"
+            value={walkinPhone}
+            onChangeText={onWalkinPhoneChange}
+            keyboardType="phone-pad"
+          />
           {matches.length > 0 ? (
             <View className="gap-1">
               {matches.map((m) => (

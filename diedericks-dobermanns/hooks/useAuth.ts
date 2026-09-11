@@ -37,10 +37,15 @@ export function useAuth() {
   );
 
   const signUp = useCallback(
-    async (email: string, password: string, fullName: string) => {
+    async (email: string, password: string, fullName: string, phone: string) => {
       setIsLoading(true);
       try {
-        const { error } = await signUpWithEmail(email.trim(), password, fullName.trim());
+        const { error } = await signUpWithEmail(
+          email.trim(),
+          password,
+          fullName.trim(),
+          phone,
+        );
         if (error) throw new Error(error);
       } finally {
         setIsLoading(false);

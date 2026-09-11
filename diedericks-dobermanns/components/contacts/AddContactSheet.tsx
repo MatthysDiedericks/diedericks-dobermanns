@@ -13,6 +13,8 @@ import { Colors } from '@/constants/colors';
 import { CONTACT_TAGS } from '@/hooks/useContacts';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { createContact, updateContact } from '@/lib/contacts/mutations';
+import { CONTACT_MISSING_PHONE_BANNER, parsePhone } from '@/lib/phone';
+import { isBlankContactField } from '@/lib/contacts/reachable';
 import { useAuthStore } from '@/stores/authStore';
 import type { ContactInput, ContactRow, ContactType } from '@/types/phase10';
 
@@ -174,10 +176,17 @@ export const AddContactSheet = forwardRef<AddContactSheetHandle, AddContactSheet
         showError('Full name is required.');
         return;
       }
+      const parsed = parsePhone(phone);
+      if (!parsed.ok) {
+        showError(parsed.error);
+        return;
+      }
       setSaving(true);
       try {
-        if (editId) await updateContact(editId, payload());
-        else await createContact(payload());
+        const body = payload();
+        body.phone = parsed.value;
+        if (editId) await updateContact(editId, body);
+        else await createContact(body);
         showSaved(editId ? 'Contact updated' : 'Contact added');
         onSaved();
         close();
@@ -207,6 +216,14 @@ export const AddContactSheet = forwardRef<AddContactSheetHandle, AddContactSheet
         </View>
 
         <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
+          {editId && isBlankContactField(phone) ? (
+            <View className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
+              <Typography variant="caption" className="text-red-300">
+                {CONTACT_MISSING_PHONE_BANNER}
+              </Typography>
+            </View>
+          ) : null}
+
           <Typography variant="caption" className="mb-1 text-silver">
             Full name *
           </Typography>
@@ -232,7 +249,7 @@ export const AddContactSheet = forwardRef<AddContactSheetHandle, AddContactSheet
           ) : null}
 
           {[
-            { label: 'Phone', value: phone, set: setPhone, keyboard: 'phone-pad' as const },
+            { label: 'Phone *', value: phone, set: setPhone, keyboard: 'phone-pad' as const },
             { label: 'WhatsApp number', value: whatsapp, set: setWhatsapp, keyboard: 'phone-pad' as const, hint: 'Leave blank if same as phone' },
             { label: 'Email', value: email, set: setEmail, keyboard: 'email-address' as const },
             { label: 'Company', value: company, set: setCompany, keyboard: 'default' as const },
@@ -311,7 +328,13 @@ export const AddContactSheet = forwardRef<AddContactSheetHandle, AddContactSheet
             <ChipRow label="Source" options={SOURCES} value={source} onChange={setSource} />
           ) : null}
 
-          <Button label={editId ? 'Save changes' : 'Add contact'} onPress={() => void save()} loading={saving} fullWidth />
+          <Button
+            label={editId ? 'Save changes' : 'Add contact'}
+            onPress={() => void save()}
+            loading={saving}
+            disabled={saving || !parsePhone(phone).ok}
+            fullWidth
+          />
         </BottomSheetScrollView>
       </BottomSheetModal>
     );

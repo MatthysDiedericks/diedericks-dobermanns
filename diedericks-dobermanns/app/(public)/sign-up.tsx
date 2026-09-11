@@ -17,6 +17,7 @@ import {
   passwordMeetsPolicy,
   passwordPolicyFailMessage,
 } from '@/lib/auth/passwordPolicy';
+import { parsePhone } from '@/lib/phone';
 
 interface FieldProps {
   label: string;
@@ -27,7 +28,7 @@ interface FieldProps {
   showToggle?: boolean;
   visible?: boolean;
   onToggleVisible?: () => void;
-  keyboardType?: 'email-address' | 'default';
+  keyboardType?: 'email-address' | 'default' | 'phone-pad';
 }
 
 function Field({ label, value, onChange, placeholder, secure, showToggle, visible, onToggleVisible, keyboardType }: FieldProps) {
@@ -55,7 +56,7 @@ function Field({ label, value, onChange, placeholder, secure, showToggle, visibl
           placeholderTextColor="#A09880"
           secureTextEntry={secure && !visible}
           keyboardType={keyboardType ?? 'default'}
-          autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
+          autoCapitalize={keyboardType === 'email-address' || keyboardType === 'phone-pad' ? 'none' : 'words'}
           autoCorrect={false}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -87,6 +88,7 @@ export default function SignUpScreen() {
   const { signUp, isLoading } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -99,12 +101,14 @@ export default function SignUpScreen() {
     setHelpVisible(false);
     if (!fullName.trim()) return setError('Please enter your full name.');
     if (!EMAIL_REGEX.test(email.trim())) return setError('Please enter a valid email address.');
+    const parsedPhone = parsePhone(phone);
+    if (!parsedPhone.ok) return setError(parsedPhone.error);
     if (!passwordMeetsPolicy(password)) {
       return setError(passwordPolicyFailMessage());
     }
     if (password !== confirm) return setError('Passwords do not match.');
     try {
-      await signUp(email, password, fullName);
+      await signUp(email, password, fullName, parsedPhone.value);
       router.replace({ pathname: '/(public)/verify-code', params: { email: email.trim() } });
     } catch (e) {
       let msg = 'Something went wrong creating your account. Try again, or WhatsApp us and we will help.';
@@ -155,6 +159,13 @@ export default function SignUpScreen() {
             onChange={setEmail}
             placeholder="you@email.com"
             keyboardType="email-address"
+          />
+          <Field
+            label="PHONE"
+            value={phone}
+            onChange={setPhone}
+            placeholder="+27 or +268 …"
+            keyboardType="phone-pad"
           />
           <Field
             label="PASSWORD"

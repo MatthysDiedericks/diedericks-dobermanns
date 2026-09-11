@@ -20,6 +20,8 @@ export interface PublicLitterRow {
   male_count: number | null;
   female_count: number | null;
   description: string | null;
+  father_id: string | null;
+  mother_id: string | null;
 }
 
 export interface PublicPuppyMedia {
@@ -65,7 +67,7 @@ export interface PublicWeightLogRow {
 
 const LITTER_SELECT =
   'id, name, status, actual_date, expected_date, go_home_date, go_home_weeks, ' +
-  'puppy_count, available_count, male_count, female_count, description';
+  'puppy_count, available_count, male_count, female_count, description, father_id, mother_id';
 
 const PUPPY_SELECT =
   'id, name, sex, colour, collar_colour, birth_weight_grams, status, date_of_birth, ' +

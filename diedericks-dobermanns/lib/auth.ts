@@ -50,6 +50,7 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   fullName: string,
+  phone: string,
 ): Promise<AuthResult> {
   if (!supabase) return { error: DEMO_ERROR };
   try {
@@ -57,7 +58,7 @@ export async function signUpWithEmail(
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, phone },
         // No longer the primary confirmation path (see verifySignupOtp) — the
         // client now types the 6-digit code from the email instead of tapping
         // a link. Left in place as a fallback for anyone who clicks the link
@@ -138,6 +139,11 @@ export async function signUpWithEmail(
       };
     }
 
+    if (data.session) {
+      const { persistSignupPhone } = await import('@/lib/auth/persistSignupPhone');
+      await persistSignupPhone(phone, data.user.id);
+    }
+
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'An unexpected error occurred.';
@@ -161,7 +167,13 @@ export async function signUpWithEmail(
 export async function verifySignupOtp(email: string, token: string): Promise<AuthResult> {
   if (!supabase) return { error: DEMO_ERROR };
   const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
-  if (!error) rememberVerifiedUser(data.user);
+  if (!error) {
+    rememberVerifiedUser(data.user);
+    const { persistSignupPhone, phoneFromUserMetadata } = await import(
+      '@/lib/auth/persistSignupPhone'
+    );
+    await persistSignupPhone(phoneFromUserMetadata(data.user), data.user?.id);
+  }
   return { error: error?.message ?? null, userId: data.user?.id ?? null };
 }
 

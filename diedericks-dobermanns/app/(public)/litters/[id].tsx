@@ -15,6 +15,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { usePublicLitterDetail } from '@/hooks/usePublicLitterDetail';
+import { usePairingBehindBlock } from '@/hooks/useBehindThisDog';
 import { titleCase } from '@/lib/format';
 import { publicLitterKind } from '@/lib/litters/publicPlacement';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
@@ -36,6 +37,7 @@ export default function LitterDetailScreen() {
   const { litter, puppies, weightsByPuppyId, uniqueDates, galleryMedia, milestones, loading } =
     usePublicLitterDetail(id);
   const { benchmarkCurve } = useGrowthBenchmark(litter?.puppy_count ?? puppies.length ?? 1);
+  const pairingBehind = usePairingBehindBlock(litter?.father_id, litter?.mother_id);
 
   if (loading) {
     return (
@@ -84,6 +86,12 @@ export default function LitterDetailScreen() {
           <Card className="mt-6">
             <Typography variant="bodyMuted">{litter.description}</Typography>
           </Card>
+        ) : null}
+
+        {pairingBehind ? (
+          <Typography variant="bodyMuted" className="mt-6">
+            {pairingBehind.summaryLine}
+          </Typography>
         ) : null}
 
         {milestones.length > 0 ? (

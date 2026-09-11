@@ -1,3 +1,4 @@
+-- Applied on live as supabase_migrations.schema_migrations version 20260909161932 (name receipts_bucket_and_policies). Duplicate 0171 prefix; do not rename.
 -- 0171 — Private receipts bucket. Already applied by hand on production;
 -- do not re-run there. Receipts carry supplier, amount and account detail,
 -- so public stays false.

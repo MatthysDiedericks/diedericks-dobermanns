@@ -14,6 +14,7 @@ alter table public.applications
     or buyer_location_type in ('sa', 'sadc', 'international')
   );
 
+-- Backfill from country. Null stays null — never guessed as South Africa.
 update public.applications
 set buyer_location_type = case
   when lower(trim(country)) in ('south africa', 'rsa', 'za') then 'sa'

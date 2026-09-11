@@ -10,6 +10,10 @@ import {
 import { tooLargeMessage } from '@/lib/uploads/constants';
 import { prepareDocumentFromUri } from '@/lib/uploads/prepareFromUri';
 import { PORTAL_CATEGORY_GROUPS, buildCategoryGroupMap } from '@/lib/documents/portalCategories';
+import {
+  isMeaninglessDocumentName,
+  MEANINGLESS_DOCUMENT_NAME_MESSAGE,
+} from '@/lib/documents/documentName';
 import type { DocumentRecord, DocumentUploadMetadata, PickedDocumentFile } from '@/lib/documents/types';
 import { RateLimitError, assertRateLimit, blockedMessage } from '@/lib/security/rateLimit';
 import { getCachedUser } from '@/lib/auth/getCachedUser';
@@ -128,6 +132,9 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
             throw new Error(e instanceof RateLimitError ? e.message : await blockedMessage());
           }
           const uid = await currentUserId();
+          if (entityType === 'dog' && isMeaninglessDocumentName(metadata.name)) {
+            throw new Error(MEANINGLESS_DOCUMENT_NAME_MESSAGE);
+          }
           const prepared = await prepareDocumentFromUri({
             uri: file.uri,
             name: file.name,
@@ -172,7 +179,7 @@ export function useUploadDocument(entityType: DocumentEntityType, entityId: stri
           entity_type: entityType,
           entity_id: entityId,
           document_name: metadata.name,
-          original_filename: prepared.path.split('/').pop() ?? 'file',
+          original_filename: file.name || prepared.path.split('/').pop() || 'file',
           storage_path: prepared.path,
           file_type: fileTypeFromName(prepared.path),
           file_size_bytes: prepared.bytes.byteLength,
@@ -228,6 +235,9 @@ export function useUpdateDocument() {
   const update = useCallback(async (id: string, patch: TablesUpdate<'documents'>) => {
     setUpdating(true);
     try {
+      if (patch.document_name != null && isMeaninglessDocumentName(patch.document_name)) {
+        throw new Error(MEANINGLESS_DOCUMENT_NAME_MESSAGE);
+      }
       const supabase = requireSupabase();
       const { data, error } = await supabase
         .from('documents')

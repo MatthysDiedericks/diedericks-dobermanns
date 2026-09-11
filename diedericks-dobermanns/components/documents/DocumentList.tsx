@@ -73,6 +73,7 @@ function sortDocuments(docs: DocumentRecord[], sort: SortMode): DocumentRecord[]
 interface DocumentListProps {
   entityType: DocumentEntityType;
   entityId: string;
+  entityLabel?: string;
   readOnly?: boolean;
   showUpload?: boolean;
   compact?: boolean;
@@ -82,6 +83,7 @@ interface DocumentListProps {
 export function DocumentList({
   entityType,
   entityId,
+  entityLabel,
   readOnly = false,
   showUpload = true,
   compact = false,
@@ -189,7 +191,7 @@ export function DocumentList({
 
       {showUpload && !readOnly ? (
         <Button
-          label="+ Upload document"
+          label="Add document"
           variant="secondary"
           size="sm"
           onPress={() => uploadRef.current?.open()}
@@ -222,6 +224,7 @@ export function DocumentList({
           ref={uploadRef}
           entityType={entityType}
           entityId={entityId}
+          entityLabel={entityLabel}
           onSaved={refresh}
         />
       ) : null}

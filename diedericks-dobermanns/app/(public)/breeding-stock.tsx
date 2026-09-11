@@ -8,9 +8,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { DogGridSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { useDogs } from '@/hooks/useDogs';
+import { useBehindSummaries } from '@/hooks/useBehindThisDog';
 
 export default function BreedingStockScreen() {
   const { dogs, loading } = useDogs({ statuses: ['keep', 'stud'] });
+  const summaries = useBehindSummaries(dogs.map((d) => d.id));
   const sires = dogs.filter((d) => d.sex === 'male');
   const dams = dogs.filter((d) => d.sex === 'female');
   const unsexed = dogs.filter((d) => d.sex !== 'male' && d.sex !== 'female');
@@ -41,8 +43,8 @@ export default function BreedingStockScreen() {
             <View>
               <SectionHeader eyebrow="Males" title="Our Sires" />
               <View className="gap-4">
-                {sires.map((dog) => (
-                  <DogCard key={dog.id} dog={dog} />
+                {                sires.map((dog) => (
+                  <DogCard key={dog.id} dog={dog} bloodlineSummary={summaries.get(dog.id) ?? null} />
                 ))}
               </View>
             </View>
@@ -52,8 +54,8 @@ export default function BreedingStockScreen() {
             <View>
               <SectionHeader eyebrow="Females" title="Our Dams" />
               <View className="gap-4">
-                {dams.map((dog) => (
-                  <DogCard key={dog.id} dog={dog} />
+                {                dams.map((dog) => (
+                  <DogCard key={dog.id} dog={dog} bloodlineSummary={summaries.get(dog.id) ?? null} />
                 ))}
               </View>
             </View>
@@ -62,7 +64,7 @@ export default function BreedingStockScreen() {
           {unsexed.length ? (
             <View className="gap-4">
               {unsexed.map((dog) => (
-                <DogCard key={dog.id} dog={dog} />
+                <DogCard key={dog.id} dog={dog} bloodlineSummary={summaries.get(dog.id) ?? null} />
               ))}
             </View>
           ) : null}

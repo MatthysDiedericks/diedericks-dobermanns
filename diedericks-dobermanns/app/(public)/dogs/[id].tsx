@@ -8,6 +8,8 @@ import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { DogStory } from '@/components/dogs/DogStory';
 import { PublicProtectionSections } from '@/components/dogs/PublicProtectionSections';
 import { DogRegisteredNameBlock } from '@/components/dogs/DogRegisteredNameBlock';
+import { BehindThisDog } from '@/components/dogs/BehindThisDog';
+import { DogAchievementsBlock } from '@/components/dogs/DogAchievementsBlock';
 import { PedigreeTree } from '@/components/dogs/PedigreeTree';
 import { Pedigree, hasPedigree } from '@/components/dogs/Pedigree';
 import { hasPedigreeAncestors, useDogPedigree } from '@/hooks/useDogPedigree';
@@ -18,7 +20,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDog } from '@/hooks/useDogs';
-import { useDogTimeline } from '@/hooks/useRecords';
+import { useAchievements, useDogTimeline } from '@/hooks/useRecords';
 import { formatAge, titleCase } from '@/lib/format';
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -38,6 +40,7 @@ export default function DogProfileScreen() {
   const insets = useSafeAreaInsets();
   const { dog, loading, error } = useDog(id);
   const { data: story } = useDogTimeline(id ?? '');
+  const { data: achievements } = useAchievements(id ?? '');
   const { ancestors, loading: pedigreeLoading } = useDogPedigree(id ?? '');
   const showImportedPedigree = !pedigreeLoading && hasPedigreeAncestors(ancestors);
 
@@ -156,6 +159,9 @@ export default function DogProfileScreen() {
               <Pedigree pedigree={dog.pedigree!} />
             </Collapsible>
           ) : null}
+
+          {showImportedPedigree ? <BehindThisDog ancestors={ancestors} /> : null}
+          <DogAchievementsBlock achievements={achievements} />
 
           {story.length ? (
             <Collapsible title="Training Story">

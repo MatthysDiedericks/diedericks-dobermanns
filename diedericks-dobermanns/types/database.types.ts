@@ -347,6 +347,7 @@ export type Database = {
           last_reminder_sent_at: string | null
           litter_interest_id: string | null
           marketing_opt_in: boolean
+          merged_into_application_id: string | null
           occupation: string | null
           personal_reference_name: string | null
           personal_reference_phone: string | null
@@ -425,6 +426,7 @@ export type Database = {
           last_reminder_sent_at?: string | null
           litter_interest_id?: string | null
           marketing_opt_in?: boolean
+          merged_into_application_id?: string | null
           occupation?: string | null
           personal_reference_name?: string | null
           personal_reference_phone?: string | null
@@ -503,6 +505,7 @@ export type Database = {
           last_reminder_sent_at?: string | null
           litter_interest_id?: string | null
           marketing_opt_in?: boolean
+          merged_into_application_id?: string | null
           occupation?: string | null
           personal_reference_name?: string | null
           personal_reference_phone?: string | null
@@ -554,6 +557,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_litter_go_home"
             referencedColumns: ["litter_id"]
+          },
+          {
+            foreignKeyName: "applications_merged_into_application_id_fkey"
+            columns: ["merged_into_application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "applications_previous_application_id_fkey"

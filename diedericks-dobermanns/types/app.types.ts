@@ -587,7 +587,9 @@ export interface Application {
   archived_at?: string | null;
   archived_by?: string | null;
   archived_reason?: string | null;
+  merged_into_application_id?: string | null;
   previous_application_id?: string | null;
+  reference_code?: string | null;
   created_at: string;
   updated_at: string;
 }

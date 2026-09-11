@@ -11,6 +11,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { DogGridSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { useDogs } from '@/hooks/useDogs';
+import { useBehindSummaries } from '@/hooks/useBehindThisDog';
 import type { DogStatus } from '@/types/app.types';
 
 type Filter = 'all' | 'available' | 'breeding_stock' | 'training_dog';
@@ -35,6 +36,7 @@ export default function DogsScreen() {
     if (filter === 'breeding_stock') return d.status === 'keep' || d.status === 'stud';
     return d.category === filter;
   });
+  const summaries = useBehindSummaries(visible.map((d) => d.id));
 
   return (
     <ScreenContainer scroll={false}>
@@ -90,7 +92,9 @@ export default function DogsScreen() {
           contentContainerClassName="gap-4 px-6 pb-12"
           initialNumToRender={8}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} tintColor={Colors.gold} />}
-          renderItem={({ item }) => <DogCard dog={item} />}
+          renderItem={({ item }) => (
+            <DogCard dog={item} bloodlineSummary={summaries.get(item.id) ?? null} />
+          )}
         />
       )}
     </ScreenContainer>

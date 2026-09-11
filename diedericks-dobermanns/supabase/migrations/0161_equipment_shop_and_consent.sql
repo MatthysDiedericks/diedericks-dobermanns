@@ -264,6 +264,16 @@ grant execute on function public.submit_equipment_enquiry(
 alter table public.applications
   add column if not exists marketing_opt_in boolean not null default false;
 
+-- The live function returns 4 columns (applications, quotes, waitlist, contracts).
+-- This version adds a 5th, `dogs`. PostgreSQL refuses to change a function's return
+-- type via CREATE OR REPLACE ("cannot change return type of existing function"), which
+-- aborted this whole migration on 8 Sep 2026. It must be dropped first.
+--
+-- Verified safe on that date: zero RLS policies and zero other functions reference
+-- claim_my_records, so dropping it cannot break a policy. Grants are re-issued at the
+-- end of this block because DROP discards them.
+drop function if exists public.claim_my_records();
+
 create or replace function public.claim_my_records()
  returns table(applications integer, quotes integer, waitlist integer, contracts integer, dogs integer)
  language plpgsql
