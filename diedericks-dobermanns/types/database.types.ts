@@ -306,6 +306,10 @@ export type Database = {
           agreed_no_breeding_rights: boolean | null
           agreed_no_resale: boolean | null
           agreed_right_of_recall: boolean | null
+          agreed_tier: string | null
+          agreed_tier_at: string | null
+          agreed_tier_by: string | null
+          agreed_tier_reason: string | null
           agreed_to_terms: boolean
           agreed_welfare_commitment: boolean | null
           approved_version_number: number | null
@@ -385,6 +389,10 @@ export type Database = {
           agreed_no_breeding_rights?: boolean | null
           agreed_no_resale?: boolean | null
           agreed_right_of_recall?: boolean | null
+          agreed_tier?: string | null
+          agreed_tier_at?: string | null
+          agreed_tier_by?: string | null
+          agreed_tier_reason?: string | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
           approved_version_number?: number | null
@@ -464,6 +472,10 @@ export type Database = {
           agreed_no_breeding_rights?: boolean | null
           agreed_no_resale?: boolean | null
           agreed_right_of_recall?: boolean | null
+          agreed_tier?: string | null
+          agreed_tier_at?: string | null
+          agreed_tier_by?: string | null
+          agreed_tier_reason?: string | null
           agreed_to_terms?: boolean
           agreed_welfare_commitment?: boolean | null
           approved_version_number?: number | null
@@ -2845,6 +2857,9 @@ export type Database = {
           updated_at: string
           urgency_flag: boolean
           wrights_coi: number | null
+          size_category: string | null
+          alc_5: number | null
+          alc_10: number | null
         }
         Insert: {
           birth_order?: number | null
@@ -2950,6 +2965,9 @@ export type Database = {
           updated_at?: string
           urgency_flag?: boolean
           wrights_coi?: number | null
+          size_category?: string | null
+          alc_5?: number | null
+          alc_10?: number | null
         }
         Update: {
           birth_order?: number | null
@@ -3055,6 +3073,9 @@ export type Database = {
           updated_at?: string
           urgency_flag?: boolean
           wrights_coi?: number | null
+          size_category?: string | null
+          alc_5?: number | null
+          alc_10?: number | null
         }
         Relationships: [
           {

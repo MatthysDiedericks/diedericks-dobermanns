@@ -56,14 +56,14 @@ const DOG_STAFF_DETAIL_SELECT =
   'health_tested, hip_score, elbow_score, dcm_status, ' +
   'coat_type, height_cm, body_length_cm, chest_depth_cm, chest_girth_cm, ear_type, eye_colour, ' +
   'standard, bloodline_type, ' +
-  'is_spayed_neutered, wrights_coi, registered_name, ' +
+  'is_spayed_neutered, wrights_coi, size_category, alc_5, alc_10, registered_name, ' +
   'genetics_b_locus, genetics_d_locus, genetics_vwd_status, genetics_dcm1_status, genetics_dcm2_status, genetics_notes, ' +
   'status, category, price, is_public, is_featured, programme_tier, ' +
   'father_id, mother_id, litter_id, owner_id, handover_status, handover_date, ' +
   'owner_contact_id, buyer_contact_id, placement_date, ownership_status, ownership_status_at, ownership_notes, do_not_contact, ' +
   'deceased_at, deceased_cause, ' +
   'pedigree_photo_media_id, ' +
-  'new_owner_name, reserved_for_name, ' +
+  'collar_colour, birth_order, birth_weight_grams, new_owner_name, reserved_for_name, ' +
   'owner_contact:contacts!dogs_owner_contact_id_fkey(id, full_name, phone, whatsapp_number, email), ' +
   'dog_media!dog_media_dog_id_fkey(id, url, thumbnail_url, is_primary, type, sort_order, caption, uploaded_at)';
 

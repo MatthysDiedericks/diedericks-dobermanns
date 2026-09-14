@@ -8,6 +8,7 @@ import { DogMeasurementsPanel } from '@/components/dogs/detail/DogMeasurementsPa
 import { DogHealthWeightSection } from '@/components/dogs/detail/DogHealthWeightSection';
 import { HeatStatusCard } from '@/components/dogs/detail/HeatStatusCard';
 import { SectionCard } from '@/components/dogs/detail/SectionCard';
+import { CompletenessBar } from '@/components/dogs/profile/CompletenessBar';
 import { DogProfileHeaderBlock } from '@/components/dogs/profile/DogProfileHeaderBlock';
 import { DogStatCardsBlock } from '@/components/dogs/profile/DogStatCardsBlock';
 import { HealthCalendarSection } from '@/components/dogs/profile/HealthCalendarSection';
@@ -23,22 +24,48 @@ import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { createDraftContract } from '@/lib/contracts/createDraft';
 import { contractStatusLabel } from '@/lib/dogs/contractStatus';
 import { formatCoiPercent } from '@/lib/dogs/formatCoi';
+import { liveAgeFromDob } from '@/lib/dogs/liveAge';
+import { profileCompleteness } from '@/lib/dogs/completeness';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
-import { titleCase } from '@/lib/format';
-import { formatWeight } from '@/lib/kennel/formatters';
+import { collarLabel } from '@/lib/litters/collarColours';
+import { colourLabel } from '@/lib/colours/dogColours';
+import { formatKennelDate, formatWeight } from '@/lib/kennel/formatters';
 import { getAgeDays } from '@/lib/litters/weighingSchedule';
+import type { LineageStripData } from '@/lib/dogs/lineageStrip';
 import { requireSupabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Dog } from '@/types/app.types';
+
+function grams(value: number | null | undefined): string | null {
+  if (value == null) return null;
+  return `${value} g`;
+}
+
+function cm(value: number | null | undefined): string | null {
+  if (value == null) return null;
+  return `${value} cm`;
+}
+
+function yn(value: boolean | null | undefined): string | null {
+  if (value == null) return null;
+  return value ? 'Yes' : 'No';
+}
+
+function sizeLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 export function DogOverviewTab({
   dog,
   onRefresh,
   canEdit,
+  lineage = null,
 }: {
   dog: Dog;
   onRefresh: () => void;
   canEdit: boolean;
+  lineage?: LineageStripData | null;
 }) {
   const router = useRouter();
   const actorId = useAuthStore((s) => s.session?.user.id);
@@ -116,22 +143,16 @@ export function DogOverviewTab({
     return `Litter average at ${ageDays} days: ${formatWeight(best.avgGrams / 1000)}`;
   }, [latestKg, bench.benchmarkCurve, ageDays]);
 
-  const hasIds = Boolean(
-    dog.registered_name || dog.call_name || dog.microchip_number || dog.registration_number,
-  );
-  const hasPhysical = Boolean(
-    dog.coat_type || dog.height_cm || dog.ear_type || dog.eye_colour,
-  );
-  const hasGenetics = Boolean(
-    formatCoiPercent(dog.wrights_coi) ||
-      dog.genetics_b_locus ||
-      dog.genetics_d_locus ||
-      dog.genetics_vwd_status ||
-      dog.genetics_dcm1_status ||
-      dog.genetics_dcm2_status ||
-      dog.genetics_notes,
-  );
-  const hasNotes = Boolean(dog.temperament_notes || dog.training_notes);
+  const completeness = profileCompleteness({
+    ...dog,
+    litter_letter: lineage?.litter?.letter ?? null,
+  });
+  const progenyCount = lineage?.progeny.reduce((n, p) => n + p.puppyCount, 0) ?? 0;
+  const buyerName =
+    dog.owner_contact?.full_name?.trim() ||
+    dog.new_owner_name?.trim() ||
+    dog.reserved_for_name?.trim() ||
+    null;
   const contractLabel = contractStatusLabel(
     contract.exists ? { status: contract.status, signedByClient: contract.signed } : null,
   );
@@ -144,9 +165,53 @@ export function DogOverviewTab({
           style={{ width: '100%', height: 200, borderRadius: 12, marginBottom: 16 }}
           contentFit="cover"
         />
-      ) : null}
+      ) : (
+        <Typography variant="body" className="mb-4 text-muted">
+          —
+        </Typography>
+      )}
 
-      <DogProfileHeaderBlock dog={dog} goHomeDate={goHomeDate} />
+      <DogProfileHeaderBlock dog={dog} goHomeDate={goHomeDate} buyerName={buyerName} />
+      <CompletenessBar result={completeness} />
+
+      <SectionCard title="Identity">
+        <DetailRow showDash label="Date of birth" value={dog.date_of_birth ? formatKennelDate(dog.date_of_birth) : null} />
+        <DetailRow showDash label="Age" value={liveAgeFromDob(dog.date_of_birth)} />
+        <DetailRow showDash label="Sex" value={dog.sex} />
+        <DetailRow showDash label="Colour" value={dog.colour ? colourLabel(dog.colour) : null} />
+        <DetailRow showDash label="Coat type" value={dog.coat_type} />
+        <DetailRow showDash label="Size" value={sizeLabel(dog.size_category)} />
+        <DetailRow showDash label="Birth weight" value={grams(dog.birth_weight_grams)} />
+        <DetailRow showDash label="Birth order" value={dog.birth_order} />
+        <DetailRow
+          showDash
+          label="Collar"
+          value={
+            dog.collar_colour && dog.collar_colour !== 'none'
+              ? collarLabel(dog.collar_colour)
+              : null
+          }
+        />
+      </SectionCard>
+
+      <SectionCard title="Identifiers">
+        <DetailRow showDash label="Microchip" value={dog.microchip_number} mono />
+        <DetailRow showDash label="Tattoo" value={dog.tattoo_number} />
+        <DetailRow showDash label="Passport" value={dog.passport_number} />
+        <DetailRow showDash label="DNA" value={dog.dna_number} />
+        <DetailRow showDash label="Insurance" value={dog.insurance_number} />
+        <DetailRow showDash label="Registration number" value={dog.registration_number} mono />
+        <DetailRow showDash label="Registration type" value={dog.registration_type} />
+        <DetailRow showDash label="Litter letter" value={lineage?.litter?.letter ?? null} />
+      </SectionCard>
+
+      <SectionCard title="Measurements">
+        <DetailRow showDash label="Height" value={cm(dog.height_cm)} />
+        <DetailRow showDash label="Body length" value={cm(dog.body_length_cm)} />
+        <DetailRow showDash label="Chest depth" value={cm(dog.chest_depth_cm)} />
+        <DetailRow showDash label="Chest girth" value={cm(dog.chest_girth_cm)} />
+      </SectionCard>
+
       <DogStatCardsBlock
         latestKg={latestKg}
         benchmarkLabel={benchmarkLabel}
@@ -161,8 +226,30 @@ export function DogOverviewTab({
       />
       <DogHealthWeightSection dogId={dog.id} dog={dog} />
 
+      <SectionCard title="Health">
+        <DetailRow showDash label="Hips" value={dog.hip_score} />
+        <DetailRow showDash label="Elbows" value={dog.elbow_score} />
+        <DetailRow showDash label="Eyes" value={dog.eye_colour} />
+        <DetailRow showDash label="DCM1" value={dog.genetics_dcm1_status} />
+        <DetailRow showDash label="DCM2" value={dog.genetics_dcm2_status} />
+        <DetailRow showDash label="vWD" value={dog.genetics_vwd_status} />
+      </SectionCard>
+
+      <SectionCard title="Breeding">
+        <DetailRow showDash label="Wright's COI" value={formatCoiPercent(dog.wrights_coi)} />
+        <DetailRow showDash label="ALC 5" value={formatCoiPercent(dog.alc_5)} />
+        <DetailRow showDash label="ALC 10" value={formatCoiPercent(dog.alc_10)} />
+        <DetailRow showDash label="Spayed / neutered" value={yn(dog.is_spayed_neutered ?? null)} />
+        <DetailRow
+          showDash
+          label="Breeding dog"
+          value={['keep', 'stud', 'breeding_stock'].includes(dog.status ?? '') ? 'Yes' : 'No'}
+        />
+        <DetailRow showDash label="Progeny" value={progenyCount ? `${progenyCount}` : 'none yet'} />
+      </SectionCard>
+
       <SectionCard title="Paperwork">
-        <DetailRow label="Contract" value={contractLabel} />
+        <DetailRow showDash label="Contract" value={contractLabel} />
         {canEdit && !contract.exists ? (
           <Button
             label={creating ? 'Creating…' : 'Create contract'}
@@ -216,30 +303,6 @@ export function DogOverviewTab({
         <DogMeasurementsPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
       ) : null}
 
-      {hasIds ? (
-        <SectionCard title="Identifiers">
-          <DetailRow label="Registered name" value={dog.registered_name} />
-          <DetailRow label="Call name" value={dog.call_name} />
-          <DetailRow label="Microchip" value={dog.microchip_number} mono />
-          <DetailRow label="Registration" value={dog.registration_number} mono />
-        </SectionCard>
-      ) : null}
-
-      {hasPhysical ? (
-        <SectionCard title="Physical">
-          <DetailRow label="Coat" value={dog.coat_type} />
-          <DetailRow label="Height (cm)" value={dog.height_cm} />
-          <DetailRow label="Ear type" value={dog.ear_type ? titleCase(dog.ear_type) : null} />
-          <DetailRow label="Eye colour" value={dog.eye_colour} />
-        </SectionCard>
-      ) : null}
-
-      {dog.is_spayed_neutered ? (
-        <SectionCard title="Status">
-          <DetailRow label="Spayed / neutered" value="Yes" />
-        </SectionCard>
-      ) : null}
-
       {canEdit ? <DogOwnerSection dog={dog} contact={dog.owner_contact} onUpdated={onRefresh} /> : null}
 
       {canEdit ? <ShareDogSection dog={dog} onDone={onRefresh} /> : null}
@@ -255,24 +318,18 @@ export function DogOverviewTab({
         />
       ) : null}
 
-      {hasGenetics && canEdit ? (
+      {canEdit ? (
         <SectionCard title="Genetics">
-          <DetailRow label="Wright's COI" value={formatCoiPercent(dog.wrights_coi)} />
-          <DetailRow label="B locus" value={dog.genetics_b_locus} />
-          <DetailRow label="D locus" value={dog.genetics_d_locus} />
-          <DetailRow label="vWD" value={dog.genetics_vwd_status} />
-          <DetailRow label="DCM1" value={dog.genetics_dcm1_status} />
-          <DetailRow label="DCM2" value={dog.genetics_dcm2_status} />
-          <DetailRow label="Notes" value={dog.genetics_notes} />
+          <DetailRow showDash label="B locus" value={dog.genetics_b_locus} />
+          <DetailRow showDash label="D locus" value={dog.genetics_d_locus} />
+          <DetailRow showDash label="Notes" value={dog.genetics_notes} />
         </SectionCard>
       ) : null}
 
-      {hasNotes ? (
-        <SectionCard title="Notes">
-          <DetailRow label="Temperament" value={dog.temperament_notes} />
-          <DetailRow label="Training" value={dog.training_notes} />
-        </SectionCard>
-      ) : null}
+      <SectionCard title="Notes">
+        <DetailRow showDash label="Temperament" value={dog.temperament_notes} />
+        <DetailRow showDash label="Training" value={dog.training_notes} />
+      </SectionCard>
 
       <Typography variant="caption" className="mb-3 text-subtle">
         Print pedigree is website-only.

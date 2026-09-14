@@ -9,7 +9,7 @@ import type { Dog } from '@/types/app.types';
 import type { DogFilterTab } from '@/types/phase10';
 
 const DOG_SELECT =
-  'id, name, call_name, breed, colour, sex, status, date_of_birth, microchip_number, programme_tier, updated_at, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)';
+  'id, name, call_name, registered_name, breed, colour, sex, status, date_of_birth, microchip_number, registration_number, collar_colour, programme_tier, litter_id, father_id, mother_id, buyer_contact_id, owner_contact_id, new_owner_name, reserved_for_name, updated_at, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)';
 
 export interface KennelDog extends Dog {
   inHeat?: boolean;

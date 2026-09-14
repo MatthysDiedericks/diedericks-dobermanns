@@ -1,6 +1,7 @@
 import { callNotify } from '@/lib/functions';
 import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
+import { applicationCommercialTierKey } from '@/lib/applications/tierVocab';
 import { categoryFromDogInterest } from '@/lib/waitlist/helpers';
 import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
 import type { Application, WaitingListEntry } from '@/types/app.types';
@@ -143,7 +144,7 @@ export async function createWaitlistFromApplication(
     enquirer_phone: app.phone,
     enquirer_country: app.country,
     source: 'app',
-    preferred_category: categoryFromDogInterest(app.dog_interest),
+    preferred_category: categoryFromDogInterest(applicationCommercialTierKey(app)),
     preferred_sex: app.preferred_sex ?? 'any',
     preferred_colour: app.preferred_colour ?? null,
     tail_preference: app.tail_preference ?? null,

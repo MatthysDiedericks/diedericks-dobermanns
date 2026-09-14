@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, View } from 'react-native';
 
-import { Input } from '@/components/ui/Input';
+import { DogSearchField } from '@/components/dogs/DogSearchField';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { ActiveBreeding } from '@/hooks/useActiveBreedings';
+import { dogsMatching } from '@/lib/dogs/search';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 
 interface BreedingSelectFieldProps {
@@ -36,9 +37,15 @@ export function BreedingSelectField({
 
   const selected = breedings.find((b) => b.id === value);
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return breedings;
-    return breedings.filter((b) => breedingLabel(b).toLowerCase().includes(q));
+    const mapped = breedings.map((b) => ({
+      id: b.id,
+      name: breedingLabel(b),
+      mother_name: b.damName,
+      father_name: b.sireName,
+      litter_date: b.matingDate,
+    }));
+    const ids = new Set(dogsMatching(mapped, query).map((d) => d.id));
+    return breedings.filter((b) => ids.has(b.id) || !query.trim());
   }, [breedings, query]);
 
   function pick(b: ActiveBreeding | null) {
@@ -68,11 +75,11 @@ export function BreedingSelectField({
             <Typography variant="subtitle" className="mb-3 text-gold">
               {label}
             </Typography>
-            <Input
-              placeholder="Search dam, sire, or date…"
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
+            <DogSearchField
+              query={query}
+              onQueryChange={setQuery}
+              debounceMs={0}
+              empty={query.trim().length > 0 && filtered.length === 0}
             />
             <FlatList
               data={filtered}

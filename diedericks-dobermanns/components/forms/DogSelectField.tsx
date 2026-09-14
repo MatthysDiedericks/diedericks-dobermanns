@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, View } from 'react-native';
 
-import { Input } from '@/components/ui/Input';
+import { DogSearchField } from '@/components/dogs/DogSearchField';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { BreedingDog } from '@/hooks/useBreedingDogs';
+import { dogsMatching } from '@/lib/dogs/search';
 
 interface DogSelectFieldProps {
   label: string;
@@ -20,16 +21,7 @@ export function DogSelectField({ label, value, onChange, dogs, placeholder }: Do
   const [query, setQuery] = useState('');
 
   const selected = dogs.find((d) => d.id === value);
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return dogs;
-    return dogs.filter(
-      (d) =>
-        d.name.toLowerCase().includes(q) ||
-        (d.registration_number?.toLowerCase().includes(q) ?? false) ||
-        (d.colour?.toLowerCase().includes(q) ?? false),
-    );
-  }, [dogs, query]);
+  const filtered = useMemo(() => dogsMatching(dogs, query), [dogs, query]);
 
   function pick(id: string | null) {
     onChange(id);
@@ -58,11 +50,11 @@ export function DogSelectField({ label, value, onChange, dogs, placeholder }: Do
             <Typography variant="subtitle" className="mb-3 text-gold">
               {label}
             </Typography>
-            <Input
-              placeholder="Search by name, colour, registration…"
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
+            <DogSearchField
+              query={query}
+              onQueryChange={setQuery}
+              debounceMs={0}
+              empty={query.trim().length > 0 && filtered.length === 0}
             />
             <FlatList
               data={filtered}

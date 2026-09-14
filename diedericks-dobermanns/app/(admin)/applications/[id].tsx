@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, View } from 'react-native';
 
@@ -26,6 +26,7 @@ import { useLinkedQuote, type LinkedQuote } from '@/hooks/useLinkedQuote';
 import { addDogToApplication, createWaitlistFromApplication, reviewApplication, useSubmitting } from '@/hooks/useMutations';
 import { useWaitlistTypes } from '@/hooks/useWaitingList';
 import { fetchInviteStates, type InviteStateRow } from '@/lib/portal/invite';
+import { applicationTierDisplay } from '@/lib/applications/tierVocab';
 import { locationLabel } from '@/lib/apply/buyerLocation';
 import { formatDateTime, titleCase } from '@/lib/format';
 import { PAYMENT_GATE_MESSAGE, isWaitlistPaymentGateError } from '@/lib/waitlist/paymentGate';
@@ -316,7 +317,19 @@ export default function ApplicationDetailScreen() {
           <EnumField label="Colour" field="preferred_colour" value={app.preferred_colour} />
           <EnumField label="Tail preference" field="tail_preference" value={app.tail_preference} />
           <EnumField label="Timeline" field="preferred_timeline" value={app.preferred_timeline} />
-          <EnumField label="Budget" field="budget_range" value={app.budget_range} />
+          {(() => {
+            const programme = applicationTierDisplay(app.agreed_tier, app.budget_range, []);
+            return (
+              <Field
+                label="Programme"
+                value={
+                  programme.appliedForShort
+                    ? `${programme.primary} (applied for ${programme.appliedForShort})`
+                    : programme.primary
+                }
+              />
+            );
+          })()}
           <Field label="Training planned" value={app.training_planned ? 'Yes' : 'No'} />
           <Field label="Security / training goals" value={app.security_requirements} />
           <Field label="Special requests" value={app.special_requests} />
@@ -350,6 +363,14 @@ export default function ApplicationDetailScreen() {
         </View>
 
         <View className="mt-2 gap-3 pb-8">
+          <Button
+            label="Change tier"
+            variant="outline"
+            onPress={() =>
+              router.push(`/(admin)/applications/change-tier?id=${app.id}` as Href)
+            }
+            fullWidth
+          />
           {app.status === 'approved' || done === 'approved' ? (
             <>
               <InviteToPortalButton email={app.email} fullName={app.full_name} phone={app.phone} source="application" sourceId={app.id} initialState={inviteState} />

@@ -16,16 +16,19 @@ import {
 } from '@/components/dogs/DogDirectoryCard';
 import { UnallocatedSalesBanner } from '@/components/dogs/UnallocatedSalesBanner';
 import { ExpectingBreedingRow } from '@/components/dogs/ExpectingBreedingRow';
+import { DogSearchField } from '@/components/dogs/DogSearchField';
+import { GroupedDogSearch } from '@/components/dogs/GroupedDogSearch';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useDogDirectory } from '@/hooks/useDogDirectory';
 import { useKennelDogs } from '@/hooks/useKennelDogs';
 import { isAdminPlus } from '@/lib/auth/routes';
+import { gapSummaryLine, summarizeGaps } from '@/lib/dogs/gaps';
 import {
   matchesProgrammeFilter,
   PROGRAMME_TIER_SELECT_OPTIONS,
@@ -58,6 +61,7 @@ export function DogsDirectoryScreen({
   const [filter, setFilter] = useState<DogFilterTab>('breeding');
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
+  const searching = Boolean(search.trim());
   const {
     breedingStock,
     expecting,
@@ -68,7 +72,8 @@ export function DogsDirectoryScreen({
     error,
     refresh,
     role,
-  } = useKennelDogs(filter, search);
+  } = useKennelDogs(filter, searching ? '' : search);
+  const directory = useDogDirectory();
   const canAdd = showAddButton && (isAdminPlus(role) || role === 'trainer');
   const studs = breedingStock.studs.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
   const females = breedingStock.females.filter((d) =>
@@ -77,6 +82,16 @@ export function DogsDirectoryScreen({
   const expectingRows = expecting.filter((e) => matchesProgrammeFilter(e.dog.programme_tier, tierFilter));
   const deceasedRows = deceased.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
   const alumniRows = alumni.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
+  const refinedRoster = directory.dogs.filter((d) =>
+    matchesProgrammeFilter(d.programme_tier, tierFilter),
+  );
+  const gapLine = gapSummaryLine(
+    summarizeGaps(
+      searching
+        ? refinedRoster
+        : [...studs, ...females, ...expectingRows.map((e) => e.dog), ...deceasedRows, ...alumniRows],
+    ),
+  );
 
   const emptyMessages: Record<DogFilterTab, { title: string; message: string }> = {
     breeding: {
@@ -103,29 +118,40 @@ export function DogsDirectoryScreen({
       {showUnallocatedBanner ? <UnallocatedSalesBanner /> : null}
 
       <View className="mb-3 px-6">
-        <Input
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search name, call name, microchip"
+        <DogSearchField
+          query={search}
+          onQueryChange={setSearch}
+          debounceMs={0}
         />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mt-3 max-h-12"
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {FILTERS.map((f) => (
-            <Pressable
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              className={`rounded-full border px-4 py-2 ${
-                filter === f.key ? 'border-gold bg-gold/15' : 'border-gold/25'
-              }`}
-            >
-              <Typography variant="caption">{f.label}</Typography>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {gapLine ? (
+          <Typography variant="caption" className="mt-2 text-amber-200">
+            {gapLine}
+          </Typography>
+        ) : null}
+        {searching ? (
+          <Typography variant="caption" className="mt-3 text-muted">
+            Refine
+          </Typography>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mt-3 max-h-12"
+            contentContainerStyle={{ gap: 8 }}
+          >
+            {FILTERS.map((f) => (
+              <Pressable
+                key={f.key}
+                onPress={() => setFilter(f.key)}
+                className={`rounded-full border px-4 py-2 ${
+                  filter === f.key ? 'border-gold bg-gold/15' : 'border-gold/25'
+                }`}
+              >
+                <Typography variant="caption">{f.label}</Typography>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -163,7 +189,15 @@ export function DogsDirectoryScreen({
         </Typography>
       ) : null}
 
-      {loading ? (
+      {searching ? (
+        directory.loading ? (
+          <View className="px-6">
+            <CardListSkeleton count={5} />
+          </View>
+        ) : (
+          <GroupedDogSearch dogs={refinedRoster} query={search} detailRoute={detailRoute} />
+        )
+      ) : loading ? (
         <View className="px-6">
           <CardListSkeleton count={5} />
         </View>

@@ -10,21 +10,19 @@ import {
 } from 'react-native';
 
 import { DogAncestorAnalysis } from '@/components/dogs/DogAncestorAnalysis';
-import { DogProgenySection } from '@/components/dogs/DogProgenySection';
-import { DogSiblingsSection } from '@/components/dogs/DogSiblingsSection';
 import { PedigreeEditorForm } from '@/components/dogs/PedigreeEditorForm';
 import { PedigreeTree } from '@/components/dogs/PedigreeTree';
+import { DogLineageStrip } from '@/components/dogs/DogLineageStrip';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useDog } from '@/hooks/useDogs';
+import { useLineageStrip } from '@/hooks/useLineageStrip';
 
 const TABS = [
   { id: 'chart', label: 'Chart' },
-  { id: 'siblings', label: 'Siblings' },
-  { id: 'progeny', label: 'Progeny' },
   { id: 'ancestors', label: 'Ancestor Analysis' },
   { id: 'edit', label: 'Edit' },
 ] as const;
@@ -36,6 +34,7 @@ export default function PedigreeScreen() {
   const router = useRouter();
   const dogId = id ?? '';
   const { dog, loading, error } = useDog(dogId, { staff: true });
+  const lineage = useLineageStrip(dogId);
   const [tab, setTab] = useState<TabId>('chart');
 
   if (loading) {
@@ -64,6 +63,15 @@ export default function PedigreeScreen() {
     >
       <ScreenContainer scroll={false}>
         <PageHeader eyebrow="Pedigree" title={dog.name} />
+        {lineage.data ? (
+          <View className="px-6">
+            <DogLineageStrip
+              data={lineage.data}
+              dogHref={(id) => `/(admin)/dogs/${id}`}
+              litterHref={(id) => `/(admin)/litters/${id}`}
+            />
+          </View>
+        ) : null}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -102,12 +110,6 @@ export default function PedigreeScreen() {
                 profileRoutePrefix="/(admin)/dogs/"
               />
             </View>
-          ) : null}
-          {tab === 'siblings' ? (
-            <DogSiblingsSection dogId={dogId} profileRoutePrefix="/(admin)/dogs/" />
-          ) : null}
-          {tab === 'progeny' ? (
-            <DogProgenySection dogId={dogId} profileRoutePrefix="/(admin)/dogs/" />
           ) : null}
           {tab === 'ancestors' ? (
             <DogAncestorAnalysis dogId={dogId} storedCoi={dog.wrights_coi} />

@@ -3,8 +3,10 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Controller, type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import type { DogFormValues } from '@/components/forms/DogForm';
+import { DogSearchField } from '@/components/dogs/DogSearchField';
 import { ToggleRow } from '@/components/forms/fields';
 import { Typography } from '@/components/ui/Typography';
+import { dogsMatching } from '@/lib/dogs/search';
 import { supabase } from '@/lib/supabase';
 import {
   inheritedParentageText,
@@ -26,26 +28,37 @@ function PickerList({
   value: string;
   onChange: (next: string) => void;
 }) {
+  const [query, setQuery] = useState('');
+  const visible = dogsMatching(
+    options.map((o) => ({ id: o.value || 'none', name: o.label })),
+    query,
+  );
+  const filtered = options.filter(
+    (o) => !query.trim() || visible.some((v) => v.id === (o.value || 'none')) || o.value === value,
+  );
   return (
-    <ScrollView
-      nestedScrollEnabled
-      className="mb-4 max-h-48 rounded-xl border border-gold/20 bg-surface"
-    >
-      {options.map((opt) => {
-        const active = value === opt.value;
-        return (
-          <Pressable
-            key={opt.value || 'none'}
-            onPress={() => onChange(opt.value)}
-            className={`border-b border-gold/10 px-4 py-2.5 ${active ? 'bg-gold/15' : ''}`}
-          >
-            <Typography variant="body" className={active ? 'text-gold' : 'text-text'}>
-              {opt.label}
-            </Typography>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+    <View className="mb-4">
+      <DogSearchField query={query} onQueryChange={setQuery} debounceMs={0} />
+      <ScrollView
+        nestedScrollEnabled
+        className="max-h-48 rounded-xl border border-gold/20 bg-surface"
+      >
+        {filtered.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <Pressable
+              key={opt.value || 'none'}
+              onPress={() => onChange(opt.value)}
+              className={`border-b border-gold/10 px-4 py-2.5 ${active ? 'bg-gold/15' : ''}`}
+            >
+              <Typography variant="body" className={active ? 'text-gold' : 'text-text'}>
+                {opt.label}
+              </Typography>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 

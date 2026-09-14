@@ -18,6 +18,7 @@ import {
   groupApplicationsForList,
   isPossibleDuplicate,
 } from '@/lib/applications/duplicateFlag';
+import { applicationTierDisplay } from '@/lib/applications/tierVocab';
 import { formatDateTime, titleCase } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import { locationBadge } from '@/lib/apply/buyerLocation';
@@ -160,7 +161,8 @@ export default function AdminApplicationsScreen() {
                       </Typography>
                     ) : null}
                     <Typography variant="caption" className="mt-1">
-                      {titleCase(app.dog_interest)} · {titleCase(app.purpose)}
+                      {applicationTierDisplay(app.agreed_tier, app.budget_range, []).line} ·{' '}
+                      {titleCase(app.purpose)}
                     </Typography>
                     {app.id_check_status === 'failed' ? (
                       <Typography variant="caption" className="mt-0.5 text-amber-400">

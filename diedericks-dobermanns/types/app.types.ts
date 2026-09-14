@@ -273,6 +273,10 @@ export interface Dog {
   location?: string | null;
   is_spayed_neutered?: boolean;
   wrights_coi?: number | null;
+  size_category?: 'small' | 'medium' | 'large' | 'oversize' | null;
+  alc_5?: number | null;
+  alc_10?: number | null;
+  birth_order?: number | null;
   registered_name?: string | null;
   genetics_b_locus?: string | null;
   genetics_d_locus?: string | null;
@@ -563,6 +567,10 @@ export interface Application {
   tail_preference: string | null;
   preferred_timeline: string | null;
   budget_range: string | null;
+  agreed_tier?: string | null;
+  agreed_tier_at?: string | null;
+  agreed_tier_by?: string | null;
+  agreed_tier_reason?: string | null;
   dogs_requested?: number;
   training_planned: boolean;
   delivery_acknowledged: boolean;

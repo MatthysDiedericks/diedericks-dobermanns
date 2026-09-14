@@ -2,6 +2,7 @@
  * Promote / sync an approved application onto the waiting list, copying
  * preferences without overwriting hand-entered values.
  */
+import { applicationCommercialTierKey } from '@/lib/applications/tierVocab';
 import { categoryFromDogInterest } from '@/lib/waitlist/helpers';
 import { buildForwardStagePatch } from '@/lib/waitlist/pipeline';
 import { supabase } from '@/lib/supabase';
@@ -23,6 +24,7 @@ export function prefsFromApplication(
     | 'budget_range'
     | 'preferred_timeline'
     | 'dog_interest'
+    | 'agreed_tier'
     | 'special_requests'
     | 'why_dobermann'
   >,
@@ -59,7 +61,7 @@ export function prefsFromApplication(
     patch.preferred_timeline = app.preferred_timeline;
   }
   if (emptyOrDefault(existing?.preferred_category, ['any'])) {
-    patch.preferred_category = categoryFromDogInterest(app.dog_interest);
+    patch.preferred_category = categoryFromDogInterest(applicationCommercialTierKey(app));
   }
   if (emptyOrDefault(existing?.preference_notes)) {
     patch.preference_notes = app.special_requests ?? app.why_dobermann ?? null;

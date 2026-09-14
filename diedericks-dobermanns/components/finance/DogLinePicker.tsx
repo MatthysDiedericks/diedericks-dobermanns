@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { DogSearchField } from '@/components/dogs/DogSearchField';
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
 import { Typography } from '@/components/ui/Typography';
-import { Colors } from '@/constants/colors';
+import { dogsMatching, noDogMatchLine } from '@/lib/dogs/search';
 import { humanizeStatus } from '@/lib/finance/formatters';
 import { requireSupabase } from '@/lib/supabase';
 import type { DogStatus } from '@/types/app.types';
@@ -15,6 +16,9 @@ export interface PickableDog {
   litter_id: string | null;
   date_of_birth: string | null;
   price: number | null;
+  sex?: string | null;
+  colour?: string | null;
+  call_name?: string | null;
 }
 
 interface Props {
@@ -43,7 +47,7 @@ export function DogLinePicker({ onSelect }: Props) {
       const supabase = requireSupabase();
       const { data, error } = await supabase
         .from('dogs')
-        .select('id, name, status, litter_id, date_of_birth, call_name')
+        .select('id, name, status, litter_id, date_of_birth, call_name, sex, colour')
         .in('status', ['available', 'in_training', 'reserved'])
         .order('litter_id', { ascending: false, nullsFirst: false })
         .order('date_of_birth', { ascending: false });
@@ -57,6 +61,9 @@ export function DogLinePicker({ onSelect }: Props) {
           litter_id: d.litter_id,
           date_of_birth: d.date_of_birth,
           price: null,
+          sex: d.sex,
+          colour: d.colour,
+          call_name: d.call_name,
         })),
       );
     } catch {
@@ -70,11 +77,7 @@ export function DogLinePicker({ onSelect }: Props) {
     void load();
   }, [load]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return dogs;
-    return dogs.filter((d) => d.name.toLowerCase().includes(q));
-  }, [dogs, query]);
+  const filtered = useMemo(() => dogsMatching(dogs, query), [dogs, query]);
 
   const puppies = filtered.filter((d) => d.litter_id != null);
   const adults = filtered.filter((d) => d.litter_id == null);
@@ -95,12 +98,11 @@ export function DogLinePicker({ onSelect }: Props) {
 
   return (
     <View className="rounded-xl border border-gold/30 bg-black-rich">
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search dogs…"
-        placeholderTextColor={Colors.silver}
-        className="border-b border-gold/20 px-3 py-2 text-white"
+      <DogSearchField
+        query={query}
+        onQueryChange={setQuery}
+        debounceMs={0}
+        empty={query.trim().length > 0 && filtered.length === 0}
       />
       <ScrollView style={{ maxHeight: 300 }} keyboardShouldPersistTaps="handled">
         {loading ? (
@@ -109,7 +111,7 @@ export function DogLinePicker({ onSelect }: Props) {
           </Typography>
         ) : filtered.length === 0 ? (
           <Typography variant="caption" className="p-3 text-silver">
-            No matching dogs.
+            {noDogMatchLine(query)}
           </Typography>
         ) : (
           <>

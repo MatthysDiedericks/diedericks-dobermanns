@@ -61,3 +61,24 @@ scripts/output/
 # (diedericksdobermanns-web.git) — do not track its files again in this
 # outer repo, that creates a duplicate copy that can drift out of sync.
 diedericksdobermann-web/
+
+# Database and storage backups — CONTAIN EVERY CLIENT'S PERSONAL DATA
+# (contacts.json, users.json, applications.json, documents, ID uploads).
+# These must never reach GitHub. Keep them on disk and on the external
+# drive only. Added 14 Sep 2026 after they were found untracked-but-not-
+# ignored, one `git add -A` away from being published.
+backups/
+backups-storage/
+
+# Cursor's verification screenshots and saved page dumps. merge-duplicates.html
+# contains a real applicant's name and email address. Evidence for a review,
+# not source code — it does not belong in a public repo.
+# Any tmp- folder. Cursor names these inconsistently (tmp-phone-screenshots,
+# tmp-signup-phone-screens) and a narrow pattern missed one that held a real
+# client's phone number on screen. Catch them all.
+tmp-*/
+
+# Throwaway copies of the website used for build checking. Duplicates of a
+# repo that already has its own remote; nothing here is the source of truth.
+_idbuildcheck/
+_archive_buildcheck/

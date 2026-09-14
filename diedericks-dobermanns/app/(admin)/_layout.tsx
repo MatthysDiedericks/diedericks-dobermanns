@@ -73,6 +73,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="applications/index" options={{ href: null }} />
         <Tabs.Screen name="applications/[id]" options={{ href: null }} />
         <Tabs.Screen name="applications/merge" options={{ href: null }} />
+        <Tabs.Screen name="applications/change-tier" options={{ href: null }} />
         <Tabs.Screen name="invite/index" options={{ href: null }} />
         <Tabs.Screen name="clients/index" options={{ href: null }} />
         <Tabs.Screen name="clients/[id]/index" options={{ href: null }} />

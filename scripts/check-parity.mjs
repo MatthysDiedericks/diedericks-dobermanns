@@ -236,6 +236,12 @@ function run() {
     if (cat.status !== 0) process.exit(cat.status ?? 1);
   }
 
+  const phoneScript = path.join(scriptDir, 'check-contacts-phone.mjs');
+  if (fs.existsSync(phoneScript)) {
+    const phone = spawnSync(process.execPath, [phoneScript], { stdio: 'inherit' });
+    if (phone.status !== 0) process.exit(phone.status ?? 1);
+  }
+
   const migScript = path.join(scriptDir, 'check-migration-numbers.mjs');
   if (fs.existsSync(migScript)) {
     const mig = spawnSync(process.execPath, [migScript], { stdio: 'inherit' });

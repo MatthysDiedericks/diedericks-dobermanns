@@ -1,4 +1,5 @@
 import { labelFor } from '@/components/forms/ApplicationForm/labels';
+import { applicationCommercialTierKey } from '@/lib/applications/tierVocab';
 import type { ApplicationFormValues } from '@/components/forms/ApplicationForm/schema';
 import { fetchPricingTiers } from '@/lib/finance/pricingQueries';
 import { resolveQuotePrice } from '@/lib/finance/quotePrice';
@@ -65,7 +66,7 @@ export async function buildAppQuotePrefill(
   const { data: app, error } = await supabase
     .from('applications')
     .select(
-      'id, user_id, full_name, email, dog_interest, specific_dog_id, litter_interest_id, preferred_sex, preferred_colour, tail_preference',
+      'id, user_id, full_name, email, dog_interest, budget_range, agreed_tier, specific_dog_id, litter_interest_id, preferred_sex, preferred_colour, tail_preference',
     )
     .eq('id', applicationId)
     .maybeSingle();
@@ -120,19 +121,24 @@ export async function buildAppQuotePrefill(
     }
   }
 
+  const commercialTier = applicationCommercialTierKey({
+    agreed_tier: (app as { agreed_tier?: string | null }).agreed_tier,
+    dog_interest: app.dog_interest,
+    budget_range: app.budget_range,
+  });
   const resolved = resolveQuotePrice(
     {
       dogPrice,
       dogTier,
       litterDefaultTier,
-      applicationTier: app.dog_interest,
+      applicationTier: commercialTier,
     },
     tiers,
   );
-  const tier = app.dog_interest ? tiers.find((t) => t.tier_key === app.dog_interest) : undefined;
+  const tier = commercialTier ? tiers.find((t) => t.tier_key === commercialTier) : undefined;
   const tierLabel =
     tier?.display_label ??
-    labelFor('dog_interest', (app.dog_interest ?? undefined) as never);
+    labelFor('dog_interest', (commercialTier ?? app.dog_interest ?? undefined) as never);
 
   const prefs = preferenceSummary(app);
   const description =
@@ -173,7 +179,7 @@ export async function buildAppQuotePrefill(
     priceOnRequest: resolved.priceOnRequest || resolved.unitPrice == null,
     priceSourceLabel: resolved.sourceLabel,
     litterInterestId: app.litter_interest_id,
-    applicationTier: app.dog_interest,
+    applicationTier: commercialTier,
     existingQuoteId: existing?.id ?? null,
     extraLines,
   };

@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, SectionList, View } from 'react-native';
 
-import { Input } from '@/components/ui/Input';
+import { DogSearchField } from '@/components/dogs/DogSearchField';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { groupDogs, type DogGroupable } from '@/lib/dogs/groups';
+import { dogsMatching } from '@/lib/dogs/search';
 
 export type DogPickerOption = DogGroupable & { id: string; name: string };
 
@@ -29,8 +30,7 @@ export function DogGroupPickerField({ label, value, onChange, dogs, placeholder 
   const selected = dogs.find((d) => d.id === value);
 
   const sections = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const pool = q ? dogs.filter((d) => d.name.toLowerCase().includes(q)) : dogs;
+    const pool = dogsMatching(dogs, query);
     return groupDogs(pool).map((g) => ({ title: g.label, data: g.dogs }));
   }, [dogs, query]);
 
@@ -61,11 +61,11 @@ export function DogGroupPickerField({ label, value, onChange, dogs, placeholder 
             <Typography variant="subtitle" className="mb-3 text-gold">
               {label}
             </Typography>
-            <Input
-              placeholder="Search dogs by name…"
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
+            <DogSearchField
+              query={query}
+              onQueryChange={setQuery}
+              debounceMs={0}
+              empty={query.trim().length > 0 && sections.length === 0}
             />
             <Pressable onPress={() => pick(null)} className="mb-2 py-2">
               <Typography variant="caption" className="text-muted">

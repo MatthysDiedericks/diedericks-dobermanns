@@ -1,5 +1,5 @@
 import { ScrollView, Pressable, View } from 'react-native';
-import { useState } from 'react';
+import { useRef } from 'react';
 
 import { DogPedigreeTab } from '@/components/dogs/detail/DogPedigreeTab';
 import { DogBreedingTab } from '@/components/dogs/detail/DogBreedingTab';
@@ -13,6 +13,7 @@ import { DogOverviewTab } from '@/components/dogs/detail/DogOverviewTab';
 import { ReceivedPuppyCard } from '@/components/portal/ReceivedPuppyCard';
 import { Typography } from '@/components/ui/Typography';
 import { useAuthStore } from '@/stores/authStore';
+import type { LineageStripData } from '@/lib/dogs/lineageStrip';
 import type { Dog } from '@/types/app.types';
 
 const BASE_TABS = [
@@ -33,11 +34,13 @@ interface DogDetailTabsProps {
   dog: Dog;
   onRefresh: () => void;
   clientView?: boolean;
+  lineage?: LineageStripData | null;
 }
 
-export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTabsProps) {
-  const [active, setActive] = useState<TabId>('overview');
+export function DogDetailTabs({ dogId, dog, onRefresh, clientView, lineage = null }: DogDetailTabsProps) {
   const isAdmin = useAuthStore((s) => s.hasRole('admin'));
+  const scrollRef = useRef<ScrollView>(null);
+  const offsets = useRef<Partial<Record<TabId, number>>>({});
   const tabs = BASE_TABS.filter((t) => {
     if (clientView && t.id === 'breeding') return false;
     if (t.id === 'protection' && (clientView || dog.programme_tier !== 'protection_dog')) {
@@ -45,6 +48,15 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
     }
     return true;
   });
+
+  function jump(id: TabId) {
+    const y = offsets.current[id] ?? 0;
+    scrollRef.current?.scrollTo({ y, animated: true });
+  }
+
+  function mark(id: TabId, y: number) {
+    offsets.current[id] = y;
+  }
 
   return (
     <View className="flex-1">
@@ -57,48 +69,46 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
         {tabs.map((tab) => (
           <Pressable
             key={tab.id}
-            onPress={() => setActive(tab.id)}
-            className={`rounded-full border px-4 py-2 ${
-              active === tab.id ? 'border-gold bg-gold/15' : 'border-gold/25 bg-surface'
-            }`}
+            onPress={() => jump(tab.id)}
+            className="rounded-full border border-gold/25 bg-surface px-4 py-2"
           >
-            <Typography variant="caption" className={active === tab.id ? 'text-gold' : ''}>
-              {tab.label}
-            </Typography>
+            <Typography variant="caption">{tab.label}</Typography>
           </Pressable>
         ))}
       </ScrollView>
 
-      <ScrollView className="px-4 pb-12" keyboardShouldPersistTaps="handled">
-        {active === 'overview' ? (
-          <>
-            {clientView ? <ReceivedPuppyCard dog={dog} /> : null}
-            <DogOverviewTab dog={dog} onRefresh={onRefresh} canEdit={isAdmin && !clientView} />
-          </>
+      <ScrollView
+        ref={scrollRef}
+        className="px-4 pb-12"
+        keyboardShouldPersistTaps="handled"
+      >
+        <View onLayout={(e) => mark('overview', e.nativeEvent.layout.y)}>
+          {clientView ? <ReceivedPuppyCard dog={dog} /> : null}
+          <DogOverviewTab
+            dog={dog}
+            onRefresh={onRefresh}
+            canEdit={isAdmin && !clientView}
+            lineage={lineage}
+          />
+        </View>
+        {!clientView && dog.programme_tier === 'protection_dog' ? (
+          <View onLayout={(e) => mark('protection', e.nativeEvent.layout.y)} className="mt-8">
+            <Typography variant="label" className="mb-3 text-gold">
+              PROTECTION LISTING
+            </Typography>
+            <ProtectionListingTab dog={dog} onRefresh={onRefresh} />
+          </View>
         ) : null}
-        {active === 'protection' && !clientView ? (
-          <ProtectionListingTab dog={dog} onRefresh={onRefresh} />
-        ) : null}
-        {active === 'health' ? <DogHealthTab dogId={dogId} dog={dog} /> : null}
-        {active === 'breeding' && !clientView ? <DogBreedingTab dog={dog} /> : null}
-        {active === 'temperament' ? <DogTemperamentTab dog={dog} canEdit={isAdmin} /> : null}
-        {active === 'documents' ? (
-          <>
-            {!clientView ? (
-              <MicrochipQuickAttach dogId={dogId} dogName={dog.name} onSaved={onRefresh} />
-            ) : null}
-            <DocumentList
-              entityType="dog"
-              entityId={dogId}
-              entityLabel={dog.name}
-              readOnly={clientView}
-              showUpload={!clientView}
-              clientVisibleOnly={clientView}
-            />
-          </>
-        ) : null}
-        {active === 'gallery' ? <DogLinksTab dogId={dogId} variant="gallery" /> : null}
-        {active === 'pedigree' ? (
+        <View onLayout={(e) => mark('health', e.nativeEvent.layout.y)} className="mt-8">
+          <Typography variant="label" className="mb-3 text-gold">
+            HEALTH
+          </Typography>
+          <DogHealthTab dogId={dogId} dog={dog} />
+        </View>
+        <View onLayout={(e) => mark('pedigree', e.nativeEvent.layout.y)} className="mt-8">
+          <Typography variant="label" className="mb-3 text-gold">
+            PEDIGREE
+          </Typography>
           <DogPedigreeTab
             dogId={dogId}
             displayName={dog.name}
@@ -106,7 +116,43 @@ export function DogDetailTabs({ dogId, dog, onRefresh, clientView }: DogDetailTa
             disableAncestorLinks={clientView}
             showCoi={!clientView}
           />
+        </View>
+        {!clientView ? (
+          <View onLayout={(e) => mark('breeding', e.nativeEvent.layout.y)} className="mt-8">
+            <Typography variant="label" className="mb-3 text-gold">
+              BREEDING
+            </Typography>
+            <DogBreedingTab dog={dog} />
+          </View>
         ) : null}
+        <View onLayout={(e) => mark('temperament', e.nativeEvent.layout.y)} className="mt-8">
+          <Typography variant="label" className="mb-3 text-gold">
+            TEMPERAMENT
+          </Typography>
+          <DogTemperamentTab dog={dog} canEdit={isAdmin} />
+        </View>
+        <View onLayout={(e) => mark('documents', e.nativeEvent.layout.y)} className="mt-8">
+          <Typography variant="label" className="mb-3 text-gold">
+            DOCUMENTS
+          </Typography>
+          {!clientView ? (
+            <MicrochipQuickAttach dogId={dogId} dogName={dog.name} onSaved={onRefresh} />
+          ) : null}
+          <DocumentList
+            entityType="dog"
+            entityId={dogId}
+            entityLabel={dog.name}
+            readOnly={clientView}
+            showUpload={!clientView}
+            clientVisibleOnly={clientView}
+          />
+        </View>
+        <View onLayout={(e) => mark('gallery', e.nativeEvent.layout.y)} className="mt-8">
+          <Typography variant="label" className="mb-3 text-gold">
+            GALLERY
+          </Typography>
+          <DogLinksTab dogId={dogId} variant="gallery" />
+        </View>
       </ScrollView>
     </View>
   );

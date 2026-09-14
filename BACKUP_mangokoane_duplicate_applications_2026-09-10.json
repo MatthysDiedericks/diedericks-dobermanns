@@ -1,0 +1,125 @@
+{
+  "backup_taken": "2026-09-10",
+  "reason": "Mamoloko Mangokoane submitted the same application 5 times because the website showed 'We could not submit your application' after the row had already saved. The file upload failed (documents_category_check) but the application itself was stored, so she retried. Kept DD-1BE9A104, deleted the other four.",
+  "kept": "DD-1BE9A104 (1be9a104-a5c5-41dd-b938-401a97a29e07)",
+  "deleted": ["DD-83BD3148", "DD-02AE8ADA", "DD-7FE7FD4C", "DD-A0EBC0EB"],
+  "merged_into_kept_record_from_DD-A0EBC0EB": {
+    "full_name": "Mamoloko Mangokoane (was lowercase 'mamoloko')",
+    "address": "112 Quintus Van Der Walt Dr / Norkem Park (she corrected the street type)",
+    "city": "Kempton Park (was 'Ekurhuleni')",
+    "occupation": "Self-employed",
+    "employer": "self-employed",
+    "marketing_opt_in": "false - her final submission opted OUT; latest consent wins under POPIA"
+  },
+  "applicant": {
+    "full_name": "Mamoloko Mangokoane",
+    "email": "mangokoanemj@gmail.com",
+    "phone": "0718878467",
+    "id_type": "sa_id",
+    "id_number": "8810106154085",
+    "id_check_status": "passed",
+    "date_of_birth": "1988-10-10",
+    "country": "South Africa",
+    "province": "Gauteng",
+    "city": "Kempton Park",
+    "address": "112 Quintus Van Der Walt Dr\nNorkem Park",
+    "occupation": "Self-employed",
+    "employer": "self-employed",
+    "instagram_handle": "juju_fitnesstrainn"
+  },
+  "home_and_family": {
+    "home_type": "house",
+    "has_secure_yard": "yes",
+    "yard_size": "large_500_plus",
+    "sleeping_arrangement": "outdoor_kennel",
+    "hours_alone_per_day": "4_6",
+    "exercise_level": "very_active",
+    "children_ages": "7",
+    "current_pets": "No current pets",
+    "previous_dog_fate": "I had a dog many years ago in high school. It died of old age."
+  },
+  "dobermann": {
+    "dog_interest": "puppy",
+    "purpose": "family",
+    "dogs_requested": 1,
+    "experience_with_dobermanns": "None.",
+    "dobermann_experience_level": "researched_only",
+    "why_dobermann": "I do love its appearance and athletic look. I understand the breed is intelligent, loyal and naturally protective.\nIt will easily fit and be part of our family.\nAnd it will make an active companion as I am an active individual",
+    "aware_of_dcm": "aware_learning_more",
+    "aware_of_commitment": "yes_fully_prepared",
+    "aware_of_costs": "yes_fully_budgeted",
+    "preferred_sex": "male",
+    "preferred_colour": "brown_tan",
+    "tail_preference": "docked",
+    "preferred_timeline": "asap",
+    "budget_range": "standard",
+    "training_planned": true,
+    "delivery_acknowledged": true
+  },
+  "agreements_all_true": [
+    "agreed_to_terms",
+    "agreed_no_breeding_rights",
+    "agreed_right_of_recall",
+    "agreed_no_resale",
+    "agreed_welfare_commitment",
+    "agreed_microchip_policy"
+  ],
+  "deleted_rows_detail": [
+    {
+      "reference_code": "DD-83BD3148",
+      "id": "83bd3148-eb8d-498c-b1b5-2a823a21b0cd",
+      "created_at": "2026-09-10T08:42:04.823278+00:00",
+      "identical_to_kept_record": true,
+      "differences": "none",
+      "marketing_opt_in": true,
+      "city": "Ekurhuleni",
+      "dog_request_id": "fc0d5129-5431-4e74-bad3-009e53ce98d8"
+    },
+    {
+      "reference_code": "DD-02AE8ADA",
+      "id": "02ae8ada-bf2d-4ce7-9161-0a0e84cc1083",
+      "created_at": "2026-09-10T08:42:12.235729+00:00",
+      "identical_to_kept_record": true,
+      "differences": "none - submitted 7 seconds after the first, a double submit",
+      "marketing_opt_in": true,
+      "city": "Ekurhuleni",
+      "dog_request_id": "747b86bb-ee02-4ce4-8aec-cceb5549dc4b"
+    },
+    {
+      "reference_code": "DD-7FE7FD4C",
+      "id": "7fe7fd4c-6f23-4208-84be-536a783097f1",
+      "created_at": "2026-09-10T08:57:13.528437+00:00",
+      "identical_to_kept_record": true,
+      "differences": "none",
+      "marketing_opt_in": true,
+      "city": "Ekurhuleni",
+      "dog_request_id": "15aeb8ba-1928-4eba-a3f8-de148842ec70"
+    },
+    {
+      "reference_code": "DD-A0EBC0EB",
+      "id": "a0ebc0eb-b6ca-4690-ba03-6ebd1253401b",
+      "created_at": "2026-09-10T09:19:30.991155+00:00",
+      "identical_to_kept_record": false,
+      "differences": "Her fifth and final attempt - a shorter retype. Corrections taken into the kept record (name capitalisation, address, city, occupation, marketing opt-out). Content NOT carried over because the kept record is fuller:",
+      "why_dobermann": "I love  the look of the dog,  athletic and agile. \nI understand them to be intelligent, active and protective.  It make a good family dog and companion.",
+      "experience_with_dobermanns": null,
+      "current_pets": "None",
+      "children_ages": "7 years",
+      "previous_dog_fate": "Many years ago, died of old gae.",
+      "marketing_opt_in": false,
+      "city": "Kempton Park",
+      "dog_request_id": "40a8a008-03df-45e3-8b1a-09bfcadf0b23"
+    }
+  ],
+  "dog_request_kept": {
+    "id": "0452fe36-1309-4b27-b8e3-7f5c64149480",
+    "request_index": 1,
+    "preferred_sex": "male",
+    "preferred_colour": "brown_tan",
+    "tail_preference": "docked",
+    "preferred_timeline": "asap",
+    "budget_range": "standard"
+  },
+  "no_dependent_records": "All five had 0 quotes, 0 reservations, 0 waiting_list entries, 0 todo items, 0 events and 0 documents. Each had 1 application_versions row, deleted with its parent.",
+  "documents_note": "Her ID upload never stored on any of the five attempts - the documents insert failed with documents_category_check on every try. She still needs to send her ID."
+}

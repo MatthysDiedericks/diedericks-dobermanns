@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { LitterBulkTierAction } from '@/components/litters/LitterBulkTierAction';
+import { MissingDataDot } from '@/components/dogs/MissingDataDot';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
@@ -11,6 +12,7 @@ import {
   PROGRAMME_TIER_SELECT_OPTIONS,
   programmeTierLabel,
 } from '@/lib/dogs/programmeTier';
+import { dogDataGaps, gapLabel, gapSummaryLine, summarizeGaps } from '@/lib/dogs/gaps';
 import { titleCase } from '@/lib/format';
 import { formatPuppyAge, formatWeight } from '@/lib/kennel/formatters';
 import { CollarDot, collarLabel } from '@/lib/litters/collarColours';
@@ -29,6 +31,7 @@ export function LitterPuppiesTab({
   const router = useRouter();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const selectedIds = puppies.filter((p) => selected[p.id]).map((p) => p.id);
+  const gapLine = gapSummaryLine(summarizeGaps(puppies));
 
   return (
     <View className="pb-8">
@@ -47,6 +50,11 @@ export function LitterPuppiesTab({
             onChanged?.();
           }}
         />
+      ) : null}
+      {gapLine ? (
+        <Typography variant="caption" className="mb-3 text-amber-200">
+          {gapLine}
+        </Typography>
       ) : null}
       <View className="gap-3">
         {puppies.map((p) => {
@@ -77,6 +85,12 @@ export function LitterPuppiesTab({
                     <Typography variant="subtitle">
                       {p.sex === 'male' ? '♂' : '♀'} {p.name}
                     </Typography>
+                    <MissingDataDot
+                      gaps={dogDataGaps({
+                        ...p,
+                        document_count: null,
+                      }).map(gapLabel)}
+                    />
                     <Typography variant="caption">
                       {p.colour} · {titleCase(p.status ?? '')} · {collarLabel(ext.collar_colour)}
                     </Typography>

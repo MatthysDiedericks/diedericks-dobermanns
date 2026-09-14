@@ -4,10 +4,13 @@ import { Animated, Pressable, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 
 import { DogStatusBadge } from '@/components/dogs/DogStatusBadge';
+import { MissingDataDot } from '@/components/dogs/MissingDataDot';
 import { ThumbImage } from '@/components/media/ThumbImage';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import type { ExpectingDogEntry, KennelDog } from '@/hooks/useKennelDogs';
+import type { DirectoryDog } from '@/lib/dogs/directory';
+import { dogDataGaps, gapLabel } from '@/lib/dogs/gaps';
 import { programmeTierLabel } from '@/lib/dogs/programmeTier';
 import { profilePhotoUrl } from '@/lib/dogs/profilePhoto';
 import { formatKennelDate } from '@/lib/kennel/formatters';
@@ -35,7 +38,7 @@ function PulsingDot() {
   return <Animated.View style={{ opacity }} className="h-2 w-2 rounded-full bg-danger" />;
 }
 
-function SexColourRow({ sex, colour }: { sex: KennelDog['sex']; colour: KennelDog['colour'] }) {
+function SexColourRow({ sex, colour }: { sex: KennelDog['sex'] | DirectoryDog['sex']; colour: KennelDog['colour'] | DirectoryDog['colour'] }) {
   const sexColor = sex === 'male' ? '#60a5fa' : sex === 'female' ? '#f472b6' : Colors.silver;
   const dot = colour ? COLOUR_HEX[colour] ?? '#8C8474' : '#8C8474';
 
@@ -56,7 +59,7 @@ function SexColourRow({ sex, colour }: { sex: KennelDog['sex']; colour: KennelDo
   );
 }
 
-function DogPhoto({ dog, muted }: { dog: KennelDog; muted?: boolean }) {
+function DogPhoto({ dog, muted }: { dog: KennelDog | DirectoryDog; muted?: boolean }) {
   const photo = profilePhotoUrl(dog.media);
 
   return (
@@ -74,7 +77,7 @@ function DogPhoto({ dog, muted }: { dog: KennelDog; muted?: boolean }) {
   );
 }
 
-function displayName(dog: KennelDog): string {
+function displayName(dog: Pick<KennelDog, 'name' | 'call_name'>): string {
   const call = dog.call_name?.trim();
   if (call && call.toLowerCase() !== dog.name.toLowerCase()) {
     return `${dog.name} (${call})`;
@@ -83,7 +86,7 @@ function displayName(dog: KennelDog): string {
 }
 
 interface DogDirectoryCardProps {
-  dog: KennelDog;
+  dog: KennelDog | DirectoryDog;
   detailRoute: string;
   variant?: 'breeding' | 'deceased' | 'alumni';
   expecting?: ExpectingDogEntry;
@@ -107,15 +110,18 @@ export function DogDirectoryCard({
     >
       <DogPhoto dog={dog} muted={muted} />
       <View className="ml-4 flex-1">
-        <Typography variant="subtitle" className="text-gold" numberOfLines={1}>
-          {displayName(dog)}
-        </Typography>
+        <View className="flex-row items-center gap-2">
+          <Typography variant="subtitle" className="flex-1 text-gold" numberOfLines={1}>
+            {displayName(dog)}
+          </Typography>
+          <MissingDataDot gaps={dogDataGaps(dog).map(gapLabel)} />
+        </View>
         <SexColourRow sex={dog.sex} colour={dog.colour} />
         <Typography variant="caption" className="mt-1 text-muted">
           {programmeTierLabel(dog.programme_tier)}
         </Typography>
 
-        {variant === 'breeding' && dog.inHeat ? (
+        {variant === 'breeding' && 'inHeat' in dog && dog.inHeat ? (
           <View className="mt-2 flex-row items-center gap-2">
             <PulsingDot />
             <Typography variant="caption" className="text-danger">

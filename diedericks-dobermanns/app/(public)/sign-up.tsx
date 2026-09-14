@@ -17,7 +17,7 @@ import {
   passwordMeetsPolicy,
   passwordPolicyFailMessage,
 } from '@/lib/auth/passwordPolicy';
-import { parsePhone } from '@/lib/phone';
+import { PHONE_INVALID_MESSAGE, phoneField } from '@/lib/phone';
 
 interface FieldProps {
   label: string;
@@ -29,10 +29,27 @@ interface FieldProps {
   visible?: boolean;
   onToggleVisible?: () => void;
   keyboardType?: 'email-address' | 'default' | 'phone-pad';
+  invalid?: boolean;
 }
 
-function Field({ label, value, onChange, placeholder, secure, showToggle, visible, onToggleVisible, keyboardType }: FieldProps) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  secure,
+  showToggle,
+  visible,
+  onToggleVisible,
+  keyboardType,
+  invalid,
+}: FieldProps) {
   const [focused, setFocused] = useState(false);
+  const borderColor = invalid
+    ? 'rgba(248,113,113,0.7)'
+    : focused
+      ? Colors.gold
+      : 'rgba(196,163,90,0.2)';
   return (
     <View className="mb-4">
       <Typography variant="caption" className="mb-1 text-muted">
@@ -43,7 +60,7 @@ function Field({ label, value, onChange, placeholder, secure, showToggle, visibl
           flexDirection: 'row',
           alignItems: 'center',
           borderWidth: 1,
-          borderColor: focused ? Colors.gold : 'rgba(196,163,90,0.2)',
+          borderColor,
           backgroundColor: '#1C1A0E',
           borderRadius: 12,
           paddingHorizontal: 16,
@@ -94,21 +111,27 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [helpVisible, setHelpVisible] = useState(false);
 
   async function onSubmit() {
     setError(null);
+    setPhoneError(null);
     setHelpVisible(false);
     if (!fullName.trim()) return setError('Please enter your full name.');
     if (!EMAIL_REGEX.test(email.trim())) return setError('Please enter a valid email address.');
-    const parsedPhone = parsePhone(phone);
-    if (!parsedPhone.ok) return setError(parsedPhone.error);
+    const parsedPhone = phoneField.safeParse(phone);
+    if (!parsedPhone.success) {
+      const message = parsedPhone.error.issues[0]?.message ?? PHONE_INVALID_MESSAGE;
+      setPhoneError(message);
+      return setError(message);
+    }
     if (!passwordMeetsPolicy(password)) {
       return setError(passwordPolicyFailMessage());
     }
     if (password !== confirm) return setError('Passwords do not match.');
     try {
-      await signUp(email, password, fullName, parsedPhone.value);
+      await signUp(email, password, fullName, parsedPhone.data);
       router.replace({ pathname: '/(public)/verify-code', params: { email: email.trim() } });
     } catch (e) {
       let msg = 'Something went wrong creating your account. Try again, or WhatsApp us and we will help.';
@@ -163,10 +186,21 @@ export default function SignUpScreen() {
           <Field
             label="PHONE"
             value={phone}
-            onChange={setPhone}
+            onChange={(v) => {
+              setPhone(v);
+              setPhoneError(null);
+            }}
             placeholder="+27 or +268 …"
             keyboardType="phone-pad"
+            invalid={Boolean(phoneError)}
           />
+          {phoneError ? (
+            <View className="-mt-2 mb-4">
+              <Typography variant="caption" className="text-red-400">
+                {phoneError}
+              </Typography>
+            </View>
+          ) : null}
           <Field
             label="PASSWORD"
             value={password}
