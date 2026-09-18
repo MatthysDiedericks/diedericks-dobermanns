@@ -68,16 +68,17 @@ export interface VaccinationRecord {
 
 export interface DewormingRecord {
   id: string;
-  dog_ids: string[];
+  dog_id: string;
   product_name: string | null;
-  date_treated: string;
+  treatment_date: string;
   next_due_date: string | null;
   schedule_type: string | null;
   treatment_type: string;
   doctor_name: string | null;
+  administered_by: string | null;
   vet_practice_id: string | null;
   health_product_id: string | null;
-  weight_kg: number | null;
+  dosage: string | null;
   notes: string | null;
 }
 

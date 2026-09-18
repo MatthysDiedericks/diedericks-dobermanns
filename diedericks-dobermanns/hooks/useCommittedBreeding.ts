@@ -68,14 +68,14 @@ async function hydrateParents(links: ParentLink[]): Promise<LineageParent[]> {
       ]);
       if (!dog) return null;
       const photos = media ?? [];
-      const cover = pickProfilePhoto(photos);
+      const cover = pickProfilePhoto(photos, new Date(), dog.id);
       return {
         id: dog.id,
         name: dog.name,
         callName: dog.call_name,
         registeredName: dog.registered_name,
         role: role === 'sire' ? 'sire' : 'dam',
-        photoUrl: profilePhotoUrl(photos),
+        photoUrl: profilePhotoUrl(photos, new Date(), dog.id),
         photoUrls: [
           cover?.thumbnail_url || cover?.url,
           ...photos.filter((p) => p !== cover).map((p) => p.thumbnail_url || p.url),

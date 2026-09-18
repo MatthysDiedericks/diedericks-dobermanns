@@ -81,7 +81,7 @@ export default function DogProfileScreen() {
   return (
     <ScreenContainer contentContainerStyle={{ paddingTop: 0 }}>
       <View>
-        <PublicPhotoGallery media={dog.media ?? []} />
+        <PublicPhotoGallery media={dog.media ?? []} dogId={dog.id} />
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/dogs'))}
           style={{ top: insets.top + 8 }}

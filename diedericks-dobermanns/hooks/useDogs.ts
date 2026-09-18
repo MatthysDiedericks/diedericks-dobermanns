@@ -198,8 +198,8 @@ const LITTER_DETAIL_SELECT = `
   mother:dogs!litters_mother_id_fkey(id, name),
   father:dogs!litters_father_id_fkey(id, name),
   puppies:dogs!dogs_litter_id_fkey(
-    id, name, sex, colour, collar_colour, birth_weight_grams, status, date_of_birth, price, reserved_for_name, programme_tier,
-    owner_id, released_at,
+    id, name, sex, colour, collar_colour, birth_weight_grams, birth_order, birth_time, status, date_of_birth, price, reserved_for_name, programme_tier,
+    owner_id, released_at, deceased_at, outcome, outcome_date, outcome_note,
     dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)
   )
 `;

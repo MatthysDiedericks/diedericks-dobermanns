@@ -86,7 +86,7 @@ export function HeatCurrentTab({
     cycles[0] ??
     null;
 
-  const photo = profilePhotoUrl(dog?.media);
+  const photo = profilePhotoUrl(dog?.media, new Date(), dog?.id);
   const ovulation = cycle?.ovulation_date;
   const breedingWindow =
     ovulation && parseDateInput(ovulation)

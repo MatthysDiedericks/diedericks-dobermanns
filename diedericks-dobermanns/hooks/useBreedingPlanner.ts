@@ -25,7 +25,7 @@ const LINE_ORDER: Record<string, number> = { A: 0, B: 1, Cross: 2, Unknown: 3 };
 
 function photoFromRow(row: Record<string, unknown>): string | null {
   const media = (row.dog_media as { url: string; is_primary: boolean; thumbnail_url?: string | null; uploaded_at?: string | null }[] | null) ?? [];
-  return profilePhotoUrl(media);
+  return profilePhotoUrl(media, new Date(), String(row.id));
 }
 
 function mapPlannerDog(row: Record<string, unknown>): PlannerDog {

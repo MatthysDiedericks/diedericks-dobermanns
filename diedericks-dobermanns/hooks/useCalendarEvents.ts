@@ -79,7 +79,7 @@ async function loadFallbackEvents(monthStart: string, monthEnd: string): Promise
       .lte('next_due_date', monthEnd),
     supabase
       .from('deworming_records')
-      .select('id, next_due_date, product_name, treatment_type')
+      .select('id, dog_id, next_due_date, product_name, treatment_type')
       .gte('next_due_date', monthStart)
       .lte('next_due_date', monthEnd),
     supabase

@@ -41,7 +41,7 @@ export default function DogProfileScreen() {
     );
   }
 
-  const photo = profilePhotoUrl(dog.media);
+  const photo = profilePhotoUrl(dog.media, new Date(), dog.id);
   const photos = (dog.media ?? []).filter((m) => m.type === 'photo');
   const videos = (dog.media ?? []).filter((m) => m.type === 'video');
 

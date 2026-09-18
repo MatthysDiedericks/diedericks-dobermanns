@@ -16,7 +16,7 @@ interface DogCardProps {
 }
 
 export function DogCard({ dog, variant = 'default', bloodlineSummary }: DogCardProps) {
-  const photo = profilePhotoUrl(dog.media);
+  const photo = profilePhotoUrl(dog.media, new Date(), dog.id);
   const subtitle = [titleCase(dog.sex), titleCase(dog.colour)].filter(Boolean).join(' · ');
 
   if (variant === 'carousel') {

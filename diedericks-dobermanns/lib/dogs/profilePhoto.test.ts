@@ -36,8 +36,9 @@ const conformation = {
 assert.equal(pickProfilePhoto([older, chosen, newest]), chosen);
 assert.equal(profilePhotoUrl([older, chosen, newest]), chosen.thumbnail_url);
 
-assert.equal(pickProfilePhoto([older, newest]), newest);
-assert.equal(profilePhotoUrl([older, newest]), newest.thumbnail_url);
+const unpinned = pickProfilePhoto([older, newest], new Date('2026-08-31T12:00:00+02:00'), 'dog-a');
+assert.ok(unpinned === older || unpinned === newest);
+assert.ok(profilePhotoUrl([older, newest], new Date('2026-08-31T12:00:00+02:00'), 'dog-a'));
 
 assert.equal(profilePhotoUrl([older]), older.url);
 

@@ -49,7 +49,7 @@ function mapDog(raw: unknown): PlanDog | null {
     health_dcm3: row.health_dcm3 ?? null,
     health_dcm4: row.health_dcm4 ?? null,
     health_dcm5: row.health_dcm5 ?? null,
-    photoUrl: profilePhotoUrl(row.dog_media),
+    photoUrl: profilePhotoUrl(row.dog_media, new Date(), row.id),
   };
 }
 

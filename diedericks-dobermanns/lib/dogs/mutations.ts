@@ -1,4 +1,23 @@
 import { callNotify } from '@/lib/functions';
+import {
+  deceasedAtStamp,
+  soldMissingBuyer,
+  type DogStatus,
+} from '@/lib/dogs/status';
+import { blank, firstLitterError, validateLitter } from '@/lib/litters/validate';
+import {
+  fetchLitterDeleteImpact,
+  LITTER_STATUS_ARCHIVED,
+  litterDangerMode,
+  namesMatch,
+  type LitterDeleteImpact,
+} from '@/lib/litters/deleteImpact';
+import {
+  birthWeightLogInsert,
+  newbornPuppyInsert,
+  shouldWriteBirthWeight,
+} from '@/lib/litters/newbornPuppy';
+import { puppyDidNotSurvive, type PuppyOutcome } from '@/lib/litters/outcomes';
 import { supabase } from '@/lib/supabase';
 import type { DogPedigree, ReservationStatus } from '@/types/app.types';
 import type { Json, TablesInsert, TablesUpdate } from '@/types/database.types';
@@ -28,6 +47,42 @@ export async function saveDog(
   return {
     error: error?.message ?? null,
     id: data ? (data as { id: string }).id : null,
+  };
+}
+
+export async function updateDogStatus(
+  dogId: string,
+  status: DogStatus,
+): Promise<{
+  error: string | null;
+  stampedDeceasedAt: boolean;
+  missingBuyer: boolean;
+}> {
+  if (!supabase) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { error: null, stampedDeceasedAt: status === 'deceased', missingBuyer: status === 'sold' };
+  }
+  const { data: dog, error: fetchErr } = await supabase
+    .from('dogs')
+    .select('deceased_at, new_owner_name, buyer_contact_id')
+    .eq('id', dogId)
+    .maybeSingle();
+  if (fetchErr) {
+    return { error: fetchErr.message, stampedDeceasedAt: false, missingBuyer: false };
+  }
+  if (!dog) {
+    return { error: 'Dog not found.', stampedDeceasedAt: false, missingBuyer: false };
+  }
+
+  const patch: TablesUpdate<'dogs'> = { status };
+  const deceasedAt = deceasedAtStamp(status, dog.deceased_at);
+  if (deceasedAt) patch.deceased_at = deceasedAt;
+
+  const { error } = await supabase.from('dogs').update(patch).eq('id', dogId);
+  return {
+    error: error?.message ?? null,
+    stampedDeceasedAt: Boolean(deceasedAt),
+    missingBuyer: status === 'sold' && soldMissingBuyer(dog),
   };
 }
 
@@ -92,6 +147,7 @@ export interface AddDogMediaInput {
   uploadedBy?: string | null;
   /** Only meaningful for client uploads — whether the owner agreed to a future publish. */
   clientConsent?: boolean;
+  caption?: string | null;
 }
 
 /**
@@ -111,6 +167,7 @@ export async function addDogMedia(input: AddDogMediaInput): Promise<MutationResu
     is_public: input.isPublic ?? true,
     uploaded_by: input.uploadedBy ?? null,
     client_consent: input.clientConsent ?? false,
+    caption: input.caption?.trim() || null,
   };
   const { error } = await supabase.from('dog_media').insert(row);
   return { error: error?.message ?? null };
@@ -136,11 +193,82 @@ export async function setPrimaryImage(
 export async function saveLitter(
   values: TablesInsert<'litters'>,
   id?: string,
+  options?: { includeRetiredAndDeceasedDams?: boolean },
 ): Promise<SaveResult> {
   if (!supabase) {
     await new Promise((r) => setTimeout(r, 500));
     return { error: null, id: id ?? `demo-litter-${Date.now()}` };
   }
+
+  const motherId = (values.mother_id as string | null) ?? null;
+  const fatherId = (values.father_id as string | null) ?? null;
+  const ids = [motherId, fatherId].filter((row): row is string => Boolean(row));
+  let dam = null;
+  let sire = null;
+  if (ids.length > 0) {
+    const { data } = await supabase
+      .from('dogs')
+      .select('id, name, sex, status, deceased_at')
+      .in('id', ids);
+    const rows = (data ?? []) as {
+      id: string;
+      name: string;
+      sex: string | null;
+      status: string | null;
+      deceased_at: string | null;
+    }[];
+    dam = rows.find((d) => d.id === motherId) ?? null;
+    sire = rows.find((d) => d.id === fatherId) ?? null;
+  }
+
+  let existingMotherId: string | null | undefined;
+  let existingFatherId: string | null | undefined;
+  if (id) {
+    const { data: existing } = await supabase
+      .from('litters')
+      .select('mother_id, father_id')
+      .eq('id', id)
+      .maybeSingle();
+    existingMotherId = existing?.mother_id ?? null;
+    existingFatherId = existing?.father_id ?? null;
+  }
+
+  const problems = validateLitter({
+    name: values.name as string | null,
+    status: String(values.status ?? ''),
+    mother_id: motherId,
+    father_id: fatherId,
+    expected_date: (values.expected_date as string | null) ?? null,
+    actual_date: (values.actual_date as string | null) ?? null,
+    dam,
+    sire,
+    includeRetiredAndDeceasedDams: options?.includeRetiredAndDeceasedDams,
+    existingMotherId,
+    existingFatherId,
+  });
+  const refused = firstLitterError(problems);
+  if (refused) return { error: refused, id: id ?? null };
+
+  if (!id && motherId && fatherId) {
+    const actualDate = blank(values.actual_date as string | null);
+    const expectedDate = blank(values.expected_date as string | null);
+    const date = actualDate ?? expectedDate;
+    if (date) {
+      let query = supabase
+        .from('litters')
+        .select('id')
+        .eq('mother_id', motherId)
+        .eq('father_id', fatherId);
+      query = actualDate
+        ? query.eq('actual_date', actualDate)
+        : query.eq('expected_date', date);
+      const { data: duplicate } = await query.limit(1).maybeSingle();
+      if (duplicate) {
+        return { error: null, id: (duplicate as { id: string }).id };
+      }
+    }
+  }
+
   if (id) {
     const { error } = await supabase
       .from('litters')
@@ -190,10 +318,170 @@ export async function markBreedingNoOutcome(
   return { error: error?.message ?? null };
 }
 
-export async function deleteLitter(id: string): Promise<MutationResult> {
+export async function getLitterDeleteImpact(
+  id: string,
+): Promise<{ impact: LitterDeleteImpact | null; error: string | null }> {
+  if (!supabase) return { impact: null, error: 'Not connected.' };
+  try {
+    const impact = await fetchLitterDeleteImpact(supabase as never, id);
+    return { impact, error: null };
+  } catch (e) {
+    return { impact: null, error: e instanceof Error ? e.message : 'Could not load counts.' };
+  }
+}
+
+export async function deleteLitter(id: string, typedName: string): Promise<MutationResult> {
   if (!supabase) return simulate();
+  try {
+    const impact = await fetchLitterDeleteImpact(supabase as never, id);
+    if (litterDangerMode(impact) === 'archive') {
+      return { error: 'This litter has puppies. Archive it instead.' };
+    }
+    if (!namesMatch(impact.litterName, typedName)) {
+      return { error: 'Type the litter name to confirm.' };
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Could not check this litter.' };
+  }
   const { error } = await supabase.from('litters').delete().eq('id', id);
   return { error: error?.message ?? null };
+}
+
+export async function archiveLitter(id: string): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { error } = await supabase
+    .from('litters')
+    .update({ status: LITTER_STATUS_ARCHIVED, is_public: false })
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+export async function startWhelping(litterId: string): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { data: litter, error: fetchErr } = await supabase
+    .from('litters')
+    .select('id, actual_date')
+    .eq('id', litterId)
+    .maybeSingle();
+  if (fetchErr) return { error: fetchErr.message };
+  if (!litter) return { error: 'Litter not found.' };
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase
+    .from('litters')
+    .update({
+      status: 'born',
+      actual_date: litter.actual_date || today,
+    })
+    .eq('id', litterId);
+  return { error: error?.message ?? null };
+}
+
+export async function finishWhelping(litterId: string): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { data: pups, error: pupErr } = await supabase
+    .from('dogs')
+    .select('sex, status, outcome, deceased_at')
+    .eq('litter_id', litterId);
+  if (pupErr) return { error: pupErr.message };
+  const rows = pups ?? [];
+  let males = 0;
+  let females = 0;
+  let deceased = 0;
+  for (const p of rows) {
+    if (puppyDidNotSurvive(p)) {
+      deceased += 1;
+      continue;
+    }
+    if (p.sex === 'male') males += 1;
+    else if (p.sex === 'female') females += 1;
+  }
+  const { error } = await supabase
+    .from('litters')
+    .update({
+      puppy_count: rows.length,
+      male_count: males,
+      female_count: females,
+      deceased_count: deceased,
+    })
+    .eq('id', litterId);
+  return { error: error?.message ?? null };
+}
+
+export async function addPuppyToLitter(input: {
+  litterId: string;
+  birth_order: number;
+  sex: 'male' | 'female';
+  collar_colour?: string | null;
+  colour?: string | null;
+  birth_weight_grams?: number | null;
+  birth_time?: string | null;
+  name?: string;
+  outcome?: PuppyOutcome;
+  outcome_date?: string | null;
+  outcome_note?: string | null;
+}): Promise<SaveResult> {
+  if (!supabase) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { error: null, id: `demo-${Date.now()}` };
+  }
+  const { data: litter, error: litterErr } = await supabase
+    .from('litters')
+    .select('actual_date, litter_letter, male_count, female_count')
+    .eq('id', input.litterId)
+    .maybeSingle();
+  if (litterErr) return { error: litterErr.message, id: null };
+  if (!litter) return { error: 'Litter not found.', id: null };
+
+  const letter = litter.litter_letter?.trim().toUpperCase() ?? '';
+  const name =
+    input.name?.trim() ||
+    (letter ? `${letter}${input.birth_order}` : `Puppy ${input.birth_order}`);
+  const birthDate = litter.actual_date ?? new Date().toISOString().slice(0, 10);
+
+  const { data, error } = await supabase
+    .from('dogs')
+    .insert(
+      newbornPuppyInsert({
+        name,
+        sex: input.sex,
+        colour: input.colour,
+        collar_colour: input.collar_colour,
+        birth_order: input.birth_order,
+        birth_time: input.birth_time,
+        birth_weight_grams: input.birth_weight_grams,
+        date_of_birth: birthDate,
+        litter_id: input.litterId,
+        outcome: input.outcome,
+        outcome_date: input.outcome_date,
+        outcome_note: input.outcome_note,
+      }),
+    )
+    .select('id')
+    .single();
+  if (error) return { error: error.message, id: null };
+
+  if (shouldWriteBirthWeight(input.birth_weight_grams)) {
+    const { error: weightError } = await supabase
+      .from('weight_logs')
+      .insert(birthWeightLogInsert(data.id, input.birth_weight_grams, birthDate));
+    if (weightError) return { error: weightError.message, id: data.id };
+  }
+
+  const live = (input.outcome ?? 'live') === 'live';
+  if (live) {
+    const males = (litter.male_count ?? 0) + (input.sex === 'male' ? 1 : 0);
+    const females = (litter.female_count ?? 0) + (input.sex === 'female' ? 1 : 0);
+    await supabase
+      .from('litters')
+      .update({
+        male_count: males,
+        female_count: females,
+        puppy_count: males + females,
+      })
+      .eq('id', input.litterId);
+  }
+
+  return { error: null, id: data.id };
 }
 
 /**

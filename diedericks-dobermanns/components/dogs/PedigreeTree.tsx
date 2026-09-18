@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { GenerationSelector } from '@/components/dogs/GenerationSelector';
+import { PedigreeMobileChart } from '@/components/dogs/PedigreeMobileChart';
 import {
   PEDIGREE_COLUMN_WIDTH,
   PEDIGREE_NODE_MIN_HEIGHT,
@@ -17,15 +19,16 @@ import {
   type PedigreeAncestor,
 } from '@/hooks/useDogPedigree';
 import { usePedigreePhotoMaps } from '@/hooks/usePedigreePhotoMaps';
+import { formatCoiPercent } from '@/lib/dogs/formatCoi';
+import { pickPedigreePhoto } from '@/lib/dogs/profilePhoto';
+import { generationColumnTitle, positionsForDepth } from '@/lib/pedigree/generation';
 import {
   maxPedigreeGeneration,
   pedigreeRowSpan,
   positionToRowIndex,
 } from '@/lib/pedigree/layout';
-import { generationColumnTitle, positionsForDepth } from '@/lib/pedigree/generation';
-import { usePedigreeDepth } from '@/lib/pedigree/usePedigreeDepth';
-import { pickPedigreePhoto } from '@/lib/dogs/profilePhoto';
 import { resolveAncestorPhoto } from '@/lib/pedigree/resolveAncestorPhoto';
+import { usePedigreeDepth } from '@/lib/pedigree/usePedigreeDepth';
 
 interface PedigreeTreeProps {
   dogId: string;
@@ -33,10 +36,19 @@ interface PedigreeTreeProps {
   profileRoutePrefix?: string;
   ancestors?: PedigreeAncestor[];
   registeredName?: string | null;
+  registrationNumber?: string | null;
   wrightsCoi?: number | null;
   emptyLabel?: string;
   disableAncestorLinks?: boolean;
   publicOnly?: boolean;
+}
+
+function issuedOn(): string {
+  return new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function ColumnNodes({
@@ -105,15 +117,18 @@ export function PedigreeTree({
   profileRoutePrefix = '/(admin)/dogs/',
   ancestors: ancestorsProp,
   registeredName: registeredNameProp,
+  registrationNumber: registrationNumberProp,
   wrightsCoi: wrightsCoiProp,
   emptyLabel,
   disableAncestorLinks,
   publicOnly = false,
 }: PedigreeTreeProps) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const fetched = useDogPedigree(ancestorsProp ? '' : dogId);
   const ancestors = ancestorsProp ?? fetched.ancestors;
   const registeredName = registeredNameProp ?? fetched.registeredName;
+  const registrationNumber = registrationNumberProp ?? fetched.registrationNumber;
   const wrightsCoi = wrightsCoiProp ?? fetched.wrightsCoi;
   const loading = ancestorsProp ? false : fetched.loading;
   const error = ancestorsProp ? null : fetched.error;
@@ -126,6 +141,7 @@ export function PedigreeTree({
   const { depth, setDepth } = usePedigreeDepth(maxGen, 'app');
   const visible = ancestors.filter((a) => a.position.length <= depth);
   const totalHeight = PEDIGREE_NODE_MIN_HEIGHT * (depth > 0 ? 2 ** depth : 1);
+  const narrow = width < 640;
 
   if (loading) return <CardListSkeleton count={2} />;
   if (error) {
@@ -155,66 +171,109 @@ export function PedigreeTree({
     });
   }
 
+  const subjectPhoto = (() => {
+    const own = photos.ownDogs.get(dogId);
+    if (!own) return null;
+    const picked = pickPedigreePhoto(own.media, own.pedigreePhotoMediaId);
+    return picked?.thumbnail_url || picked?.url || null;
+  })();
+  const subjectLabel = subjectNodeLabel(registeredName, displayName);
+  const onOwnDogPress = disableAncestorLinks ? undefined : openProfile;
+  const coi = formatCoiPercent(wrightsCoi);
+  const footerLine = [registrationNumber?.trim() || null, issuedOn()].filter(Boolean).join(' · ');
+
   return (
     <View>
       <GenerationSelector maxGen={maxGen} depth={depth} onChange={setDepth} surface="app" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View className="flex-row pr-4" style={{ minHeight: totalHeight }}>
-          <View
-            style={{
-              width: 18,
-              height: totalHeight,
-              justifyContent: 'space-around',
-            }}
-          >
-            <Typography variant="caption" className="text-[#C4A35A]" style={{ transform: [{ rotate: '-90deg' }] }}>
-              SIRE LINE
-            </Typography>
-            <Typography variant="caption" className="text-[#C4A35A]" style={{ transform: [{ rotate: '-90deg' }] }}>
-              DAM LINE
-            </Typography>
-          </View>
-          <View
-            style={{
-              width: PEDIGREE_COLUMN_WIDTH,
-              height: totalHeight,
-              justifyContent: 'center',
-              paddingHorizontal: 4,
-            }}
-          >
-            <PedigreeNode
-              label={subjectNodeLabel(registeredName, displayName)}
-              generation={0}
-              emphasis
-              photoUrl={(() => {
-                const own = photos.ownDogs.get(dogId);
-                if (!own) return null;
-                const picked = pickPedigreePhoto(own.media, own.pedigreePhotoMediaId);
-                return picked?.thumbnail_url || picked?.url || null;
-              })()}
-            />
-          </View>
-          {Array.from({ length: depth }, (_, i) => i + 1).map((gen) => (
-            <View key={gen}>
-              <Typography variant="caption" className="mb-1 text-center text-[#C4A35A]">
-                {generationColumnTitle(gen)}
-              </Typography>
-              <ColumnNodes
-                generation={gen}
-                depth={depth}
-                ancestors={visible}
-                photoUrl={photoFor}
-                onOwnDogPress={disableAncestorLinks ? undefined : openProfile}
-              />
-            </View>
-          ))}
+      <View className="border border-[#C4A35A] bg-[#111008] p-3">
+        <View className="mb-3 items-center border-b border-[#C4A35A] pb-3">
+          <Image
+            source={require('@/assets/monogram-source.png')}
+            style={{ width: 40, height: 40 }}
+            contentFit="contain"
+          />
+          <Typography variant="label" className="mt-2 text-center tracking-[0.2em] text-[#C4A35A]">
+            DIEDERICKS DOBERMANNS
+          </Typography>
+          <Typography variant="caption" className="mt-1 text-center uppercase tracking-widest text-[#F5F0E8]">
+            {subjectLabel}
+          </Typography>
         </View>
-      </ScrollView>
-      {wrightsCoi != null ? (
-        <Typography variant="caption" className="mt-2 text-[#A8A090]">
-          Wright&apos;s COI {wrightsCoi.toFixed(1)}% over {maxGen} generations
-        </Typography>
-      ) : null}
+
+        {narrow ? (
+          <PedigreeMobileChart
+            depth={depth}
+            ancestors={visible}
+            photoUrl={photoFor}
+            onOwnDogPress={onOwnDogPress}
+            subjectLabel={subjectLabel}
+            subjectPhotoUrl={subjectPhoto}
+          />
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row pr-4" style={{ minHeight: totalHeight }}>
+              <View style={{ width: 18, height: totalHeight, justifyContent: 'space-around' }}>
+                <Typography
+                  variant="caption"
+                  className="text-[#C4A35A]"
+                  style={{ transform: [{ rotate: '-90deg' }] }}
+                >
+                  SIRE LINE
+                </Typography>
+                <Typography
+                  variant="caption"
+                  className="text-[#C4A35A]"
+                  style={{ transform: [{ rotate: '-90deg' }] }}
+                >
+                  DAM LINE
+                </Typography>
+              </View>
+              <View
+                style={{
+                  width: PEDIGREE_COLUMN_WIDTH,
+                  height: totalHeight,
+                  justifyContent: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <PedigreeNode
+                  label={subjectLabel}
+                  generation={0}
+                  emphasis
+                  photoUrl={subjectPhoto}
+                />
+              </View>
+              {Array.from({ length: depth }, (_, i) => i + 1).map((gen) => (
+                <View key={gen}>
+                  <Typography variant="caption" className="mb-1 text-center text-[#C4A35A]">
+                    {generationColumnTitle(gen)}
+                  </Typography>
+                  <ColumnNodes
+                    generation={gen}
+                    depth={depth}
+                    ancestors={visible}
+                    photoUrl={photoFor}
+                    onOwnDogPress={onOwnDogPress}
+                  />
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+
+        <View className="mt-3 border-t border-[#C4A35A] pt-2">
+          {footerLine ? (
+            <Typography variant="caption" className="text-center text-[#A8A090]">
+              {footerLine}
+            </Typography>
+          ) : null}
+          {coi ? (
+            <Typography variant="caption" className="mt-1 text-center text-[#A8A090]">
+              Wright&apos;s COI {coi} over {maxGen} generations
+            </Typography>
+          ) : null}
+        </View>
+      </View>
     </View>
   );
 }

@@ -2,6 +2,7 @@ import { ControlledInput, OptionGroup, ToggleRow } from '@/components/forms/fiel
 import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 import { PROGRAMME_TIER_SELECT_OPTIONS } from '@/lib/dogs/programmeTier';
+import { DOG_STATUSES, deceasedAtStamp, isDogStatus, soldMissingBuyer, type DogStatus } from '@/lib/dogs/status';
 import { DOG_COLOUR_OPTIONS } from '@/lib/colours/dogColours';
 import { replaceDogMedia, saveDog, useSubmitting } from '@/hooks/useMutations';
 import type { Dog, DogCategory } from '@/types/app.types';
@@ -13,7 +14,7 @@ import type { UploaderValue } from '@/components/forms/MediaUploader';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { z } from 'zod';
 
 const dogSchema = z.object({
@@ -32,10 +33,7 @@ const dogSchema = z.object({
   is_spayed_neutered: z.boolean(),
   wrights_coi: z.string(),
   category: z.enum(['puppy', 'adult', 'breeding_stock', 'training_dog']),
-  status: z.enum([
-    'available', 'reserved', 'sold', 'donated', 'gifted', 'keep', 'stud',
-    'in_training', 'breeding_stock', 'deceased', 'retired', 'puppy',
-  ]),
+  status: z.enum(DOG_STATUSES.map((s) => s.value) as [DogStatus, ...DogStatus[]]),
   sex: z.union([z.literal(''), z.enum(['male', 'female'])]),
   colour: z.union([z.literal(''), z.enum(['black_tan', 'brown_tan'])]),
   tail_type: z.union([z.literal(''), z.enum(['docked', 'natural'])]),
@@ -66,6 +64,7 @@ type DogFormValues = z.infer<typeof dogSchema>;
 export type { DogFormValues };
 
 function toDefaults(dog?: Dog, defaultCategory?: DogCategory): DogFormValues {
+  const status = dog?.status;
   return {
     name: dog?.name ?? '',
     call_name: dog?.call_name ?? '',
@@ -82,7 +81,7 @@ function toDefaults(dog?: Dog, defaultCategory?: DogCategory): DogFormValues {
     is_spayed_neutered: dog?.is_spayed_neutered ?? false,
     wrights_coi: dog?.wrights_coi != null ? String(dog.wrights_coi) : '',
     category: dog?.category ?? defaultCategory ?? 'puppy',
-    status: dog?.status ?? 'available',
+    status: isDogStatus(status) ? status : 'available',
     sex: dog?.sex ?? '',
     colour: dog?.colour ?? '',
     tail_type: dog?.tail_type ?? '',
@@ -172,11 +171,16 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
       mother_id: inheritFromLitter ? null : values.mother_id || null,
       programme_tier: values.programme_tier.trim() || null,
     };
+    const deceasedAt = deceasedAtStamp(values.status, dog?.deceased_at);
+    if (deceasedAt) payload.deceased_at = deceasedAt;
 
     const result = await run(() => saveDog(payload, dog?.id));
     if (result.error) return;
     if (result.id) {
       await replaceDogMedia(result.id, [...photos, ...videos]);
+    }
+    if (values.status === 'sold' && soldMissingBuyer(dog ?? {})) {
+      Alert.alert('Saved', 'No buyer recorded for this dog.');
     }
     onSaved();
   }
@@ -209,17 +213,7 @@ export function DogForm({ dog, defaultCategory, onSaved }: DogFormProps) {
         control={control}
         name="status"
         label="Status"
-        options={[
-          { value: 'keep', label: 'Breeding Female' },
-          { value: 'stud', label: 'Stud' },
-          { value: 'deceased', label: 'In Memory' },
-          { value: 'sold', label: 'Alumni / Placed' },
-          { value: 'in_training', label: 'In Training' },
-          { value: 'puppy', label: 'Puppy' },
-          { value: 'retired', label: 'Retired' },
-          { value: 'available', label: 'Available' },
-          { value: 'reserved', label: 'Reserved' },
-        ]}
+        options={DOG_STATUSES.map((s) => ({ value: s.value, label: s.label }))}
       />
       <OptionGroup
         control={control}

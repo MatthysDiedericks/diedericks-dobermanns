@@ -50,7 +50,7 @@ export default function EditDogScreen() {
     );
   }
 
-  const primaryPhoto = profilePhotoUrl(dog.media);
+  const primaryPhoto = profilePhotoUrl(dog.media, new Date(), dog.id);
 
   return (
     <KeyboardAvoidingView

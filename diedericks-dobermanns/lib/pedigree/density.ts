@@ -4,6 +4,13 @@ export function cellShowsPhoto(generation: number): boolean {
   return generation <= 2;
 }
 
+/** Portrait 3:4 footprint so every photo cell in a column matches. */
+export function photoFramePx(generation: number): { width: number; height: number } {
+  if (generation <= 0) return { width: 84, height: 112 };
+  if (generation === 1) return { width: 66, height: 88 };
+  return { width: 48, height: 64 };
+}
+
 export function ancestorFieldMask(generation: number): {
   showTitles: boolean;
   showDob: boolean;

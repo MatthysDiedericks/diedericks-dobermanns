@@ -71,7 +71,7 @@ export default function TrainerBookingDetailScreen() {
     );
   }
 
-  const hero = pickProfilePhoto(booking.dog?.media);
+  const hero = pickProfilePhoto(booking.dog?.media, new Date(), booking.dog?.id);
 
   return (
     <ScreenContainer>

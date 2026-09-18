@@ -11,8 +11,9 @@ const SIZE = 112;
 
 function primaryUrl(
   media: Pick<DogMedia, 'url' | 'thumbnail_url' | 'is_primary' | 'uploaded_at'>[] | undefined,
+  dogId?: string,
 ): string | null {
-  return profilePhotoUrl(media);
+  return profilePhotoUrl(media, new Date(), dogId);
 }
 
 function initialOf(name: string): string {
@@ -23,11 +24,13 @@ function initialOf(name: string): string {
 export function PortalDogThumb({
   name,
   media,
+  dogId,
 }: {
   name: string;
   media: Pick<DogMedia, 'url' | 'thumbnail_url' | 'is_primary' | 'uploaded_at'>[] | undefined;
+  dogId?: string;
 }) {
-  const url = primaryUrl(media);
+  const url = primaryUrl(media, dogId);
   const [failed, setFailed] = useState(false);
   const src = url ? (supabaseThumbUrl(url, 'avatar') ?? url) : null;
   const showImage = Boolean(src) && !failed;

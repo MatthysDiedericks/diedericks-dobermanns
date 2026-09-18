@@ -3,7 +3,12 @@ import { Pressable, View } from 'react-native';
 
 import { Typography } from '@/components/ui/Typography';
 import type { PedigreeAncestor } from '@/hooks/useDogPedigree';
-import { ancestorFieldMask, borderClassFor, cellShowsPhoto } from '@/lib/pedigree/density';
+import {
+  ancestorFieldMask,
+  borderClassFor,
+  cellShowsPhoto,
+  photoFramePx,
+} from '@/lib/pedigree/density';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 
 interface PedigreeNodeProps {
@@ -29,16 +34,35 @@ export function PedigreeNode({
 }: PedigreeNodeProps) {
   if (empty) {
     return (
-      <View className={`flex-1 rounded-lg border bg-black-rich ${borderClassFor(generation, true)}`} />
+      <View className="flex-1 items-center justify-center">
+        <Typography variant="caption" style={{ color: 'rgba(196, 163, 90, 0.2)', fontSize: 16 }}>
+          —
+        </Typography>
+      </View>
     );
   }
 
   const mask = ancestorFieldMask(generation);
   const showPhoto = cellShowsPhoto(generation) && Boolean(photoUrl);
+  const frame = photoFramePx(generation);
+  const align = generation <= 0 ? 'center' : 'flex-start';
   const content = (
-    <View className={`flex-1 justify-center rounded-lg border bg-black-rich px-2 py-2 ${borderClassFor(generation, false)}`}>
+    <View
+      className={`flex-1 rounded-lg border bg-black-rich px-2 py-2 ${borderClassFor(generation, false)}`}
+      style={{ justifyContent: align }}
+    >
       {showPhoto ? (
-        <Image source={{ uri: photoUrl! }} style={{ width: '100%', height: 56, marginBottom: 6 }} contentFit="cover" />
+        <Image
+          source={{ uri: photoUrl! }}
+          style={{
+            width: frame.width,
+            height: frame.height,
+            marginBottom: 6,
+            alignSelf: 'center',
+          }}
+          contentFit="cover"
+          contentPosition="center"
+        />
       ) : null}
       <Typography
         variant={emphasis ? 'subtitle' : 'caption'}
@@ -79,5 +103,5 @@ export function subjectNodeLabel(registeredName: string | null, fallbackName: st
   return registeredName?.trim() || fallbackName;
 }
 
-export const PEDIGREE_NODE_MIN_HEIGHT = 44;
-export const PEDIGREE_COLUMN_WIDTH = 132;
+export const PEDIGREE_NODE_MIN_HEIGHT = 56;
+export const PEDIGREE_COLUMN_WIDTH = 140;

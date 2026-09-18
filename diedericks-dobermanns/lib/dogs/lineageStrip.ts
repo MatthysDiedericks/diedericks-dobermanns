@@ -1,5 +1,6 @@
 import { resolveDogParents, fetchProgenyGroups } from '@/lib/breeding/relatives';
 import { PROFILE_PHOTO_EMBED, profilePhotoUrl } from '@/lib/dogs/profilePhoto';
+import { summariseProgeny, type ProgenySummary } from '@/lib/dogs/progenySummary';
 import { requireSupabase } from '@/lib/supabase';
 
 export type LineageParent = {
@@ -27,6 +28,7 @@ export type LineageProgenyLitter = {
   date: string | null;
   puppyCount: number;
   href: string | null;
+  isUngrouped: boolean;
 };
 
 export type LineageLitterInfo = {
@@ -45,6 +47,7 @@ export type LineageStripData = {
   litter: LineageLitterInfo | null;
   littermates: LineageLittermate[];
   progeny: LineageProgenyLitter[];
+  progenySummary: ProgenySummary;
 };
 
 type MediaRow = {
@@ -84,7 +87,7 @@ async function loadDogCard(id: string | null): Promise<LineageParent | null> {
     id: data.id,
     name: data.call_name?.trim() || data.name,
     callName: data.call_name ?? null,
-    photoUrl: profilePhotoUrl(media),
+    photoUrl: profilePhotoUrl(media, new Date(), data.id),
     linked: true,
   };
 }
@@ -197,13 +200,21 @@ export async function fetchLineageStrip(dogId: string): Promise<LineageStripData
     ];
   }
 
-  const { data: progenyLitters } = await supabase
-    .from('litters')
-    .select(
-      'id, actual_date, mother_id, father_id, mother:mother_id(name, call_name), father:father_id(name, call_name), puppies:dogs!dogs_litter_id_fkey(id)',
-    )
-    .or(`mother_id.eq.${dogId},father_id.eq.${dogId}`)
-    .order('actual_date', { ascending: false, nullsFirst: false });
+  const [{ data: progenyLitters }, { data: progenyDogs }] = await Promise.all([
+    supabase
+      .from('litters')
+      .select(
+        'id, actual_date, mother_id, father_id, mother:mother_id(name, call_name), father:father_id(name, call_name), puppies:dogs!dogs_litter_id_fkey(id)',
+      )
+      .or(`mother_id.eq.${dogId},father_id.eq.${dogId}`)
+      .order('actual_date', { ascending: false, nullsFirst: false }),
+    supabase
+      .from('dogs')
+      .select('id, sex, date_of_birth, litter_id')
+      .or(`father_id.eq.${dogId},mother_id.eq.${dogId}`),
+  ]);
+
+  const progenySummary = summariseProgeny(progenyDogs ?? []);
 
   const progeny: LineageProgenyLitter[] = (progenyLitters ?? []).map((row) => {
     const litterRow = row as unknown as {
@@ -225,6 +236,7 @@ export async function fetchLineageStrip(dogId: string): Promise<LineageStripData
       date: litterRow.actual_date,
       puppyCount: (litterRow.puppies ?? []).filter((p) => p.id !== dogId).length,
       href: `/(admin)/litters/${litterRow.id}`,
+      isUngrouped: false,
     };
   });
 
@@ -239,8 +251,9 @@ export async function fetchLineageStrip(dogId: string): Promise<LineageStripData
       date: g.actualDate,
       puppyCount: g.dogs.length,
       href: g.litterId ? `/(admin)/litters/${g.litterId}` : null,
+      isUngrouped: !g.litterId,
     });
   }
 
-  return { dogId, sire, dam, litter, littermates, progeny };
+  return { dogId, sire, dam, litter, littermates, progeny, progenySummary };
 }

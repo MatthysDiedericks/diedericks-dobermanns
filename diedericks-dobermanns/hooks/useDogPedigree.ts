@@ -37,6 +37,7 @@ export function hasPedigreeAncestors(ancestors: PedigreeAncestor[]): boolean {
 export function useDogPedigree(dogId: string) {
   const [ancestors, setAncestors] = useState<PedigreeAncestor[]>([]);
   const [registeredName, setRegisteredName] = useState<string | null>(null);
+  const [registrationNumber, setRegistrationNumber] = useState<string | null>(null);
   const [wrightsCoi, setWrightsCoi] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,9 @@ export function useDogPedigree(dogId: string) {
   const refresh = useCallback(async () => {
     if (!dogId) {
       setAncestors([]);
+      setRegisteredName(null);
+      setRegistrationNumber(null);
+      setWrightsCoi(null);
       setLoading(false);
       return;
     }
@@ -57,7 +61,11 @@ export function useDogPedigree(dogId: string) {
     try {
       const client = requireSupabase();
       const [dogRes, pedRes] = await Promise.all([
-        client.from('dogs').select('registered_name, wrights_coi').eq('id', dogId).maybeSingle(),
+        client
+          .from('dogs')
+          .select('registered_name, wrights_coi, registration_number')
+          .eq('id', dogId)
+          .maybeSingle(),
         client
           .from('pedigree_ancestors' as never)
           .select(ANCESTOR_SELECT)
@@ -70,6 +78,7 @@ export function useDogPedigree(dogId: string) {
 
       const dogRow = dogRes.data as Record<string, unknown> | null;
       setRegisteredName((dogRow?.registered_name as string | null) ?? null);
+      setRegistrationNumber((dogRow?.registration_number as string | null) ?? null);
       setWrightsCoi(
         dogRow?.wrights_coi != null ? Number(dogRow.wrights_coi) : null,
       );
@@ -89,5 +98,5 @@ export function useDogPedigree(dogId: string) {
     void refresh();
   }, [refresh]);
 
-  return { ancestors, registeredName, wrightsCoi, loading, error, refresh };
+  return { ancestors, registeredName, registrationNumber, wrightsCoi, loading, error, refresh };
 }

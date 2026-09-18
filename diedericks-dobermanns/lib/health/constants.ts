@@ -10,7 +10,7 @@ export const VACCINATION_SELECT =
   'id, dog_id, vaccine_name, date_administered, next_due_date, schedule_type, doctor_name, administered_by, vet_practice_id, health_product_id, batch_number, notes';
 
 export const DEWORMING_SELECT =
-  'id, dog_ids, product_name, date_treated, next_due_date, schedule_type, treatment_type, doctor_name, vet_practice_id, health_product_id, weight_kg, notes';
+  'id, dog_id, product_name, treatment_date, next_due_date, schedule_type, treatment_type, doctor_name, administered_by, vet_practice_id, health_product_id, dosage, notes';
 
 export const VET_VISIT_SELECT =
   'id, dog_id, visit_date, reason, next_due_date, schedule_type, doctor_name, vet_name, vet_practice_id, vet_clinic, diagnosis, treatment, medications, cost, follow_up_date, notes';

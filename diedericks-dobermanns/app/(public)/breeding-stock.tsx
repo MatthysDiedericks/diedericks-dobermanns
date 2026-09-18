@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View } from 'react-native';
 
 import { DogCard } from '@/components/dogs/DogCard';
@@ -9,13 +10,23 @@ import { DogGridSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { useDogs } from '@/hooks/useDogs';
 import { useBehindSummaries } from '@/hooks/useBehindThisDog';
+import { sortByDailySeed } from '@/lib/dogs/dailyOrder';
 
 export default function BreedingStockScreen() {
   const { dogs, loading } = useDogs({ statuses: ['keep', 'stud'] });
   const summaries = useBehindSummaries(dogs.map((d) => d.id));
-  const sires = dogs.filter((d) => d.sex === 'male');
-  const dams = dogs.filter((d) => d.sex === 'female');
-  const unsexed = dogs.filter((d) => d.sex !== 'male' && d.sex !== 'female');
+  const sires = useMemo(
+    () => sortByDailySeed(dogs.filter((d) => d.sex === 'male')),
+    [dogs],
+  );
+  const dams = useMemo(
+    () => sortByDailySeed(dogs.filter((d) => d.sex === 'female')),
+    [dogs],
+  );
+  const unsexed = useMemo(
+    () => sortByDailySeed(dogs.filter((d) => d.sex !== 'male' && d.sex !== 'female')),
+    [dogs],
+  );
 
   return (
     <ScreenContainer>

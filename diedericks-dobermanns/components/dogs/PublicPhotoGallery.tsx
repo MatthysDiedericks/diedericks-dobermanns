@@ -27,6 +27,7 @@ const THUMB_SIZE = 80;
 
 interface PublicPhotoGalleryProps {
   media: DogMedia[];
+  dogId?: string;
 }
 
 function FullscreenViewer({
@@ -71,7 +72,7 @@ function FullscreenViewer({
   );
 }
 
-export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
+export function PublicPhotoGallery({ media, dogId }: PublicPhotoGalleryProps) {
   const photos = useMemo(
     () =>
       [...media]
@@ -79,7 +80,7 @@ export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
         .sort((a, b) => a.sort_order - b.sort_order),
     [media],
   );
-  const primary = pickProfilePhoto(photos);
+  const primary = pickProfilePhoto(photos, new Date(), dogId);
   const [viewer, setViewer] = useState<DogMedia | null>(null);
   const width = Dimensions.get('window').width;
 
@@ -135,7 +136,14 @@ export function PublicPhotoGallery({ media }: PublicPhotoGalleryProps) {
       <Modal visible={viewer != null} transparent animationType="fade">
         <Pressable className="flex-1 bg-black/95" onPress={() => setViewer(null)}>
           {viewer ? (
-            <FullscreenViewer viewer={viewer} width={width} onClose={() => setViewer(null)} />
+            <>
+              <FullscreenViewer viewer={viewer} width={width} onClose={() => setViewer(null)} />
+              {viewer.caption?.trim() ? (
+                <Typography variant="body" className="absolute bottom-16 left-6 right-6 text-center text-ink">
+                  {viewer.caption.trim()}
+                </Typography>
+              ) : null}
+            </>
           ) : null}
           <Pressable onPress={() => setViewer(null)} className="absolute right-6 top-14">
             <Ionicons name="close" size={28} color={Colors.gold} />

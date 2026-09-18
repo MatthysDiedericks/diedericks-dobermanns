@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { subscribeCalendarRefresh } from '@/lib/calendar/refresh';
 import {
   buildHealthCalendar,
   type DewormingLike,
@@ -47,6 +48,8 @@ export function useDogHealthCalendar(dogId: string) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => subscribeCalendarRefresh(() => void refresh()), [refresh]);
 
   return { calendar, vaccinationsCount, dewormingCount, loading, refresh };
 }

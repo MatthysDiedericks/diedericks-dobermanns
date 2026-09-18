@@ -5,6 +5,8 @@ export type GapDog = {
   colour?: string | null;
   document_count?: number | null;
   status?: string | null;
+  outcome?: string | null;
+  deceased_at?: string | null;
   buyer_name?: string | null;
   buyer_contact_id?: string | null;
   owner_contact_id?: string | null;
@@ -24,6 +26,15 @@ export function gapLabel(gap: DogDataGap): string {
 }
 
 export function dogDataGaps(dog: GapDog): DogDataGap[] {
+  if (
+    dog.status === "deceased" ||
+    dog.status === "stillborn" ||
+    dog.outcome === "stillborn" ||
+    dog.outcome === "died_early" ||
+    dog.deceased_at
+  ) {
+    return [];
+  }
   const gaps: DogDataGap[] = [];
   if (!dog.microchip_number?.trim()) gaps.push("microchip");
   if (!dog.colour?.trim()) gaps.push("colour");

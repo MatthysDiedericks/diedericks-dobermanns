@@ -84,6 +84,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="contacts/unreachable" options={{ href: null }} />
         <Tabs.Screen name="litters/new" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/register-pups" options={{ href: null }} />
+        <Tabs.Screen name="litters/[id]/whelping" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/litter-history" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/edit" options={{ href: null }} />
@@ -124,6 +125,8 @@ export default function AdminLayout() {
         <Tabs.Screen name="settings/pricing" options={{ href: null }} />
         <Tabs.Screen name="settings/catalogue" options={{ href: null }} />
         <Tabs.Screen name="settings/skill-library" options={{ href: null }} />
+        <Tabs.Screen name="settings/quote-lapse" options={{ href: null }} />
+        <Tabs.Screen name="settings/allocation" options={{ href: null }} />
         <Tabs.Screen name="training/index" options={{ href: null }} />
         <Tabs.Screen name="enquiries" options={{ href: null }} />
         <Tabs.Screen name="equipment/index" options={{ href: null }} />

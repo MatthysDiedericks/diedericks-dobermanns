@@ -31,7 +31,7 @@ export default function TrainerDogsScreen() {
           />
         ) : (
           dogs.map(({ dog, completedSessions, lastSessionDate }) => {
-            const photo = profilePhotoUrl(dog.media);
+            const photo = profilePhotoUrl(dog.media, new Date(), dog.id);
             return (
               <Pressable key={dog.id} onPress={() => router.push(`/(trainer)/dogs/${dog.id}` as never)}>
                 <Card className="flex-row items-center gap-3">

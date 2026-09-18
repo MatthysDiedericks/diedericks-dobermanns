@@ -29,7 +29,7 @@ export default function DewormingScreen() {
             <Card>
               <Typography variant="subtitle">{String(item.product_name ?? item.treatment_type)}</Typography>
               <Typography variant="caption">
-                Treated {format(parseISO(item.date_treated as string), 'dd MMM yyyy')}
+                Treated {format(parseISO(String(item.treatment_date ?? item.date_treated)), 'dd MMM yyyy')}
               </Typography>
               {item.next_due_date ? (
                 <Typography variant="caption" className="text-gold">

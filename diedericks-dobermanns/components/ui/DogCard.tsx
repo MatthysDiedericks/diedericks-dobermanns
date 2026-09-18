@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function DogCard({ dog, onPress }: Props) {
-  const img = profilePhotoUrl(dog.media);
+  const img = profilePhotoUrl(dog.media, new Date(), dog.id);
 
   return (
     <Pressable onPress={onPress} className="overflow-hidden rounded-2xl border border-gold/20 bg-surface">

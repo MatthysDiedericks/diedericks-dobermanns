@@ -71,7 +71,7 @@ export function DogOverviewTab({
   const actorId = useAuthStore((s) => s.session?.user.id);
   const canGeneratePack = useAuthStore((s) => s.hasRole('admin', 'super_admin', 'management'));
   const [creating, setCreating] = useState(false);
-  const photo = profilePhotoUrl(dog.media);
+  const photo = profilePhotoUrl(dog.media, new Date(), dog.id);
   const health = useDogHealthCalendar(dog.id);
   const weights = useWeightLogs(dog.id);
   const latestKg = weights.logs[0] ? Number(weights.logs[0].weight_kg) : null;
@@ -147,7 +147,7 @@ export function DogOverviewTab({
     ...dog,
     litter_letter: lineage?.litter?.letter ?? null,
   });
-  const progenyCount = lineage?.progeny.reduce((n, p) => n + p.puppyCount, 0) ?? 0;
+  const progenyCount = lineage?.progenySummary.total ?? 0;
   const buyerName =
     dog.owner_contact?.full_name?.trim() ||
     dog.new_owner_name?.trim() ||
@@ -171,7 +171,13 @@ export function DogOverviewTab({
         </Typography>
       )}
 
-      <DogProfileHeaderBlock dog={dog} goHomeDate={goHomeDate} buyerName={buyerName} />
+      <DogProfileHeaderBlock
+        dog={dog}
+        goHomeDate={goHomeDate}
+        buyerName={buyerName}
+        canEdit={canEdit}
+        onStatusChanged={onRefresh}
+      />
       <CompletenessBar result={completeness} />
 
       <SectionCard title="Identity">
@@ -303,7 +309,11 @@ export function DogOverviewTab({
         <DogMeasurementsPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
       ) : null}
 
-      {canEdit ? <DogOwnerSection dog={dog} contact={dog.owner_contact} onUpdated={onRefresh} /> : null}
+      {canEdit ? (
+        <View nativeID="ownership-card">
+          <DogOwnerSection dog={dog} contact={dog.owner_contact} onUpdated={onRefresh} />
+        </View>
+      ) : null}
 
       {canEdit ? <ShareDogSection dog={dog} onDone={onRefresh} /> : null}
       {canEdit ? (

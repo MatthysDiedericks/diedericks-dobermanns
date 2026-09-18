@@ -126,7 +126,9 @@ export function useAdminGallery(): ListResult<GalleryItem> {
   return useRemoteList<GalleryItem>(MOCK_GALLERY, (client) =>
     client
       .from('gallery_items')
-      .select('id, title, url, thumbnail_url, type, sort_order, is_published')
+      .select(
+        'id, title, description, image_url, video_url, category, discipline, is_featured, sort_order, photo_taken_at, created_at',
+      )
       .order('sort_order'),
   );
 }

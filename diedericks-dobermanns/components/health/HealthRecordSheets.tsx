@@ -28,6 +28,8 @@ import {
   useVetVisitsForDog,
 } from '@/hooks/useHealth';
 import { parseDateInput, showError } from '@/lib/dogDetail/feedback';
+import { suggestNextDueDate } from '@/lib/health/nextDue';
+import { suggestProductSpelling } from '@/lib/health/productMatch';
 import type { HealthProductCategory } from '@/lib/health/types';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 
@@ -168,6 +170,7 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
             treatment_type: 'deworming',
             schedule_type: 'quarterly',
             date_treated: today,
+            next_due_date: suggestNextDueDate(today, 'quarterly'),
           });
         } else {
           setValues({
@@ -243,13 +246,15 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
               treatment_type: values.treatment_type ?? 'deworming',
               schedule_type: values.schedule_type ?? 'quarterly',
               doctor_name: values.doctor_name ?? null,
+              administered_by: values.administered_by ?? null,
               vet_practice_id: values.vet_practice_id ?? null,
               health_product_id: values.health_product_id ?? null,
+              dosage: values.dosage ?? null,
               notes: values.notes ?? null,
               next_due_date:
-                values.schedule_type === 'custom'
-                  ? parseDateInput(values.next_due_date ?? '')
-                  : null,
+                parseDateInput(values.next_due_date ?? '') ||
+                suggestNextDueDate(date, values.schedule_type ?? 'quarterly') ||
+                null,
             },
             recordId,
           );
@@ -370,7 +375,8 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
                     mode === 'vaccination'
                       ? (item as { date_administered: string }).date_administered
                       : mode === 'deworming'
-                        ? (item as { date_treated: string }).date_treated
+                        ? (item as { treatment_date?: string; date_treated?: string }).treatment_date
+                          ?? (item as { date_treated?: string }).date_treated
                         : (item as { visit_date: string }).visit_date;
                   const nextDue = (item as { next_due_date?: string | null }).next_due_date ?? null;
                   return (
@@ -455,6 +461,10 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
                             product_name: p.product_name,
                             health_product_id: p.id,
                             schedule_type: p.default_schedule_type ?? s.schedule_type,
+                            next_due_date: suggestNextDueDate(
+                              s.date_treated ?? s.date_administered ?? new Date().toISOString().slice(0, 10),
+                              p.default_schedule_type ?? s.schedule_type,
+                            ),
                           }))
                         }
                         className={`rounded-full border px-3 py-1.5 ${
@@ -474,6 +484,28 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
                       )
                     }
                   />
+                  {mode === 'deworming' &&
+                  suggestProductSpelling(values.product_name ?? '', products.map((p) => p.product_name)) ? (
+                    <Pressable
+                      onPress={() => {
+                        const hint = suggestProductSpelling(
+                          values.product_name ?? '',
+                          products.map((p) => p.product_name),
+                        );
+                        if (hint) setValues((s) => ({ ...s, product_name: hint }));
+                      }}
+                      className="mb-3"
+                    >
+                      <Typography variant="caption" className="text-amber-300">
+                        Did you mean{' '}
+                        {suggestProductSpelling(
+                          values.product_name ?? '',
+                          products.map((p) => p.product_name),
+                        )}
+                        ?
+                      </Typography>
+                    </Pressable>
+                  ) : null}
                   <Field label="New product name" value={values.new_product_name} onChange={(v) => setValues((s) => ({ ...s, new_product_name: v }))} />
                   <Button label="Add new product" variant="outline" onPress={() => void onAddProductInline()} fullWidth className="mb-3" />
                 </>
@@ -549,7 +581,10 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
               ) : null}
 
               {mode === 'deworming' ? (
-                <Field label="Dosage" value={values.dosage} onChange={(v) => setValues((s) => ({ ...s, dosage: v }))} />
+                <>
+                  <Field label="Dosage" value={values.dosage} onChange={(v) => setValues((s) => ({ ...s, dosage: v }))} />
+                  <Field label="Given by" value={values.administered_by} onChange={(v) => setValues((s) => ({ ...s, administered_by: v }))} />
+                </>
               ) : null}
 
               <ChipPicker
@@ -581,13 +616,7 @@ export const HealthRecordSheets = forwardRef<HealthRecordSheetsHandle, HealthRec
                 }
               />
 
-              {values.schedule_type === 'custom' ? (
-                <Field label="Custom next due date" value={values.next_due_date} onChange={(v) => setValues((s) => ({ ...s, next_due_date: v }))} />
-              ) : values.schedule_type !== 'none' ? (
-                <Typography variant="caption" className="mb-4 text-muted">
-                  Next due date will be calculated automatically when saved.
-                </Typography>
-              ) : null}
+              <Field label="Next due date" value={values.next_due_date} onChange={(v) => setValues((s) => ({ ...s, next_due_date: v }))} />
 
               <Field label="Notes" value={values.notes} onChange={(v) => setValues((s) => ({ ...s, notes: v }))} multiline />
               <Button label="Save" onPress={() => void onSave()} loading={saving} fullWidth />

@@ -23,7 +23,7 @@ export default function TrainerDogProgressScreen() {
   const [gallery, setGallery] = useState<DogMedia[]>([]);
 
   const heroDog = sessions[0]?.dog;
-  const heroMedia = pickProfilePhoto(heroDog?.media);
+  const heroMedia = pickProfilePhoto(heroDog?.media, new Date(), heroDog?.id);
 
   useEffect(() => {
     if (!dogId || sessions.length === 0) return;

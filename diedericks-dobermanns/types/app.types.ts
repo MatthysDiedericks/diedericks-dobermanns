@@ -277,6 +277,7 @@ export interface Dog {
   alc_5?: number | null;
   alc_10?: number | null;
   birth_order?: number | null;
+  birth_time?: string | null;
   registered_name?: string | null;
   genetics_b_locus?: string | null;
   genetics_d_locus?: string | null;
@@ -312,6 +313,9 @@ export interface Dog {
   do_not_contact?: boolean | null;
   deceased_at?: string | null;
   deceased_cause?: string | null;
+  outcome?: 'live' | 'stillborn' | 'died_early' | null;
+  outcome_date?: string | null;
+  outcome_note?: string | null;
   new_owner_name?: string | null;
   reserved_for_name?: string | null;
   owner_contact?: {
@@ -898,8 +902,10 @@ export interface GalleryItem {
   image_url: string;
   video_url: string | null;
   category: GalleryCategory | null;
+  discipline?: string | null;
   is_featured: boolean;
   sort_order: number;
+  photo_taken_at?: string | null;
   created_at: string;
 }
 

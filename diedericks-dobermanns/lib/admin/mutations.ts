@@ -324,3 +324,19 @@ export async function setGalleryFeatured(
     .eq('id', id);
   return { error: error?.message ?? null };
 }
+
+export async function updateGalleryItem(
+  id: string,
+  fields: {
+    title?: string | null;
+    description?: string | null;
+    category?: string | null;
+    discipline?: string | null;
+    photo_taken_at?: string | null;
+    is_featured?: boolean;
+  },
+): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { error } = await supabase.from('gallery_items').update(fields).eq('id', id);
+  return { error: error?.message ?? null };
+}

@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import { CollarDots } from '@/components/dogs/CollarDots';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import type { LineageParent, LineageStripData } from '@/lib/dogs/lineageStrip';
+import { formatProgenySummaryLine } from '@/lib/dogs/progenySummary';
 
 function ParentBox({
   role,
@@ -64,6 +65,7 @@ export function DogLineageStrip({
         .filter(Boolean)
         .join(', ')
     : null;
+  const progenySummaryLine = formatProgenySummaryLine(data.progenySummary);
 
   function openParent(parent: LineageParent) {
     if (parent.linked && parent.id) {
@@ -87,37 +89,55 @@ export function DogLineageStrip({
         currentId={data.dogId}
         onPress={(id) => router.push(dogHref(id) as never)}
       />
-      <Typography variant="caption" className="mt-3 text-gold-dim">
-        PROGENY
-      </Typography>
-      {data.progeny.length === 0 ? (
-        <Typography variant="body" className="mt-0.5 text-muted">
-          none yet
-        </Typography>
-      ) : (
-        data.progeny.map((p) => {
-          const label = [
-            p.otherParentName,
-            p.date ? formatKennelDate(p.date) : null,
-            `${p.puppyCount} ${p.puppyCount === 1 ? 'puppy' : 'puppies'}`,
-          ]
-            .filter(Boolean)
-            .join(' · ');
-          return (
-            <Pressable
-              key={p.litterId ?? label}
-              onPress={() => {
-                if (p.litterId && litterHref) router.push(litterHref(p.litterId) as never);
-              }}
-              className="py-1"
-            >
-              <Typography variant="body" className="text-gold">
-                {label}
-              </Typography>
-            </Pressable>
-          );
-        })
-      )}
+      {progenySummaryLine ? (
+        <View className="mt-3">
+          <Typography variant="caption" className="text-gold-dim">
+            PROGENY
+          </Typography>
+          <Typography variant="body" className="mt-1 text-gold">
+            {progenySummaryLine}
+          </Typography>
+          {data.progeny.map((p) => {
+            const ungrouped =
+              p.isUngrouped || (!p.litterId && p.otherParentName === 'Ungrouped');
+            const label = [
+              ungrouped ? 'Ungrouped' : p.otherParentName,
+              p.date ? formatKennelDate(p.date) : null,
+              `${p.puppyCount} ${p.puppyCount === 1 ? 'puppy' : 'puppies'}`,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+            return (
+              <Pressable
+                key={p.litterId ?? label}
+                onPress={() => {
+                  if (ungrouped) {
+                    Alert.alert('No litter recorded', 'These puppies have no litter recorded.');
+                    return;
+                  }
+                  if (p.litterId && litterHref) router.push(litterHref(p.litterId) as never);
+                }}
+                className="py-1"
+              >
+                {ungrouped ? (
+                  <View className="self-start rounded-md border border-amber-400/40 bg-amber-500/10 px-2 py-1">
+                    <Typography variant="body" className="text-amber-300">
+                      {label}
+                    </Typography>
+                    <Typography variant="caption" className="text-amber-400/80">
+                      These puppies have no litter recorded.
+                    </Typography>
+                  </View>
+                ) : (
+                  <Typography variant="body" className="text-gold">
+                    {label}
+                  </Typography>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }

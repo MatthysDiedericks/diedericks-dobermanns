@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 
 import { DogCard } from '@/components/dogs/DogCard';
@@ -12,6 +12,7 @@ import { DogGridSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { useDogs } from '@/hooks/useDogs';
 import { useBehindSummaries } from '@/hooks/useBehindThisDog';
+import { sortByDailySeed } from '@/lib/dogs/dailyOrder';
 import type { DogStatus } from '@/types/app.types';
 
 type Filter = 'all' | 'available' | 'breeding_stock' | 'training_dog';
@@ -27,15 +28,18 @@ export default function DogsScreen() {
   const { dogs, loading, refetch } = useDogs();
   const [filter, setFilter] = useState<Filter>('all');
 
-  const visible = dogs.filter((d) => {
-    if (filter === 'all') return true;
-    if (filter === 'available') return d.status === ('available' as DogStatus);
-    // Breeding dogs span two category values (dams: breeding_stock+keep,
-    // studs: adult+stud) — filter on status, not category, so studs aren't
-    // silently dropped from the "Breeding" tab.
-    if (filter === 'breeding_stock') return d.status === 'keep' || d.status === 'stud';
-    return d.category === filter;
-  });
+  const visible = useMemo(() => {
+    const filtered = dogs.filter((d) => {
+      if (filter === 'all') return true;
+      if (filter === 'available') return d.status === ('available' as DogStatus);
+      // Breeding dogs span two category values (dams: breeding_stock+keep,
+      // studs: adult+stud) — filter on status, not category, so studs aren't
+      // silently dropped from the "Breeding" tab.
+      if (filter === 'breeding_stock') return d.status === 'keep' || d.status === 'stud';
+      return d.category === filter;
+    });
+    return sortByDailySeed(filtered);
+  }, [dogs, filter]);
   const summaries = useBehindSummaries(visible.map((d) => d.id));
 
   return (

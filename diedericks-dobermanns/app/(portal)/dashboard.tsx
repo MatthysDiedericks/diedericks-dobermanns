@@ -143,7 +143,7 @@ export default function PortalDashboard() {
             <Link key={dog.id} href={`/(portal)/dogs/${dog.id}` as never} asChild>
               <Pressable>
                 <Card className="mb-3 flex-row items-center">
-                  <PortalDogThumb name={dog.name} media={dog.media} />
+                  <PortalDogThumb name={dog.name} media={dog.media} dogId={dog.id} />
                   <View className="ml-4 flex-1">
                     <Typography variant="title">{dog.name}</Typography>
                     <View className="mt-1">

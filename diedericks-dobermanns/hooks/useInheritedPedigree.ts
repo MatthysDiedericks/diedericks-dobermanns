@@ -163,6 +163,7 @@ export function useInheritedPedigree(dogId: string, fallbackName: string) {
   return {
     ancestors,
     registeredName: own.registeredName,
+    registrationNumber: own.registrationNumber,
     wrightsCoi: own.wrightsCoi,
     displayName,
     loading: own.loading || loadingParents,

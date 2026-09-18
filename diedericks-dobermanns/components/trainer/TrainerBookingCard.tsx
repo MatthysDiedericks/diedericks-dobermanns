@@ -31,7 +31,7 @@ function formatWhen(iso: string): string {
 }
 
 function primaryPhoto(booking: TrainingBooking): string | null {
-  return profilePhotoUrl(booking.dog?.media);
+  return profilePhotoUrl(booking.dog?.media, new Date(), booking.dog?.id);
 }
 
 export function TrainerBookingCard({

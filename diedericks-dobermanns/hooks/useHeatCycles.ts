@@ -187,6 +187,8 @@ export function useFemaleHeatSummaries() {
                 thumbnail_url?: string | null;
                 uploaded_at?: string | null;
               }[] | null) ?? [],
+              new Date(),
+              dog.id,
             );
             return buildFemaleHeatSummary(
               {

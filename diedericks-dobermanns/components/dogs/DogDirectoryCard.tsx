@@ -60,7 +60,7 @@ function SexColourRow({ sex, colour }: { sex: KennelDog['sex'] | DirectoryDog['s
 }
 
 function DogPhoto({ dog, muted }: { dog: KennelDog | DirectoryDog; muted?: boolean }) {
-  const photo = profilePhotoUrl(dog.media);
+  const photo = profilePhotoUrl(dog.media, new Date(), dog.id);
 
   return (
     <View

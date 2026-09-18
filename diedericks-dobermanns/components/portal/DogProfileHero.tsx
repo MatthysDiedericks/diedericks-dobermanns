@@ -20,7 +20,7 @@ export function DogProfileHero({ dog, nickname }: DogProfileHeroProps) {
 
   return (
     <View className="relative">
-      <PublicPhotoGallery media={dog.media ?? []} />
+      <PublicPhotoGallery media={dog.media ?? []} dogId={dog.id} />
       <View
         style={{
           position: 'absolute',

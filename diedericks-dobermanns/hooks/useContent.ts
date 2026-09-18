@@ -48,6 +48,7 @@ export function useLitters(): ListResult<Litter> {
       .from('litters')
       .select('id, name, status, expected_date, actual_date, go_home_date, puppy_count, available_count, is_public')
       .eq('is_public', true)
+      .neq('status', 'archived')
       .order('expected_date'),
   );
 }

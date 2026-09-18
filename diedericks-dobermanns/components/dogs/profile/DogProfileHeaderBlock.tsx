@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { DogStatusControl } from '@/components/dogs/profile/DogStatusControl';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { collectionCountdown } from '@/lib/dogs/collectionCountdown';
@@ -20,10 +21,14 @@ export function DogProfileHeaderBlock({
   dog,
   goHomeDate,
   buyerName,
+  canEdit = false,
+  onStatusChanged,
 }: {
   dog: Dog;
   goHomeDate?: string | null;
   buyerName?: string | null;
+  canEdit?: boolean;
+  onStatusChanged?: () => void;
 }) {
   const call = dog.call_name?.trim() || dog.name;
   const registered = dog.registered_name?.trim();
@@ -48,7 +53,18 @@ export function DogProfileHeaderBlock({
         />
       ) : null}
       <View className="flex-1">
-        <Typography variant="title">{call}</Typography>
+        <View className="flex-row flex-wrap items-start gap-3">
+          <View className="min-w-[40%] flex-1">
+            <Typography variant="title">{call}</Typography>
+          </View>
+          {canEdit ? (
+            <DogStatusControl
+              dogId={dog.id}
+              status={dog.status}
+              onStatusChanged={onStatusChanged}
+            />
+          ) : null}
+        </View>
         {showRegistered ? (
           <Typography variant="caption" className="mt-1 text-muted">
             {registered}

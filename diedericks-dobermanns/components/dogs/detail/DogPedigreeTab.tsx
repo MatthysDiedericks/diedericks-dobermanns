@@ -5,7 +5,6 @@ import { BehindThisDog } from '@/components/dogs/BehindThisDog';
 import { Typography } from '@/components/ui/Typography';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { useInheritedPedigree } from '@/hooks/useInheritedPedigree';
-import { formatCoiPercent } from '@/lib/dogs/formatCoi';
 import { hasPedigreeAncestors } from '@/hooks/useDogPedigree';
 
 export function DogPedigreeTab({
@@ -37,11 +36,6 @@ export function DogPedigreeTab({
           Pedigree not yet recorded for {ped.damMissing}.
         </Typography>
       ) : null}
-      {showCoi && formatCoiPercent(ped.wrightsCoi) ? (
-        <Typography variant="caption" className="mb-3 text-muted">
-          Wright&apos;s COI {formatCoiPercent(ped.wrightsCoi)}
-        </Typography>
-      ) : null}
       {hasPedigreeAncestors(ped.ancestors) ? (
         <>
           <PedigreeTree
@@ -50,7 +44,8 @@ export function DogPedigreeTab({
             profileRoutePrefix={profileRoutePrefix}
             ancestors={ped.ancestors}
             registeredName={ped.registeredName}
-            wrightsCoi={null}
+            registrationNumber={ped.registrationNumber}
+            wrightsCoi={showCoi ? ped.wrightsCoi : null}
             disableAncestorLinks={disableAncestorLinks}
           />
           <BehindThisDog ancestors={ped.ancestors} />

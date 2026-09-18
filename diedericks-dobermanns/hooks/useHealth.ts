@@ -1,7 +1,7 @@
 import { addDays, formatISO } from 'date-fns';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { notifyCalendarRefresh } from '@/lib/calendar/refresh';
+import { notifyCalendarRefresh, subscribeCalendarRefresh } from '@/lib/calendar/refresh';
 import {
   CALENDAR_EVENT_SELECT,
   DEWORMING_SELECT,
@@ -41,7 +41,7 @@ function mapHealthDog(row: Record<string, unknown>): HealthDog {
   return {
     id: row.id as string,
     name: row.name as string,
-    photoUrl: profilePhotoUrl(media),
+    photoUrl: profilePhotoUrl(media, new Date(), row.id as string),
   };
 }
 
@@ -317,8 +317,8 @@ export function useDewormingForDog(dogId: string) {
       const { data, error: err } = await requireSupabase()
         .from('deworming_records')
         .select(DEWORMING_SELECT)
-        .contains('dog_ids', [dogId])
-        .order('date_treated', { ascending: false });
+        .eq('dog_id', dogId)
+        .order('treatment_date', { ascending: false });
       if (err) throw new Error(err.message);
       setRecords((data ?? []) as DewormingRecord[]);
     } catch (e) {
@@ -342,9 +342,10 @@ export function useDewormingForDog(dogId: string) {
         treatment_type: string;
         schedule_type: string;
         doctor_name?: string | null;
+        administered_by?: string | null;
         vet_practice_id?: string | null;
         health_product_id?: string | null;
-        weight_kg?: number | null;
+        dosage?: string | null;
         notes?: string | null;
         next_due_date?: string | null;
       },
@@ -357,13 +358,13 @@ export function useDewormingForDog(dogId: string) {
         treatment_type: input.treatment_type,
         schedule_type: input.schedule_type ?? 'quarterly',
         doctor_name: input.doctor_name ?? null,
+        administered_by: input.administered_by ?? null,
         vet_practice_id: input.vet_practice_id ?? null,
         health_product_id: input.health_product_id ?? null,
+        dosage: input.dosage ?? null,
         notes: input.notes ?? null,
+        next_due_date: input.next_due_date ?? null,
       };
-      if (input.schedule_type === 'custom' && input.next_due_date) {
-        payload.next_due_date = input.next_due_date;
-      }
 
       const client = requireSupabase();
       const { error: err } = id
@@ -509,7 +510,7 @@ export function useHealthSummaries() {
       const client = requireSupabase();
       const [vacs, deworms, visits, dogsRes] = await Promise.all([
         client.from('vaccinations').select(`${VACCINATION_SELECT}`).order('date_administered', { ascending: false }),
-        client.from('deworming_records').select(DEWORMING_SELECT).order('date_treated', { ascending: false }),
+        client.from('deworming_records').select(DEWORMING_SELECT).order('treatment_date', { ascending: false }),
         client.from('vet_visits').select(VET_VISIT_SELECT).order('visit_date', { ascending: false }),
         client.from('dogs').select(
             'id, name, dog_media!dog_media_dog_id_fkey(url, thumbnail_url, is_primary, uploaded_at)' as typeof HEALTH_DOG_SELECT,
@@ -536,18 +537,18 @@ export function useHealthSummaries() {
 
       setDewormingSummaries(
         dogList.map((dog) => {
-          const dogRecords = ((deworms.data ?? []) as DewormingRecord[]).filter((r) =>
-            r.dog_ids?.includes(dog.id),
+          const dogRecords = ((deworms.data ?? []) as DewormingRecord[]).filter(
+            (r) => r.dog_id === dog.id,
           );
           const deworm = dogRecords.find((r) => r.treatment_type === 'deworming' || r.treatment_type === 'both');
           const tick = dogRecords.find((r) => r.treatment_type === 'tick_flea' || r.treatment_type === 'both');
           return {
             dog,
             lastDeworm: deworm?.product_name ?? null,
-            lastDewormDate: deworm?.date_treated ?? null,
+            lastDewormDate: deworm?.treatment_date ?? null,
             nextDewormDue: deworm?.next_due_date ?? null,
             lastTickFlea: tick?.product_name ?? null,
-            lastTickFleaDate: tick?.date_treated ?? null,
+            lastTickFleaDate: tick?.treatment_date ?? null,
             nextTickFleaDue: tick?.next_due_date ?? null,
           };
         }),
@@ -672,7 +673,7 @@ export function useUpcomingHealthEvents(daysAhead = 30) {
 
       for (const d of (deworms.data ?? []) as DewormingRecord[]) {
         if (!d.next_due_date || d.next_due_date < today) continue;
-        const dogId = d.dog_ids?.[0];
+        const dogId = d.dog_id;
         if (!dogId) continue;
         const dog = dogMap.get(dogId);
         const days = daysUntilDate(d.next_due_date);
@@ -723,6 +724,8 @@ export function useUpcomingHealthEvents(daysAhead = 30) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => subscribeCalendarRefresh(() => void refresh()), [refresh]);
 
   return { events, loading, refresh };
 }

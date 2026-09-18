@@ -177,3 +177,15 @@ export function sortByDailySeed<T extends { id: string }>(items: T[], now: Date 
     return ha < hb ? -1 : ha > hb ? 1 : a.id.localeCompare(b.id);
   });
 }
+
+/**
+ * Pick an index in `[0, length)` from the same MD5 daily seed used for order.
+ * First 8 hex chars → uint32 → modulo. Length 0 returns 0 so callers never crash.
+ */
+export function seedIndex(seed: string, length: number): number {
+  if (length <= 0) return 0;
+  const n = parseInt(md5Hex(seed).slice(0, 8), 16);
+  if (!Number.isFinite(n)) return 0;
+  return n % length;
+}
+
