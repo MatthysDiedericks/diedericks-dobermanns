@@ -5,7 +5,7 @@ import type { Litter } from '@/types/app.types';
 export const litterSchema = z.object({
   name: z.string(),
   litter_letter: z.string().max(1),
-  status: z.enum(['planned', 'expected', 'born', 'placed']),
+  status: z.enum(['planned', 'expected', 'born', 'placed', 'archived']),
   mother_id: z.string(),
   father_id: z.string(),
   whelping_type: z.enum(['natural', 'c_section']).nullable(),
@@ -23,6 +23,14 @@ export const litterSchema = z.object({
 
 export type LitterFormValues = z.infer<typeof litterSchema>;
 
+const LITTER_STATUSES = ['planned', 'expected', 'born', 'placed', 'archived'] as const;
+
+function asLitterStatus(value: string | null | undefined): LitterFormValues['status'] {
+  return (LITTER_STATUSES as readonly string[]).includes(value ?? '')
+    ? (value as LitterFormValues['status'])
+    : 'planned';
+}
+
 function timeInput(value: string | null | undefined): string {
   if (!value) return '';
   return value.slice(0, 5);
@@ -32,7 +40,7 @@ export function litterFormDefaults(litter?: Litter): LitterFormValues {
   return {
     name: litter?.name ?? '',
     litter_letter: litter?.litter_letter ?? '',
-    status: litter?.status ?? 'planned',
+    status: asLitterStatus(litter?.status),
     mother_id: litter?.mother_id ?? '',
     father_id: litter?.father_id ?? '',
     whelping_type: litter?.whelping_type ?? null,

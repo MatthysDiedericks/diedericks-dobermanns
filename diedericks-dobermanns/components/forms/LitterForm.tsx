@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { BreedingSelectField } from '@/components/forms/BreedingSelectField';
 import { DogSelectField } from '@/components/forms/DogSelectField';
@@ -16,9 +16,17 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { useActiveBreedings, type ActiveBreeding } from '@/hooks/useActiveBreedings';
-import { useBreedingDogs } from '@/hooks/useBreedingDogs';
+import { useBreedingDogs, type BreedingDog } from '@/hooks/useBreedingDogs';
 import { goHomeWindow, whelpWindow } from '@/lib/dogs/whelpDates';
-import { linkBreedingToLitter, saveLitter, useSubmitting } from '@/hooks/useMutations';
+import { linkBreedingToLitter, saveLitter } from '@/hooks/useMutations';
+import {
+  blank,
+  generateLitterName,
+  litterNameDate,
+  nextLitterLetter,
+  validateLitter,
+} from '@/lib/litters/validate';
+import { requireSupabase, supabase } from '@/lib/supabase';
 import type { Litter } from '@/types/app.types';
 import type { TablesInsert } from '@/types/database.types';
 
@@ -31,33 +39,94 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function mergeDams(active: BreedingDog[], historical: BreedingDog[]): BreedingDog[] {
+  const seen = new Set(active.map((d) => d.id));
+  const extra = historical.filter((d) => !seen.has(d.id));
+  return [...active, ...extra].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function LitterForm({ litter, onSaved }: LitterFormProps) {
-  const { females, males, loading: dogsLoading } = useBreedingDogs();
+  const { females, males, historicalDams, loading: dogsLoading } = useBreedingDogs();
   const { breedings, loading: breedingsLoading } = useActiveBreedings();
   const { control, handleSubmit, watch, setValue } = useForm<LitterFormValues>({
     resolver: zodResolver(litterSchema),
     defaultValues: litterFormDefaults(litter),
   });
-  const { submitting, run } = useSubmitting();
+  const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [selectedBreedingId, setSelectedBreedingId] = useState<string | null>(null);
+  const [includeHistorical, setIncludeHistorical] = useState(false);
+  const inFlight = useRef(false);
+  const lastGeneratedName = useRef<string | null>(null);
+  const skipLetterSuggest = useRef(Boolean(litter?.litter_letter));
 
   const status = watch('status');
   const motherId = watch('mother_id');
   const fatherId = watch('father_id');
-  const litterLetter = watch('litter_letter');
   const name = watch('name');
-  const isBorn = status === 'born' || status === 'placed';
+  const expectedDate = watch('expected_date');
+  const actualDate = watch('actual_date');
   const isNew = !litter;
+  const damOptions = useMemo(
+    () => (includeHistorical ? mergeDams(females, historicalDams) : females),
+    [females, historicalDams, includeHistorical],
+  );
+  const dam =
+    damOptions.find((d) => d.id === motherId) ??
+    historicalDams.find((d) => d.id === motherId) ??
+    null;
+  const sire = males.find((d) => d.id === fatherId) ?? null;
+  const problems = validateLitter({
+    name,
+    status,
+    mother_id: motherId,
+    father_id: fatherId,
+    expected_date: expectedDate,
+    actual_date: actualDate,
+    dam,
+    sire,
+    includeRetiredAndDeceasedDams: includeHistorical,
+    existingMotherId: litter?.mother_id ?? null,
+    existingFatherId: litter?.father_id ?? null,
+  });
+  const showBornOffer =
+    (status === 'planned' || status === 'expected') && Boolean(blank(actualDate));
 
   useEffect(() => {
-    if (name.trim() || !motherId || !fatherId) return;
-    const dam = females.find((d) => d.id === motherId);
-    const sire = males.find((d) => d.id === fatherId);
-    if (!dam || !sire) return;
-    const prefix = litterLetter.trim() ? `${litterLetter.trim().toUpperCase()}-` : '';
-    setValue('name', `${prefix}Litter (${sire.name} × ${dam.name})`);
-  }, [motherId, fatherId, litterLetter, name, females, males, setValue]);
+    const generated = generateLitterName(
+      dam?.name,
+      sire?.name,
+      litterNameDate(expectedDate, actualDate),
+    );
+    if (!generated) return;
+    if (!blank(name) || name === lastGeneratedName.current) {
+      lastGeneratedName.current = generated;
+      setValue('name', generated);
+    }
+  }, [dam?.name, sire?.name, expectedDate, actualDate, name, setValue]);
+
+  useEffect(() => {
+    if (!motherId || !supabase) return;
+    if (skipLetterSuggest.current) {
+      skipLetterSuggest.current = false;
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data } = await requireSupabase()
+        .from('litters')
+        .select('id, litter_letter')
+        .eq('mother_id', motherId);
+      if (cancelled) return;
+      const used = (data ?? [])
+        .filter((row) => row.id !== litter?.id)
+        .map((row) => row.litter_letter);
+      setValue('litter_letter', nextLitterLetter(used));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [motherId, litter?.id, setValue]);
 
   function applyBreeding(b: ActiveBreeding | null) {
     setSelectedBreedingId(b?.id ?? null);
@@ -73,22 +142,49 @@ export function LitterForm({ litter, onSaved }: LitterFormProps) {
   }
 
   async function onValid(values: LitterFormValues) {
-    setSaveError(null);
-    const payload = litterFormPayload(values) as TablesInsert<'litters'>;
-    const { error, id } = await run(() => saveLitter(payload, litter?.id));
-    if (error) {
-      setSaveError(error);
+    if (inFlight.current) return;
+    const nextProblems = validateLitter({
+      name: values.name,
+      status: values.status,
+      mother_id: values.mother_id,
+      father_id: values.father_id,
+      expected_date: values.expected_date,
+      actual_date: values.actual_date,
+      dam,
+      sire,
+      includeRetiredAndDeceasedDams: includeHistorical,
+      existingMotherId: litter?.mother_id ?? null,
+      existingFatherId: litter?.father_id ?? null,
+    });
+    if (nextProblems.length > 0) {
+      setSaveError(nextProblems[0].message);
       return;
     }
-    if (isNew && selectedBreedingId && id) {
-      const link = await linkBreedingToLitter(
-        selectedBreedingId,
-        id,
-        (payload.actual_date as string | null) ?? null,
-      );
-      if (link.error) console.error('[LitterForm] linkBreedingToLitter:', link.error);
+    inFlight.current = true;
+    setSubmitting(true);
+    setSaveError(null);
+    try {
+      const payload = litterFormPayload(values) as TablesInsert<'litters'>;
+      const { error, id } = await saveLitter(payload, litter?.id, {
+        includeRetiredAndDeceasedDams: includeHistorical,
+      });
+      if (error) {
+        setSaveError(error);
+        return;
+      }
+      if (isNew && selectedBreedingId && id) {
+        const link = await linkBreedingToLitter(
+          selectedBreedingId,
+          id,
+          (payload.actual_date as string | null) ?? null,
+        );
+        if (link.error) console.error('[LitterForm] linkBreedingToLitter:', link.error);
+      }
+      onSaved();
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
     }
-    onSaved();
   }
 
   return (
@@ -103,7 +199,7 @@ export function LitterForm({ litter, onSaved }: LitterFormProps) {
           placeholder="No open breedings — enter details manually"
         />
       ) : null}
-      <ControlledInput control={control} name="name" label="Litter name" placeholder="A-Litter (Sire × Dam)" />
+      <ControlledInput control={control} name="name" label="Litter name" placeholder="Claire × Santini – Jul 2026" />
       <Controller
         control={control}
         name="litter_letter"
@@ -138,7 +234,7 @@ export function LitterForm({ litter, onSaved }: LitterFormProps) {
             label="Dam (mother)"
             value={value.trim() || null}
             onChange={(id) => onChange(id ?? '')}
-            dogs={dogsLoading ? [] : females}
+            dogs={dogsLoading ? [] : damOptions}
             placeholder="Select dam…"
           />
         )}
@@ -156,34 +252,39 @@ export function LitterForm({ litter, onSaved }: LitterFormProps) {
           />
         )}
       />
-      {isBorn ? (
-        <OptionGroup
-          control={control}
-          name="whelping_type"
-          label="Whelping type"
-          options={[
-            { value: 'natural', label: 'Natural' },
-            { value: 'c_section', label: 'C-Section' },
-          ]}
-        />
-      ) : null}
-      {!isBorn ? (
-        <ControlledInput
-          control={control}
-          name="expected_date"
-          label="Expected date (YYYY-MM-DD)"
-          placeholder="2026-08-01"
-          autoCapitalize="none"
-        />
-      ) : null}
-      {isBorn ? (
+      <Pressable
+        onPress={() => setIncludeHistorical((v) => !v)}
+        className="mb-4 flex-row items-center justify-between rounded-xl border border-gold/20 bg-surface px-4 py-3"
+      >
+        <Typography variant="body">Include retired and deceased dams</Typography>
+        <View className={`h-6 w-11 rounded-full p-0.5 ${includeHistorical ? 'bg-gold' : 'bg-black-rich'}`}>
+          <View className={`h-5 w-5 rounded-full bg-ink ${includeHistorical ? 'ml-auto' : ''}`} />
+        </View>
+      </Pressable>
+      <ControlledInput
+        control={control}
+        name="expected_date"
+        label="Expected date (YYYY-MM-DD)"
+        placeholder="2026-08-01"
+        autoCapitalize="none"
+      />
+      <ControlledInput
+        control={control}
+        name="actual_date"
+        label="Actual whelp date (YYYY-MM-DD)"
+        placeholder="Leave empty unless born"
+        autoCapitalize="none"
+      />
+      {status === 'born' || status === 'placed' ? (
         <>
-          <ControlledInput
+          <OptionGroup
             control={control}
-            name="actual_date"
-            label="Actual whelp date (YYYY-MM-DD)"
-            placeholder="2026-06-05"
-            autoCapitalize="none"
+            name="whelping_type"
+            label="Whelping type"
+            options={[
+              { value: 'natural', label: 'Natural' },
+              { value: 'c_section', label: 'C-Section' },
+            ]}
           />
           <ControlledInput
             control={control}
@@ -213,15 +314,34 @@ export function LitterForm({ litter, onSaved }: LitterFormProps) {
       <ControlledInput control={control} name="available_count" label="Available count" keyboardType="phone-pad" />
       <ControlledInput control={control} name="description" label="Description" multiline />
       <ToggleRow control={control} name="is_public" label="Publicly visible" />
+      {showBornOffer ? (
+        <View className="mb-3 rounded-xl border border-gold/30 bg-gold/10 p-3">
+          <Typography variant="caption" className="text-text">
+            You have set a birth date. A {status} litter cannot also be born.
+          </Typography>
+          <Pressable onPress={() => setValue('status', 'born')} className="mt-2">
+            <Typography variant="caption" className="text-gold">
+              Change status to born
+            </Typography>
+          </Pressable>
+        </View>
+      ) : null}
+      {problems.length > 0
+        ? problems.map((p) => (
+            <Typography key={`${p.field}:${p.message}`} variant="caption" className="mt-1 text-danger">
+              {p.message}
+            </Typography>
+          ))
+        : null}
       {saveError ? (
         <Typography variant="caption" className="mt-2 text-danger">
           {saveError}
         </Typography>
       ) : null}
       <Button
-        label={litter ? 'Save Changes' : 'Create Litter'}
+        label={submitting ? 'Saving…' : litter ? 'Save Changes' : 'Create Litter'}
         onPress={handleSubmit(onValid)}
-        loading={submitting}
+        disabled={submitting || problems.length > 0}
         fullWidth
         className="mt-4"
       />

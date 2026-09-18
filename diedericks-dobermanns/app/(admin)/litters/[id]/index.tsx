@@ -6,6 +6,7 @@ import { DocumentList } from '@/components/documents/DocumentList';
 import { LitterCalendarTab } from '@/components/litters/LitterCalendarTab';
 import { LitterContractsTab } from '@/components/litters/LitterContractsTab';
 import { LitterFinancialsTab } from '@/components/litters/LitterFinancialsTab';
+import { LitterGuideLead } from '@/components/litters/LitterGuideLead';
 import { LitterHealthTab } from '@/components/litters/LitterHealthTab';
 import { LitterNotesTab } from '@/components/litters/LitterNotesTab';
 import { LitterPhotosTab } from '@/components/litters/LitterPhotosTab';
@@ -16,12 +17,14 @@ import { LitterReportsTab } from '@/components/litters/LitterReportsTab';
 import { LitterSharingTab } from '@/components/litters/LitterSharingTab';
 import { LitterTodosTab } from '@/components/litters/LitterTodosTab';
 import { LitterWeightsTab } from '@/components/litters/LitterWeightsTab';
+import { WeighInBoard } from '@/components/litters/WeighInBoard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
 import { resolveLitterTab } from '@/lib/litters/tabFromParams';
+import { litterGuidePhase } from '@/lib/litters/guide';
 import { useLitterWeights } from '@/hooks/useLitterWeights';
 import { useLitterDetail } from '@/hooks/useDogs';
 
@@ -62,8 +65,20 @@ export default function LitterDetailScreen() {
   const router = useRouter();
   const litterId = id ?? '';
   const { litter, puppies, loading, error, refresh } = useLitterDetail(litterId);
-  const { puppies: weightPuppies } = useLitterWeights(litterId, litter?.actual_date);
-  const tab = resolveLitterTab(TABS, tabParam, 'puppies');
+  const {
+    puppies: weightPuppies,
+    weightsByPuppyId,
+    logWeightsBatch,
+  } = useLitterWeights(litterId, litter?.actual_date);
+  const phase = litterGuidePhase({
+    status: litter?.status,
+    puppyCount: puppies.length,
+  });
+  const tab = resolveLitterTab(
+    TABS,
+    tabParam,
+    phase === 'rearing' ? 'weights' : 'puppies',
+  );
   const [holders, setHolders] = useState<LitterQuoteHolder[]>([]);
   const puppyIds = puppies.map((p) => p.id);
 
@@ -120,6 +135,30 @@ export default function LitterDetailScreen() {
             .join(' · ')}
         </Typography>
       ) : null}
+      <View className="px-6">
+        <LitterGuideLead
+          litterId={litterId}
+          status={detail.status}
+          puppyCount={puppies.length}
+          expectedDate={detail.expected_date}
+          litterLetter={detail.litter_letter ?? null}
+          actualDate={detail.actual_date}
+          weighedToday={[...weightsByPuppyId.values()].some((logs) =>
+            logs.some(
+              (l) =>
+                l.recorded_date === new Date().toISOString().slice(0, 10) &&
+                l.notes !== 'Birth weight',
+            ),
+          )}
+        />
+        {phase === 'rearing' ? (
+          <WeighInBoard
+            puppies={weightPuppies}
+            weightsByPuppyId={weightsByPuppyId}
+            onBatchSave={logWeightsBatch}
+          />
+        ) : null}
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -164,6 +203,7 @@ export default function LitterDetailScreen() {
             litterId={litterId}
             whelpDate={detail.actual_date}
             puppyCount={detail.puppy_count}
+            hideEntry={phase === 'rearing'}
           />
         ) : null}
         {tab === 'notes' ? (

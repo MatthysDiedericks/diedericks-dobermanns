@@ -29,6 +29,7 @@ function main() {
   assert.equal(puppyCountsAsAvailable({ status: 'available' }), true);
   assert.equal(puppyCountsAsAvailable({ status: 'sold' }), false);
   assert.equal(puppyCountsAsAvailable({ status: 'deceased' }), false);
+  assert.equal(puppyCountsAsAvailable({ status: 'available', outcome: 'stillborn' }), false);
   assert.equal(
     puppyCountsAsAvailable({ status: 'available', reserved_for_name: 'Ann' }),
     false,

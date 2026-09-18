@@ -1,12 +1,14 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { LitterBulkTierAction } from '@/components/litters/LitterBulkTierAction';
+import { LitterPuppyAddRow } from '@/components/litters/LitterPuppyAddRow';
 import { MissingDataDot } from '@/components/dogs/MissingDataDot';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
+import { addPuppyToLitter } from '@/hooks/useMutations';
 import {
   isProgrammeTierKey,
   PROGRAMME_TIER_SELECT_OPTIONS,
@@ -15,9 +17,15 @@ import {
 import { dogDataGaps, gapLabel, gapSummaryLine, summarizeGaps } from '@/lib/dogs/gaps';
 import { titleCase } from '@/lib/format';
 import { formatPuppyAge, formatWeight } from '@/lib/kennel/formatters';
-import { CollarDot, collarLabel } from '@/lib/litters/collarColours';
+import { CollarDot, collarLabel, type CollarColourId } from '@/lib/litters/collarColours';
 import { setProgrammeTierForDogs } from '@/lib/litters/setPuppyProgrammeTiers';
+import { type DogColourCode } from '@/lib/colours/dogColours';
 import type { Dog } from '@/types/app.types';
+import {
+  deriveLitterOutcomeCounts,
+  formatLitterOutcomeCounts,
+  type PuppyOutcome,
+} from '@/lib/litters/outcomes';
 
 export function LitterPuppiesTab({
   litterId,
@@ -30,11 +38,86 @@ export function LitterPuppiesTab({
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [newSex, setNewSex] = useState<'male' | 'female'>('male');
+  const [newCollar, setNewCollar] = useState<CollarColourId | null>(null);
+  const [newColour, setNewColour] = useState<DogColourCode | ''>('');
+  const [newWeight, setNewWeight] = useState('');
+  const [newTime, setNewTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [newOutcome, setNewOutcome] = useState<PuppyOutcome>('live');
+  const [newOutcomeDate, setNewOutcomeDate] = useState('');
+  const [newOutcomeNote, setNewOutcomeNote] = useState('');
+  const [adding, setAdding] = useState(false);
   const selectedIds = puppies.filter((p) => selected[p.id]).map((p) => p.id);
   const gapLine = gapSummaryLine(summarizeGaps(puppies));
+  const outcomeLine = formatLitterOutcomeCounts(deriveLitterOutcomeCounts(puppies));
+  const nextOrder = useMemo(() => {
+    const orders = puppies
+      .map((p) => p.birth_order)
+      .filter((n): n is number => n != null);
+    return orders.length ? Math.max(...orders) + 1 : puppies.length + 1;
+  }, [puppies]);
+  const usedCollars = useMemo(
+    () =>
+      puppies
+        .map((p) => (p as { collar_colour?: string | null }).collar_colour)
+        .filter((c): c is string => Boolean(c) && c !== 'none'),
+    [puppies],
+  );
+
+  async function addPuppy() {
+    const grams = newWeight.trim() ? parseInt(newWeight, 10) : null;
+    setAdding(true);
+    const { error } = await addPuppyToLitter({
+      litterId,
+      birth_order: nextOrder,
+      sex: newSex,
+      collar_colour: newCollar,
+      colour: newColour || null,
+      birth_weight_grams:
+        grams != null && Number.isFinite(grams) && grams > 0 ? grams : null,
+        birth_time: newTime || null,
+        outcome: newOutcome,
+        outcome_date: newOutcomeDate || null,
+        outcome_note: newOutcomeNote || null,
+      });
+    setAdding(false);
+    if (error) {
+      Alert.alert('Could not add puppy', error);
+      return;
+    }
+    setNewCollar(null);
+    setNewWeight('');
+    setNewTime(new Date().toTimeString().slice(0, 5));
+    setNewOutcome('live');
+    setNewOutcomeDate('');
+    setNewOutcomeNote('');
+    onChanged?.();
+  }
 
   return (
     <View className="pb-8">
+      <LitterPuppyAddRow
+        nextOrder={nextOrder}
+        sex={newSex}
+        setSex={setNewSex}
+        collar={newCollar}
+        setCollar={setNewCollar}
+        colour={newColour}
+        setColour={setNewColour}
+        birthGrams={newWeight}
+        setBirthGrams={setNewWeight}
+        birthTime={newTime}
+        setBirthTime={setNewTime}
+        outcome={newOutcome}
+        setOutcome={setNewOutcome}
+        outcomeDate={newOutcomeDate}
+        setOutcomeDate={setNewOutcomeDate}
+        outcomeNote={newOutcomeNote}
+        setOutcomeNote={setNewOutcomeNote}
+        usedCollars={usedCollars}
+        onAdd={() => void addPuppy()}
+        pending={adding}
+      />
       <Button
         label="Register More Pups"
         onPress={() => router.push(`/(admin)/litters/${litterId}/register-pups` as never)}
@@ -50,6 +133,11 @@ export function LitterPuppiesTab({
             onChanged?.();
           }}
         />
+      ) : null}
+      {puppies.length ? (
+        <Typography variant="caption" className="mb-2 text-text">
+          {outcomeLine}
+        </Typography>
       ) : null}
       {gapLine ? (
         <Typography variant="caption" className="mb-3 text-amber-200">

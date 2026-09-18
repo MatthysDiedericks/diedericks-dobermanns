@@ -85,6 +85,7 @@ export async function fetchPublicLitter(id: string): Promise<PublicLitterRow | n
     .select(LITTER_SELECT)
     .eq('id', id)
     .eq('is_public', true)
+    .neq('status', 'archived')
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as unknown as PublicLitterRow) ?? null;

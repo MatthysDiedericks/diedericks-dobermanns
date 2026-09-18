@@ -32,7 +32,7 @@ export default function AdminLittersScreen() {
   const [femaleId, setFemaleId] = useState<string | undefined>();
   const [search, setSearch] = useState('');
   const { prefs, patch, clearFilters } = useLitterListPrefs();
-  const { litters, countsByLitterId, loading, error, refresh } = useLittersIndex();
+  const { litters, countsByLitterId, weighedTodayIds, loading, error, refresh } = useLittersIndex();
   const femaleHistory = useFemaleLitterHistory(view === 'female' ? femaleId : undefined);
   const query = search.trim();
   const searchLitterIds = useLitterPuppySearch(query);
@@ -135,6 +135,7 @@ export default function AdminLittersScreen() {
                       puppy_count: item.puppy_count,
                     })
                   }
+                  weighedToday={weighedTodayIds.includes(item.id)}
                   highlightQuery={query || undefined}
                   autoExpand={Boolean(query)}
                 />

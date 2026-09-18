@@ -8,11 +8,16 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { DOG_COLOUR_OPTIONS, type DogColourCode } from '@/lib/colours/dogColours';
-import { type CollarColourId } from '@/lib/litters/collarColours';
 import { seedLitterTodos } from '@/hooks/useLitterTodos';
-import { gramsToKg } from '@/hooks/useLitterWeights';
 import { useLitterDetail } from '@/hooks/useDogs';
+import { DOG_COLOUR_OPTIONS, type DogColourCode } from '@/lib/colours/dogColours';
+import {
+  birthWeightLogInsert,
+  newbornPuppyInsert,
+  shouldWriteBirthWeight,
+} from '@/lib/litters/newbornPuppy';
+import { type CollarColourId } from '@/lib/litters/collarColours';
+import { PUPPY_OUTCOMES, type PuppyOutcome } from '@/lib/litters/outcomes';
 import { requireSupabase } from '@/lib/supabase';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 
@@ -27,6 +32,9 @@ export default function RegisterPupsScreen() {
   const [colour, setColour] = useState<DogColourCode>('black_tan');
   const [collar, setCollar] = useState<CollarColourId | null>(null);
   const [birthGrams, setBirthGrams] = useState('');
+  const [outcome, setOutcome] = useState<PuppyOutcome>('live');
+  const [outcomeDate, setOutcomeDate] = useState('');
+  const [outcomeNote, setOutcomeNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedCount, setSavedCount] = useState({ male: 0, female: 0 });
 
@@ -48,31 +56,35 @@ export default function RegisterPupsScreen() {
     try {
       const client = requireSupabase();
       const name = `${letter}${pupIndex}`;
+      const birthDate = litter.actual_date ?? new Date().toISOString().slice(0, 10);
       const { data: dog, error: dogErr } = await client
         .from('dogs')
-        .insert({
-          name,
-          sex,
-          colour,
-          collar_colour: collar,
-          date_of_birth: litter.actual_date ?? new Date().toISOString().slice(0, 10),
-          litter_id: litterId,
-          status: 'puppy',
-          birth_weight_grams: grams,
-          category: 'puppy',
-          breed: 'Dobermann',
-        })
+        .insert(
+          newbornPuppyInsert({
+            name,
+            sex,
+            colour,
+            collar_colour: collar,
+            birth_order: pupIndex,
+            birth_time: timeBorn || null,
+            birth_weight_grams: grams,
+            date_of_birth: birthDate,
+            litter_id: litterId,
+            outcome,
+            outcome_date: outcomeDate || null,
+            outcome_note: outcomeNote || null,
+          }),
+        )
         .select('id')
         .single();
       if (dogErr) throw new Error(dogErr.message);
 
-      await client.from('weight_logs').insert({
-        dog_id: dog.id,
-        weight_kg: gramsToKg(grams),
-        recorded_date: litter.actual_date ?? new Date().toISOString().slice(0, 10),
-        recorded_at: new Date().toISOString(),
-        session: 'AM',
-      });
+      if (shouldWriteBirthWeight(grams)) {
+        const { error: weightErr } = await client
+          .from('weight_logs')
+          .insert(birthWeightLogInsert(dog.id, grams, birthDate));
+        if (weightErr) throw new Error(weightErr.message);
+      }
 
       setSavedCount((c) => ({
         male: c.male + (sex === 'male' ? 1 : 0),
@@ -83,6 +95,9 @@ export default function RegisterPupsScreen() {
         setPupIndex((i) => i + 1);
         setBirthGrams('');
         setCollar(null);
+        setOutcome('live');
+        setOutcomeDate('');
+        setOutcomeNote('');
         await refresh();
         showSaved('Saved ✓');
       } else {
@@ -175,6 +190,33 @@ export default function RegisterPupsScreen() {
         <Typography variant="caption" className="mb-4 text-subtle">
           = {previewKg} kg
         </Typography>
+        <Typography variant="caption" className="mb-2 text-subtle">
+          Outcome
+        </Typography>
+        <View className="mb-4 flex-row flex-wrap gap-2">
+          {PUPPY_OUTCOMES.map((o) => (
+            <Pressable
+              key={o.value}
+              onPress={() => setOutcome(o.value)}
+              className={`rounded-xl border px-3 py-3 ${
+                outcome === o.value ? 'border-gold bg-gold/15' : 'border-gold/25'
+              }`}
+            >
+              <Typography variant="caption">{o.label}</Typography>
+            </Pressable>
+          ))}
+        </View>
+        {outcome !== 'live' ? (
+          <>
+            <Input
+              label={outcome === 'stillborn' ? 'Date (optional)' : 'Date died'}
+              value={outcomeDate}
+              onChangeText={setOutcomeDate}
+              placeholder="YYYY-MM-DD"
+            />
+            <Input label="Note" value={outcomeNote} onChangeText={setOutcomeNote} />
+          </>
+        ) : null}
 
         <Button
           label="Save & Add Next Pup"

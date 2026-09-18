@@ -2,7 +2,7 @@ import { View } from 'react-native';
 
 import { EmptyTabState } from '@/components/dogs/detail/EmptyTabState';
 import { PuppyGrowthChart } from '@/components/litters/PuppyGrowthChart';
-import { WeightGrid } from '@/components/litters/WeightGrid';
+import { WeighInBoard } from '@/components/litters/WeighInBoard';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { Typography } from '@/components/ui/Typography';
 import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
@@ -12,9 +12,10 @@ interface LitterWeightsTabProps {
   litterId: string;
   whelpDate?: string | null;
   puppyCount?: number | null;
+  hideEntry?: boolean;
 }
 
-export function LitterWeightsTab({ litterId, whelpDate, puppyCount }: LitterWeightsTabProps) {
+export function LitterWeightsTab({ litterId, whelpDate, puppyCount, hideEntry }: LitterWeightsTabProps) {
   const {
     puppies,
     weightsByPuppyId,
@@ -58,12 +59,17 @@ export function LitterWeightsTab({ litterId, whelpDate, puppyCount }: LitterWeig
           {weighingSummary.isDueNow ? ' · DUE NOW' : weighingSummary.isDueSoon ? ' · Due soon' : ''}
         </Typography>
       </View>
-      <WeightGrid
-        puppies={puppies}
-        weightsByPuppyId={weightsByPuppyId}
-        whelpDate={whelpDate ?? null}
-        onBatchSave={logWeightsBatch}
-      />
+      {hideEntry ? (
+        <Typography variant="caption" className="mb-4 text-subtle">
+          Weigh-in is at the top of this page.
+        </Typography>
+      ) : (
+        <WeighInBoard
+          puppies={puppies}
+          weightsByPuppyId={weightsByPuppyId}
+          onBatchSave={logWeightsBatch}
+        />
+      )}
       <PuppyGrowthChart
         puppies={puppies}
         weightsByPuppyId={weightsByPuppyId}

@@ -4,9 +4,13 @@
  * the derived figure and only use the stored value when no puppies exist.
  */
 
+import { puppyDidNotSurvive } from "@/lib/litters/outcomes";
+
 export type PuppyCountSlice = {
   litter_id: string | null;
   status: string | null;
+  outcome?: string | null;
+  deceased_at?: string | null;
   owner_id: string | null;
   reserved_for_name: string | null;
   new_owner_name: string | null;
@@ -32,12 +36,14 @@ export function isDeceasedStatus(status: string | null | undefined): boolean {
 
 export function puppyCountsAsAvailable(p: {
   status: string | null;
+  outcome?: string | null;
+  deceased_at?: string | null;
   owner_id?: string | null;
   reserved_for_name?: string | null;
   new_owner_name?: string | null;
 }): boolean {
   const status = (p.status ?? '').toLowerCase();
-  if (DEAD.has(status) || TAKEN.has(status)) return false;
+  if (puppyDidNotSurvive(p) || DEAD.has(status) || TAKEN.has(status)) return false;
   if (p.owner_id) return false;
   if (p.reserved_for_name?.trim()) return false;
   if (p.new_owner_name?.trim()) return false;

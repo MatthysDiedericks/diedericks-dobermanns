@@ -1,4 +1,5 @@
 import { type Href, Link, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { DogCard } from '@/components/dogs/DogCard';
@@ -11,6 +12,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Typography } from '@/components/ui/Typography';
 import { useLitters } from '@/hooks/useContent';
 import { useDogs } from '@/hooks/useDogs';
+import { sortByDailySeed } from '@/lib/dogs/dailyOrder';
 import { titleCase } from '@/lib/format';
 import { publicLitterKind } from '@/lib/litters/publicPlacement';
 
@@ -21,7 +23,8 @@ function formatExpected(value: string | null): string {
 
 export default function PuppiesScreen() {
   const router = useRouter();
-  const { dogs: puppies, loading: puppiesLoading } = useDogs({ category: 'puppy' });
+  const { dogs: puppyRows, loading: puppiesLoading } = useDogs({ category: 'puppy' });
+  const puppies = useMemo(() => sortByDailySeed(puppyRows), [puppyRows]);
   const { data: litters, loading: littersLoading } = useLitters();
 
   const placedLitters = litters.filter((l) => publicLitterKind(l) === 'placed');

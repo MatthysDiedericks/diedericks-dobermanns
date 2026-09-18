@@ -12,15 +12,18 @@ import {
   litterHasRecordedPuppies,
   type DerivedLitterCount,
 } from '@/lib/litters/derivedCounts';
+import { litterNextAction } from '@/lib/litters/guide';
 
 export function LitterListCard({
   litter,
   count,
+  weighedToday = false,
   highlightQuery,
   autoExpand = false,
 }: {
   litter: LitterIndexRow;
   count: DerivedLitterCount;
+  weighedToday?: boolean;
   highlightQuery?: string;
   autoExpand?: boolean;
 }) {
@@ -31,6 +34,14 @@ export function LitterListCard({
   const dateLabel = litter.actual_date ?? litter.expected_date;
   const label = formatLitterCount(count);
   const active = isActiveLitter(litter.status);
+  const next = litterNextAction({
+    status: litter.status,
+    puppyCount: count.fromPuppies ? count.total : (litter.puppy_count ?? 0),
+    expectedDate: litter.expected_date,
+    litterLetter: litter.litter_letter,
+    actualDate: litter.actual_date,
+    weighedToday,
+  });
 
   return (
     <View className="mb-8">
@@ -60,6 +71,9 @@ export function LitterListCard({
             <Typography variant="bodyMuted">{letter}</Typography>
             <Typography variant="bodyMuted">
               Dam: {litter.mother?.name ?? '—'} · Sire: {litter.father?.name ?? '—'}
+            </Typography>
+            <Typography variant="caption" className="text-gold">
+              {next}
             </Typography>
           </Pressable>
         </View>

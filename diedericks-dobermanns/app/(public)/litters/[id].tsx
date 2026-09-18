@@ -120,7 +120,7 @@ export default function LitterDetailScreen() {
               {puppies.map((p) => {
                 const logs = weightsByPuppyId.get(p.id) ?? [];
                 const latest = logs[logs.length - 1] ?? null;
-                const photoUrl = profilePhotoUrl(p.dog_media);
+                const photoUrl = profilePhotoUrl(p.dog_media, new Date(), p.id);
                 return (
                   <PublicPuppyCard
                     key={p.id}

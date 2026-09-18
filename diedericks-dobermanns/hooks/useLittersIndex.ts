@@ -5,6 +5,8 @@ import {
   type DerivedLitterCount,
   type PuppyCountSlice,
 } from '@/lib/litters/derivedCounts';
+import { littersWeighedToday } from '@/lib/litters/guide';
+import { isArchivedLitterStatus } from '@/lib/litters/deleteImpact';
 import { requireSupabase, supabase } from '@/lib/supabase';
 
 export interface LitterIndexRow {
@@ -46,6 +48,7 @@ export function useLittersIndex() {
   const [countsByLitterId, setCountsByLitterId] = useState<
     Record<string, DerivedLitterCount>
   >({});
+  const [weighedTodayIds, setWeighedTodayIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,27 +58,38 @@ export function useLittersIndex() {
     if (!supabase) {
       setLitters([]);
       setCountsByLitterId({});
+      setWeighedTodayIds([]);
       setLoading(false);
       return;
     }
     try {
       const client = requireSupabase();
-      const [{ data, error: err }, { data: slices, error: sliceErr }] =
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data, error: err }, { data: slices, error: sliceErr }, { data: dogIds }] =
         await Promise.all([
           client.from('litters').select(LITTER_INDEX_SELECT),
           client.from('dogs').select(PUPPY_SLICE_SELECT).not('litter_id', 'is', null),
+          client.from('dogs').select('id, litter_id').not('litter_id', 'is', null),
         ]);
       if (err) throw new Error(err.message);
       if (sliceErr) throw new Error(sliceErr.message);
-      const rows = (data ?? []) as unknown as LitterIndexRow[];
+      const { data: todayLogs } = await client
+        .from('weight_logs')
+        .select('dog_id, notes')
+        .eq('recorded_date', today);
+      const rows = ((data ?? []) as unknown as LitterIndexRow[]).filter(
+        (l) => !isArchivedLitterStatus(l.status),
+      );
       setLitters(rows);
       setCountsByLitterId(
         buildDerivedCountsByLitter((slices ?? []) as PuppyCountSlice[], rows),
       );
+      setWeighedTodayIds(littersWeighedToday(dogIds ?? [], todayLogs ?? []));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load litters');
       setLitters([]);
       setCountsByLitterId({});
+      setWeighedTodayIds([]);
     } finally {
       setLoading(false);
     }
@@ -88,7 +102,7 @@ export function useLittersIndex() {
   const active = litters.filter((l) => isActiveLitter(l.status));
   const completed = litters.filter((l) => !isActiveLitter(l.status));
 
-  return { litters, countsByLitterId, active, completed, loading, error, refresh };
+  return { litters, countsByLitterId, weighedTodayIds, active, completed, loading, error, refresh };
 }
 
 export interface FemaleLitterHistoryRow {

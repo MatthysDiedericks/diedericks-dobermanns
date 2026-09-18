@@ -15,6 +15,9 @@ export interface LitterPuppy {
   colour: string | null;
   collar_colour: string | null;
   birth_weight_grams: number | null;
+  status: string | null;
+  outcome?: string | null;
+  deceased_at?: string | null;
 }
 
 export interface PuppyWeightLog {
@@ -28,7 +31,7 @@ export interface PuppyWeightLog {
 }
 
 const PUPPY_SELECT =
-  'id, name, sex, colour, collar_colour, birth_weight_grams' as const;
+  'id, name, sex, colour, collar_colour, birth_weight_grams, status, outcome, deceased_at' as const;
 const LOG_SELECT =
   'id, dog_id, weight_kg, recorded_date, recorded_at, session, notes' as const;
 
