@@ -5,6 +5,7 @@ import { DogGroupPickerField, type DogPickerOption } from '@/components/forms/Do
 import { PhotoPicker } from '@/components/forms/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { addDogMedia, useSubmitting } from '@/hooks/useMutations';
 import { resolvePhotoUrls } from '@/lib/storage';
@@ -30,6 +31,7 @@ export function AddDogMediaCard({
   const { submitting, run } = useSubmitting();
   const [isPublic, setIsPublic] = useState(true);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [captions, setCaptions] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -43,9 +45,17 @@ export function AddDogMediaCard({
       return;
     }
     const urls = await resolvePhotoUrls(photos, `dogs/${dogId}`);
-    for (const url of urls) {
+    for (let i = 0; i < urls.length; i++) {
+      const uri = photos[i];
       const { error: err } = await run(() =>
-        addDogMedia({ dogId, type: 'photo', url, isPublic, uploadedBy: profile?.id ?? null }),
+        addDogMedia({
+          dogId,
+          type: 'photo',
+          url: urls[i],
+          isPublic,
+          uploadedBy: profile?.id ?? null,
+          caption: captions[uri]?.trim() || null,
+        }),
       );
       if (err) {
         setError(err);
@@ -53,6 +63,7 @@ export function AddDogMediaCard({
       }
     }
     setPhotos([]);
+    setCaptions({});
     setSuccess(
       isPublic
         ? `Added ${urls.length} photo${urls.length === 1 ? '' : 's'} — now visible on the dog's public profile.`
@@ -82,7 +93,29 @@ export function AddDogMediaCard({
       <Typography variant="caption" className="mb-2 text-silver">
         Photos
       </Typography>
-      <PhotoPicker value={photos} onChange={setPhotos} max={5} />
+      <PhotoPicker
+        value={photos}
+        onChange={(next) => {
+          setPhotos(next);
+          setCaptions((prev) => {
+            const keep: Record<string, string> = {};
+            for (const uri of next) {
+              if (prev[uri]) keep[uri] = prev[uri];
+            }
+            return keep;
+          });
+        }}
+        max={5}
+      />
+      {photos.map((uri, i) => (
+        <Input
+          key={uri}
+          label={photos.length > 1 ? `Caption · photo ${i + 1}` : 'Caption'}
+          value={captions[uri] ?? ''}
+          onChangeText={(text) => setCaptions((prev) => ({ ...prev, [uri]: text }))}
+          placeholder="Hunter-King, PSA trial, March 2026"
+        />
+      ))}
 
       {error ? (
         <Typography variant="caption" className="mt-3 text-danger">
