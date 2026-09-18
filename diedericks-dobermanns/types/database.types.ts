@@ -2777,6 +2777,9 @@ export type Database = {
           dcm_status: string | null
           deceased_at: string | null
           deceased_cause: string | null
+          outcome: string
+          outcome_date: string | null
+          outcome_note: string | null
           delivered_at: string | null
           delivery_method: string | null
           delivery_notes: string | null
@@ -2885,6 +2888,9 @@ export type Database = {
           dcm_status?: string | null
           deceased_at?: string | null
           deceased_cause?: string | null
+          outcome?: string
+          outcome_date?: string | null
+          outcome_note?: string | null
           delivered_at?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
@@ -2993,6 +2999,9 @@ export type Database = {
           dcm_status?: string | null
           deceased_at?: string | null
           deceased_cause?: string | null
+          outcome?: string
+          outcome_date?: string | null
+          outcome_note?: string | null
           delivered_at?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
@@ -3500,6 +3509,68 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_allocations: {
+        Row: {
+          amount: number
+          basis_note: string | null
+          created_at: string
+          dog_id: string | null
+          expense_line_id: string
+          id: string
+          litter_id: string | null
+          weight: number
+        }
+        Insert: {
+          amount: number
+          basis_note?: string | null
+          created_at?: string
+          dog_id?: string | null
+          expense_line_id: string
+          id?: string
+          litter_id?: string | null
+          weight?: number
+        }
+        Update: {
+          amount?: number
+          basis_note?: string | null
+          created_at?: string
+          dog_id?: string | null
+          expense_line_id?: string
+          id?: string
+          litter_id?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_allocations_dog_id_fkey"
+            columns: ["dog_id"]
+            isOneToOne: false
+            referencedRelation: "dogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_allocations_expense_line_id_fkey"
+            columns: ["expense_line_id"]
+            isOneToOne: false
+            referencedRelation: "expense_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_allocations_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_allocations_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "v_litter_go_home"
+            referencedColumns: ["litter_id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           colour: string | null
@@ -3529,6 +3600,66 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      expense_lines: {
+        Row: {
+          allocation_kind: string
+          category_id: string | null
+          created_at: string
+          description: string
+          expense_id: string
+          id: string
+          line_amount: number
+          quantity: number
+          sort_order: number
+          unit_amount: number | null
+          vat_amount: number
+          vat_rate: number | null
+        }
+        Insert: {
+          allocation_kind: string
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          expense_id: string
+          id?: string
+          line_amount: number
+          quantity?: number
+          sort_order?: number
+          unit_amount?: number | null
+          vat_amount?: number
+          vat_rate?: number | null
+        }
+        Update: {
+          allocation_kind?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          expense_id?: string
+          id?: string
+          line_amount?: number
+          quantity?: number
+          sort_order?: number
+          unit_amount?: number | null
+          vat_amount?: number
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_lines_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_lines_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {

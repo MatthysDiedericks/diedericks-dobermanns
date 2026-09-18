@@ -2343,6 +2343,9 @@ export type Database = {
           dcm_status: string | null
           deceased_at: string | null
           deceased_cause: string | null
+          outcome: string
+          outcome_date: string | null
+          outcome_note: string | null
           delivered_at: string | null
           delivery_method: string | null
           delivery_notes: string | null
@@ -2443,6 +2446,9 @@ export type Database = {
           dcm_status?: string | null
           deceased_at?: string | null
           deceased_cause?: string | null
+          outcome?: string
+          outcome_date?: string | null
+          outcome_note?: string | null
           delivered_at?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
@@ -2543,6 +2549,9 @@ export type Database = {
           dcm_status?: string | null
           deceased_at?: string | null
           deceased_cause?: string | null
+          outcome?: string
+          outcome_date?: string | null
+          outcome_note?: string | null
           delivered_at?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
