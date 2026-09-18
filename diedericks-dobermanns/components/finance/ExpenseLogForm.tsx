@@ -27,8 +27,12 @@ export function ExpenseLogForm() {
   const form = useExpenseForm();
 
   const handleSave = async (andReset: boolean) => {
-    const result = await form.save(andReset);
-    if (result === 'back') router.back();
+    await form.save(andReset);
+  };
+
+  const goListFresh = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(admin)/finance/expenses/index' as never);
   };
 
   if (form.loadingExpense) {
@@ -47,7 +51,7 @@ export function ExpenseLogForm() {
       <PageHeader eyebrow="Finance" title={title} />
       <ScrollView className="px-6 pb-12" keyboardShouldPersistTaps="handled">
       {form.successMsg ? (
-        <View className="mb-3 rounded-xl border border-success/40 bg-success/10 px-4 py-2">
+        <View className="mb-3 rounded-xl border border-success/40 bg-success/10 px-4 py-3">
           <Typography variant="label" className="text-success">
             {form.successMsg}
           </Typography>
@@ -197,9 +201,11 @@ export function ExpenseLogForm() {
       <Input value={form.notes} onChangeText={form.setNotes} placeholder="Notes" className="mb-4" />
 
       {form.error ? (
-        <Typography variant="caption" className="mb-3 text-danger">
-          {form.error}
-        </Typography>
+        <View className="mb-3 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3">
+          <Typography variant="caption" className="text-danger">
+            {form.error}
+          </Typography>
+        </View>
       ) : null}
 
       {form.editingId && isStaffCategory(form.categoryId) && !form.employeeId ? (
@@ -226,7 +232,19 @@ export function ExpenseLogForm() {
         />
       ) : null}
 
-      {form.editingId ? (
+      {form.justSaved ? (
+        <View className="mb-8 gap-3">
+          {!form.editingId ? (
+            <Button label="Add another" onPress={form.addAnother} fullWidth />
+          ) : null}
+          <Button
+            label="Back to expenses"
+            variant="outline"
+            onPress={goListFresh}
+            fullWidth
+          />
+        </View>
+      ) : form.editingId ? (
         <View className="mb-8 gap-3">
           <Button label="Update expense" onPress={() => void handleSave(false)} loading={form.saving} fullWidth />
           <Button label="Cancel" variant="outline" onPress={() => router.back()} fullWidth />

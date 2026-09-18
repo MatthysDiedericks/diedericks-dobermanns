@@ -6,7 +6,8 @@ import { Colors } from '@/constants/colors';
 import { formatAmount } from '@/lib/finance/formatters';
 
 interface Breakdown {
-  general: number;
+  company: number;
+  shared: number;
   dog: number;
   litter: number;
   total: number;
@@ -17,7 +18,8 @@ interface Props {
 }
 
 const ROWS: { key: keyof Omit<Breakdown, 'total'>; label: string; color: string }[] = [
-  { key: 'general', label: 'General', color: Colors.gold },
+  { key: 'company', label: 'Company overhead', color: Colors.goldMuted },
+  { key: 'shared', label: 'Shared kennel', color: Colors.gold },
   { key: 'dog', label: 'Dog-specific', color: Colors.goldLight },
   { key: 'litter', label: 'Litter-specific', color: Colors.goldMuted },
 ];

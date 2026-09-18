@@ -1,6 +1,18 @@
 import { format, parseISO } from 'date-fns';
 
-import { formatAmount } from '@/lib/finance/formatters';
+import { formatAmount, formatDate } from '@/lib/finance/formatters';
+
+export const EXPENSE_SAVE_FAILED =
+  'Not saved — check your connection and press Save again. Nothing has been lost.';
+
+export function expenseSavedConfirmation(opts: {
+  amount: number;
+  supplier?: string | null;
+  date: string;
+}): string {
+  const who = opts.supplier?.trim() || 'no supplier';
+  return `Saved. ${formatAmount(opts.amount)} — ${who}, ${formatDate(opts.date)}.`;
+}
 
 /** Fields needed to show the money that actually left the bank. */
 export type ExpenseMoney = {

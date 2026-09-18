@@ -116,7 +116,7 @@ export function ExpenseAllocationSection({
         Allocation
       </Typography>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-        {(['general', 'dog', 'litter'] as const).map((t) => (
+        {(['company', 'shared', 'dog', 'litter'] as const).map((t) => (
           <Pressable
             key={t}
             onPress={() => onAllocationTypeChange(t)}
@@ -125,7 +125,13 @@ export function ExpenseAllocationSection({
             }`}
           >
             <Typography variant="caption">
-              {t === 'general' ? 'General' : t === 'dog' ? 'Specific Dog' : 'Specific Litter'}
+              {t === 'company'
+                ? 'Company overhead'
+                : t === 'shared'
+                  ? 'Shared overhead'
+                  : t === 'dog'
+                    ? 'Specific Dog'
+                    : 'Specific Litter'}
             </Typography>
           </Pressable>
         ))}

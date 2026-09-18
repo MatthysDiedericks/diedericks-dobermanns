@@ -143,7 +143,7 @@ export async function bulkImportExpenses(rows: ImportRow[], createdBy: string | 
     vat_applicable: false,
     vat_rate: 0,
     vat_amount: 0,
-    allocation_type: 'general' as const,
+    allocation_type: 'shared' as const,
     expense_date: r.date,
     supplier_name: r.supplier,
     notes: r.notes,

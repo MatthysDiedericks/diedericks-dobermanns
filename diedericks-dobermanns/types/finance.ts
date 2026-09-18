@@ -102,7 +102,7 @@ export interface Expense {
   vat_amount: number | null;
   payment_account_id: string | null;
   payment_account_name: string | null;
-  allocation_type: 'general' | 'dog' | 'litter';
+  allocation_type: 'company' | 'shared' | 'dog' | 'litter';
   is_payable: boolean;
   payable_due_date: string | null;
   payable_paid_date: string | null;
@@ -112,6 +112,36 @@ export interface Expense {
   employee_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One line on a supplier invoice. Header is `Expense`. */
+export type AllocationKind = 'company' | 'dog' | 'litter' | 'shared';
+
+export interface ExpenseLine {
+  id: string;
+  expense_id: string;
+  description: string;
+  quantity: number;
+  unit_amount: number | null;
+  line_amount: number;
+  vat_rate: number | null;
+  vat_amount: number | null;
+  category_id: string | null;
+  allocation_kind: AllocationKind;
+  sort_order: number;
+  created_at: string;
+}
+
+/** Resolved split of a line, frozen at capture. */
+export interface ExpenseAllocation {
+  id: string;
+  expense_line_id: string;
+  dog_id: string | null;
+  litter_id: string | null;
+  amount: number;
+  weight: number;
+  basis_note: string | null;
+  created_at: string;
 }
 
 export type InvoiceWithDetails = Invoice & {

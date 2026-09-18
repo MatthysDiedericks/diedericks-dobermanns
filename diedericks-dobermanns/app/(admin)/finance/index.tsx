@@ -10,6 +10,7 @@ import { BarChart } from 'react-native-chart-kit';
 
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { ExpenseAllocationBreakdown } from '@/components/finance/ExpenseAllocationBreakdown';
+import { ExpenseAllocationReconciliation } from '@/components/finance/ExpenseAllocationReconciliation';
 import { FinanceActionChips } from '@/components/finance/FinanceActionChips';
 import { FinanceDashboardFabs } from '@/components/finance/FinanceDashboardFabs';
 import { FinanceKpiCard } from '@/components/finance/FinanceKpiCard';
@@ -22,7 +23,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
-import { useExpenseAllocationBreakdown } from '@/hooks/useExpenses';
+import { useAllocationReconciliation, useExpenseAllocationBreakdown } from '@/hooks/useExpenses';
 import { useFinanceReport } from '@/hooks/useFinanceReport';
 import { useFinanceYears } from '@/hooks/useFinanceYears';
 import { buildFinanceReport } from '@/lib/finance/buildFinanceReport';
@@ -69,6 +70,7 @@ export default function FinanceDashboardScreen() {
 
   const { summary: budgetSummary } = useBudgetSummary(budgetYear);
   const { breakdown: allocationBreakdown } = useExpenseAllocationBreakdown(from, to);
+  const { report: allocationReport } = useAllocationReconciliation(from, to);
 
   const chartWidth = Dimensions.get('window').width - 48;
   const chartConfig = {
@@ -185,6 +187,12 @@ export default function FinanceDashboardScreen() {
       {!isLoading && allocationBreakdown.total > 0 ? (
         <View className="mb-6 px-6">
           <ExpenseAllocationBreakdown breakdown={allocationBreakdown} />
+        </View>
+      ) : null}
+
+      {allocationReport && allocationReport.total > 0 ? (
+        <View className="mb-6 px-6">
+          <ExpenseAllocationReconciliation report={allocationReport} />
         </View>
       ) : null}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
 import {
@@ -9,9 +9,13 @@ import {
 } from '@/hooks/useExpenses';
 import type { ReceiptIntent } from '@/components/finance/ExpenseReceiptControl';
 import { buildExpensePayload, validateExpenseForm } from '@/lib/finance/expenseFormPayload';
+import { normalizeAllocationType } from '@/lib/finance/allocation';
 import {
   defaultVatAmount,
+  EXPENSE_SAVE_FAILED,
+  expenseGross,
   expenseLoggedLabel,
+  expenseSavedConfirmation,
   vatLooksOffRate,
 } from '@/lib/finance/expenseGross';
 
@@ -40,7 +44,7 @@ export function useExpenseForm() {
   const [expenseDate, setExpenseDate] = useState(today);
   const [supplier, setSupplier] = useState('');
   const [invoiceRef, setInvoiceRef] = useState('');
-  const [allocationType, setAllocationType] = useState<AllocationType>('general');
+  const [allocationType, setAllocationType] = useState<AllocationType>('shared');
   const [selectedDogId, setSelectedDogId] = useState<string | null>(null);
   const [selectedDogName, setSelectedDogName] = useState('');
   const [selectedLitterId, setSelectedLitterId] = useState<string | null>(null);
@@ -64,6 +68,14 @@ export function useExpenseForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const successClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successClearRef.current) clearTimeout(successClearRef.current);
+    };
+  }, []);
 
   const priceNum = parseFloat(priceExclVat) || 0;
   const vatNum = parseFloat(vatAmountText) || 0;
@@ -110,7 +122,7 @@ export function useExpenseForm() {
         setExpenseDate(exp.expense_date);
         setSupplier(exp.supplier_name ?? '');
         setInvoiceRef(exp.invoice_reference ?? '');
-        setAllocationType((exp.allocation_type as AllocationType) ?? 'general');
+        setAllocationType(normalizeAllocationType(exp.allocation_type));
         setSelectedDogId(exp.dog_id);
         setSelectedLitterId(exp.litter_id);
         setPaymentAccountId(exp.payment_account_id);
@@ -170,29 +182,15 @@ export function useExpenseForm() {
     setPriceExclVat('');
     setVatAmountText('');
     setVatTouched(false);
-    setSupplier('');
     setInvoiceRef('');
     setNotes('');
     setReceiptPath(null);
     setReceiptName(null);
     setOriginalReceiptPath(null);
     setReceiptIntent('keep');
-    if (!lockedDog && !lockedLitter) {
-      setAllocationType('general');
-      setSelectedDogId(null);
-      setSelectedDogName('');
-      setSelectedLitterId(null);
-      setSelectedLitterName('');
-    }
-    setPaymentAccountId(null);
-    setPaymentAccountName('');
-    setCustomAccount('');
-    setPayableDueDate('');
-    setCreditorName('');
-    setIsPayable(false);
-    setRecurringEnd('');
-    setSuccessMsg('Expense logged ✓');
-    setTimeout(() => setSuccessMsg(null), 2500);
+    setJustSaved(false);
+    if (successClearRef.current) clearTimeout(successClearRef.current);
+    successClearRef.current = setTimeout(() => setSuccessMsg(null), 4000);
   };
 
   const save = async (andReset: boolean) => {
@@ -205,15 +203,27 @@ export function useExpenseForm() {
     setError(null);
     try {
       const payload = buildPayload();
+      const confirmation = expenseSavedConfirmation({
+        amount: expenseGross({ amount: payload.amount, vat_amount: payload.vat_amount }),
+        supplier: supplier || payload.supplier_name,
+        date: expenseDate,
+      });
       if (editingId) {
         await updateExpense({ id: editingId, ...payload });
-        return 'back' as const;
+        setSuccessMsg(confirmation);
+        setJustSaved(true);
+        return 'saved' as const;
       }
       await createExpense(payload);
-      if (andReset) resetAfterSave();
-      return andReset ? ('reset' as const) : ('back' as const);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save expense');
+      setSuccessMsg(confirmation);
+      if (andReset) {
+        resetAfterSave();
+        return 'reset' as const;
+      }
+      setJustSaved(true);
+      return 'saved' as const;
+    } catch {
+      setError(EXPENSE_SAVE_FAILED);
       return false;
     } finally {
       setSaving(false);
@@ -285,6 +295,8 @@ export function useExpenseForm() {
     saving,
     error,
     successMsg,
+    justSaved,
+    addAnother: resetAfterSave,
     save,
   };
 }

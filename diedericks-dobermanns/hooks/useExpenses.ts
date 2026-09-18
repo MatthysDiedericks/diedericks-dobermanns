@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 
 import { EXPENSE_WITH_CATEGORY } from '@/lib/finance/expenseColumns';
 import { expenseGross } from '@/lib/finance/expenseGross';
@@ -7,19 +8,22 @@ import {
   deleteExpense,
   fetchExpenseById,
   mapExpenseRow,
+  reclassifyExpenses,
   updateExpense,
   type AllocationType,
   type CreateExpenseInput,
 } from '@/lib/finance/expenseMutations';
+import { fetchAllocationReconciliation } from '@/lib/finance/allocationLedger';
 import {
   fetchAllExpenses,
   fetchExpenseCategories,
 } from '@/lib/finance/queries';
+import type { AllocationReconciliation } from '@/lib/finance/reconcileAllocations';
 import { requireSupabase } from '@/lib/supabase';
 import type { ExpenseCategory, ExpenseWithCategory } from '@/types/finance';
 
 export type { AllocationType, CreateExpenseInput };
-export { createExpense, deleteExpense, fetchExpenseById, updateExpense };
+export { createExpense, deleteExpense, fetchExpenseById, updateExpense, reclassifyExpenses };
 
 export function useExpenses(categoryId?: string) {
   const [data, setData] = useState<ExpenseWithCategory[]>([]);
@@ -39,9 +43,11 @@ export function useExpenses(categoryId?: string) {
     }
   }, [categoryId]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   return { data, loading, error, refresh };
 }
@@ -173,7 +179,13 @@ export function useVatExpenseSummary(from: string, to: string) {
 }
 
 export function useExpenseAllocationBreakdown(from: string, to: string) {
-  const [breakdown, setBreakdown] = useState({ general: 0, dog: 0, litter: 0, total: 0 });
+  const [breakdown, setBreakdown] = useState({
+    company: 0,
+    shared: 0,
+    dog: 0,
+    litter: 0,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -189,13 +201,49 @@ export function useExpenseAllocationBreakdown(from: string, to: string) {
           rows
             .filter((r) => r.allocation_type === type)
             .reduce((s, r) => s + expenseGross(r), 0);
-        const general = sumType('general');
+        const company = sumType('company');
+        const shared = sumType('shared') + sumType('general');
         const dog = sumType('dog');
         const litter = sumType('litter');
-        setBreakdown({ general, dog, litter, total: general + dog + litter });
+        setBreakdown({
+          company,
+          shared,
+          dog,
+          litter,
+          total: company + shared + dog + litter,
+        });
         setLoading(false);
       });
   }, [from, to]);
 
   return { breakdown, loading };
+}
+
+export function useAllocationReconciliation(from: string, to: string) {
+  const [report, setReport] = useState<AllocationReconciliation | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void fetchAllocationReconciliation(from, to)
+      .then((next) => {
+        if (!cancelled) setReport(next);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Could not reconcile');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [from, to]);
+
+  return { report, loading, error };
 }

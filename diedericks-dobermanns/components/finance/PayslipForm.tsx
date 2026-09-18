@@ -53,6 +53,7 @@ export function PayslipForm({
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const grossNum = Number(gross) || 0;
   const net = useMemo(() => payslipNet(grossNum, deductions), [grossNum, deductions]);
   const currency = employee.currency || 'SZL';
@@ -60,6 +61,7 @@ export function PayslipForm({
   const submit = async () => {
     setBusy(true);
     setError(null);
+    setSuccess(null);
     try {
       const id = await createPayslip({
         employee_id: employee.id,
@@ -75,10 +77,17 @@ export function PayslipForm({
         rate_of_pay: rate ? Number(rate) : null,
         hours_worked: hours ? Number(hours) : null,
       });
-      await sharePayslipPdf(id);
+      setSuccess(`Saved. Payslip for ${employeeDisplayName(employee)}.`);
+      try {
+        await sharePayslipPdf(id);
+      } catch {
+        /* payslip is saved — sharing the PDF is separate */
+      }
       router.replace(`/(admin)/finance/employees/${employee.id}` as never);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create payslip');
+    } catch {
+      setError(
+        'Not saved — check your connection and press Save again. Nothing has been lost.',
+      );
     } finally {
       setBusy(false);
     }
@@ -148,6 +157,11 @@ export function PayslipForm({
       <Typography variant="label" className="mb-4 text-gold">
         Net {formatPayslipAmount(net, currency)}
       </Typography>
+      {success ? (
+        <Typography variant="caption" className="mb-3 text-success">
+          {success}
+        </Typography>
+      ) : null}
       {error ? (
         <Typography variant="caption" className="mb-3 text-danger">
           {error}

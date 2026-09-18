@@ -29,6 +29,7 @@ export function EmployeeForm({ existing }: { existing?: Employee }) {
   const [isActive, setIsActive] = useState(existing?.is_active ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const submit = async () => {
     if (!fullName.trim()) {
@@ -37,6 +38,7 @@ export function EmployeeForm({ existing }: { existing?: Employee }) {
     }
     setBusy(true);
     setError(null);
+    setSuccess(null);
     try {
       const id = await saveEmployee(
         {
@@ -57,9 +59,12 @@ export function EmployeeForm({ existing }: { existing?: Employee }) {
         },
         existing?.id,
       );
+      setSuccess(`Saved. ${fullName.trim()}.`);
       router.replace(`/(admin)/finance/employees/${id}` as never);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save');
+    } catch {
+      setError(
+        'Not saved — check your connection and press Save again. Nothing has been lost.',
+      );
     } finally {
       setBusy(false);
     }
@@ -87,6 +92,11 @@ export function EmployeeForm({ existing }: { existing?: Employee }) {
         <Typography variant="body">Active</Typography>
         <Switch value={isActive} onValueChange={setIsActive} />
       </View>
+      {success ? (
+        <Typography variant="caption" className="mb-3 text-success">
+          {success}
+        </Typography>
+      ) : null}
       {error ? (
         <Typography variant="caption" className="mb-3 text-danger">
           {error}

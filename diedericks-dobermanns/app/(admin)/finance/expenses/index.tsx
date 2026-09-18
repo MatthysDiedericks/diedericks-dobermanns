@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { LinkExpenseEmployee } from '@/components/finance/LinkExpenseEmployee';
+import { ExpensesReclassifyBar } from '@/components/finance/ExpensesReclassifyBar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
@@ -19,6 +20,7 @@ import {
   expenseVatNote,
   isImportedExpenseSource,
 } from '@/lib/finance/expenseGross';
+import { allocationTypeLabel, normalizeAllocationType } from '@/lib/finance/allocation';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
 import { showSaved } from '@/lib/dogDetail/feedback';
 import type { ExpenseWithCategory } from '@/types/finance';
@@ -26,6 +28,8 @@ import type { ExpenseWithCategory } from '@/types/finance';
 export default function FinanceExpensesListScreen() {
   const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const { categories } = useExpenseCategories();
   const { data: employees, refresh: refreshEmployees } = useEmployees(true);
   const { data: expenses, loading, refresh } = useExpenses(
@@ -36,6 +40,8 @@ export default function FinanceExpensesListScreen() {
     () => expenses.reduce((s, e) => s + expenseGross(e), 0),
     [expenses],
   );
+
+  const selectedIds = expenses.filter((e) => selected[e.id]).map((e) => e.id);
 
   const confirmDelete = (exp: ExpenseWithCategory) => {
     const gross = expenseGross(exp);
@@ -86,7 +92,24 @@ export default function FinanceExpensesListScreen() {
       <View className="mb-4 px-6">
         <Typography variant="display" className="text-gold">{formatAmount(total)}</Typography>
         <Typography variant="caption">{expenses.length} expenses</Typography>
+        <Pressable onPress={() => setSelecting((v) => !v)} className="mt-2">
+          <Typography variant="caption" className="text-gold">
+            {selecting ? 'Done selecting' : 'Select to reclassify'}
+          </Typography>
+        </Pressable>
       </View>
+
+      {selecting ? (
+        <View className="mb-3 px-6">
+          <ExpensesReclassifyBar
+            selectedIds={selectedIds}
+            onDone={() => {
+              setSelected({});
+              refresh();
+            }}
+          />
+        </View>
+      ) : null}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 px-6">
         <Pressable
@@ -110,7 +133,7 @@ export default function FinanceExpensesListScreen() {
         ))}
       </ScrollView>
 
-      {loading ? (
+      {loading && expenses.length === 0 ? (
         <View className="px-6">
           <CardListSkeleton count={5} />
         </View>
@@ -129,6 +152,18 @@ export default function FinanceExpensesListScreen() {
             const vat = expenseVatNote(exp.vat_amount);
             return (
               <View>
+              {selecting ? (
+                <Pressable
+                  onPress={() =>
+                    setSelected((prev) => ({ ...prev, [exp.id]: !prev[exp.id] }))
+                  }
+                  className="mb-1 px-1"
+                >
+                  <Typography variant="caption" className="text-gold">
+                    {selected[exp.id] ? 'Selected' : 'Tap to select'}
+                  </Typography>
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() =>
                   router.push({
@@ -146,7 +181,8 @@ export default function FinanceExpensesListScreen() {
                     <View className="flex-1">
                       <Typography variant="body" numberOfLines={1}>{exp.description}</Typography>
                       <Typography variant="caption">
-                        {exp.categoryName} · {formatDate(exp.expense_date)}
+                        {exp.categoryName} · {formatDate(exp.expense_date)} ·{' '}
+                        {allocationTypeLabel(normalizeAllocationType(exp.allocation_type))}
                       </Typography>
                     </View>
                   </View>

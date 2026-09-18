@@ -47,6 +47,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            Kennel cost allocation
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            Nursing dam weight, puppy dog-day weight, and how many litters a dam purchase is spread across.
+          </Typography>
+          <Button
+            label="Allocation settings"
+            variant="outline"
+            onPress={() => router.push('/(admin)/settings/allocation' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Quote lapse
           </Typography>
           <Typography variant="bodyMuted" className="mt-2">
