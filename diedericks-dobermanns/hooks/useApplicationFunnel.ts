@@ -8,6 +8,7 @@ import {
   type FunnelSnapshot,
   type StepEventRow,
 } from '@/lib/applications/funnel';
+import { funnelQueryErrorOutcome } from '@/lib/applications/funnelQueryError';
 import { requireSupabase } from '@/lib/supabase';
 
 export type FunnelLoad = {
@@ -15,17 +16,6 @@ export type FunnelLoad = {
   trackingReady: boolean;
   loading: boolean;
 };
-
-function trackingTableMissing(message: string): boolean {
-  const m = message.toLowerCase();
-  return (
-    m.includes('application_step_events') &&
-    (m.includes('does not exist') ||
-      m.includes('could not find') ||
-      m.includes('schema cache') ||
-      m.includes('42p01'))
-  );
-}
 
 export function useApplicationFunnel(fromRaw?: string, toRaw?: string) {
   const range = parseFunnelRange(fromRaw, toRaw);
@@ -72,12 +62,11 @@ export function useApplicationFunnel(fromRaw?: string, toRaw?: string) {
       ]);
 
       if (events.error) {
-        if (trackingTableMissing(events.error.message)) {
-          setSnapshot(empty);
-          setTrackingReady(false);
-          return;
-        }
-        throw events.error;
+        const outcome = funnelQueryErrorOutcome(events.error.message);
+        setSnapshot(empty);
+        setTrackingReady(outcome.trackingReady);
+        if (outcome.shouldLog) throw events.error;
+        return;
       }
 
       setTrackingReady(true);
@@ -93,13 +82,10 @@ export function useApplicationFunnel(fromRaw?: string, toRaw?: string) {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not load funnel';
-      if (trackingTableMissing(message)) {
-        setSnapshot(empty);
-        setTrackingReady(false);
-      } else {
-        setError(message);
-        setSnapshot(empty);
-      }
+      const outcome = funnelQueryErrorOutcome(message);
+      setSnapshot(empty);
+      setTrackingReady(outcome.trackingReady);
+      if (outcome.shouldLog) setError(message);
     } finally {
       setLoading(false);
     }
