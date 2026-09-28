@@ -9,6 +9,7 @@ import { DogHealthWeightSection } from '@/components/dogs/detail/DogHealthWeight
 import { HeatStatusCard } from '@/components/dogs/detail/HeatStatusCard';
 import { SectionCard } from '@/components/dogs/detail/SectionCard';
 import { CompletenessBar } from '@/components/dogs/profile/CompletenessBar';
+import { DogProfitabilityPanel } from '@/components/dogs/profile/DogProfitabilityPanel';
 import { DogProfileHeaderBlock } from '@/components/dogs/profile/DogProfileHeaderBlock';
 import { DogStatCardsBlock } from '@/components/dogs/profile/DogStatCardsBlock';
 import { HealthCalendarSection } from '@/components/dogs/profile/HealthCalendarSection';
@@ -75,9 +76,6 @@ export function DogOverviewTab({
   const health = useDogHealthCalendar(dog.id);
   const weights = useWeightLogs(dog.id);
   const latestKg = weights.logs[0] ? Number(weights.logs[0].weight_kg) : null;
-  const [goHomeDate, setGoHomeDate] = useState<string | null>(
-    (dog as { handover_date?: string | null }).handover_date ?? null,
-  );
   const [puppyCount, setPuppyCount] = useState(0);
   const [contract, setContract] = useState<{
     id: string | null;
@@ -96,10 +94,9 @@ export function DogOverviewTab({
       .eq('id', dog.litter_id)
       .maybeSingle()
       .then(({ data }) => {
-        if (!goHomeDate && data?.go_home_date) setGoHomeDate(data.go_home_date);
         if (data?.puppy_count) setPuppyCount(data.puppy_count);
       });
-  }, [dog.litter_id, goHomeDate]);
+  }, [dog.litter_id]);
 
   useEffect(() => {
     void requireSupabase()
@@ -159,25 +156,28 @@ export function DogOverviewTab({
 
   return (
     <View className="pb-8">
-      {photo ? (
-        <Image
-          source={{ uri: photo }}
-          style={{ width: '100%', height: 200, borderRadius: 12, marginBottom: 16 }}
-          contentFit="cover"
-        />
-      ) : (
-        <Typography variant="body" className="mb-4 text-muted">
-          —
-        </Typography>
-      )}
-
-      <DogProfileHeaderBlock
-        dog={dog}
-        goHomeDate={goHomeDate}
-        buyerName={buyerName}
-        canEdit={canEdit}
-        onStatusChanged={onRefresh}
-      />
+      <View className="mb-4 flex-row items-start gap-3">
+        {photo ? (
+          <Image
+            source={{ uri: photo }}
+            style={{ width: 64, height: 64, borderRadius: 8 }}
+            contentFit="cover"
+          />
+        ) : (
+          <Typography variant="caption" className="text-muted">
+            No photo
+          </Typography>
+        )}
+        <View className="flex-1">
+          <DogProfileHeaderBlock
+            dog={dog}
+            buyerName={buyerName}
+            canEdit={canEdit}
+            onStatusChanged={onRefresh}
+          />
+          <DogProfitabilityPanel dogId={dog.id} status={dog.status} />
+        </View>
+      </View>
       <CompletenessBar result={completeness} />
 
       <SectionCard title="Identity">

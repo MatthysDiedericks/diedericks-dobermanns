@@ -240,9 +240,9 @@ export function AdminDashboardContent() {
 
       <EquipmentShopWidget />
 
-      <SurfaceCard title="Stock list" href="/(admin)/stock">
+      <SurfaceCard title="Stock" href="/(admin)/stock">
         <Typography variant="caption" className="text-subtle">
-          What is loaded, and whether it is actually reaching the shop.
+          Physical products on the shelf — receive, adjust, and see what is on hand.
         </Typography>
       </SurfaceCard>
 

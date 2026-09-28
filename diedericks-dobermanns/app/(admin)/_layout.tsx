@@ -1,22 +1,51 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs, usePathname } from 'expo-router';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { ExpiringAlertsProvider, ExpiryBell } from '@/components/admin/ExpiryAlerts';
 import { Colors } from '@/constants/colors';
 import { tabBarTheme } from '@/constants/navTheme';
 import { useUnallocatedSalesCount } from '@/hooks/useUnallocatedSales';
+import { useAuthStore } from '@/stores/authStore';
 
 export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 
+function AccountantFinanceOnly() {
+  const role = useAuthStore((s) => s.profile?.role);
+  const pathname = usePathname();
+  if (role !== 'accountant') return null;
+  if (pathname?.includes('/finance')) return null;
+  return <Redirect href="/(admin)/finance" />;
+}
+
+function AdminAlertBell() {
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  if (pathname?.includes('dashboard')) return null;
+  return (
+    <View style={{ position: 'absolute', top: insets.top + 8, right: 16, zIndex: 40 }}>
+      <ExpiryBell />
+    </View>
+  );
+}
+
 export default function AdminLayout() {
   const { count: unallocatedCount } = useUnallocatedSalesCount();
+  const accountant = useAuthStore((s) => s.profile?.role) === 'accountant';
 
   return (
-    <AuthGuard roles={['admin', 'super_admin', 'management']}>
-      <Tabs screenOptions={tabBarTheme}>
+    <AuthGuard roles={['admin', 'super_admin', 'management', 'accountant']}>
+      <ExpiringAlertsProvider>
+        <AccountantFinanceOnly />
+        <View style={{ flex: 1 }}>
+          <AdminAlertBell />
+          <Tabs screenOptions={tabBarTheme}>
         <Tabs.Screen
           name="dashboard"
           options={{
+            href: accountant ? null : undefined,
             title: 'Dashboard',
             tabBarIcon: ({ color, size }) => <Ionicons name="grid" color={color} size={size} />,
           }}
@@ -24,8 +53,9 @@ export default function AdminLayout() {
         <Tabs.Screen
           name="dogs/index"
           options={{
+            href: accountant ? null : undefined,
             title: 'Dogs',
-            tabBarBadge: unallocatedCount > 0 ? unallocatedCount : undefined,
+            tabBarBadge: accountant ? undefined : unallocatedCount > 0 ? unallocatedCount : undefined,
             tabBarBadgeStyle: { backgroundColor: Colors.gold, color: Colors.black },
             tabBarIcon: ({ color, size }) => <Ionicons name="paw" color={color} size={size} />,
           }}
@@ -33,6 +63,7 @@ export default function AdminLayout() {
         <Tabs.Screen
           name="breeding/index"
           options={{
+            href: accountant ? null : undefined,
             title: 'Breeding',
             tabBarIcon: ({ color, size }) => <Ionicons name="heart-circle" color={color} size={size} />,
           }}
@@ -40,6 +71,7 @@ export default function AdminLayout() {
         <Tabs.Screen
           name="litters/index"
           options={{
+            href: accountant ? null : undefined,
             title: 'Litters',
             tabBarIcon: ({ color, size }) => <Ionicons name="git-branch" color={color} size={size} />,
           }}
@@ -47,6 +79,7 @@ export default function AdminLayout() {
         <Tabs.Screen
           name="waiting-list"
           options={{
+            href: accountant ? null : undefined,
             title: 'Waitlist',
             tabBarIcon: ({ color, size }) => <Ionicons name="list" color={color} size={size} />,
           }}
@@ -60,10 +93,12 @@ export default function AdminLayout() {
         />
         <Tabs.Screen name="finance/cashflow" options={{ href: null }} />
         <Tabs.Screen name="finance/proofs" options={{ href: null }} />
+        <Tabs.Screen name="finance/purchases" options={{ href: null }} />
 
         {/* Hidden routes — reached via in-app navigation, not the tab bar. */}
         <Tabs.Screen name="dogs/new" options={{ href: null }} />
         <Tabs.Screen name="dogs/unallocated" options={{ href: null }} />
+        <Tabs.Screen name="dogs/mine" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/index" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/edit" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/pedigree" options={{ href: null }} />
@@ -84,6 +119,7 @@ export default function AdminLayout() {
         <Tabs.Screen name="contacts/unreachable" options={{ href: null }} />
         <Tabs.Screen name="litters/new" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/register-pups" options={{ href: null }} />
+        <Tabs.Screen name="litters/[id]/allocate" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/whelping" options={{ href: null }} />
         <Tabs.Screen name="dogs/[id]/litter-history" options={{ href: null }} />
         <Tabs.Screen name="litters/[id]/index" options={{ href: null }} />
@@ -126,12 +162,16 @@ export default function AdminLayout() {
         <Tabs.Screen name="settings/catalogue" options={{ href: null }} />
         <Tabs.Screen name="settings/skill-library" options={{ href: null }} />
         <Tabs.Screen name="settings/quote-lapse" options={{ href: null }} />
+        <Tabs.Screen name="settings/alerts" options={{ href: null }} />
         <Tabs.Screen name="settings/allocation" options={{ href: null }} />
         <Tabs.Screen name="training/index" options={{ href: null }} />
         <Tabs.Screen name="enquiries" options={{ href: null }} />
         <Tabs.Screen name="equipment/index" options={{ href: null }} />
         <Tabs.Screen name="equipment/[id]" options={{ href: null }} />
         <Tabs.Screen name="stock" options={{ href: null }} />
+        <Tabs.Screen name="stock/receive" options={{ href: null }} />
+        <Tabs.Screen name="stock/new" options={{ href: null }} />
+        <Tabs.Screen name="stock/[id]" options={{ href: null }} />
         <Tabs.Screen name="gallery" options={{ href: null }} />
         <Tabs.Screen name="testimonials" options={{ href: null }} />
         <Tabs.Screen name="faq" options={{ href: null }} />
@@ -147,7 +187,9 @@ export default function AdminLayout() {
         <Tabs.Screen name="waitlist/follow-ups" options={{ href: null }} />
         <Tabs.Screen name="follow-ups" options={{ href: null }} />
         <Tabs.Screen name="pedigree/ancestor-photos" options={{ href: null }} />
-      </Tabs>
+          </Tabs>
+        </View>
+      </ExpiringAlertsProvider>
     </AuthGuard>
   );
 }

@@ -16,6 +16,7 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { useRevenueTypeFilter } from '@/hooks/useRevenueTypeFilter';
 import { matchesRevenueTypeFilter } from '@/lib/finance/quoteTypes';
 import { formatAmount, formatDate } from '@/lib/finance/formatters';
+import { invoiceListSentLabel } from '@/lib/finance/sendInvoice';
 
 const FILTERS = ['all', 'draft', 'sent', 'partially_paid', 'paid', 'overdue', 'cancelled'] as const;
 
@@ -101,6 +102,9 @@ export default function FinanceInvoicesListScreen() {
                   ) : null}
                   <Typography variant="caption" className="mt-1">
                     {formatDate(invoice.issue_date)}
+                  </Typography>
+                  <Typography variant="caption" className="mt-1 text-gold">
+                    {invoiceListSentLabel(invoice.sent_at)}
                   </Typography>
                 </View>
                 <View className="items-end gap-2">

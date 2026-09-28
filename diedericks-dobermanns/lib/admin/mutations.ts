@@ -4,6 +4,7 @@ import { callCreateVideoRoom, callNotify } from '@/lib/functions';
 import { formatDateTime } from '@/lib/format';
 import { SOCIAL_SETTING_KEYS } from '@/lib/social';
 import { getCachedUser } from '@/lib/auth/getCachedUser';
+import { announcementWriteError } from '@/lib/litters/announcement';
 import { supabase } from '@/lib/supabase';
 import { syncWaitlistOnApplicationApproved } from '@/lib/waitlist/syncFromApplication';
 import type {
@@ -313,6 +314,22 @@ export async function setFaqPublished(
   return { error: error?.message ?? null };
 }
 
+export async function addGalleryItem(input: {
+  title?: string | null;
+  description?: string | null;
+  category: string;
+  discipline?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  photo_taken_at?: string | null;
+  litter_id?: string | null;
+  sort_order?: number;
+}): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { error } = await supabase.from('gallery_items').insert(input);
+  return { error: error ? announcementWriteError(error) : null };
+}
+
 export async function setGalleryFeatured(
   id: string,
   isFeatured: boolean,
@@ -334,9 +351,12 @@ export async function updateGalleryItem(
     discipline?: string | null;
     photo_taken_at?: string | null;
     is_featured?: boolean;
+    image_url?: string | null;
+    video_url?: string | null;
+    litter_id?: string | null;
   },
 ): Promise<MutationResult> {
   if (!supabase) return simulate();
   const { error } = await supabase.from('gallery_items').update(fields).eq('id', id);
-  return { error: error?.message ?? null };
+  return { error: error ? announcementWriteError(error) : null };
 }

@@ -3,8 +3,10 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, View } from 'react-native';
 
+import { LinkPuppySheet } from '@/components/waitlist/LinkPuppySheet';
 import { PipelineBoard } from '@/components/waitlist/PipelineBoard';
 import { StageSelector } from '@/components/waitlist/StageSelector';
+import { WaitlistReconcile } from '@/components/waitlist/WaitlistReconcile';
 import { WaitlistTable } from '@/components/waitlist/WaitlistTable';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -18,8 +20,14 @@ import { useFinanceAccess } from '@/hooks/useFinanceAccess';
 import { useFollowUps } from '@/hooks/useFollowUps';
 import { filterWaitlistEntries, sortWaitlistEntries, useWaitingList, useWaitlistTypes } from '@/hooks/useWaitingList';
 import { createWaitlistType } from '@/hooks/useMutations';
-import { isWaitingListQueueStage, stageLabel, WAITING_LIST_QUEUE_STAGES } from '@/lib/waitlist/constants';
+import { stageLabel, WAITING_LIST_QUEUE_STAGES } from '@/lib/waitlist/constants';
 import { effectiveStage, entryEmail } from '@/lib/waitlist/helpers';
+import {
+  isClosedWaitingStage,
+  shownOnDefaultWaitingList,
+  waitingClosedLine,
+  waitingListCounts,
+} from '@/lib/waitlist/placementClose';
 import type { WaitingListEntry } from '@/types/app.types';
 
 type ViewMode = 'pipeline' | 'list';
@@ -27,7 +35,7 @@ const CATEGORY_FILTERS = ['any', 'standard', 'elite', 'protection'] as const;
 
 function SummaryStrip({ entries }: { entries: WaitingListEntry[] }) {
   const today = new Date().toISOString().slice(0, 10);
-  const active = entries.filter((e) => isWaitingListQueueStage(effectiveStage(e))).length;
+  const active = entries.filter((e) => shownOnDefaultWaitingList(effectiveStage(e))).length;
   const followUpToday = entries.filter((e) => e.follow_up_date === today).length;
   const chips = [
     { label: 'Active', value: active, tone: 'text-gold' },
@@ -57,11 +65,23 @@ export default function WaitlistHomeScreen() {
   const [stageFilter, setStageFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [unmetOnly, setUnmetOnly] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
   const [stagePickerFor, setStagePickerFor] = useState<WaitingListEntry | null>(null);
+  const [linkFor, setLinkFor] = useState<WaitingListEntry | null>(null);
+
+  const counts = useMemo(
+    () => waitingListCounts(data.map((entry) => effectiveStage(entry))),
+    [data],
+  );
 
   const queue = useMemo(
-    () => data.filter((e) => isWaitingListQueueStage(effectiveStage(e))),
-    [data],
+    () =>
+      data.filter((entry) => {
+        const stage = effectiveStage(entry);
+        if (shownOnDefaultWaitingList(stage)) return true;
+        return showClosed && isClosedWaitingStage(stage);
+      }),
+    [data, showClosed],
   );
 
   const filtered = useMemo(
@@ -147,7 +167,8 @@ export default function WaitlistHomeScreen() {
       <View className="mb-3 px-4">
         <Input placeholder="Search clients…" value={search} onChangeText={setSearch} autoCapitalize="none" />
         <Typography variant="caption" className="mt-2 text-silver">
-          Showing {filtered.length} of {queue.length} paid
+          {waitingClosedLine(counts.waiting, counts.closed)}
+          {filtered.length !== queue.length ? ` · showing ${filtered.length}` : ''}
         </Typography>
       </View>
 
@@ -167,6 +188,15 @@ export default function WaitlistHomeScreen() {
             <Typography variant="caption">{stageLabel(s)}</Typography>
           </Pressable>
         ))}
+        <Pressable
+          onPress={() => {
+            setShowClosed((value) => !value);
+            setStageFilter(null);
+          }}
+          className={`mr-2 rounded-full border px-3 py-1.5 ${showClosed ? 'border-gold bg-gold/15' : 'border-gold/20'}`}
+        >
+          <Typography variant="caption">{showClosed ? 'Hide closed' : 'Show closed'}</Typography>
+        </Pressable>
       </ScrollView>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 px-4">
@@ -217,6 +247,7 @@ export default function WaitlistHomeScreen() {
         />
       </View>
 
+      {!loading ? <WaitlistReconcile entries={data} onSelect={(e) => router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: e.id } })} /> : null}
       {!loading ? <SummaryStrip entries={filtered} /> : null}
       {loading ? <CardListSkeleton count={3} /> : null}
 
@@ -224,9 +255,10 @@ export default function WaitlistHomeScreen() {
         <EmptyState title="No one waiting" message="Only deposit-paid, matched and reserved clients appear here." />
       ) : loading ? null : viewMode === 'pipeline' ? (
         <PipelineBoard
-          entries={filtered}
+          entries={filtered.filter((entry) => shownOnDefaultWaitingList(effectiveStage(entry)))}
           onSelect={(e) => router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: e.id } })}
           onLongPress={(e) => setStagePickerFor(e)}
+          onLinkPuppy={setLinkFor}
         />
       ) : (
         <WaitlistTable
@@ -234,8 +266,32 @@ export default function WaitlistHomeScreen() {
           onRefresh={refresh}
           onSelect={(e) => router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: e.id } })}
           onMoveStage={setStagePickerFor}
+          onLinkPuppy={setLinkFor}
         />
       )}
+
+      {viewMode === 'pipeline' && showClosed ? (
+        <View className="mt-4">
+          <Typography variant="label" className="mb-2 px-4 text-gold">
+            Closed
+          </Typography>
+          <WaitlistTable
+            entries={filtered.filter((entry) => isClosedWaitingStage(effectiveStage(entry)))}
+            onRefresh={refresh}
+            onSelect={(e) => router.push({ pathname: '/(admin)/waitlist/[id]', params: { id: e.id } })}
+            onMoveStage={setStagePickerFor}
+            onLinkPuppy={setLinkFor}
+          />
+        </View>
+      ) : null}
+
+      <LinkPuppySheet
+        entryId={linkFor?.id ?? null}
+        litterId={linkFor?.assigned_litter_id ?? null}
+        visible={linkFor != null}
+        onClose={() => setLinkFor(null)}
+        onSaved={refresh}
+      />
 
       <StageSelector visible={!!stagePickerFor} entry={stagePickerFor} onClose={() => setStagePickerFor(null)} onSaved={refresh} />
     </ScreenContainer>

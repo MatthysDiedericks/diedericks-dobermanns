@@ -14,15 +14,18 @@ import {
 } from '@/lib/litters/deleteImpact';
 import {
   birthWeightLogInsert,
+  isTailType,
   newbornPuppyInsert,
   shouldWriteBirthWeight,
 } from '@/lib/litters/newbornPuppy';
 import { puppyDidNotSurvive, type PuppyOutcome } from '@/lib/litters/outcomes';
+import { intakeIsComplete, validatePuppyIntake } from '@/lib/litters/puppyIntake';
 import { supabase } from '@/lib/supabase';
 import type { DogPedigree, ReservationStatus } from '@/types/app.types';
 import type { Json, TablesInsert, TablesUpdate } from '@/types/database.types';
 
 import { simulate, type MutationResult, type SaveResult } from '@/lib/shared/mutationTypes';
+import { closePlacementForDog } from '@/lib/waitlist/closePlacement';
 
 export async function saveDog(
   values: TablesInsert<'dogs'>,
@@ -33,10 +36,23 @@ export async function saveDog(
     return { error: null, id: id ?? `demo-${Date.now()}` };
   }
   if (id) {
+    let becameSold = false;
+    if (values.status === 'sold') {
+      const { data: previous } = await supabase
+        .from('dogs')
+        .select('status')
+        .eq('id', id)
+        .maybeSingle();
+      becameSold = previous?.status !== 'sold';
+    }
     const { error } = await supabase
       .from('dogs')
       .update(values as TablesUpdate<'dogs'>)
       .eq('id', id);
+    if (!error && becameSold) {
+      const closed = await closePlacementForDog(id, 'Closed because the dog was marked sold.');
+      if (closed.error) return { error: closed.error, id };
+    }
     return { error: error?.message ?? null, id };
   }
   const { data, error } = await supabase
@@ -64,7 +80,7 @@ export async function updateDogStatus(
   }
   const { data: dog, error: fetchErr } = await supabase
     .from('dogs')
-    .select('deceased_at, new_owner_name, buyer_contact_id')
+    .select('deceased_at, new_owner_name, buyer_contact_id, status')
     .eq('id', dogId)
     .maybeSingle();
   if (fetchErr) {
@@ -78,7 +94,18 @@ export async function updateDogStatus(
   const deceasedAt = deceasedAtStamp(status, dog.deceased_at);
   if (deceasedAt) patch.deceased_at = deceasedAt;
 
+  const becameSold = status === 'sold' && dog.status !== 'sold';
   const { error } = await supabase.from('dogs').update(patch).eq('id', dogId);
+  if (!error && becameSold) {
+    const closed = await closePlacementForDog(dogId, 'Closed because the dog was marked sold.');
+    if (closed.error) {
+      return {
+        error: closed.error,
+        stampedDeceasedAt: Boolean(deceasedAt),
+        missingBuyer: soldMissingBuyer(dog),
+      };
+    }
+  }
   return {
     error: error?.message ?? null,
     stampedDeceasedAt: Boolean(deceasedAt),
@@ -411,26 +438,60 @@ export async function addPuppyToLitter(input: {
   litterId: string;
   birth_order: number;
   sex: 'male' | 'female';
+  tail_type?: string | null;
   collar_colour?: string | null;
   colour?: string | null;
   birth_weight_grams?: number | null;
   birth_time?: string | null;
+  birth_type?: string | null;
   name?: string;
+  allowDuplicateCollar?: boolean;
   outcome?: PuppyOutcome;
   outcome_date?: string | null;
   outcome_note?: string | null;
 }): Promise<SaveResult> {
+  const required = validatePuppyIntake({
+    sex: input.sex,
+    collarColour: input.collar_colour,
+    tailType: input.tail_type,
+    birthWeightGrams: input.birth_weight_grams,
+    birthTime: input.birth_time,
+    usedCollars: [],
+    allowDuplicateCollar: true,
+  });
+  if (!intakeIsComplete(required)) {
+    return { error: Object.values(required)[0] ?? 'This puppy is incomplete.', id: null };
+  }
   if (!supabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { error: null, id: `demo-${Date.now()}` };
   }
   const { data: litter, error: litterErr } = await supabase
     .from('litters')
-    .select('actual_date, litter_letter, male_count, female_count')
+    .select('actual_date, litter_letter, male_count, female_count, default_programme_tier')
     .eq('id', input.litterId)
     .maybeSingle();
   if (litterErr) return { error: litterErr.message, id: null };
   if (!litter) return { error: 'Litter not found.', id: null };
+
+  const { data: siblings } = await supabase
+    .from('dogs')
+    .select('collar_colour')
+    .eq('litter_id', input.litterId);
+  const intakeErrors = validatePuppyIntake({
+    sex: input.sex,
+    collarColour: input.collar_colour,
+    tailType: input.tail_type,
+    birthWeightGrams: input.birth_weight_grams,
+    birthTime: input.birth_time,
+    usedCollars: (siblings ?? [])
+      .map((d) => d.collar_colour)
+      .filter((c): c is string => Boolean(c) && c !== 'none'),
+    allowDuplicateCollar: input.allowDuplicateCollar,
+  });
+  if (!intakeIsComplete(intakeErrors)) {
+    return { error: Object.values(intakeErrors)[0] ?? 'This puppy is incomplete.', id: null };
+  }
 
   const letter = litter.litter_letter?.trim().toUpperCase() ?? '';
   const name =
@@ -438,16 +499,23 @@ export async function addPuppyToLitter(input: {
     (letter ? `${letter}${input.birth_order}` : `Puppy ${input.birth_order}`);
   const birthDate = litter.actual_date ?? new Date().toISOString().slice(0, 10);
 
+  if (!isTailType(input.tail_type)) {
+    return { error: 'Record the tail (docked or natural) before saving this puppy.', id: null };
+  }
+
   const { data, error } = await supabase
     .from('dogs')
     .insert(
       newbornPuppyInsert({
         name,
         sex: input.sex,
+        tail_type: input.tail_type,
+        programme_tier: litter.default_programme_tier,
         colour: input.colour,
         collar_colour: input.collar_colour,
         birth_order: input.birth_order,
         birth_time: input.birth_time,
+        birth_type: input.birth_type,
         birth_weight_grams: input.birth_weight_grams,
         date_of_birth: birthDate,
         litter_id: input.litterId,

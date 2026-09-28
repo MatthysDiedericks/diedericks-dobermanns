@@ -223,7 +223,9 @@ export async function moveWaitlistStage(
   doNotSellReason?: string | null,
 ): Promise<MutationResult> {
   const status =
-    stage === 'withdrawn' || stage === 'do_not_sell' ? ('removed' as const) : ('active' as const);
+    stage === 'withdrawn' || stage === 'do_not_sell' || stage === 'handover_complete'
+      ? ('removed' as const)
+      : ('active' as const);
   return updateWaitlistEntry(id, {
     pipeline_stage: stage,
     status,

@@ -10,14 +10,16 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
-import { equipmentImageUrl, shopPriceLabel, stockStatusLabel } from '@/lib/equipment/display';
+import { equipmentImageUrl, shopPriceLabel } from '@/lib/equipment/display';
 import { fetchShopContactPrefill } from '@/lib/equipment/prefill';
 import { submitEquipmentEnquiry } from '@/lib/equipment/submit';
 import { parsePhone } from '@/lib/phone';
 import type { EquipmentFulfilment, ShopContactPrefill } from '@/lib/equipment/types';
 import { fetchShopCatalogueItems } from '@/lib/finance/catalogueQueries';
 import type { CatalogueItem } from '@/lib/finance/catalogue';
+import { formatAmount } from '@/lib/finance/formatters';
 import { MARKETING_CONSENT_LABEL } from '@/lib/marketing/sources';
+import { fetchShopProducts, type ShopProduct } from '@/lib/stock/shop';
 import { useAuthStore } from '@/stores/authStore';
 
 type Basket = Record<string, number>;
@@ -25,6 +27,7 @@ type Basket = Record<string, number>;
 export default function PublicShopScreen() {
   const session = useAuthStore((s) => s.session);
   const [items, setItems] = useState<CatalogueItem[]>([]);
+  const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ShopContactPrefill | null>(null);
@@ -46,11 +49,13 @@ export default function PublicShopScreen() {
     setLoading(true);
     void Promise.all([
       fetchShopCatalogueItems(),
+      fetchShopProducts(),
       session?.user ? fetchShopContactPrefill() : Promise.resolve(null),
     ])
-      .then(([catalogue, contact]) => {
+      .then(([catalogue, shopProducts, contact]) => {
         if (cancelled) return;
         setItems(catalogue);
+        setProducts(shopProducts);
         setPrefill(contact);
         setLoadError(null);
       })
@@ -149,12 +154,46 @@ export default function PublicShopScreen() {
               </View>
             ) : loadError ? (
               <EmptyState title="Could not load the shop" message={loadError} />
-            ) : items.length === 0 ? (
+            ) : items.length === 0 && products.length === 0 ? (
               <EmptyState title="Nothing in the shop just yet. Please check back shortly." />
             ) : (
-              items.map((item) => {
+              <>
+                {products.map((product) => {
+                  const img = equipmentImageUrl(product.image_path);
+                  return (
+                    <Card key={product.id} className="overflow-hidden p-0">
+                      {img ? (
+                        <Image
+                          source={{ uri: img }}
+                          style={{ width: '100%', height: 180 }}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View className="h-28 items-center justify-center bg-surface">
+                          <Typography variant="caption">No photo</Typography>
+                        </View>
+                      )}
+                      <View className="p-4">
+                        <Typography variant="subtitle" className="text-gold">
+                          {product.name}
+                        </Typography>
+                        {product.short_description ? (
+                          <Typography variant="bodyMuted" className="mt-2">
+                            {product.short_description}
+                          </Typography>
+                        ) : null}
+                        <Typography variant="body" className="mt-2">
+                          {formatAmount(product.sell_price)}
+                        </Typography>
+                        <Typography variant="caption" className="mt-1">
+                          {product.in_stock ? 'In stock' : 'Out of stock'}
+                        </Typography>
+                      </View>
+                    </Card>
+                  );
+                })}
+                {items.map((item) => {
                 const img = equipmentImageUrl(item.image_path);
-                const stock = stockStatusLabel(item.stock_status);
                 const qty = basket[item.id] ?? 0;
                 return (
                   <Card key={item.id} className="overflow-hidden p-0">
@@ -181,11 +220,6 @@ export default function PublicShopScreen() {
                       <Typography variant="body" className="mt-2">
                         {shopPriceLabel(item)}
                       </Typography>
-                      {stock ? (
-                        <Typography variant="caption" className="mt-1 text-gold">
-                          {stock}
-                        </Typography>
-                      ) : null}
                       <View className="mt-3 flex-row items-center gap-3">
                         {qty === 0 ? (
                           <Button label="Add" variant="outline" onPress={() => setQty(item.id, 1)} />
@@ -210,7 +244,8 @@ export default function PublicShopScreen() {
                     </View>
                   </Card>
                 );
-              })
+              })}
+              </>
             )}
 
             {!loading && !loadError ? (

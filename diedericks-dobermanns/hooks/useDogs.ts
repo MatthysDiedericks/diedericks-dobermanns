@@ -194,7 +194,7 @@ export function useLittersWithPuppies() {
 
 const LITTER_DETAIL_SELECT = `
   id, name, status, actual_date, expected_date, go_home_date, go_home_weeks,
-  litter_letter, mating_type, puppy_count, male_count, female_count, deceased_count, description, notes, whelping_notes, updated_at,
+  litter_letter, mating_type, puppy_count, male_count, female_count, deceased_count, description, notes, whelping_notes, updated_at, default_programme_tier,
   mother:dogs!litters_mother_id_fkey(id, name),
   father:dogs!litters_father_id_fkey(id, name),
   puppies:dogs!dogs_litter_id_fkey(

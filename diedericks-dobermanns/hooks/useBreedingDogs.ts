@@ -55,7 +55,7 @@ export function useBreedingDogs() {
           .from('dogs')
           .select(PARENT_SELECT)
           .eq('sex', 'female')
-          .or('status.eq.retired,status.eq.deceased,not.deceased_at.is.null')
+          .or('status.eq.retired,status.eq.deceased,deceased_at.not.is.null')
           .order('name'),
       ]);
       if (damRes.error) throw damRes.error;

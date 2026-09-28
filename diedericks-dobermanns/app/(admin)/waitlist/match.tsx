@@ -9,9 +9,11 @@ import { Typography } from '@/components/ui/Typography';
 import { usePreferenceMatch } from '@/hooks/usePreferenceMatch';
 import { assignWaitlistMatch, useSubmitting } from '@/hooks/useMutations';
 import { allocateDogToClient } from '@/lib/dogs/allocation';
+import { closeEntryPlacement } from '@/lib/waitlist/closePlacement';
 import { colourLabel } from '@/lib/colours/dogColours';
 import { entryDisplayName, entryPhone } from '@/lib/waitlist/helpers';
 import { dogOfNLabel, outstandingSiblingCount } from '@/lib/waitlist/siblings';
+import { explainEmptyBuyersForDog, explainEmptyDogsForBuyer, tierGapSummary } from '@/lib/waitlist/matching';
 import { supabase } from '@/lib/supabase';
 
 export default function WaitlistMatchScreen() {
@@ -48,7 +50,7 @@ export default function WaitlistMatchScreen() {
       'Confirm allocation',
       `${dogName} → ${name}${line ? ` (${line})` : ''}. This fills this request line only${
         outstanding ? ` — ${outstanding} other dog(s) still outstanding` : ''
-      }. The puppy is reserved and this buyer moves to matched.`,
+      }. This waiting-list line is closed once the puppy is allocated.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -65,6 +67,12 @@ export default function WaitlistMatchScreen() {
               if (entry?.client_id) {
                 const alloc = await allocateDogToClient(dogId, entry.client_id);
                 if (alloc.error) return alloc;
+                const closed = await closeEntryPlacement(
+                  entryId,
+                  'Closed because the puppy was allocated to the buyer.',
+                  dogId,
+                );
+                if (closed.error) return { error: closed.error };
               } else if (supabase) {
                 await supabase
                   .from('dogs')
@@ -102,6 +110,26 @@ export default function WaitlistMatchScreen() {
       </View>
 
       <ScrollView className="px-4 pb-12">
+        {tierGapSummary(
+          matchable,
+          dogs.map((d) => ({
+            id: d.id,
+            name: d.name,
+            sex: d.sex,
+            colour: d.colour,
+            status: d.status,
+            programme_tier: d.programme_tier,
+            category: d.category,
+            tail_type: d.tail_type ?? null,
+            litter_default_programme_tier:
+              (d as { litter_default_programme_tier?: string | null }).litter_default_programme_tier ??
+              null,
+          })),
+        ).map((gap) => (
+          <Typography key={gap} variant="bodyMuted" className="mb-3 text-warning">
+            {gap}
+          </Typography>
+        ))}
         {mode === 'dog' ? (
           <>
             <Typography variant="label" className="mb-2 text-gold">
@@ -123,8 +151,40 @@ export default function WaitlistMatchScreen() {
               <Typography variant="bodyMuted">
                 Choose an available or newborn puppy to see ranked matches.
               </Typography>
+            ) : results.length === 0 ? (
+              <Typography variant="bodyMuted">
+                {explainEmptyBuyersForDog(
+                  matchable,
+                  {
+                    id: selectedDog.id,
+                    name: selectedDog.name,
+                    sex: selectedDog.sex,
+                    colour: selectedDog.colour,
+                    status: selectedDog.status,
+                    programme_tier: selectedDog.programme_tier,
+                    litter_default_programme_tier:
+                      (selectedDog as { litter_default_programme_tier?: string | null })
+                        .litter_default_programme_tier ?? null,
+                    category: selectedDog.category,
+                    tail_type: selectedDog.tail_type ?? null,
+                  },
+                  dogs.map((d) => ({
+                    id: d.id,
+                    name: d.name,
+                    sex: d.sex,
+                    colour: d.colour,
+                    status: d.status,
+                    programme_tier: d.programme_tier,
+                    litter_default_programme_tier:
+                      (d as { litter_default_programme_tier?: string | null })
+                        .litter_default_programme_tier ?? null,
+                    category: d.category,
+                    tail_type: d.tail_type ?? null,
+                  })),
+                )}
+              </Typography>
             ) : (
-              results.map(({ entry, score, criteria, mismatches, daysWaiting: days, perfectFit }, idx) => (
+              results.map(({ entry, score, criteria, mismatches, warnings, daysWaiting: days, perfectFit }, idx) => (
                 <Card key={entry.id} className={`mb-3 p-4 ${idx === 0 ? 'border-gold' : ''}`}>
                   <Typography variant="subtitle">{entryDisplayName(entry)}</Typography>
                   <Typography
@@ -138,14 +198,20 @@ export default function WaitlistMatchScreen() {
                     <Typography
                       key={c.label}
                       variant="caption"
-                      className={c.matched ? 'text-success' : 'text-silver'}
+                      className={c.unknown ? 'text-warning' : c.matched ? 'text-success' : 'text-silver'}
                     >
-                      {c.matched ? '✓' : '✗'} {c.detail}
+                      {c.unknown ? '! ' : c.matched ? '✓ ' : '✗ '}
+                      {c.detail}
                     </Typography>
                   ))}
                   {mismatches.map((m) => (
                     <Typography key={m} variant="caption" className="mt-1 text-danger">
                       {m}
+                    </Typography>
+                  ))}
+                  {warnings.map((warning) => (
+                    <Typography key={warning} variant="caption" className="mt-1 text-warning">
+                      {warning}
                     </Typography>
                   ))}
                   <View className="mt-3 flex-row gap-2">
@@ -188,7 +254,20 @@ export default function WaitlistMatchScreen() {
             {!selectedBuyer ? (
               <Typography variant="bodyMuted">Choose a buyer to see which puppies fit.</Typography>
             ) : buyerResults.length === 0 ? (
-              <Typography variant="bodyMuted">No matching puppies in the current inventory.</Typography>
+              <Typography variant="bodyMuted">
+                {explainEmptyDogsForBuyer(selectedBuyer, dogs.map((d) => ({
+                  id: d.id,
+                  name: d.name,
+                  sex: d.sex,
+                  colour: d.colour,
+                  status: d.status,
+                  programme_tier: d.programme_tier,
+                  category: d.category,
+                  tail_type: d.tail_type ?? null,
+                  litter_default_programme_tier:
+                    (d as { litter_default_programme_tier?: string | null }).litter_default_programme_tier ?? null,
+                }))) ?? 'No matching puppies in the current inventory.'}
+              </Typography>
             ) : (
               buyerResults.map(({ dog, candidate }, idx) => (
                 <Card key={dog.id} className={`mb-3 p-4 ${idx === 0 ? 'border-gold' : ''}`}>

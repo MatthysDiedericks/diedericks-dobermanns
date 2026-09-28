@@ -27,6 +27,11 @@ import {
 } from '@/lib/documents/constants';
 import type { DocumentRecord, PickedDocumentFile } from '@/lib/documents/types';
 import { parseDateInput } from '@/lib/dogDetail/feedback';
+import {
+  categoryAlwaysExpires,
+  categoryExpiryIsQuiet,
+  NO_EXPIRY_REMINDER_NOTE,
+} from '@/lib/documents/expiryCapture';
 
 export interface UploadDocumentSheetHandle {
   open: (editDoc?: DocumentRecord) => void;
@@ -100,6 +105,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
     const [file, setFile] = useState<PickedDocumentFile | null>(null);
     const [previewUri, setPreviewUri] = useState<string | null>(null);
     const [nameError, setNameError] = useState<string | null>(null);
+    const [expiryNote, setExpiryNote] = useState<string | null>(null);
 
     const categoryLabel = categories.find((c) => c.key === category)?.label ?? category;
 
@@ -127,6 +133,7 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
       setFile(null);
       setPreviewUri(null);
       setNameError(null);
+      setExpiryNote(null);
     }, [categories]);
 
     useEffect(() => {
@@ -203,6 +210,11 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
         return;
       }
       setNameError(null);
+      if (categoryAlwaysExpires(category) && !parseDateInput(expiryDate)) {
+        setExpiryNote(NO_EXPIRY_REMINDER_NOTE);
+      } else {
+        setExpiryNote(null);
+      }
       if (entityType !== 'employee' && visibility === 'public') {
         Alert.alert(
           'Public document',
@@ -306,22 +318,34 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
             value={category}
             onChange={setCategory}
           />
+          {categoryAlwaysExpires(category) ? (
+            <View className="mb-2 rounded-sm border border-gold bg-gold/10 p-3">
+              <DateField label="Expiry date" value={expiryDate} onChange={setExpiryDate} />
+              {!expiryDate ? (
+                <Typography variant="caption" className="text-gold">
+                  {NO_EXPIRY_REMINDER_NOTE}
+                </Typography>
+              ) : null}
+            </View>
+          ) : null}
           {categories.length === 0 ? (
             <Typography variant="caption" className="mb-4 text-danger">
               document_categories is missing. Apply migration 0173, then reload.
             </Typography>
           ) : null}
 
+          <DateField label="Date of document" value={dateOfDocument} onChange={setDateOfDocument} optional />
+
+          {categoryAlwaysExpires(category) || categoryExpiryIsQuiet(category) ? null : (
+            <DateField label="Expiry date" value={expiryDate} onChange={setExpiryDate} optional />
+          )}
+
           {entityType === 'dog' || entityType === 'client' ? (
-            <Typography variant="caption" className="mt-1 text-ink-muted">
+            <Typography variant="caption" className="mt-1 mb-3 text-ink-muted">
               Set &quot;Client visible&quot; to ON below to share this document with the client&apos;s portal.
               Use &quot;Parent Health Records&quot; for sire/dam health docs linked to a puppy.
             </Typography>
           ) : null}
-
-          <DateField label="Date of document" value={dateOfDocument} onChange={setDateOfDocument} optional />
-
-          <DateField label="Expiry date" value={expiryDate} onChange={setExpiryDate} optional />
 
           <Typography variant="label" className="mb-1">
             Document number
@@ -414,6 +438,15 @@ export const UploadDocumentSheet = forwardRef<UploadDocumentSheetHandle, UploadD
                 </View>
               ) : null}
             </>
+          ) : null}
+
+          {categoryExpiryIsQuiet(category) ? (
+            <DateField label="Expiry date" value={expiryDate} onChange={setExpiryDate} optional />
+          ) : null}
+          {expiryNote ? (
+            <Typography variant="caption" className="mb-3 text-gold">
+              {expiryNote}
+            </Typography>
           ) : null}
 
           <Button

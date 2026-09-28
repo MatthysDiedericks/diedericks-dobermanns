@@ -106,7 +106,7 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithDetails> 
   const supabase = requireSupabase();
   const { data: invoice, error } = await supabase
     .from('invoices')
-    .select('*, client:users!invoices_client_id_fkey(full_name, email, phone), dog:dogs(name)')
+    .select('*, client:users!invoices_client_id_fkey(full_name, email, phone, country), dog:dogs(name)')
     .eq('id', id)
     .single();
 
@@ -121,7 +121,7 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithDetails> 
   const mappedPayments = await fetchInvoicePayments(id);
 
   const row = invoice as unknown as InvoiceListRow & {
-    client?: { full_name: string | null; email: string | null; phone?: string | null } | null;
+    client?: { full_name: string | null; email: string | null; phone?: string | null; country?: string | null } | null;
   };
 
   return {
@@ -129,6 +129,7 @@ export async function fetchInvoiceById(id: string): Promise<InvoiceWithDetails> 
     clientName: row.client?.full_name ?? '—',
     clientEmail: row.client?.email ?? '',
     clientPhone: row.client?.phone ?? null,
+    clientCountry: row.client?.country ?? null,
     dogName: row.dog?.name ?? null,
     items: (items ?? []) as InvoiceWithDetails['items'],
     payments: mappedPayments,

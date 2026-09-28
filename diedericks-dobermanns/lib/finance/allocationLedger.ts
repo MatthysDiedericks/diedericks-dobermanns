@@ -1,9 +1,12 @@
 import { requireSupabase } from '@/lib/supabase';
 import {
+  findAllocationsToDepartedDogs,
   reconcileExpenseAllocations,
+  summarizeDepartedAllocations,
   type AllocationReconciliation,
   type ReconcileLine,
 } from '@/lib/finance/reconcileAllocations';
+import type { DogLifecycle } from '@/lib/finance/dogDays';
 import { isAllocationKind, toCents } from '@/lib/finance/resolveAllocations';
 
 const PAGE = 1000;
@@ -28,9 +31,13 @@ type ExpenseRow = {
 type AllocRow = {
   expense_line_id: string;
   amount: number | string;
+  dog_id: string | null;
 };
 
-async function fetchPages<T>(table: 'expense_lines' | 'expenses' | 'expense_allocations', columns: string) {
+async function fetchPages<T>(
+  table: 'expense_lines' | 'expenses' | 'expense_allocations' | 'dogs',
+  columns: string,
+) {
   const supabase = requireSupabase();
   const rows: T[] = [];
   for (let from = 0; ; from += PAGE) {
@@ -56,7 +63,7 @@ export async function fetchAllocationReconciliation(
   from?: string,
   to?: string,
 ): Promise<AllocationReconciliation> {
-  const [expenses, lines, allocations] = await Promise.all([
+  const [expenses, lines, allocations, dogs] = await Promise.all([
     fetchPages<ExpenseRow>(
       'expenses',
       'id, expense_date, supplier_name, invoice_reference, description, amount',
@@ -65,7 +72,14 @@ export async function fetchAllocationReconciliation(
       'expense_lines',
       'id, expense_id, line_amount, allocation_kind, description',
     ),
-    fetchPages<AllocRow>('expense_allocations', 'expense_line_id, amount'),
+    fetchPages<AllocRow>(
+      'expense_allocations',
+      'expense_line_id, amount, dog_id',
+    ),
+    fetchPages<DogLifecycle>(
+      'dogs',
+      'id, date_of_birth, ownership_status, ownership_status_at, deceased_at, outcome, outcome_date',
+    ),
   ]);
 
   const expenseById = new Map(expenses.map((e) => [e.id, e]));
@@ -107,9 +121,24 @@ export async function fetchAllocationReconciliation(
     );
   }
 
+  const departedDogs = summarizeDepartedAllocations(
+    findAllocationsToDepartedDogs({
+      lines: reconcileLines,
+      allocations: allocations
+        .filter((row) => lineIds.has(row.expense_line_id))
+        .map((row) => ({
+          lineId: row.expense_line_id,
+          dogId: row.dog_id,
+          amount: Number(row.amount),
+        })),
+      dogs,
+    }),
+  );
+
   return reconcileExpenseAllocations({
     lines: reconcileLines,
     allocatedCentsByLineId: allocatedCents,
     headerTotal,
+    departedDogs,
   });
 }

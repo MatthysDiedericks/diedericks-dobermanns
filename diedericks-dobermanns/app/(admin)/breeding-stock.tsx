@@ -27,7 +27,7 @@ export default function AdminBreedingStockScreen() {
 
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="The Programme" title="Breeding Stock" />
+      <PageHeader eyebrow="The Programme" title="Breeding stock (dogs)" />
 
       <View className="mb-4 px-6">
         <Button

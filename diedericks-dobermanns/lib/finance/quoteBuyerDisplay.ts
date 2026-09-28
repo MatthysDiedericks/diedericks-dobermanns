@@ -4,15 +4,16 @@ export type QuoteBuyerContact = {
   full_name?: string | null;
   email?: string | null;
   phone?: string | null;
+  country?: string | null;
   merged_into_contact_id?: string | null;
 } | null;
 
 export type QuoteBuyerSource = {
   client_id?: string | null;
   historical_client_name?: string | null;
-  client?: { full_name?: string | null; email?: string | null; phone?: string | null } | null;
+  client?: { full_name?: string | null; email?: string | null; phone?: string | null; country?: string | null } | null;
   contact?: QuoteBuyerContact;
-  application?: { email?: string | null; phone?: string | null } | null;
+  application?: { email?: string | null; phone?: string | null; country?: string | null } | null;
 };
 
 const UNASSIGNED = 'Unassigned';
@@ -51,6 +52,12 @@ export function quoteBuyerPhone(quote: QuoteBuyerSource): string | null {
   return firstText(quote.client?.phone, contact?.phone, quote.application?.phone);
 }
 
+/** Contact (CRM) first — that table is the kennel's market book. */
+export function quoteBuyerCountry(quote: QuoteBuyerSource): string | null {
+  const contact = activeQuoteContact(quote.contact ?? null);
+  return firstText(contact?.country, quote.application?.country, quote.client?.country);
+}
+
 /**
  * client_id is set when a portal account exists (at quote creation, not at
  * first sign-in). The marker means no account exists — not "has not signed in".
@@ -62,6 +69,7 @@ export function quoteBuyerDisplay(quote: QuoteBuyerSource) {
     name,
     email: quoteBuyerEmail(quote),
     phone: quoteBuyerPhone(quote),
+    country: quoteBuyerCountry(quote),
     hasPortalAccount,
     showNoPortalMarker: name !== UNASSIGNED && !hasPortalAccount,
   };

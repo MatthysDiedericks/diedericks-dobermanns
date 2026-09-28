@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { RecurringInvoiceSourceLine } from '@/components/finance/RecurringInvoiceSourceLine';
+import { PaymentBankingCard } from '@/components/finance/PaymentBankingCard';
 import { PaymentHistoryList } from '@/components/finance/PaymentHistoryList';
 import { RecordPaymentForm } from '@/components/finance/RecordPaymentForm';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -19,17 +20,40 @@ import {
   updateInvoiceStatus,
   useInvoiceDetail,
 } from '@/hooks/useInvoices';
+import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { fetchRecurringInvoice } from '@/lib/finance/recurringInvoiceQueries';
 import type { RecurringInvoice } from '@/lib/finance/recurringInvoiceTypes';
+import { previewInvoiceSend, sendInvoiceToRecipient } from '@/lib/finance/deliverInvoice';
 import { exportInvoicePDF } from '@/lib/finance/generatePDF';
+import { bankBlocksFromSettings, type BankBlock } from '@/lib/finance/bankDetails';
+import { fetchAppSettingsMap } from '@/lib/finance/loadBankSettings';
 import { formatAmount, formatDate, humanizeItemType } from '@/lib/finance/formatters';
+import {
+  invoiceResendConfirmCopy,
+  invoiceSentStateLabel,
+} from '@/lib/finance/sendInvoice';
 
 export default function FinanceInvoiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { invoice, loading, refresh } = useInvoiceDetail(id ?? '');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sendEmail, setSendEmail] = useState('');
+  const [sendPortal, setSendPortal] = useState(false);
+  const [sendResend, setSendResend] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<RecurringInvoice | null>(null);
+  const [bankBlocks, setBankBlocks] = useState<BankBlock[]>([]);
+
+  useEffect(() => {
+    if (!invoice) {
+      setBankBlocks([]);
+      return;
+    }
+    void fetchAppSettingsMap()
+      .then((settings) => setBankBlocks(bankBlocksFromSettings(invoice.clientCountry, settings)))
+      .catch(() => setBankBlocks([]));
+  }, [invoice]);
 
   useEffect(() => {
     const sid = invoice?.recurring_invoice_id;
@@ -57,6 +81,38 @@ export default function FinanceInvoiceDetailScreen() {
     try {
       await updateInvoiceStatus(invoice.id, 'sent');
       await refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openSend = async () => {
+    if (!invoice) return;
+    setBusy(true);
+    try {
+      const preview = await previewInvoiceSend(invoice);
+      setSendEmail(preview.email);
+      setSendPortal(preview.hasPortalAccount);
+      setSendResend(invoiceResendConfirmCopy(preview.sendCount));
+      setSendOpen(true);
+    } catch (e) {
+      Alert.alert('Could not send', e instanceof Error ? e.message : 'Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmSend = async () => {
+    if (!invoice) return;
+    setBusy(true);
+    try {
+      const user = await getCachedUser();
+      const result = await sendInvoiceToRecipient(invoice, { actorId: user?.id ?? null });
+      setSendOpen(false);
+      await refresh();
+      Alert.alert('Invoice sent', result.message);
+    } catch (e) {
+      Alert.alert('Could not send', e instanceof Error ? e.message : 'Please try again.');
     } finally {
       setBusy(false);
     }
@@ -99,6 +155,12 @@ export default function FinanceInvoiceDetailScreen() {
           ) : null}
           <Typography variant="caption" className="mt-3">
             Issue {formatDate(invoice.issue_date)} · Due {formatDate(invoice.due_date)}
+          </Typography>
+          <Typography variant="caption" className="mt-2 text-gold">
+            {invoiceSentStateLabel({
+              sentAt: invoice.sent_at ?? null,
+              sentTo: invoice.sent_to ?? null,
+            })}
           </Typography>
 
           <Typography variant="label" className="mt-6 mb-1">Bill to</Typography>
@@ -157,12 +219,30 @@ export default function FinanceInvoiceDetailScreen() {
           ) : null}
         </Card>
 
+        {invoice.amount_outstanding > 0 ? (
+          <View className="mt-3">
+            <PaymentBankingCard
+              blocks={bankBlocks}
+              paymentReference={invoice.invoice_number}
+            />
+          </View>
+        ) : null}
+
         <PaymentHistoryList payments={invoice.payments} onChanged={() => void refresh()} />
 
         <View className="mt-6 gap-3">
+          {invoice.status !== 'void' && invoice.status !== 'cancelled' ? (
+            <Button
+              label={invoice.sent_at ? 'Resend' : 'Send invoice'}
+              onPress={() => void openSend()}
+              loading={busy}
+              fullWidth
+            />
+          ) : null}
           {invoice.amount_outstanding > 0 ? (
             <Button
               label="Record payment"
+              variant="secondary"
               onPress={() => setPaymentOpen(true)}
               loading={busy}
               fullWidth
@@ -199,6 +279,26 @@ export default function FinanceInvoiceDetailScreen() {
               void refresh();
             }}
         />
+      </Modal>
+
+      <Modal visible={sendOpen} onClose={() => setSendOpen(false)} title={invoice.sent_at ? 'Resend invoice' : 'Send invoice'}>
+        <Typography variant="body">
+          Email {invoice.invoice_number} ({formatAmount(invoice.total_amount)}) to {sendEmail}?
+        </Typography>
+        <Typography variant="caption" className="mt-2">
+          {sendPortal
+            ? 'The client will also get an in-app notice linking to this invoice in the portal.'
+            : 'No portal account on this invoice — email only.'}
+        </Typography>
+        {sendResend ? (
+          <Typography variant="caption" className="mt-2 text-gold">
+            {sendResend}
+          </Typography>
+        ) : null}
+        <View className="mt-4 gap-2">
+          <Button label={busy ? 'Sending…' : 'Send'} onPress={() => void confirmSend()} loading={busy} fullWidth />
+          <Button label="Cancel" variant="secondary" onPress={() => setSendOpen(false)} disabled={busy} fullWidth />
+        </View>
       </Modal>
     </ScreenContainer>
   );

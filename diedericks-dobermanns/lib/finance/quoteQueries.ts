@@ -19,9 +19,9 @@ const QUOTE_SELECT =
   'delivery_decision, delivery_note, quote_type, ' +
   'lapse_hold_until, lapse_hold_reason, last_client_activity_at, ' +
   'reminder_first_sent_at, reminder_final_sent_at, lapsed_at, lapse_reason, ' +
-  'client:users!quotes_client_id_fkey(id, full_name, phone, email), ' +
-  'contact:contacts!quotes_contact_id_fkey(full_name, email, phone, merged_into_contact_id), ' +
-  'application:applications(email, phone), ' +
+  'client:users!quotes_client_id_fkey(id, full_name, phone, email, country), ' +
+  'contact:contacts!quotes_contact_id_fkey(full_name, email, phone, country, merged_into_contact_id), ' +
+  'application:applications(email, phone, country), ' +
   'items:quote_items(id, item_type, dog_id, litter_id, subject_kind, description, quantity, unit_price, line_total, sort_order, catalogue_code), ' +
   'invoices!invoices_quote_id_fkey(amount_outstanding, amount_paid, total_amount)';
 

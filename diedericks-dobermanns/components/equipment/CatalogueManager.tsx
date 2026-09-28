@@ -9,12 +9,10 @@ import { Colors } from '@/constants/colors';
 import { equipmentImageUrl, shopPriceLabel } from '@/lib/equipment/display';
 import {
   CATALOGUE_CATEGORIES,
-  STOCK_STATUSES,
   codeFromLabel,
   isStarterCatalogueItem,
   type CatalogueCategory,
   type CatalogueItem,
-  type StockStatus,
 } from '@/lib/finance/catalogue';
 import {
   createCatalogueItem,
@@ -35,7 +33,6 @@ type Draft = {
   sort_order: string;
   short_description: string;
   is_client_visible: boolean;
-  stock_status: StockStatus;
   image_path: string;
 };
 
@@ -50,7 +47,6 @@ const blank = (): Draft => ({
   sort_order: '0',
   short_description: '',
   is_client_visible: false,
-  stock_status: 'in_stock',
   image_path: '',
 });
 
@@ -91,7 +87,6 @@ export function CatalogueManager({ initialItemId }: { initialItemId?: string }) 
       sort_order: String(it.sort_order),
       short_description: it.short_description ?? '',
       is_client_visible: it.is_client_visible,
-      stock_status: it.stock_status,
       image_path: it.image_path ?? '',
     });
   }, [initialItemId, items]);
@@ -128,7 +123,6 @@ export function CatalogueManager({ initialItemId }: { initialItemId?: string }) 
       sort_order: Number(draft.sort_order) || 0,
       short_description: draft.short_description.trim() || null,
       is_client_visible: draft.is_client_visible,
-      stock_status: draft.stock_status,
       image_path: draft.image_path.trim() || null,
     };
     const res =
@@ -211,7 +205,6 @@ export function CatalogueManager({ initialItemId }: { initialItemId?: string }) 
                       sort_order: String(it.sort_order),
                       short_description: it.short_description ?? '',
                       is_client_visible: it.is_client_visible,
-                      stock_status: it.stock_status,
                       image_path: it.image_path ?? '',
                     });
                   }}
@@ -310,19 +303,6 @@ function Editor({
           Show in shop: {draft.is_client_visible ? 'yes' : 'no'} (tap to toggle)
         </Typography>
       </Pressable>
-      <View className="flex-row flex-wrap gap-2">
-        {STOCK_STATUSES.map((s) => (
-          <Pressable
-            key={s.value}
-            onPress={() => setDraft({ ...draft, stock_status: s.value })}
-            className={`rounded-lg border px-3 py-2 ${
-              draft.stock_status === s.value ? 'border-gold bg-gold/15' : 'border-gold/20'
-            }`}
-          >
-            <Typography variant="caption">{s.label}</Typography>
-          </Pressable>
-        ))}
-      </View>
       <Typography variant="caption" className="mt-1 text-silver">
         Shop image (JPEG, PNG or WebP, up to 5 MB)
       </Typography>

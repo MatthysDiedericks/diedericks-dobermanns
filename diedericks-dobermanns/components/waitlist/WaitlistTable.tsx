@@ -4,11 +4,12 @@ import { Alert, Linking, Pressable, Share, View } from 'react-native';
 
 import { InviteStateChip } from '@/components/admin/InviteStateChip';
 import { PreferenceBadges } from '@/components/waitlist/PreferenceBadges';
+import { StageAgeLine } from '@/components/waitlist/StageAgeLine';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
-import { daysWaiting, isFollowUpOverdue, stageLabel } from '@/lib/waitlist/constants';
+import { isFollowUpOverdue, stageLabel } from '@/lib/waitlist/constants';
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from '@/lib/waitlist/helpers';
 import { dogOfNLabel, siblingTotal } from '@/lib/waitlist/siblings';
 import { reorderWaitlistPosition } from '@/lib/waitlist/mutations';
@@ -20,10 +21,11 @@ interface Props {
   entries: WaitingListEntry[];
   onSelect: (entry: WaitingListEntry) => void;
   onMoveStage: (entry: WaitingListEntry) => void;
+  onLinkPuppy: (entry: WaitingListEntry) => void;
   onRefresh: () => void;
 }
 
-export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Props) {
+export function WaitlistTable({ entries, onSelect, onMoveStage, onLinkPuppy, onRefresh }: Props) {
   const [inviteMap, setInviteMap] = useState<Map<string, InviteStateRow>>(new Map());
   const [inviteFailed, setInviteFailed] = useState(false);
 
@@ -105,12 +107,7 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Pro
                     </Typography>
                   ) : null}
                 </View>
-                <Typography
-                  variant="subtitle"
-                  className={`mt-2 ${daysWaiting(entry.date_added ?? entry.created_at) >= 180 ? 'text-danger' : daysWaiting(entry.date_added ?? entry.created_at) >= 90 ? 'text-warning' : 'text-gold'}`}
-                >
-                  {daysWaiting(entry.date_added ?? entry.created_at)} days waiting
-                </Typography>
+                <StageAgeLine entry={entry} />
                 <Typography variant="caption" className="mt-1 text-silver">
                   {entry.enquirer_country ?? '—'}
                 </Typography>
@@ -144,6 +141,11 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onRefresh }: Pro
                   }}
                 >
                   <Ionicons name="mail-outline" size={20} color={Colors.gold} />
+                </Pressable>
+                <Pressable onPress={() => onLinkPuppy(entry)}>
+                  <Typography variant="caption" className="text-gold">
+                    Link
+                  </Typography>
                 </Pressable>
                 <Pressable onPress={() => onMoveStage(entry)}>
                   <Ionicons name="arrow-forward-circle-outline" size={20} color={Colors.gold} />

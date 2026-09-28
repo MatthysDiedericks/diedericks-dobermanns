@@ -1,3 +1,4 @@
+import { galleryGridIncludes } from '@/lib/litters/announcement';
 import {
   MOCK_FAQ,
   MOCK_GALLERY,
@@ -23,13 +24,17 @@ export function useTestimonials(): ListResult<Testimonial> {
 }
 
 export function useGallery(): ListResult<GalleryItem> {
-  return useRemoteList<GalleryItem>(MOCK_GALLERY, (client) =>
+  const result = useRemoteList<GalleryItem>(MOCK_GALLERY, (client) =>
     client
-      .from('gallery_items')
-      .select('id, title, description, image_url, video_url, category, is_featured, sort_order, photo_taken_at')
+      .from('v_public_gallery')
+      .select('id, title, description, image_url, video_url, category, is_featured, sort_order, photo_taken_at, litter_id')
       .order('photo_taken_at', { ascending: false, nullsFirst: false })
       .order('sort_order', { ascending: false }),
   );
+  return {
+    ...result,
+    data: result.data.filter((i) => galleryGridIncludes(i.category)),
+  };
 }
 
 export function useFaq(): ListResult<FaqItem> {

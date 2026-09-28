@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { DogStatusControl } from '@/components/dogs/profile/DogStatusControl';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { dogCollectionDate } from '@/lib/dogs/dogCollectionDate';
 import { collectionCountdown } from '@/lib/dogs/collectionCountdown';
 import { liveAgeFromDob } from '@/lib/dogs/liveAge';
 import { programmeTierLabel } from '@/lib/dogs/programmeTier';
@@ -19,13 +20,11 @@ function sexSymbol(sex: string | null | undefined): string | null {
 
 export function DogProfileHeaderBlock({
   dog,
-  goHomeDate,
   buyerName,
   canEdit = false,
   onStatusChanged,
 }: {
   dog: Dog;
-  goHomeDate?: string | null;
   buyerName?: string | null;
   canEdit?: boolean;
   onStatusChanged?: () => void;
@@ -34,7 +33,7 @@ export function DogProfileHeaderBlock({
   const registered = dog.registered_name?.trim();
   const showRegistered = registered && registered !== call && registered !== dog.name;
   const age = liveAgeFromDob(dog.date_of_birth);
-  const countdown = collectionCountdown(goHomeDate ?? dog.handover_date);
+  const countdown = collectionCountdown(dogCollectionDate(dog));
   const collar = dog.collar_colour && dog.collar_colour !== 'none';
   const facts = [
     sexSymbol(dog.sex),

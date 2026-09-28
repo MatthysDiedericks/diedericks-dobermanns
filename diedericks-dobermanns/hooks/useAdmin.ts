@@ -16,6 +16,7 @@ import {
 } from '@/lib/mockData';
 import { supabase, requireSupabase } from '@/lib/supabase';
 import { useRemoteList, type ListResult } from '@/hooks/useRemoteList';
+import type { LitterPickerOption } from '@/components/admin/galleryOptions';
 import type {
   AppUser,
   Application,
@@ -127,9 +128,20 @@ export function useAdminGallery(): ListResult<GalleryItem> {
     client
       .from('gallery_items')
       .select(
-        'id, title, description, image_url, video_url, category, discipline, is_featured, sort_order, photo_taken_at, created_at',
+        'id, title, description, image_url, video_url, category, discipline, is_featured, sort_order, photo_taken_at, created_at, litter_id',
       )
       .order('sort_order'),
+  );
+}
+
+export function useAdminLittersForPicker(): ListResult<LitterPickerOption> {
+  return useRemoteList<LitterPickerOption>([], (client) =>
+    client
+      .from('litters')
+      .select(
+        'id, name, status, is_public, created_at, mother:dogs!litters_mother_id_fkey(name), father:dogs!litters_father_id_fkey(name)',
+      )
+      .order('created_at', { ascending: false }),
   );
 }
 

@@ -27,11 +27,20 @@ export function usePreferenceMatch() {
       const { data } = await supabase
         .from('dogs')
         .select(
-          'id, name, breed, colour, sex, status, category, programme_tier, date_of_birth, litter_id, tail_type',
+          'id, name, breed, colour, sex, status, category, programme_tier, date_of_birth, litter_id, tail_type, litter:litters!dogs_litter_id_fkey(default_programme_tier)',
         )
-        .in('status', ['available', 'puppy'])
+        .eq('status', 'available')
         .order('name');
-      setDogs((data ?? []) as Dog[]);
+      setDogs(
+        ((data ?? []) as unknown as (Dog & {
+          litter?: { default_programme_tier?: string | null } | null;
+        })[]).map((row) => ({
+          ...row,
+          litter_default_programme_tier: row.programme_tier
+            ? null
+            : row.litter?.default_programme_tier ?? null,
+        })),
+      );
     })();
   }, []);
 
@@ -52,6 +61,9 @@ export function usePreferenceMatch() {
       colour: selectedDog.colour,
       status: selectedDog.status,
       programme_tier: selectedDog.programme_tier,
+      litter_default_programme_tier:
+        (selectedDog as { litter_default_programme_tier?: string | null })
+          .litter_default_programme_tier ?? null,
       category: selectedDog.category,
       tail_type: selectedDog.tail_type ?? null,
     };
@@ -67,6 +79,9 @@ export function usePreferenceMatch() {
       colour: d.colour,
       status: d.status,
       programme_tier: d.programme_tier,
+      litter_default_programme_tier:
+        (d as { litter_default_programme_tier?: string | null }).litter_default_programme_tier ??
+        null,
       category: d.category,
       tail_type: d.tail_type ?? null,
     }));

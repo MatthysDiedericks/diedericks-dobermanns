@@ -2,6 +2,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 import { noteForSavedQuoteLine } from '@/lib/finance/quoteSubjectNote';
+import { bankBlocksHtml, type BankBlock } from '@/lib/finance/bankDetails';
 import { formatAmountPlain, formatDate } from '@/lib/finance/formatters';
 import { LOGO_BASE64 } from '@/lib/finance/logoBase64';
 import type { QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
@@ -19,6 +20,7 @@ function escapeHtml(value: string): string {
 export function buildClientQuoteHtml(
   quote: ClientQuoteDetail,
   snapshot?: QuoteRevisionRow['snapshot'] | null,
+  bankBlocks: BankBlock[] = [],
 ): string {
   const number = snapshot?.quote_number ?? quote.quote_number;
   const revision = snapshot?.revision ?? quote.last_sent_revision ?? quote.revision ?? 1;
@@ -67,6 +69,7 @@ export function buildClientQuoteHtml(
       <p class="meta">Date ${formatDate(quote.sent_at ?? quote.created_at)} · Valid until ${formatDate(quote.valid_until)}</p>
       <table>${rows}</table>
       <p class="total">Total R${formatAmountPlain(total)}</p>
+      ${bankBlocks.length ? `<div style="margin-top:24px;padding:12px 16px;background:#fafaf7;border:1px solid #e8dfc8;">${bankBlocksHtml(bankBlocks, number)}</div>` : ''}
       ${quote.notes ? `<p style="margin-top:24px; font-size:13px;">${escapeHtml(quote.notes)}</p>` : ''}
     </body></html>`;
 }
@@ -74,8 +77,9 @@ export function buildClientQuoteHtml(
 export async function shareClientQuotePdf(
   quote: ClientQuoteDetail,
   snapshot?: QuoteRevisionRow['snapshot'] | null,
+  bankBlocks: BankBlock[] = [],
 ): Promise<void> {
-  const html = buildClientQuoteHtml(quote, snapshot);
+  const html = buildClientQuoteHtml(quote, snapshot, bankBlocks);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
   await Sharing.shareAsync(uri, {
     mimeType: 'application/pdf',

@@ -14,6 +14,7 @@ const COL = (width - 24 * 2 - GAP) / 2;
 
 const CATEGORIES: { key: GalleryCategory | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
+  { key: 'planned_litters', label: 'Planned Litters' },
   { key: 'puppies', label: 'Puppies' },
   { key: 'training', label: 'Training' },
   { key: 'competition', label: 'Competition' },

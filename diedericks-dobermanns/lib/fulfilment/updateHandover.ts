@@ -1,5 +1,6 @@
 import { buyerNameFields, isPlaceholderDogName, realDogName } from '@/lib/dogs/placeholderName';
 import { requireSupabase } from '@/lib/supabase';
+import { closePlacementForDog } from '@/lib/waitlist/closePlacement';
 
 export type HandoverStatus = 'awaiting_go_home' | 'ready' | 'scheduled' | 'delivered';
 
@@ -59,10 +60,11 @@ export async function updateDogHandover(input: {
   if (error) return { error: error.message };
 
   if (input.handover_status === 'delivered') {
-    await supabase
-      .from('waiting_list')
-      .update({ pipeline_stage: 'handover_complete' })
-      .eq('assigned_dog_id', input.dogId);
+    const closed = await closePlacementForDog(
+      input.dogId,
+      'Closed because the puppy was marked delivered.',
+    );
+    if (closed.error) return { error: closed.error };
   }
 
   return {};

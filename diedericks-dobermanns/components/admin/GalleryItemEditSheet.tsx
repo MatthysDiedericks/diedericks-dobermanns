@@ -1,29 +1,14 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, Switch, View } from 'react-native';
 
+import { CATEGORIES, DISCIPLINES, litterPickerLabel, type LitterPickerOption } from '@/components/admin/galleryOptions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { updateGalleryItem } from '@/hooks/useMutations';
+import { isLitterLinkedCategory } from '@/lib/litters/announcement';
 import type { GalleryItem } from '@/types/app.types';
-
-const CATEGORIES = [
-  { value: 'puppies', label: 'Puppies' },
-  { value: 'elite_pups', label: 'Elite Pups' },
-  { value: 'protection_dogs', label: 'Elite Family Protection Dogs' },
-  { value: 'planned_litters', label: 'Planned Litters' },
-  { value: 'litter_announcements', label: 'Litter Announcement (poster)' },
-  { value: 'competition', label: 'Competition' },
-  { value: 'training', label: 'Training' },
-  { value: 'kennel', label: 'Kennel' },
-  { value: 'family', label: 'Family' },
-];
-
-const DISCIPLINES = [
-  { value: 'protection', label: 'Protection' },
-  { value: 'obedience', label: 'Obedience' },
-];
 
 function toDateInput(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : '';
@@ -31,10 +16,12 @@ function toDateInput(value: string | null | undefined): string {
 
 export function GalleryItemEditSheet({
   item,
+  litters = [],
   onClose,
   onSaved,
 }: {
   item: GalleryItem;
+  litters?: LitterPickerOption[];
   onClose: () => void;
   onSaved: (next: GalleryItem) => void;
 }) {
@@ -42,6 +29,7 @@ export function GalleryItemEditSheet({
   const [title, setTitle] = useState(item.title ?? '');
   const [description, setDescription] = useState(item.description ?? '');
   const [category, setCategory] = useState<string>(item.category ?? 'puppies');
+  const [litterId, setLitterId] = useState(item.litter_id ?? '');
   const [discipline, setDiscipline] = useState(item.discipline ?? 'protection');
   const [photoTakenAt, setPhotoTakenAt] = useState(toDateInput(item.photo_taken_at));
   const [featured, setFeatured] = useState(item.is_featured);
@@ -58,6 +46,7 @@ export function GalleryItemEditSheet({
       discipline: isVideo ? discipline : null,
       photo_taken_at: photoTakenAt || null,
       is_featured: featured,
+      litter_id: isLitterLinkedCategory(category) ? litterId || null : item.litter_id ?? null,
     };
     const { error: err } = await updateGalleryItem(item.id, fields);
     setBusy(false);
@@ -108,6 +97,31 @@ export function GalleryItemEditSheet({
             </Pressable>
           ))}
         </View>
+        {isLitterLinkedCategory(category) ? (
+          <View className="mb-4">
+            <Typography variant="caption" className="mb-2 text-silver">
+              Litter
+            </Typography>
+            <View className="flex-row flex-wrap gap-2">
+              {litters.map((l) => (
+                <Pressable
+                  key={l.id}
+                  onPress={() => setLitterId(l.id)}
+                  className={`rounded-full border px-3 py-1.5 ${
+                    litterId === l.id ? 'border-gold bg-gold/15' : 'border-gold/20'
+                  }`}
+                >
+                  <Typography
+                    variant="caption"
+                    className={litterId === l.id ? 'text-gold' : 'text-silver'}
+                  >
+                    {litterPickerLabel(l)} · {l.status}
+                  </Typography>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
         {isVideo ? (
           <View className="mb-4 flex-row flex-wrap gap-2">
             {DISCIPLINES.map((d) => (

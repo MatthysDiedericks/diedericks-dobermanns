@@ -8,18 +8,13 @@ import {
   buildStatementHTML,
   buildStatementRows,
 } from '@/lib/finance/invoiceHtml';
+import { bankBlocksFromSettings, formatBankBlocksText } from '@/lib/finance/bankDetails';
+import { fetchBuyerCountry } from '@/lib/finance/buyerCountry';
+import { fetchAppSettingsMap } from '@/lib/finance/loadBankSettings';
 import { LOGO_BASE64 } from '@/lib/finance/logoBase64';
 import { fetchClientInvoices } from '@/lib/finance/queries';
 import { requireSupabase } from '@/lib/supabase';
 import type { FinanceReportData, InvoiceWithDetails } from '@/types/finance';
-
-/** Banking details for invoice PDFs — update account number here. */
-export const BANKING = {
-  bank: 'FNB',
-  accountName: 'Diedericks Dobermanns',
-  accountNo: 'XXXXXXXX',
-  branch: '250655',
-} as const;
 
 function generateIncomeStatementHTML(data: FinanceReportData): string {
   return `
@@ -100,10 +95,6 @@ function generateIncomeStatementHTML(data: FinanceReportData): string {
   `;
 }
 
-function generateInvoiceHTML(invoice: InvoiceWithDetails): string {
-  return buildInvoiceHTML(invoice, BANKING, LOGO_BASE64);
-}
-
 export async function exportFinancePDF(reportData: FinanceReportData) {
   const html = generateIncomeStatementHTML(reportData);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -114,8 +105,56 @@ export async function exportFinancePDF(reportData: FinanceReportData) {
   });
 }
 
+export async function invoiceBankBlocks(invoice: InvoiceWithDetails) {
+  const settings = await fetchAppSettingsMap();
+  const quoteId = invoice.quote_id ?? null;
+  let contactId: string | null = null;
+  let applicationId: string | null = null;
+  if (quoteId) {
+    const supabase = requireSupabase();
+    const { data } = await supabase
+      .from('quotes')
+      .select('contact_id, application_id, client_id')
+      .eq('id', quoteId)
+      .maybeSingle();
+    contactId = data?.contact_id ?? null;
+    applicationId = data?.application_id ?? null;
+  }
+  const country = await fetchBuyerCountry({
+    client_id: invoice.client_id ?? null,
+    contact_id: contactId,
+    application_id: applicationId,
+  });
+  return bankBlocksFromSettings(country ?? invoice.clientCountry, settings);
+}
+
+/** Same HTML download and email share. Callers decide print vs base64. */
+export async function buildInvoicePdfHtml(invoice: InvoiceWithDetails): Promise<{
+  html: string;
+  blocksText: string;
+}> {
+  const blocks = await invoiceBankBlocks(invoice);
+  return {
+    html: buildInvoiceHTML(invoice, blocks, LOGO_BASE64),
+    blocksText: formatBankBlocksText(blocks, invoice.invoice_number),
+  };
+}
+
+export async function buildInvoicePdfBase64(invoice: InvoiceWithDetails): Promise<{
+  base64: string;
+  html: string;
+  blocksText: string;
+}> {
+  const built = await buildInvoicePdfHtml(invoice);
+  const printed = await Print.printToFileAsync({ html: built.html, base64: true });
+  if (!printed.base64) {
+    throw new Error('Could not build the invoice PDF.');
+  }
+  return { base64: printed.base64, html: built.html, blocksText: built.blocksText };
+}
+
 export async function exportInvoicePDF(invoice: InvoiceWithDetails) {
-  const html = generateInvoiceHTML(invoice);
+  const { html } = await buildInvoicePdfHtml(invoice);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
   await Sharing.shareAsync(uri, {
     mimeType: 'application/pdf',

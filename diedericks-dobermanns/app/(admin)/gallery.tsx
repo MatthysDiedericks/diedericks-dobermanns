@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AddDogMediaCard } from '@/components/admin/AddDogMediaCard';
+import { GalleryUploadCard } from '@/components/admin/GalleryUploadCard';
 import { DogMediaManager } from '@/components/admin/DogMediaManager';
 import { GalleryItemEditSheet } from '@/components/admin/GalleryItemEditSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
-import { useAdminGallery, useDogsForMediaPicker } from '@/hooks/useAdmin';
+import { useAdminGallery, useAdminLittersForPicker, useDogsForMediaPicker } from '@/hooks/useAdmin';
 import { setGalleryFeatured } from '@/hooks/useMutations';
 import { ThumbImage } from '@/components/media/ThumbImage';
 import { titleCase } from '@/lib/format';
@@ -20,6 +20,7 @@ import type { GalleryItem } from '@/types/app.types';
 export default function AdminGalleryScreen() {
   const { data: items, loading, refetch } = useAdminGallery();
   const { data: dogs } = useDogsForMediaPicker();
+  const { data: litters } = useAdminLittersForPicker();
   const [dogId, setDogId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -44,11 +45,16 @@ export default function AdminGalleryScreen() {
     <ScreenContainer>
       <PageHeader eyebrow="Content" title="Gallery" />
       <View className="px-6">
-        <AddDogMediaCard
+        <GalleryUploadCard
           dogs={dogs}
           dogId={dogId}
           onDogIdChange={setDogId}
-          onUploaded={() => setRefreshKey((n) => n + 1)}
+          litters={litters}
+          items={list}
+          onUploaded={() => {
+            setRefreshKey((n) => n + 1);
+            void refetch();
+          }}
         />
       </View>
       <DogMediaManager key={`${dogId ?? 'all'}-${refreshKey}`} dogId={dogId} dogName={dogName} dogStatus={dogStatus} />
@@ -109,6 +115,7 @@ export default function AdminGalleryScreen() {
       {editing ? (
         <GalleryItemEditSheet
           item={editing}
+          litters={litters}
           onClose={() => setEditing(null)}
           onSaved={(next) => {
             setLocal((prev) => (prev ?? items).map((g) => (g.id === next.id ? next : g)));

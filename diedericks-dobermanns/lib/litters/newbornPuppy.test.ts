@@ -14,6 +14,7 @@ function main() {
     sex: 'male' as const,
     colour: 'black_tan',
     collar_colour: 'red',
+    tail_type: 'docked' as const,
     birth_order: 11,
     birth_weight_grams: 450,
     date_of_birth: '2026-07-01',

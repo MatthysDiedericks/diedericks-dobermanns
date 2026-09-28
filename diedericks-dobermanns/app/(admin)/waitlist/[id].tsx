@@ -2,7 +2,9 @@
 import { InviteStateChip } from "@/components/admin/InviteStateChip";
 import { PreferenceBadges } from "@/components/waitlist/PreferenceBadges";
 import { PipelineBreadcrumb } from "@/components/waitlist/PipelineBreadcrumb";
+import { LinkPuppySheet } from "@/components/waitlist/LinkPuppySheet";
 import { StageSelector } from "@/components/waitlist/StageSelector";
+import { StageAgeLine } from "@/components/waitlist/StageAgeLine";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +16,7 @@ import { Colors } from "@/constants/colors";
 import { updateWaitlistEntry, addDogToApplication, useSubmitting } from "@/hooks/useMutations";
 import { useWaitlistEntry } from "@/hooks/useWaitingList";
 import { WAITLIST_HISTORY_SELECT, WAITLIST_SELECT } from "@/lib/waitlist/queries";
-import { daysWaiting, stageLabel } from "@/lib/waitlist/constants";
+import { stageLabel } from "@/lib/waitlist/constants";
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from "@/lib/waitlist/helpers";
 import { dogOfNLabel, outstandingSiblingCount } from "@/lib/waitlist/siblings";
 import { supabase } from "@/lib/supabase";
@@ -35,6 +37,7 @@ export default function WaitlistEntryDetailScreen() {
   const { submitting, run } = useSubmitting();
   const [tab, setTab] = useState<Tab>("overview");
   const [stageOpen, setStageOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [history, setHistory] = useState<WaitingListHistoryRow[]>([]);
@@ -109,7 +112,6 @@ export default function WaitlistEntryDetailScreen() {
     );
   }
 
-  const days = daysWaiting(entry.date_added ?? entry.created_at);
   const tabs: Tab[] = ["overview", "preferences", "history", "notes"];
 
   return (
@@ -127,9 +129,9 @@ export default function WaitlistEntryDetailScreen() {
         ) : null}
         <Badge label={entry.priority} tone="muted" />
         <InviteStateChip state={inviteState} />
-        <Typography variant="subtitle" className={days >= 180 ? "text-danger" : days >= 90 ? "text-warning" : "text-gold"}>
-          {days}d waiting
-        </Typography>
+      </View>
+      <View className="mb-3 px-4">
+        <StageAgeLine entry={entry} />
       </View>
       <View className="mb-4 flex-row flex-wrap gap-2 px-4">
         {entryPhone(entry) ? (
@@ -139,6 +141,7 @@ export default function WaitlistEntryDetailScreen() {
           <Button label="Email" size="sm" variant="outline" onPress={() => Linking.openURL(`mailto:${entryEmail(entry)}`)} />
         ) : null}
         <Button label="Move stage" size="sm" onPress={() => setStageOpen(true)} />
+        <Button label="Link puppy" size="sm" variant="outline" onPress={() => setLinkOpen(true)} />
         {entry.application_id ? (
           <Button
             label="Add another dog"
@@ -239,6 +242,13 @@ export default function WaitlistEntryDetailScreen() {
       </ScrollView>
 
       <StageSelector visible={stageOpen} entry={entry} onClose={() => setStageOpen(false)} onSaved={refresh} />
+      <LinkPuppySheet
+        entryId={entry.id}
+        litterId={entry.assigned_litter_id ?? null}
+        visible={linkOpen}
+        onClose={() => setLinkOpen(false)}
+        onSaved={refresh}
+      />
     </ScreenContainer>
   );
 }

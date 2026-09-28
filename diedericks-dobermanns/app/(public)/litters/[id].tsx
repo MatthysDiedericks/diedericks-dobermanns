@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -34,7 +35,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 export default function LitterDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { litter, puppies, weightsByPuppyId, uniqueDates, galleryMedia, milestones, loading } =
+  const { litter, puppies, weightsByPuppyId, uniqueDates, galleryMedia, announcement, milestones, loading } =
     usePublicLitterDetail(id);
   const { benchmarkCurve } = useGrowthBenchmark(litter?.puppy_count ?? puppies.length ?? 1);
   const pairingBehind = usePairingBehindBlock(litter?.father_id, litter?.mother_id);
@@ -66,6 +67,16 @@ export default function LitterDetailScreen() {
         title={litter.name ?? 'Upcoming Litter'}
       />
       <View className="px-6">
+        {announcement?.image_url ? (
+          <View className="mb-6 overflow-hidden rounded-2xl border border-gold/20 bg-black-rich">
+            <Image
+              source={{ uri: announcement.image_url }}
+              style={{ width: '100%', aspectRatio: 3 / 4 }}
+              contentFit="contain"
+            />
+          </View>
+        ) : null}
+
         <View className="mb-4 flex-row">
           <Badge label={placed ? 'All placed' : titleCase(litter.status)} tone="gold" />
         </View>

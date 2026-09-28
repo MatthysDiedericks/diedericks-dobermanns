@@ -14,6 +14,7 @@ import {
   DeceasedDogCard,
   DogDirectoryCard,
 } from '@/components/dogs/DogDirectoryCard';
+import { MyDogsList } from '@/components/dogs/MyDogsList';
 import { UnallocatedSalesBanner } from '@/components/dogs/UnallocatedSalesBanner';
 import { ExpectingBreedingRow } from '@/components/dogs/ExpectingBreedingRow';
 import { DogSearchField } from '@/components/dogs/DogSearchField';
@@ -35,7 +36,10 @@ import {
 } from '@/lib/dogs/programmeTier';
 import type { DogFilterTab } from '@/types/phase10';
 
-const FILTERS: { key: DogFilterTab; label: string }[] = [
+type ScreenFilter = 'mine' | DogFilterTab;
+
+const FILTERS: { key: ScreenFilter; label: string }[] = [
+  { key: 'mine', label: 'My dogs' },
   { key: 'breeding', label: 'Breeding Stock' },
   { key: 'expecting', label: 'Expecting' },
   { key: 'deceased', label: 'Deceased' },
@@ -48,6 +52,7 @@ interface DogsDirectoryScreenProps {
   headerEyebrow?: string;
   headerTitle?: string;
   showUnallocatedBanner?: boolean;
+  initialFilter?: ScreenFilter;
 }
 
 export function DogsDirectoryScreen({
@@ -56,9 +61,10 @@ export function DogsDirectoryScreen({
   headerEyebrow = 'Kennel',
   headerTitle = 'Dogs',
   showUnallocatedBanner = false,
+  initialFilter = 'mine',
 }: DogsDirectoryScreenProps) {
   const router = useRouter();
-  const [filter, setFilter] = useState<DogFilterTab>('breeding');
+  const [filter, setFilter] = useState<ScreenFilter>(initialFilter);
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const searching = Boolean(search.trim());
@@ -72,7 +78,7 @@ export function DogsDirectoryScreen({
     error,
     refresh,
     role,
-  } = useKennelDogs(filter, searching ? '' : search);
+  } = useKennelDogs(filter === 'mine' ? 'breeding' : filter, searching ? '' : search);
   const directory = useDogDirectory();
   const canAdd = showAddButton && (isAdminPlus(role) || role === 'trainer');
   const studs = breedingStock.studs.filter((d) => matchesProgrammeFilter(d.programme_tier, tierFilter));
@@ -123,12 +129,12 @@ export function DogsDirectoryScreen({
           onQueryChange={setSearch}
           debounceMs={0}
         />
-        {gapLine ? (
+        {filter !== 'mine' && gapLine ? (
           <Typography variant="caption" className="mt-2 text-amber-200">
             {gapLine}
           </Typography>
         ) : null}
-        {searching ? (
+        {filter !== 'mine' && searching ? (
           <Typography variant="caption" className="mt-3 text-muted">
             Refine
           </Typography>
@@ -152,6 +158,7 @@ export function DogsDirectoryScreen({
             ))}
           </ScrollView>
         )}
+        {filter === 'mine' ? null : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -181,15 +188,18 @@ export function DogsDirectoryScreen({
             );
           })}
         </ScrollView>
+        )}
       </View>
 
-      {error ? (
+      {error && filter !== 'mine' ? (
         <Typography variant="body" className="mb-2 px-6 text-danger">
           {error}
         </Typography>
       ) : null}
 
-      {searching ? (
+      {filter === 'mine' ? (
+        <MyDogsList search={search} detailRoute={detailRoute} />
+      ) : searching ? (
         directory.loading ? (
           <View className="px-6">
             <CardListSkeleton count={5} />

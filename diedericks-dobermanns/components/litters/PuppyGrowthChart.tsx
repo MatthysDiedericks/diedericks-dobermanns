@@ -2,7 +2,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Fragment, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 
 import { EmptyTabState } from '@/components/dogs/detail/EmptyTabState';
 import { buildAgeDaysToX, GrowthBenchmarkLine } from '@/components/litters/GrowthBenchmarkLine';
@@ -172,19 +172,33 @@ export function PuppyGrowthChart({
           const faded = isolatedId && isolatedId !== p.id;
           const color = collarHex(p.collar_colour);
           const opacity = faded ? 0.2 : 1;
-          const points = logs.map((l) => ({
-            x: xForDate(l.recorded_date),
-            y: yForGrams(l.weight_kg * 1000),
-          }));
-          const pathD =
-            points.length >= 2
-              ? points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ')
-              : '';
+          const points = [...logs]
+            .sort((a, b) =>
+              (a.recorded_at ?? a.recorded_date).localeCompare(b.recorded_at ?? b.recorded_date),
+            )
+            .map((l) => ({
+              x: xForDate(l.recorded_date),
+              y: yForGrams(l.weight_kg * 1000),
+              grams: l.weight_kg * 1000,
+            }));
           return (
             <Fragment key={p.id}>
-              {pathD ? (
-                <Path d={pathD} stroke={color} strokeWidth={2} fill="none" opacity={opacity} />
-              ) : null}
+              {points.slice(0, -1).map((pt, i) => {
+                const next = points[i + 1];
+                const flatOrDown = next.grams <= pt.grams;
+                return (
+                  <Line
+                    key={`${p.id}-seg-${i}`}
+                    x1={pt.x}
+                    y1={pt.y}
+                    x2={next.x}
+                    y2={next.y}
+                    stroke={flatOrDown ? '#f59e0b' : color}
+                    strokeWidth={flatOrDown ? 3 : 2}
+                    opacity={opacity}
+                  />
+                );
+              })}
               {points.map((pt, i) => (
                 <Circle key={`${p.id}-${i}`} cx={pt.x} cy={pt.y} r={4} fill={color} opacity={opacity} />
               ))}

@@ -14,6 +14,8 @@ export function LitterPuppyAddRow({
   setSex,
   collar,
   setCollar,
+  tail,
+  setTail,
   colour,
   setColour,
   birthGrams,
@@ -29,12 +31,17 @@ export function LitterPuppyAddRow({
   usedCollars,
   onAdd,
   pending,
+  errors,
+  allowDuplicate,
+  onToggleDuplicate,
 }: {
   nextOrder: number;
   sex: 'male' | 'female';
   setSex: (s: 'male' | 'female') => void;
   collar: CollarColourId | null;
   setCollar: (c: CollarColourId | null) => void;
+  tail: 'docked' | 'natural' | null;
+  setTail: (t: 'docked' | 'natural' | null) => void;
   colour: DogColourCode | '';
   setColour: (c: DogColourCode | '') => void;
   birthGrams: string;
@@ -50,6 +57,9 @@ export function LitterPuppyAddRow({
   usedCollars: string[];
   onAdd: () => void;
   pending: boolean;
+  errors?: { collar?: string; tail?: string; weight?: string; time?: string; duplicate?: string };
+  allowDuplicate?: boolean;
+  onToggleDuplicate?: () => void;
 }) {
   const duplicateCollar = collar != null && collar !== 'none' && usedCollars.includes(collar);
 
@@ -89,6 +99,27 @@ export function LitterPuppyAddRow({
         usedColours={usedCollars}
         duplicateWarning={duplicateCollar}
       />
+      <Typography variant="caption" className="mb-2 mt-3 text-subtle">
+        Tail
+      </Typography>
+      <View className="mb-3 flex-row gap-2">
+        {(['docked', 'natural'] as const).map((value) => (
+          <Pressable
+            key={value}
+            onPress={() => setTail(value)}
+            className={`flex-1 rounded-xl border py-3 ${
+              tail === value ? 'border-gold bg-gold/15' : 'border-gold/25'
+            }`}
+          >
+            <Typography variant="caption" className="text-center">
+              {value === 'docked' ? 'Docked' : 'Natural'}
+            </Typography>
+          </Pressable>
+        ))}
+      </View>
+      {errors?.tail ? (
+        <Typography variant="caption" className="mb-2 text-red-300">{errors.tail}</Typography>
+      ) : null}
       <Typography variant="caption" className="mb-2 mt-3 text-subtle">
         Colour
       </Typography>
@@ -178,11 +209,26 @@ export function LitterPuppyAddRow({
           </View>
         </View>
       ) : null}
+      {errors?.collar ? (
+        <Typography variant="caption" className="mb-1 text-red-300">{errors.collar}</Typography>
+      ) : null}
+      {errors?.weight ? (
+        <Typography variant="caption" className="mb-1 text-red-300">{errors.weight}</Typography>
+      ) : null}
+      {errors?.time ? (
+        <Typography variant="caption" className="mb-1 text-red-300">{errors.time}</Typography>
+      ) : null}
+      {errors?.duplicate ? (
+        <Pressable onPress={onToggleDuplicate} className="mb-2">
+          <Typography variant="caption" className="text-amber-200">
+            {allowDuplicate ? '✓ ' : ''}{errors.duplicate}
+          </Typography>
+        </Pressable>
+      ) : null}
       <Button
         label="Add puppy"
         onPress={onAdd}
         loading={pending}
-        disabled={duplicateCollar}
         fullWidth
       />
     </View>

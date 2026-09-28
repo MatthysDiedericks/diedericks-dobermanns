@@ -16,6 +16,12 @@ import {
   WHELPING_OUTCOME_BUTTONS,
 } from '@/lib/litters/guide';
 import type { PuppyOutcome } from '@/lib/litters/outcomes';
+import {
+  formatPuppySaved,
+  intakeIsComplete,
+  validatePuppyIntake,
+  type IntakeErrors,
+} from '@/lib/litters/puppyIntake';
 import { resolvePhotoUrls } from '@/lib/storage';
 import { useAuthStore } from '@/stores/authStore';
 import type { Dog } from '@/types/app.types';
@@ -53,9 +59,14 @@ export function WhelpingFlow({
   const [sex, setSex] = useState<'male' | 'female'>('male');
   const [grams, setGrams] = useState('');
   const [collar, setCollar] = useState<CollarColourId | null>(null);
+  const [tail, setTail] = useState<'docked' | 'natural' | null>(null);
   const [colour, setColour] = useState<DogColourCode | ''>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<IntakeErrors>({});
+  const [allowDuplicate, setAllowDuplicate] = useState(false);
+  const [savedLine, setSavedLine] = useState<string | null>(null);
+  const [birthType, setBirthType] = useState<'' | 'natural' | 'assisted' | 'c_section'>('');
   const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -70,20 +81,32 @@ export function WhelpingFlow({
     setSex('male');
     setGrams('');
     setCollar(null);
+    setTail(null);
     setColour('');
     setPhotos([]);
     setError(null);
+    setFieldErrors({});
+    setAllowDuplicate(false);
+    setBirthType('');
     gramsRef.current?.focus();
   }
 
   async function save() {
     setError(null);
     setPhotoNote(null);
-    const birthGrams = grams.trim() ? parseGrams(grams) : null;
-    if (grams.trim() && birthGrams == null) {
-      setError('Weight must be a whole number in grams, or left blank.');
-      return;
-    }
+    const parsed = grams.trim() ? parseGrams(grams) : null;
+    const intakeErrors = validatePuppyIntake({
+      sex,
+      collarColour: collar,
+      tailType: tail,
+      birthWeightGrams: parsed,
+      birthTime: time,
+      usedCollars,
+      allowDuplicateCollar: allowDuplicate,
+    });
+    setFieldErrors(intakeErrors);
+    if (!intakeIsComplete(intakeErrors) || !tail) return;
+    const birthGrams = parsed as number;
     const heldPhotos = [...photos];
     setPending(true);
     try {
@@ -91,10 +114,13 @@ export function WhelpingFlow({
         litterId,
         birth_order: nextOrder,
         sex,
+        tail_type: tail,
         collar_colour: collar,
         colour: colour || null,
         birth_weight_grams: birthGrams,
         birth_time: time || null,
+        birth_type: birthType || null,
+        allowDuplicateCollar: allowDuplicate,
         outcome,
       });
       if (res.error || !res.id) {
@@ -122,6 +148,15 @@ export function WhelpingFlow({
           setPhotoNote('Pup saved. Photo can be added later.');
         }
       }
+      setSavedLine(
+        formatPuppySaved({
+          order: nextOrder,
+          collarLabel: collarLabel(collar ?? ''),
+          sex,
+          grams: birthGrams,
+          time,
+        }),
+      );
       resetForm();
       await onSaved();
     } finally {
@@ -257,11 +292,55 @@ export function WhelpingFlow({
           );
         })}
       </View>
-      {duplicateCollar ? (
-        <Typography variant="caption" className="mb-3 text-amber-200">
-          That collar is already on another pup in this litter.
-        </Typography>
+      {fieldErrors.collar ? (
+        <Typography variant="caption" className="mb-2 text-red-300">{fieldErrors.collar}</Typography>
       ) : null}
+      {duplicateCollar ? (
+        <Pressable onPress={() => setAllowDuplicate((v) => !v)} className="mb-3">
+          <Typography variant="caption" className="text-amber-200">
+            {allowDuplicate ? '✓ ' : ''}{fieldErrors.duplicate ?? 'That collar is already on another pup. Save anyway if you have run out.'}
+          </Typography>
+        </Pressable>
+      ) : null}
+      <Typography variant="caption" className="mb-2 text-subtle">
+        Tail
+      </Typography>
+      <View className="mb-3 flex-row gap-2">
+        {(['docked', 'natural'] as const).map((value) => (
+          <Pressable
+            key={value}
+            onPress={() => setTail(value)}
+            className={`min-h-14 flex-1 items-center justify-center rounded-xl border ${
+              tail === value ? 'border-gold bg-gold/15' : 'border-gold/25'
+            }`}
+          >
+            <Typography variant="caption">{value === 'docked' ? 'Docked' : 'Natural'}</Typography>
+          </Pressable>
+        ))}
+      </View>
+      {fieldErrors.tail ? (
+        <Typography variant="caption" className="mb-2 text-red-300">{fieldErrors.tail}</Typography>
+      ) : null}
+      <Typography variant="caption" className="mb-2 text-subtle">
+        Birth type (optional)
+      </Typography>
+      <View className="mb-4 flex-row flex-wrap gap-2">
+        {([
+          ['natural', 'Natural'],
+          ['assisted', 'Assisted'],
+          ['c_section', 'Caesarean'],
+        ] as const).map(([value, label]) => (
+          <Pressable
+            key={value}
+            onPress={() => setBirthType(birthType === value ? '' : value)}
+            className={`rounded-full border px-3 py-2 ${
+              birthType === value ? 'border-gold bg-gold/15' : 'border-gold/25'
+            }`}
+          >
+            <Typography variant="caption">{label}</Typography>
+          </Pressable>
+        ))}
+      </View>
 
       <Typography variant="caption" className="mb-2 text-subtle">
         Colour
@@ -287,6 +366,18 @@ export function WhelpingFlow({
         <PhotoPicker value={photos} onChange={setPhotos} max={1} />
       </View>
 
+      {fieldErrors.weight ? (
+        <Typography variant="caption" className="mb-1 text-red-300">{fieldErrors.weight}</Typography>
+      ) : null}
+      {fieldErrors.time ? (
+        <Typography variant="caption" className="mb-1 text-red-300">{fieldErrors.time}</Typography>
+      ) : null}
+      {fieldErrors.sex ? (
+        <Typography variant="caption" className="mb-1 text-red-300">{fieldErrors.sex}</Typography>
+      ) : null}
+      {savedLine ? (
+        <Typography variant="caption" className="mb-2 text-emerald-300">{savedLine}</Typography>
+      ) : null}
       {error ? (
         <View className="mb-4 rounded-xl border border-danger/40 bg-danger/10 p-3">
           <Typography variant="body" className="text-danger">

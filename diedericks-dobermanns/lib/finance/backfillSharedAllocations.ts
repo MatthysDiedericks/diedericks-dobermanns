@@ -87,8 +87,11 @@ export function planSharedAllocationBackfill(input: {
   dogs: DogDaysDog[];
   litters: DogDaysLitter[];
   settings?: Partial<DogDaysSettings>;
+  /** Lines to delete-and-rewrite even if they already have allocations. */
+  rewriteLineIds?: Iterable<string>;
 }): SharedBackfillPlan {
   const allocated = new Set(input.allocatedLineIds);
+  const rewrite = new Set(input.rewriteLineIds ?? []);
   const settings: DogDaysSettings = {
     ...DEFAULT_DOG_DAYS_SETTINGS,
     ...input.settings,
@@ -102,7 +105,7 @@ export function planSharedAllocationBackfill(input: {
   let totalValueCovered = 0;
 
   for (const line of input.lines) {
-    if (allocated.has(line.id)) {
+    if (allocated.has(line.id) && !rewrite.has(line.id)) {
       skippedAlreadyAllocated += 1;
       continue;
     }

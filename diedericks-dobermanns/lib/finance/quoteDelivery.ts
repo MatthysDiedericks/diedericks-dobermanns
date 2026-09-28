@@ -58,7 +58,6 @@ function deliveryTemplate(catalogue: CatalogueItem[]): CatalogueItem {
       description_template: 'Delivery / travel',
       price_varies: true,
       default_price: null,
-      equipment_type: null,
     } as CatalogueItem)
   );
 }

@@ -22,6 +22,12 @@ import { setProgrammeTierForDogs } from '@/lib/litters/setPuppyProgrammeTiers';
 import { type DogColourCode } from '@/lib/colours/dogColours';
 import type { Dog } from '@/types/app.types';
 import {
+  formatPuppySaved,
+  intakeIsComplete,
+  validatePuppyIntake,
+  type IntakeErrors,
+} from '@/lib/litters/puppyIntake';
+import {
   deriveLitterOutcomeCounts,
   formatLitterOutcomeCounts,
   type PuppyOutcome,
@@ -40,6 +46,7 @@ export function LitterPuppiesTab({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [newSex, setNewSex] = useState<'male' | 'female'>('male');
   const [newCollar, setNewCollar] = useState<CollarColourId | null>(null);
+  const [newTail, setNewTail] = useState<'docked' | 'natural' | null>(null);
   const [newColour, setNewColour] = useState<DogColourCode | ''>('');
   const [newWeight, setNewWeight] = useState('');
   const [newTime, setNewTime] = useState(() => new Date().toTimeString().slice(0, 5));
@@ -47,6 +54,9 @@ export function LitterPuppiesTab({
   const [newOutcomeDate, setNewOutcomeDate] = useState('');
   const [newOutcomeNote, setNewOutcomeNote] = useState('');
   const [adding, setAdding] = useState(false);
+  const [intakeErrors, setIntakeErrors] = useState<IntakeErrors>({});
+  const [allowDuplicate, setAllowDuplicate] = useState(false);
+  const [savedLine, setSavedLine] = useState<string | null>(null);
   const selectedIds = puppies.filter((p) => selected[p.id]).map((p) => p.id);
   const gapLine = gapSummaryLine(summarizeGaps(puppies));
   const outcomeLine = formatLitterOutcomeCounts(deriveLitterOutcomeCounts(puppies));
@@ -66,16 +76,29 @@ export function LitterPuppiesTab({
 
   async function addPuppy() {
     const grams = newWeight.trim() ? parseInt(newWeight, 10) : null;
+    const errors = validatePuppyIntake({
+      sex: newSex,
+      collarColour: newCollar,
+      tailType: newTail,
+      birthWeightGrams: grams != null && Number.isFinite(grams) ? grams : null,
+      birthTime: newTime,
+      usedCollars,
+      allowDuplicateCollar: allowDuplicate,
+    });
+    setIntakeErrors(errors);
+    if (!intakeIsComplete(errors)) return;
     setAdding(true);
     const { error } = await addPuppyToLitter({
       litterId,
       birth_order: nextOrder,
       sex: newSex,
+      tail_type: newTail,
       collar_colour: newCollar,
       colour: newColour || null,
       birth_weight_grams:
         grams != null && Number.isFinite(grams) && grams > 0 ? grams : null,
         birth_time: newTime || null,
+        allowDuplicateCollar: allowDuplicate,
         outcome: newOutcome,
         outcome_date: newOutcomeDate || null,
         outcome_note: newOutcomeNote || null,
@@ -86,11 +109,22 @@ export function LitterPuppiesTab({
       return;
     }
     setNewCollar(null);
+    setNewTail(null);
     setNewWeight('');
     setNewTime(new Date().toTimeString().slice(0, 5));
     setNewOutcome('live');
     setNewOutcomeDate('');
     setNewOutcomeNote('');
+    setAllowDuplicate(false);
+    setIntakeErrors({});
+    const line = formatPuppySaved({
+      order: nextOrder,
+      collarLabel: collarLabel(newCollar),
+      sex: newSex,
+      grams: grams ?? 0,
+      time: newTime,
+    });
+    setSavedLine(line);
     onChanged?.();
   }
 
@@ -102,6 +136,8 @@ export function LitterPuppiesTab({
         setSex={setNewSex}
         collar={newCollar}
         setCollar={setNewCollar}
+        tail={newTail}
+        setTail={setNewTail}
         colour={newColour}
         setColour={setNewColour}
         birthGrams={newWeight}
@@ -117,6 +153,18 @@ export function LitterPuppiesTab({
         usedCollars={usedCollars}
         onAdd={() => void addPuppy()}
         pending={adding}
+        errors={intakeErrors}
+        allowDuplicate={allowDuplicate}
+        onToggleDuplicate={() => setAllowDuplicate((v) => !v)}
+      />
+      {savedLine ? (
+        <Typography variant="caption" className="mb-3 text-emerald-300">{savedLine}</Typography>
+      ) : null}
+      <Button
+        label="Allocate this litter"
+        onPress={() => router.push(`/(admin)/litters/${litterId}/allocate` as never)}
+        fullWidth
+        className="mb-3"
       />
       <Button
         label="Register More Pups"

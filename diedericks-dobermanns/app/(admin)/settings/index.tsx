@@ -62,6 +62,21 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
+            On-screen alerts
+          </Typography>
+          <Typography variant="bodyMuted" className="mt-2">
+            How early the dashboard banner and the bell warn you. Documents start at 30 days, not 7.
+          </Typography>
+          <Button
+            label="Alert lead times"
+            variant="outline"
+            onPress={() => router.push('/(admin)/settings/alerts' as never)}
+            fullWidth
+            className="mt-4"
+          />
+        </Card>
+        <Card className="p-4">
+          <Typography variant="subtitle" className="text-gold">
             Quote lapse
           </Typography>
           <Typography variant="bodyMuted" className="mt-2">
@@ -92,13 +107,13 @@ export default function AdminSettingsIndex() {
         </Card>
         <Card className="p-4">
           <Typography variant="subtitle" className="text-gold">
-            Quote catalogue
+            Services & fees
           </Typography>
           <Typography variant="bodyMuted" className="mt-2">
-            What you sell — crates, certificates, delivery, training — for the quote picker.
+            Quote lines that are not physical stock — certificates, freight, training, delivery.
           </Typography>
           <Button
-            label="Manage catalogue"
+            label="Manage services & fees"
             variant="outline"
             onPress={() => router.push('/(admin)/settings/catalogue' as never)}
             fullWidth

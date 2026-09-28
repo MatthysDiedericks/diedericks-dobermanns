@@ -1,4 +1,4 @@
-import { STOCK_STATUSES, type CatalogueItem, type StockStatus } from '@/lib/finance/catalogue';
+import { type CatalogueItem } from '@/lib/finance/catalogue';
 import { formatAmount } from '@/lib/finance/formatters';
 import { getPublicUrl } from '@/lib/storage';
 
@@ -49,11 +49,6 @@ export function stockStatusFor(
     };
   }
   return { key: 'live', label: 'Live in shop', reason: null };
-}
-
-export function stockStatusLabel(status: StockStatus): string | null {
-  if (status === 'in_stock') return null;
-  return STOCK_STATUSES.find((s) => s.value === status)?.label ?? status.replace(/_/g, ' ');
 }
 
 export function equipmentImageUrl(imagePath: string | null | undefined): string | null {

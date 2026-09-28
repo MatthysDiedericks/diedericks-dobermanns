@@ -24,6 +24,7 @@ import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { useBudgetSummary } from '@/hooks/useBudgetSummary';
 import { useAllocationReconciliation, useExpenseAllocationBreakdown } from '@/hooks/useExpenses';
+import { useIncomeLinkGap } from '@/hooks/useIncomeLinkGap';
 import { useFinanceReport } from '@/hooks/useFinanceReport';
 import { useFinanceYears } from '@/hooks/useFinanceYears';
 import { buildFinanceReport } from '@/lib/finance/buildFinanceReport';
@@ -71,6 +72,7 @@ export default function FinanceDashboardScreen() {
   const { summary: budgetSummary } = useBudgetSummary(budgetYear);
   const { breakdown: allocationBreakdown } = useExpenseAllocationBreakdown(from, to);
   const { report: allocationReport } = useAllocationReconciliation(from, to);
+  const incomeGap = useIncomeLinkGap();
 
   const chartWidth = Dimensions.get('window').width - 48;
   const chartConfig = {
@@ -128,6 +130,9 @@ export default function FinanceDashboardScreen() {
 
       <FinanceActionChips
         exporting={exporting}
+        onLinkSales={() => router.push('/(admin)/finance/link-sales' as never)}
+        onSalesInvoices={() => router.push('/(admin)/finance/invoices' as never)}
+        onPurchaseInvoices={() => router.push('/(admin)/finance/purchases' as never)}
         onCashflow={() => router.push('/(admin)/finance/cashflow' as never)}
         onDebtors={() => router.push('/(admin)/finance/creditors' as never)}
         onProofs={() => router.push('/(admin)/finance/proofs' as never)}
@@ -190,9 +195,9 @@ export default function FinanceDashboardScreen() {
         </View>
       ) : null}
 
-      {allocationReport && allocationReport.total > 0 ? (
+      {allocationReport && (allocationReport.total > 0 || incomeGap) ? (
         <View className="mb-6 px-6">
-          <ExpenseAllocationReconciliation report={allocationReport} />
+          <ExpenseAllocationReconciliation report={allocationReport} incomeGap={incomeGap} />
         </View>
       ) : null}
 

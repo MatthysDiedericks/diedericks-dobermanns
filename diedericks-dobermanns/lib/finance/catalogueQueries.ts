@@ -3,12 +3,9 @@ import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { requireSupabase, supabase } from '@/lib/supabase';
 
 const SELECT =
-  'id, code, label, item_type, category, default_price, price_varies, description_template, notes, is_active, sort_order, image_path, short_description, is_client_visible, stock_status, equipment_type';
+  'id, code, label, item_type, category, default_price, price_varies, description_template, notes, is_active, sort_order, image_path, short_description, is_client_visible';
 
 function mapRow(r: Record<string, unknown>): CatalogueItem {
-  const stock = r.stock_status === 'made_to_order' || r.stock_status === 'sold_out'
-    ? r.stock_status
-    : 'in_stock';
   return {
     id: String(r.id),
     code: String(r.code),
@@ -24,8 +21,6 @@ function mapRow(r: Record<string, unknown>): CatalogueItem {
     image_path: (r.image_path as string | null) ?? null,
     short_description: (r.short_description as string | null) ?? null,
     is_client_visible: Boolean(r.is_client_visible),
-    stock_status: stock,
-    equipment_type: typeof r.equipment_type === 'string' ? r.equipment_type : null,
   };
 }
 
@@ -246,8 +241,6 @@ export type CatalogueWriteInput = {
   image_path?: string | null;
   short_description?: string | null;
   is_client_visible?: boolean;
-  stock_status?: CatalogueItem['stock_status'];
-  equipment_type?: string | null;
 };
 
 function validatePrice(input: CatalogueWriteInput): string | null {

@@ -11,6 +11,9 @@ import { LitterHealthTab } from '@/components/litters/LitterHealthTab';
 import { LitterNotesTab } from '@/components/litters/LitterNotesTab';
 import { LitterPhotosTab } from '@/components/litters/LitterPhotosTab';
 import { LitterPuppiesTab } from '@/components/litters/LitterPuppiesTab';
+import { LitterQueuePanels, type AppLitterQueueRow } from '@/components/litters/LitterQueuePanels';
+import { LitterRoundsGrid } from '@/components/litters/LitterRoundsGrid';
+import { PuppyGrowthChart } from '@/components/litters/PuppyGrowthChart';
 import { LitterQuoteHolders } from '@/components/litters/LitterQuoteHolders';
 import { fetchLitterQuoteHolders, type LitterQuoteHolder } from '@/lib/finance/litterQuoteHolders';
 import { LitterReportsTab } from '@/components/litters/LitterReportsTab';
@@ -23,10 +26,22 @@ import { Button } from '@/components/ui/Button';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { showError } from '@/lib/dogDetail/feedback';
+import type { PuppyWeightLog } from '@/hooks/useLitterWeights';
 import { resolveLitterTab } from '@/lib/litters/tabFromParams';
 import { litterGuidePhase } from '@/lib/litters/guide';
 import { useLitterWeights } from '@/hooks/useLitterWeights';
 import { useLitterDetail } from '@/hooks/useDogs';
+import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
+import { supabase } from '@/lib/supabase';
+import { buildForwardStagePatch } from '@/lib/waitlist/pipeline';
+import { useAuthStore } from '@/stores/authStore';
+import {
+  WEIGHING_SCHEDULES,
+  weighingDue,
+  weightsLeadTheLitter,
+  type WeighingSchedule,
+} from '@/lib/litters/weightRounds';
 
 const TABS = [
   'puppies',
@@ -44,6 +59,17 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number];
+
+function latestWeighIn(weightsByPuppyId: Map<string, PuppyWeightLog[]>): Date | null {
+  let latest: Date | null = null;
+  weightsByPuppyId.forEach((logs) =>
+    logs.forEach((log) => {
+      const at = log.recorded_at ? new Date(log.recorded_at) : new Date(`${log.recorded_date}T12:00:00`);
+      if (!latest || at > latest) latest = at;
+    }),
+  );
+  return latest;
+}
 
 const TAB_LABELS: Record<TabId, string> = {
   puppies: 'Puppies',
@@ -68,8 +94,18 @@ export default function LitterDetailScreen() {
   const {
     puppies: weightPuppies,
     weightsByPuppyId,
+    uniqueDates,
     logWeightsBatch,
   } = useLitterWeights(litterId, litter?.actual_date);
+  const profileId = useAuthStore((s) => s.profile?.id ?? null);
+  const [schedule, setSchedule] = useState<WeighingSchedule>('am_pm');
+  const [queueRows, setQueueRows] = useState<AppLitterQueueRow[]>([]);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [queueTick, setQueueTick] = useState(0);
+  const weightsLead = weightsLeadTheLitter(litter?.actual_date);
+  const { benchmarkCurve, loading: benchmarkLoading, error: benchmarkError } = useGrowthBenchmark(
+    weightPuppies.length,
+  );
   const phase = litterGuidePhase({
     status: litter?.status,
     puppyCount: puppies.length,
@@ -90,6 +126,58 @@ export default function LitterDetailScreen() {
     if (!litterId) return;
     void fetchLitterQuoteHolders(litterId).then(setHolders).catch(() => setHolders([]));
   }, [litterId]);
+
+  useEffect(() => {
+    const raw = (litter as { weighing_schedule?: string } | null)?.weighing_schedule;
+    if (
+      raw === 'am_pm' ||
+      raw === 'every_1h' ||
+      raw === 'every_2h' ||
+      raw === 'every_4h' ||
+      raw === 'every_6h' ||
+      raw === 'daily'
+    ) {
+      setSchedule(raw);
+    }
+  }, [litter]);
+
+  useEffect(() => {
+    if (!litterId || !supabase) return;
+    void supabase
+      .from('waiting_list')
+      .select(
+        'id, enquirer_name, pipeline_stage, payment_status, preferred_sex, preferred_colour, ear_preference, tail_preference, assigned_dog_id, assigned_litter_id, queue_anchor_at, date_added, client:users!waiting_list_client_id_fkey(full_name)',
+      )
+      .or(`assigned_litter_id.eq.${litterId},assigned_litter_id.is.null`)
+      .then(({ data, error: qErr }) => {
+        if (qErr) {
+          setQueueError(qErr.message);
+          setQueueRows([]);
+          return;
+        }
+        setQueueError(null);
+        setQueueRows(
+          (data ?? []).map((row) => {
+            const client = row.client as { full_name?: string | null } | { full_name?: string | null }[] | null;
+            const fullName = Array.isArray(client) ? client[0]?.full_name : client?.full_name;
+            return {
+              id: row.id,
+              name: row.enquirer_name?.trim() || fullName?.trim() || 'Unnamed',
+              pipeline_stage: row.pipeline_stage,
+              payment_status: row.payment_status,
+              preferred_sex: row.preferred_sex,
+              preferred_colour: row.preferred_colour,
+              ear_preference: row.ear_preference,
+              tail_preference: row.tail_preference,
+              assigned_dog_id: row.assigned_dog_id,
+              assigned_litter_id: row.assigned_litter_id,
+              queue_anchor_at: row.queue_anchor_at,
+              date_added: row.date_added,
+            };
+          }),
+        );
+      });
+  }, [litterId, queueTick]);
 
   const detail = litter as typeof litter & {
     litter_letter?: string | null;
@@ -151,12 +239,58 @@ export default function LitterDetailScreen() {
             ),
           )}
         />
-        {phase === 'rearing' ? (
-          <WeighInBoard
-            puppies={weightPuppies}
-            weightsByPuppyId={weightsByPuppyId}
-            onBatchSave={logWeightsBatch}
-          />
+        {weightsLead ? (
+          <View className="mb-4">
+            <View className="mb-3 flex-row flex-wrap gap-2">
+              {WEIGHING_SCHEDULES.map((option) => (
+                <Pressable
+                  key={option.id}
+                  onPress={() => {
+                    const next = option.id;
+                    setSchedule(next);
+                    if (!supabase) return;
+                    void supabase
+                      .from('litters')
+                      .update({ weighing_schedule: next })
+                      .eq('id', litterId)
+                      .then(({ error: schedErr }) => {
+                        if (schedErr) showError(schedErr.message);
+                      });
+                  }}
+                  className={`rounded-full border px-3 py-2 ${
+                    schedule === option.id ? 'border-gold bg-gold/15' : 'border-gold/25'
+                  }`}
+                >
+                  <Typography variant="caption">{option.label}</Typography>
+                </Pressable>
+              ))}
+            </View>
+            <Typography variant="caption" className="mb-3 text-subtle">
+              {weighingDue({
+                schedule,
+                lastWeighedAt: latestWeighIn(weightsByPuppyId),
+              }).label}
+              {schedule !== 'am_pm' ? ' · AM / PM returns to morning and evening' : ''}
+            </Typography>
+            <PuppyGrowthChart
+              puppies={weightPuppies}
+              weightsByPuppyId={weightsByPuppyId}
+              uniqueDates={uniqueDates}
+              whelpDate={detail.actual_date}
+              benchmarkCurve={!benchmarkLoading && !benchmarkError ? benchmarkCurve : undefined}
+            />
+            <LitterRoundsGrid
+              puppies={weightPuppies}
+              weightsByPuppyId={weightsByPuppyId}
+              actualDate={detail.actual_date}
+            />
+            <WeighInBoard
+              puppies={weightPuppies}
+              weightsByPuppyId={weightsByPuppyId}
+              onBatchSave={logWeightsBatch}
+              schedule={schedule}
+            />
+          </View>
         ) : null}
       </View>
       <ScrollView
@@ -178,6 +312,34 @@ export default function LitterDetailScreen() {
       </ScrollView>
 
       <ScrollView className="px-6 pb-12">
+        {queueError ? (
+          <Typography variant="caption" className="mb-2 text-red-300">{queueError}</Typography>
+        ) : null}
+        <LitterQueuePanels
+          allocated={queueRows.filter((row) => row.assigned_litter_id === litterId)}
+          general={queueRows.filter((row) => !row.assigned_litter_id)}
+          puppies={puppies.map((p) => ({ id: p.id, name: p.name }))}
+          now={new Date()}
+          onAllocate={async (waitlistId, dogId) => {
+            if (!supabase) return 'Not signed in.';
+            const entry = queueRows.find((row) => row.id === waitlistId);
+            const forward = buildForwardStagePatch(entry?.pipeline_stage, 'matched', profileId, {
+              assigned_dog_id: dogId,
+              assigned_litter_id: litterId,
+            });
+            const patch = forward ?? {
+              assigned_dog_id: dogId,
+              assigned_litter_id: litterId,
+            };
+            const { error: assignError } = await supabase
+              .from('waiting_list')
+              .update(patch)
+              .eq('id', waitlistId);
+            if (assignError) return assignError.message;
+            setQueueTick((n) => n + 1);
+            return null;
+          }}
+        />
         {tab === 'puppies' ? (
           <>
             <LitterQuoteHolders
@@ -199,12 +361,17 @@ export default function LitterDetailScreen() {
           <LitterCalendarTab litterId={litterId} puppyIds={puppyIds} />
         ) : null}
         {tab === 'weights' ? (
-          <LitterWeightsTab
-            litterId={litterId}
-            whelpDate={detail.actual_date}
-            puppyCount={detail.puppy_count}
-            hideEntry={phase === 'rearing'}
-          />
+          weightsLead ? (
+            <Typography variant="body" className="text-subtle">
+              For the first 21 days the weight chart is at the top of this page.
+            </Typography>
+          ) : (
+            <LitterWeightsTab
+              litterId={litterId}
+              whelpDate={detail.actual_date}
+              puppyCount={detail.puppy_count}
+            />
+          )
         ) : null}
         {tab === 'notes' ? (
           <LitterNotesTab

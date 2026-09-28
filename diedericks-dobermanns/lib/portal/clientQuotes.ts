@@ -19,6 +19,9 @@ export type ClientQuoteDetail = ClientQuoteListRow & {
   notes: string | null;
   subtotal: number;
   discount: number;
+  client_id?: string | null;
+  contact_id?: string | null;
+  application_id?: string | null;
   items: {
     description: string;
     quantity: number;
@@ -73,7 +76,7 @@ export async function fetchMyClientQuoteById(
   const { data: quote, error } = await supabase
     .from('quotes')
     .select(
-      'id, quote_number, status, total, currency, valid_until, sent_at, created_at, last_sent_revision, revision, notes, subtotal, discount, client_id, application_id',
+      'id, quote_number, status, total, currency, valid_until, sent_at, created_at, last_sent_revision, revision, notes, subtotal, discount, client_id, contact_id, application_id',
     )
     .eq('id', id)
     .maybeSingle();

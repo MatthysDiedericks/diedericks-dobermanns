@@ -1,5 +1,7 @@
 import { addBuyerToLitterGroup } from '@/lib/dogs/litterGroups';
+import { stampDogOntoInvoices } from '@/lib/finance/stampSaleDog';
 import { supabase } from '@/lib/supabase';
+import { closePlacementForDog } from '@/lib/waitlist/closePlacement';
 import { useAuthStore } from '@/stores/authStore';
 
 async function writeShareAudit(args: {
@@ -71,6 +73,21 @@ export async function allocateDogToClient(
     .eq('id', dogId);
   if (dogErr) return { error: dogErr.message };
 
+  const { data: quoteItems } = await supabase
+    .from('quote_items')
+    .select('quote_id')
+    .eq('dog_id', dogId);
+  const quoteIds = [...new Set((quoteItems ?? []).map((row) => row.quote_id).filter(Boolean))];
+  if (quoteIds.length > 0) {
+    const { data: quotes } = await supabase
+      .from('quotes')
+      .select('converted_invoice_id')
+      .in('id', quoteIds as string[]);
+    const invoiceIds = (quotes ?? []).map((row) => row.converted_invoice_id);
+    const stamped = await stampDogOntoInvoices(supabase, invoiceIds, dogId);
+    if (stamped.error) return { error: stamped.error };
+  }
+
   const { data: existing, error: findErr } = await supabase
     .from('reservations')
     .select('id, status')
@@ -108,6 +125,11 @@ export async function allocateDogToClient(
     toOwnerId: clientUserId,
   });
   await pushShareNotice(clientUserId, before.name, true);
+  const closed = await closePlacementForDog(
+    dogId,
+    'Closed because the puppy was allocated to the buyer.',
+  );
+  if (closed.error) return { error: closed.error };
   return { error: null };
 }
 

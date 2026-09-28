@@ -258,6 +258,20 @@ function main() {
   assert.equal(weightedSet.find((r) => r.dogId === "pup-1")?.weight, 0.5);
   assert.equal(weightedSet.find((r) => r.dogId === "stud-1")?.weight, 1);
 
+  const soldByOwnership = defaultSharedRecipients({
+    invoiceDate: "2026-03-02",
+    dogs: [
+      adult(CLAIRE),
+      adult("sold-mar", {
+        ownership_status: "with_owner",
+        ownership_status_at: "2026-03-01",
+      }),
+    ],
+    litters: [],
+  });
+  assert.equal(soldByOwnership.some((r) => r.dogId === "sold-mar"), false);
+  assert.equal(soldByOwnership.some((r) => r.dogId === CLAIRE), true);
+
   const equalSet = defaultSharedRecipients({
     invoiceDate: INVOICE_DATE,
     dogs: roster,

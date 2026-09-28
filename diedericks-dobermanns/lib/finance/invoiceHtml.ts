@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns';
 
+import { bankBlocksHtml, type BankBlock } from '@/lib/finance/bankDetails';
 import { formatAmountPlain } from '@/lib/finance/formatters';
 import type { StatementRow } from '@/lib/finance/statementRows';
 import type { InvoiceWithDetails } from '@/types/finance';
@@ -7,16 +8,9 @@ import type { InvoiceWithDetails } from '@/types/finance';
 export type { StatementRow } from '@/lib/finance/statementRows';
 export { buildStatementRows } from '@/lib/finance/statementRows';
 
-export type BankingDetails = {
-  bank: string;
-  accountName: string;
-  accountNo: string;
-  branch: string;
-};
-
 export function buildInvoiceHTML(
   invoice: InvoiceWithDetails,
-  banking: BankingDetails,
+  blocks: BankBlock[],
   logoBase64: string,
 ): string {
   const itemsHtml = invoice.items
@@ -94,6 +88,7 @@ export function buildInvoiceHTML(
     table.payments td { padding: 5px 4px; border-bottom: 1px solid #f5f5f5; }
     .banking { background: #fafaf7; border: 1px solid #e8dfc8; border-radius: 4px; padding: 12px 16px; font-size: 12px; line-height: 1.9; }
     .banking strong { color: #C4A35A; }
+    .bank-heading { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #C4A35A; margin-bottom: 6px; }
     .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #eee; font-size: 10px; color: #999; display: flex; justify-content: space-between; }
     .notes-box { background: #fafaf7; border-left: 3px solid #C4A35A; padding: 10px 14px; font-size: 12px; color: #444; margin-top: 16px; }
   </style>
@@ -143,11 +138,7 @@ export function buildInvoiceHTML(
     ${invoice.notes ? `<div class="notes-box">${invoice.notes}</div>` : ''}
     <div class="section-head">Banking Details</div>
     <div class="banking">
-      <strong>Bank:</strong> ${banking.bank} &nbsp;|&nbsp;
-      <strong>Account name:</strong> ${banking.accountName} &nbsp;|&nbsp;
-      <strong>Account no:</strong> ${banking.accountNo} &nbsp;|&nbsp;
-      <strong>Branch code:</strong> ${banking.branch}<br>
-      <strong>Reference:</strong> ${invoice.invoice_number}
+      ${bankBlocksHtml(blocks, invoice.invoice_number)}
     </div>
     <div class="footer">
       <span>Diedericks Dobermanns · This invoice is valid for 30 days from issue date</span>

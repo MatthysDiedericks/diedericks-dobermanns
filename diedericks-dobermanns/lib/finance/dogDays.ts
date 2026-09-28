@@ -21,16 +21,37 @@ import {
 } from "./allocationSettings";
 
 const LEFT_KENNEL = new Set(["sold", "donated", "gifted"]);
+/** Still a kennel resident. The live enum never stored `kennel`; `returned` is a dog back on the property. */
+const ON_PROPERTY_OWNERSHIP = new Set(["kennel", "returned"]);
+/** Statuses that mean the dog has left. A dated `unknown` is handled separately — that is the kennel default when undated. */
+const LEFT_OWNERSHIP = new Set([
+  "with_owner",
+  "deceased",
+  "rehomed",
+  "lost_contact",
+]);
 const MS_PER_DAY = 86_400_000;
 
-export type DogDaysDog = {
-  id: string;
+/**
+ * The columns that decide whether a dog was still on the property.
+ * `deceased_at` is a partial record: four dogs are marked deceased by
+ * ownership_status with that column still null, and it says nothing about
+ * a dog that was sold.
+ */
+export type DogLifecycle = {
+  id?: string;
   date_of_birth: string | null;
-  status: string | null;
+  ownership_status?: string | null;
+  ownership_status_at?: string | null;
   deceased_at: string | null;
-  litter_id: string | null;
   outcome?: string | null;
   outcome_date?: string | null;
+};
+
+export type DogDaysDog = DogLifecycle & {
+  id: string;
+  status: string | null;
+  litter_id: string | null;
   handover_date?: string | null;
   placement_date?: string | null;
   delivered_at?: string | null;
@@ -116,9 +137,97 @@ function isPuppy(dog: DogDaysDog): boolean {
   return (dog.category ?? "").toLowerCase() === "puppy";
 }
 
+function ownershipKey(dog: DogLifecycle): string {
+  return (dog.ownership_status ?? "unknown").toLowerCase();
+}
+
+function earliestIso(dates: Array<string | null>): string | null {
+  const dated = dates.filter((d): d is string => Boolean(d));
+  if (dated.length === 0) return null;
+  return dated.reduce((a, b) => (a < b ? a : b));
+}
+
+function dayBefore(iso: string): string {
+  return fromDayNumber(dayNumber(iso) - 1);
+}
+
+/**
+ * Earliest day the dog left, from the three lifecycle columns.
+ * `ownership_status_at` counts for any status other than kennel/returned.
+ * Earliest, not first-non-null — sold in March and marked deceased in August
+ * left in March.
+ */
+export function lifecycleDepartureDay(dog: DogLifecycle): string | null {
+  const status = ownershipKey(dog);
+  const ownershipAt = ON_PROPERTY_OWNERSHIP.has(status)
+    ? null
+    : dateOnly(dog.ownership_status_at);
+  return earliestIso([
+    ownershipAt,
+    dateOnly(dog.deceased_at),
+    dateOnly(dog.outcome_date),
+  ]);
+}
+
+/**
+ * Non-kennel status and none of the three dates. Do not guess they are still
+ * here — leave them out and list them.
+ */
+export function hasUnresolvedDeparture(dog: DogLifecycle): boolean {
+  if (lifecycleDepartureDay(dog)) return false;
+  return LEFT_OWNERSHIP.has(ownershipKey(dog));
+}
+
+export function unresolvedDepartureDogs<T extends DogLifecycle>(dogs: T[]): T[] {
+  return dogs.filter(hasUnresolvedDeparture);
+}
+
+function calendarDayUtc(on: Date): string {
+  const y = on.getUTCFullYear();
+  const m = String(on.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(on.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * A dog counts for a date if it was born on or before that date and had not
+ * yet left. Departure is `ownership_status_at` for any status other than
+ * 'kennel' — `deceased_at` is a partial record: four dogs are marked deceased
+ * by status with that column still null, and it says nothing at all about a
+ * dog that was sold.
+ */
+export function wasOnPropertyOn(dog: DogLifecycle, on: Date): boolean {
+  const outcome = normalizePuppyOutcome(dog.outcome);
+  if (outcome === "stillborn") return false;
+  const day = calendarDayUtc(on);
+  const birth = dateOnly(dog.date_of_birth);
+  if (!birth || day < birth) return false;
+  if (hasUnresolvedDeparture(dog)) return false;
+  const left = lifecycleDepartureDay(dog);
+  if (left && day > left) return false;
+  return true;
+}
+
+function puppyOrSaleLeaveDay(
+  dog: DogDaysDog,
+  litter: DogDaysLitter | null,
+): string | null {
+  const leave =
+    dateOnly(dog.handover_date) ??
+    dateOnly(dog.placement_date) ??
+    dateOnly(dog.delivered_at) ??
+    (isPuppy(dog) ? dateOnly(litter?.go_home_date) : null);
+  if (!leave) return null;
+  const status = (dog.status ?? "").toLowerCase();
+  if (isPuppy(dog) || LEFT_KENNEL.has(status)) return leave;
+  return null;
+}
+
 /**
  * Last calendar day this dog is on hand. Null means still here through `to`.
- * Stillborn never spend a day.
+ * Stillborn never spend a day. Lifecycle departure (ownership, death, outcome)
+ * is inclusive of that date — they were here that day. Puppy go-home and
+ * handover stay inclusive too.
  */
 export function lastOnHandDay(
   dog: DogDaysDog,
@@ -126,23 +235,14 @@ export function lastOnHandDay(
 ): string | null {
   const outcome = normalizePuppyOutcome(dog.outcome);
   if (outcome === "stillborn") return null;
+  if (hasUnresolvedDeparture(dog)) {
+    const birth = dateOnly(dog.date_of_birth);
+    return birth ? dayBefore(birth) : "0001-01-01";
+  }
 
-  const death =
-    dateOnly(dog.deceased_at) ??
-    (outcome === "died_early" ? dateOnly(dog.outcome_date) : null);
-  const leave =
-    dateOnly(dog.handover_date) ??
-    dateOnly(dog.placement_date) ??
-    dateOnly(dog.delivered_at) ??
-    (isPuppy(dog) ? dateOnly(litter?.go_home_date) : null);
-
-  const status = (dog.status ?? "").toLowerCase();
-  const sold = LEFT_KENNEL.has(status);
-  const candidates = [death];
-  if (leave && (isPuppy(dog) || sold)) candidates.push(leave);
-  const dated = candidates.filter((d): d is string => Boolean(d));
-  if (dated.length === 0) return null;
-  return dated.reduce((a, b) => (a < b ? a : b));
+  const left = lifecycleDepartureDay(dog);
+  const leave = puppyOrSaleLeaveDay(dog, litter);
+  return earliestIso([left, leave]);
 }
 
 export function firstOnHandDay(

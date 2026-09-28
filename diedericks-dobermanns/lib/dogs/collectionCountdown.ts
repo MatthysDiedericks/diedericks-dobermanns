@@ -1,3 +1,5 @@
+export { dogCollectionDate } from '@/lib/dogs/dogCollectionDate';
+
 export function collectionCountdown(goHomeDate: string | null | undefined): string | null {
   if (!goHomeDate) return null;
   const target = new Date(`${goHomeDate}T00:00:00`);

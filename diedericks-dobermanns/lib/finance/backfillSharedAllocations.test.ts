@@ -113,6 +113,24 @@ function main() {
   );
   assert.equal(plan.toInsert.some((r) => r.expense_line_id === already.id), false);
 
+  const rewrite = planSharedAllocationBackfill({
+    lines: [dated, already],
+    allocatedLineIds: [dated.id, already.id],
+    dogs,
+    litters,
+    rewriteLineIds: [dated.id],
+    settings: { puppyWeight: 0.5, nursingMultiplier: 2 },
+  });
+  assert.equal(rewrite.skippedAlreadyAllocated, 1);
+  assert.equal(rewrite.resolved.length, 1);
+  assert.equal(rewrite.resolved[0].id, dated.id);
+  assert.ok(
+    allocationsBalance(
+      150,
+      rewrite.toInsert.map((r) => r.amount),
+    ),
+  );
+
   const emptyDay = planSharedAllocationBackfill({
     lines: [
       {

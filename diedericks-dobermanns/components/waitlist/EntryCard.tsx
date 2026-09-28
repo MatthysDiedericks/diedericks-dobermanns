@@ -1,10 +1,11 @@
 import { Pressable, View } from 'react-native';
 
 import { PreferenceBadges } from '@/components/waitlist/PreferenceBadges';
+import { StageAgeLine } from '@/components/waitlist/StageAgeLine';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
-import { daysWaiting, isFollowUpOverdue } from '@/lib/waitlist/constants';
+import { isFollowUpOverdue } from '@/lib/waitlist/constants';
 import { entryDisplayName, effectiveStage } from '@/lib/waitlist/helpers';
 import { dogOfNLabel } from '@/lib/waitlist/siblings';
 import type { WaitingListEntry } from '@/types/app.types';
@@ -19,10 +20,11 @@ interface Props {
   entry: WaitingListEntry;
   onPress: () => void;
   onLongPress?: () => void;
+  onLinkPuppy?: () => void;
   siblingCount?: number;
 }
 
-export function EntryCard({ entry, onPress, onLongPress, siblingCount = 1 }: Props) {
+export function EntryCard({ entry, onPress, onLongPress, onLinkPuppy, siblingCount = 1 }: Props) {
   const overdue = isFollowUpOverdue(entry.follow_up_date);
   const paid = entry.payment_status === 'deposit_paid' || entry.payment_status === 'paid_in_full';
 
@@ -43,23 +45,19 @@ export function EntryCard({ entry, onPress, onLongPress, siblingCount = 1 }: Pro
         <View className="mt-2">
           <PreferenceBadges entry={entry} />
         </View>
+        <StageAgeLine entry={entry} />
         <View className="mt-2 flex-row flex-wrap items-center gap-2">
-          <Typography
-            variant="caption"
-            className={
-              daysWaiting(entry.date_added ?? entry.created_at) >= 180
-                ? 'text-base font-bold text-danger'
-                : daysWaiting(entry.date_added ?? entry.created_at) >= 90
-                  ? 'font-semibold text-warning'
-                  : 'text-silver'
-            }
-          >
-            {daysWaiting(entry.date_added ?? entry.created_at)} days waiting
-          </Typography>
           {entry.follow_up_date ? (
             <Typography variant="caption" className={overdue ? 'text-danger' : 'text-silver'}>
               Follow-up {entry.follow_up_date}
             </Typography>
+          ) : null}
+          {onLinkPuppy ? (
+            <Pressable onPress={onLinkPuppy}>
+              <Typography variant="caption" className="text-gold">
+                Link puppy
+              </Typography>
+            </Pressable>
           ) : null}
         </View>
         {effectiveStage(entry) === 'do_not_sell' ? (

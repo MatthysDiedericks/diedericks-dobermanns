@@ -149,6 +149,33 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_dismissals: {
+        Row: {
+          created_at: string
+          dismissed_until: string
+          id: string
+          item_id: string
+          item_kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_until: string
+          id?: string
+          item_id: string
+          item_kind: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_until?: string
+          id?: string
+          item_id?: string
+          item_kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       application_dog_requests: {
         Row: {
           application_id: string
@@ -1258,7 +1285,6 @@ export type Database = {
           created_at: string
           default_price: number | null
           description_template: string | null
-          equipment_type: string | null
           id: string
           image_path: string | null
           is_active: boolean
@@ -1269,7 +1295,6 @@ export type Database = {
           price_varies: boolean
           short_description: string | null
           sort_order: number
-          stock_status: string
           updated_at: string
           updated_by: string | null
         }
@@ -1279,7 +1304,6 @@ export type Database = {
           created_at?: string
           default_price?: number | null
           description_template?: string | null
-          equipment_type?: string | null
           id?: string
           image_path?: string | null
           is_active?: boolean
@@ -1290,7 +1314,6 @@ export type Database = {
           price_varies?: boolean
           short_description?: string | null
           sort_order?: number
-          stock_status?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1300,7 +1323,6 @@ export type Database = {
           created_at?: string
           default_price?: number | null
           description_template?: string | null
-          equipment_type?: string | null
           id?: string
           image_path?: string | null
           is_active?: boolean
@@ -1311,19 +1333,10 @@ export type Database = {
           price_varies?: boolean
           short_description?: string | null
           sort_order?: number
-          stock_status?: string
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "catalogue_items_equipment_type_fkey"
-            columns: ["equipment_type"]
-            isOneToOne: false
-            referencedRelation: "equipment_types"
-            referencedColumns: ["key"]
-          },
-        ]
+        Relationships: []
       }
       check_ins: {
         Row: {
@@ -3858,6 +3871,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_featured: boolean
+          litter_id: string | null
           photo_taken_at: string | null
           sort_order: number
           title: string | null
@@ -3871,6 +3885,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_featured?: boolean
+          litter_id?: string | null
           photo_taken_at?: string | null
           sort_order?: number
           title?: string | null
@@ -3884,12 +3899,21 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_featured?: boolean
+          litter_id?: string | null
           photo_taken_at?: string | null
           sort_order?: number
           title?: string | null
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "gallery_items_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       health_products: {
         Row: {
@@ -4195,6 +4219,7 @@ export type Database = {
           imported_at: string
           income_date: string
           invoice_number: string | null
+          litter_id: string | null
           litter_name: string | null
           notes: string | null
           source: string
@@ -4214,6 +4239,7 @@ export type Database = {
           imported_at?: string
           income_date: string
           invoice_number?: string | null
+          litter_id?: string | null
           litter_name?: string | null
           notes?: string | null
           source?: string
@@ -4233,6 +4259,7 @@ export type Database = {
           imported_at?: string
           income_date?: string
           invoice_number?: string | null
+          litter_id?: string | null
           litter_name?: string | null
           notes?: string | null
           source?: string
@@ -4247,6 +4274,13 @@ export type Database = {
             referencedRelation: "dogs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "historical_income_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
         ]
       }
       invoice_items: {
@@ -4258,6 +4292,7 @@ export type Database = {
           invoice_id: string
           item_type: string
           line_total: number | null
+          product_id: string | null
           quantity: number
           sort_order: number
           unit_price: number
@@ -4270,6 +4305,7 @@ export type Database = {
           invoice_id: string
           item_type?: string
           line_total?: number | null
+          product_id?: string | null
           quantity?: number
           sort_order?: number
           unit_price: number
@@ -4282,6 +4318,7 @@ export type Database = {
           invoice_id?: string
           item_type?: string
           line_total?: number | null
+          product_id?: string | null
           quantity?: number
           sort_order?: number
           unit_price?: number
@@ -4397,6 +4434,10 @@ export type Database = {
           quote_id: string | null
           recurring_invoice_id: string | null
           reservation_id: string | null
+          send_count: number
+          sent_at: string | null
+          sent_by: string | null
+          sent_to: string | null
           source: string | null
           status: string
           subtotal: number
@@ -4429,6 +4470,10 @@ export type Database = {
           quote_id?: string | null
           recurring_invoice_id?: string | null
           reservation_id?: string | null
+          send_count?: number
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_to?: string | null
           source?: string | null
           status?: string
           subtotal?: number
@@ -4461,6 +4506,10 @@ export type Database = {
           quote_id?: string | null
           recurring_invoice_id?: string | null
           reservation_id?: string | null
+          send_count?: number
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_to?: string | null
           source?: string | null
           status?: string
           subtotal?: number
@@ -4930,7 +4979,6 @@ export type Database = {
         Row: {
           actual_date: string | null
           actual_time: string | null
-          announcement_image_url: string | null
           available_count: number | null
           birth_weight_grams: number | null
           created_at: string
@@ -4965,11 +5013,11 @@ export type Database = {
           whelp_date_latest: string | null
           whelping_notes: string | null
           whelping_type: string | null
+          weighing_schedule: string
         }
         Insert: {
           actual_date?: string | null
           actual_time?: string | null
-          announcement_image_url?: string | null
           available_count?: number | null
           birth_weight_grams?: number | null
           created_at?: string
@@ -5004,11 +5052,11 @@ export type Database = {
           whelp_date_latest?: string | null
           whelping_notes?: string | null
           whelping_type?: string | null
+          weighing_schedule?: string
         }
         Update: {
           actual_date?: string | null
           actual_time?: string | null
-          announcement_image_url?: string | null
           available_count?: number | null
           birth_weight_grams?: number | null
           created_at?: string
@@ -5043,6 +5091,7 @@ export type Database = {
           whelp_date_latest?: string | null
           whelping_notes?: string | null
           whelping_type?: string | null
+          weighing_schedule?: string
         }
         Relationships: [
           {
@@ -5981,6 +6030,63 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          category: string
+          cost_price: number
+          created_at: string
+          id: string
+          image_path: string | null
+          is_active: boolean
+          is_client_visible: boolean
+          name: string
+          reorder_level: number
+          sell_price: number
+          short_description: string | null
+          sku: string
+          unit: string
+          updated_at: string
+          updated_by: string | null
+          vat_rate: number
+        }
+        Insert: {
+          category: string
+          cost_price?: number
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          is_active?: boolean
+          is_client_visible?: boolean
+          name: string
+          reorder_level?: number
+          sell_price?: number
+          short_description?: string | null
+          sku: string
+          unit: string
+          updated_at?: string
+          updated_by?: string | null
+          vat_rate?: number
+        }
+        Update: {
+          category?: string
+          cost_price?: number
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          is_active?: boolean
+          is_client_visible?: boolean
+          name?: string
+          reorder_level?: number
+          sell_price?: number
+          short_description?: string | null
+          sku?: string
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+          vat_rate?: number
+        }
+        Relationships: []
+      }
       project_backups: {
         Row: {
           content: string
@@ -6110,6 +6216,7 @@ export type Database = {
           item_type: string
           line_total: number | null
           litter_id: string | null
+          product_id: string | null
           quantity: number
           quote_id: string
           sort_order: number
@@ -6124,6 +6231,7 @@ export type Database = {
           item_type: string
           line_total?: number | null
           litter_id?: string | null
+          product_id?: string | null
           quantity?: number
           quote_id: string
           sort_order?: number
@@ -6138,6 +6246,7 @@ export type Database = {
           item_type?: string
           line_total?: number | null
           litter_id?: string | null
+          product_id?: string | null
           quantity?: number
           quote_id?: string
           sort_order?: number
@@ -6694,6 +6803,157 @@ export type Database = {
           is_active?: boolean
           label?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dog_id: string | null
+          id: string
+          invoice_id: string | null
+          litter_id: string | null
+          movement_type: string
+          occurred_at: string
+          product_id: string
+          quantity: number
+          reason: string | null
+          receipt_id: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dog_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          litter_id?: string | null
+          movement_type: string
+          occurred_at?: string
+          product_id: string
+          quantity: number
+          reason?: string | null
+          receipt_id?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dog_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          litter_id?: string | null
+          movement_type?: string
+          occurred_at?: string
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          receipt_id?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_shop_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_receipt_lines: {
+        Row: {
+          id: string
+          line_total: number
+          product_id: string
+          quantity: number
+          receipt_id: string
+          unit_cost: number
+        }
+        Insert: {
+          id?: string
+          line_total: number
+          product_id: string
+          quantity: number
+          receipt_id: string
+          unit_cost: number
+        }
+        Update: {
+          id?: string
+          line_total?: number
+          product_id?: string
+          quantity?: number
+          receipt_id?: string
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_receipt_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_receipt_lines_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "stock_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_receipts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expense_id: string | null
+          id: string
+          notes: string | null
+          received_on: string
+          status: string
+          supplier_invoice_no: string | null
+          supplier_name: string
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expense_id?: string | null
+          id?: string
+          notes?: string | null
+          received_on?: string
+          status?: string
+          supplier_invoice_no?: string | null
+          supplier_name: string
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expense_id?: string | null
+          id?: string
+          notes?: string | null
+          received_on?: string
+          status?: string
+          supplier_invoice_no?: string | null
+          supplier_name?: string
+          total_amount?: number
         }
         Relationships: []
       }
@@ -8267,6 +8527,109 @@ export type Database = {
       }
     }
     Views: {
+      v_product_stock: {
+        Row: {
+          category: string | null
+          cost_price: number | null
+          created_at: string | null
+          id: string | null
+          image_path: string | null
+          is_active: boolean | null
+          is_client_visible: boolean | null
+          name: string | null
+          needs_reorder: boolean | null
+          qty_on_hand: number | null
+          reorder_level: number | null
+          sell_price: number | null
+          short_description: string | null
+          sku: string | null
+          unit: string | null
+          updated_at: string | null
+          updated_by: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          [_ in never]: never
+        }
+        Update: {
+          [_ in never]: never
+        }
+        Relationships: []
+      }
+      v_shop_products: {
+        Row: {
+          category: string | null
+          id: string | null
+          image_path: string | null
+          in_stock: boolean | null
+          name: string | null
+          sell_price: number | null
+          short_description: string | null
+          sku: string | null
+          unit: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          [_ in never]: never
+        }
+        Update: {
+          [_ in never]: never
+        }
+        Relationships: []
+      }
+      v_public_gallery: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          discipline: string | null
+          id: string | null
+          image_url: string | null
+          is_featured: boolean | null
+          litter_id: string | null
+          photo_taken_at: string | null
+          sort_order: number | null
+          title: string | null
+          video_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          discipline?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_featured?: boolean | null
+          litter_id?: string | null
+          photo_taken_at?: string | null
+          sort_order?: number | null
+          title?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          discipline?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_featured?: boolean | null
+          litter_id?: string | null
+          photo_taken_at?: string | null
+          sort_order?: number | null
+          title?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_items_litter_id_fkey"
+            columns: ["litter_id"]
+            isOneToOne: false
+            referencedRelation: "litters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts_active: {
         Row: {
           address: string | null
@@ -8710,6 +9073,35 @@ export type Database = {
       client_owns_a_dog: { Args: never; Returns: boolean }
       client_owns_quote: { Args: { p_quote_id: string }; Returns: boolean }
       contact_is_customer: { Args: { p_id: string }; Returns: boolean }
+      confirm_stock_receipt: {
+        Args: { p_expense: Json; p_receipt_id: string }
+        Returns: Json
+      }
+      post_invoice_product_stock: {
+        Args: {
+          p_allow_negative?: boolean
+          p_invoice_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      product_qty_on_hand: { Args: { p_product_id: string }; Returns: number }
+      record_stock_adjustment: {
+        Args: {
+          p_allow_negative?: boolean
+          p_dog_id?: string
+          p_litter_id?: string
+          p_movement_type?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: Json
+      }
+      reverse_invoice_product_stock: {
+        Args: { p_invoice_id: string }
+        Returns: Json
+      }
       convert_quote_to_invoice: {
         Args: { p_quote_id: string }
         Returns: string

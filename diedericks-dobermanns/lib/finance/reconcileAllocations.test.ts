@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 
 import {
+  departedDogsLabel,
   exceptionListLabel,
+  findAllocationsToDepartedDogs,
   reconcileExpenseAllocations,
+  summarizeDepartedAllocations,
   type ReconcileLine,
 } from "./reconcileAllocations";
 import { toCents } from "./resolveAllocations";
@@ -68,6 +71,7 @@ function main() {
   assert.equal(report.exceptions[0].lineId, "old");
   assert.equal(report.exceptions[0].reason, "no_allocation");
   assert.equal(exceptionListLabel(report.exceptions[0]), "no stored split");
+  assert.equal(report.departedDogs.lineCount, 0);
 
   const mismatch = reconcileExpenseAllocations({
     lines: [line("shared", "shared", 100)],
@@ -80,6 +84,55 @@ function main() {
     allocatedCentsByLineId: new Map(),
   });
   assert.equal(companyOk.exceptions.length, 0);
+  assert.equal(companyOk.departedDogs.lineCount, 0);
+  assert.equal(departedDogsLabel(companyOk.departedDogs), "0 lines, R 0.00");
+
+  const departedRows = findAllocationsToDepartedDogs({
+    lines: [line("shared", "shared", 100, { expenseDate: "2026-03-02" })],
+    allocations: [
+      { lineId: "shared", dogId: "sold-mar", amount: 40 },
+      { lineId: "shared", dogId: "stayer", amount: 60 },
+    ],
+    dogs: [
+      {
+        id: "sold-mar",
+        date_of_birth: "2022-01-01",
+        ownership_status: "with_owner",
+        ownership_status_at: "2026-03-01",
+        deceased_at: null,
+        outcome_date: null,
+      },
+      {
+        id: "stayer",
+        date_of_birth: "2022-01-01",
+        ownership_status: "unknown",
+        ownership_status_at: null,
+        deceased_at: null,
+        outcome_date: null,
+      },
+    ],
+  });
+  assert.equal(departedRows.length, 1);
+  assert.equal(departedRows[0].dogId, "sold-mar");
+  const departed = summarizeDepartedAllocations(departedRows);
+  assert.equal(departed.lineCount, 1);
+  assert.equal(departed.amount, 40);
+  assert.equal(departedDogsLabel(departed), "1 line, R 40.00");
+
+  const afterFix = findAllocationsToDepartedDogs({
+    lines: [line("shared", "shared", 100, { expenseDate: "2026-03-02" })],
+    allocations: [{ lineId: "shared", dogId: "stayer", amount: 100 }],
+    dogs: [
+      {
+        id: "stayer",
+        date_of_birth: "2022-01-01",
+        ownership_status: "unknown",
+        deceased_at: null,
+      },
+    ],
+  });
+  assert.equal(afterFix.length, 0);
+  assert.equal(summarizeDepartedAllocations(afterFix).lineCount, 0);
 
   console.log("reconcileAllocations.test.ts ok");
 }

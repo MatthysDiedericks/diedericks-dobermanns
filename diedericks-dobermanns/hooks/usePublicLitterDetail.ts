@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PuppyWeightLog } from '@/hooks/useLitterWeights';
 import { deriveMilestones, type Milestone } from '@/lib/litters/milestones';
 import type { WeighingSession } from '@/lib/litters/weighingSchedule';
+import { fetchLitterAnnouncement } from '@/lib/litters/announcement';
 import {
   fetchPublicLitter,
   fetchPublicLitterMedia,
@@ -14,7 +15,7 @@ import {
   type PublicWeightLogRow,
 } from '@/lib/litters/publicLitterQueries';
 import { supabase } from '@/lib/supabase';
-import type { DogMedia } from '@/types/app.types';
+import type { DogMedia, GalleryItem } from '@/types/app.types';
 
 /**
  * Read-only data for the public litter page: the litter itself, its public
@@ -28,6 +29,7 @@ export function usePublicLitterDetail(id: string | undefined) {
   const [puppies, setPuppies] = useState<PublicPuppyRow[]>([]);
   const [media, setMedia] = useState<PublicLitterMediaRow[]>([]);
   const [weights, setWeights] = useState<PublicWeightLogRow[]>([]);
+  const [announcement, setAnnouncement] = useState<GalleryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +49,17 @@ export function usePublicLitterDetail(id: string | undefined) {
         setPuppies([]);
         setMedia([]);
         setWeights([]);
+        setAnnouncement(null);
         return;
       }
-      const [puppyRows, mediaRows] = await Promise.all([
+      const [puppyRows, mediaRows, poster] = await Promise.all([
         fetchPublicLitterPuppies(id),
         fetchPublicLitterMedia(id),
+        fetchLitterAnnouncement(id),
       ]);
       setPuppies(puppyRows);
       setMedia(mediaRows);
+      setAnnouncement(poster);
       setWeights(await fetchPublicPuppyWeights(puppyRows.map((p) => p.id)));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load litter');
@@ -112,6 +117,7 @@ export function usePublicLitterDetail(id: string | undefined) {
     weightsByPuppyId,
     uniqueDates,
     galleryMedia,
+    announcement,
     milestones,
     loading,
     error,

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
+import { PaymentBankingCard } from '@/components/finance/PaymentBankingCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,6 +15,8 @@ import { Colors } from '@/constants/colors';
 import { fetchInvoicePayments } from '@/lib/finance/clientPayments';
 import { fetchMyClientInvoiceById } from '@/lib/portal/clientInvoices';
 import { exportInvoicePDF } from '@/lib/finance/generatePDF';
+import { bankBlocksFromSettings, type BankBlock } from '@/lib/finance/bankDetails';
+import { fetchAppSettingsMap } from '@/lib/finance/loadBankSettings';
 import { formatAmount, formatDate, humanizeItemType } from '@/lib/finance/formatters';
 import { useAuthStore } from '@/stores/authStore';
 import type { InvoicePayment, InvoiceWithDetails } from '@/types/finance';
@@ -23,6 +26,7 @@ export default function ClientInvoiceDetailScreen() {
   const clientId = useAuthStore((s) => s.profile?.id);
   const [invoice, setInvoice] = useState<InvoiceWithDetails | null>(null);
   const [payments, setPayments] = useState<InvoicePayment[]>([]);
+  const [bankBlocks, setBankBlocks] = useState<BankBlock[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +36,8 @@ export default function ClientInvoiceDetailScreen() {
         setInvoice(inv);
         if (inv) {
           setPayments(await fetchInvoicePayments(id));
+          const settings = await fetchAppSettingsMap();
+          setBankBlocks(bankBlocksFromSettings(inv.clientCountry, settings));
         } else {
           setPayments([]);
         }
@@ -117,6 +123,13 @@ export default function ClientInvoiceDetailScreen() {
             <Typography variant="caption" className="mt-4 text-subtle">{invoice.notes}</Typography>
           ) : null}
         </Card>
+
+        {invoice.amount_outstanding > 0 ? (
+          <PaymentBankingCard
+            blocks={bankBlocks}
+            paymentReference={invoice.invoice_number}
+          />
+        ) : null}
 
         {payments.length > 0 ? (
           <Card className="mt-3">

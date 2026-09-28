@@ -47,7 +47,12 @@ export interface Invoice {
   updated_at: string;
   invoice_type?: string | null;
   recurring_invoice_id?: string | null;
+  quote_id?: string | null;
   historical_client_name?: string | null;
+  sent_at?: string | null;
+  sent_by?: string | null;
+  sent_to?: string | null;
+  send_count?: number;
 }
 
 export interface InvoiceItem {
@@ -148,6 +153,7 @@ export type InvoiceWithDetails = Invoice & {
   clientName: string;
   clientEmail: string;
   clientPhone?: string | null;
+  clientCountry?: string | null;
   dogName?: string | null;
   items: InvoiceItem[];
   payments: InvoicePayment[];

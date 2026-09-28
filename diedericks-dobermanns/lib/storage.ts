@@ -156,6 +156,7 @@ export async function uploadFile(opts: UploadOptions): Promise<UploadResult> {
 export async function resolvePhotoUrls(
   uris: string[],
   folder = 'timeline',
+  bucket: StorageBucket = 'dog-media',
 ): Promise<string[]> {
   if (!supabase) return uris;
   const out: string[] = [];
@@ -167,12 +168,12 @@ export async function resolvePhotoUrls(
     }
     const path = buildObjectPath(folder, 'jpg');
     const { error, path: stored } = await uploadFile({
-      bucket: 'dog-media',
+      bucket,
       path,
       uri,
       contentType: 'image/jpeg',
     });
-    if (!error && stored) out.push(getPublicUrl('dog-media', stored));
+    if (!error && stored) out.push(getPublicUrl(bucket, stored));
   }
   return out;
 }

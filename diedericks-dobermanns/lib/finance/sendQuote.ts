@@ -1,6 +1,9 @@
 import * as Print from 'expo-print';
 
 import { buildClientQuoteHtml } from '@/lib/finance/clientQuotePdf';
+import { bankBlocksFromSettings } from '@/lib/finance/bankDetails';
+import { fetchBuyerCountry } from '@/lib/finance/buyerCountry';
+import { fetchAppSettingsMap } from '@/lib/finance/loadBankSettings';
 import { recordQuoteSendRevision } from '@/lib/finance/quoteRevisions';
 import { quoteSendFail, quoteUnhandled } from '@/lib/finance/quoteErrors';
 import { requireSupabase } from '@/lib/supabase';
@@ -132,6 +135,15 @@ export async function sendQuoteToRecipient(
       throw Object.assign(new Error(error), { logged: true });
     }
     const supabase = requireSupabase();
+  const [settings, country] = await Promise.all([
+    fetchAppSettingsMap(),
+    fetchBuyerCountry({
+      client_id: quote.client_id,
+      contact_id: quote.contact_id,
+      application_id: quote.application_id,
+    }),
+  ]);
+  const bankBlocks = bankBlocksFromSettings(country, settings);
   const detail: ClientQuoteDetail = {
     id: quote.id,
     quote_number: quote.quote_number ?? '',
@@ -158,7 +170,7 @@ export async function sendQuoteToRecipient(
     })),
   };
 
-  const html = buildClientQuoteHtml(detail);
+  const html = buildClientQuoteHtml(detail, null, bankBlocks);
   const printed = await Print.printToFileAsync({ html, base64: true });
   const pdf = printed.base64;
   if (!pdf) {

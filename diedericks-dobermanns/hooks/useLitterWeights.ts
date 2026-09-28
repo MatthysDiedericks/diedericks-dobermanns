@@ -6,6 +6,11 @@ import {
   type WeighingSession,
   type WeighingSummary,
 } from '@/lib/litters/weighingSchedule';
+import {
+  saveWeightRound,
+  weightLogInsert,
+  type WeightRoundResult,
+} from '@/lib/litters/weightRounds';
 import { requireSupabase, supabase } from '@/lib/supabase';
 
 export interface LitterPuppy {
@@ -15,6 +20,7 @@ export interface LitterPuppy {
   colour: string | null;
   collar_colour: string | null;
   birth_weight_grams: number | null;
+  birth_time?: string | null;
   status: string | null;
   outcome?: string | null;
   deceased_at?: string | null;
@@ -31,7 +37,7 @@ export interface PuppyWeightLog {
 }
 
 const PUPPY_SELECT =
-  'id, name, sex, colour, collar_colour, birth_weight_grams, status, outcome, deceased_at' as const;
+  'id, name, sex, colour, collar_colour, birth_weight_grams, birth_time, status, outcome, deceased_at' as const;
 const LOG_SELECT =
   'id, dog_id, weight_kg, recorded_date, recorded_at, session, notes' as const;
 
@@ -43,9 +49,9 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     if (!litterId) return;
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
     setError(null);
     if (!supabase) {
       setPuppies([]);
@@ -87,8 +93,10 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
       setWeightsByPuppyId(map);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load weights');
-      setPuppies([]);
-      setWeightsByPuppyId(new Map());
+      if (!opts?.silent) {
+        setPuppies([]);
+        setWeightsByPuppyId(new Map());
+      }
     } finally {
       setLoading(false);
     }
@@ -130,16 +138,9 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
     ) => {
       const client = requireSupabase();
       const at = recordedAt ?? new Date();
-      const { error: err } = await client.from('weight_logs').upsert(
-        {
-          dog_id: puppyId,
-          weight_kg: weightKg,
-          recorded_date: date,
-          recorded_at: at.toISOString(),
-          session,
-        },
-        { onConflict: 'dog_id,recorded_date,session' },
-      );
+      const { error: err } = await client
+        .from('weight_logs')
+        .insert(weightLogInsert({ dogId: puppyId, weightKg, recordedAt: at, session }));
       if (err) throw new Error(err.message);
       await refresh();
     },
@@ -147,25 +148,49 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
   );
 
   const logWeightsBatch = useCallback(
-    async (
-      entries: { puppyId: string; weightKg: number }[],
-      session: WeighingSession,
-      recordedAt: Date,
-    ) => {
-      const date = recordedAt.toISOString().slice(0, 10);
+    async (input: {
+      session: WeighingSession;
+      recordedDate: string;
+      entries: { puppyId: string; name: string; weightKg: number; recordedAt: string }[];
+    }): Promise<WeightRoundResult> => {
       const client = requireSupabase();
-      const rows = entries.map((e) => ({
-        dog_id: e.puppyId,
-        weight_kg: e.weightKg,
-        recorded_date: date,
-        recorded_at: recordedAt.toISOString(),
-        session,
-      }));
-      const { error: err } = await client
-        .from('weight_logs')
-        .upsert(rows, { onConflict: 'dog_id,recorded_date,session' });
-      if (err) throw new Error(err.message);
-      await refresh();
+      const result = await saveWeightRound(
+        {
+          findExisting: async (dogId, recordedDate, session) => {
+            const { data, error: readError } = await client
+              .from('weight_logs')
+              .select('weight_kg')
+              .eq('dog_id', dogId)
+              .eq('recorded_date', recordedDate)
+              .eq('session', session)
+              .maybeSingle();
+            if (readError) throw new Error(readError.message);
+            return data ? { weight_kg: Number(data.weight_kg) } : null;
+          },
+          upsert: async (row) => {
+            const { error: writeError } = await client.from('weight_logs').upsert(row, {
+              onConflict: 'dog_id,recorded_date,session',
+            });
+            return {
+              error: writeError
+                ? { message: writeError.message, code: writeError.code }
+                : null,
+            };
+          },
+        },
+        {
+          recordedDate: input.recordedDate,
+          session: input.session,
+          entries: input.entries.map((entry) => ({
+            dogId: entry.puppyId,
+            name: entry.name,
+            weightKg: entry.weightKg,
+            recordedAt: entry.recordedAt,
+          })),
+        },
+      );
+      if (result.saved > 0) await refresh({ silent: true });
+      return result;
     },
     [refresh],
   );

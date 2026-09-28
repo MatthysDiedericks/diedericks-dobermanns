@@ -7,7 +7,11 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
+import { PaymentBankingCard } from '@/components/finance/PaymentBankingCard';
 import { shareClientQuotePdf } from '@/lib/finance/clientQuotePdf';
+import { bankBlocksFromSettings, type BankBlock } from '@/lib/finance/bankDetails';
+import { fetchBuyerCountry } from '@/lib/finance/buyerCountry';
+import { fetchAppSettingsMap } from '@/lib/finance/loadBankSettings';
 import { formatAmount, formatDate, humanizeStatus } from '@/lib/finance/formatters';
 import { fetchQuoteRevisions, type QuoteRevisionRow } from '@/lib/finance/quoteRevisions';
 import {
@@ -21,6 +25,7 @@ export default function ClientQuoteDetailScreen() {
   const userId = useAuthStore((s) => s.session?.user.id ?? s.profile?.id);
   const [quote, setQuote] = useState<ClientQuoteDetail | null>(null);
   const [snapshot, setSnapshot] = useState<QuoteRevisionRow['snapshot'] | null>(null);
+  const [bankBlocks, setBankBlocks] = useState<BankBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +40,17 @@ export default function ClientQuoteDetailScreen() {
         const row = await fetchMyClientQuoteById(id, userId);
         if (cancelled) return;
         setQuote(row);
+        if (row) {
+          const [settings, country] = await Promise.all([
+            fetchAppSettingsMap(),
+            fetchBuyerCountry({
+              client_id: row.client_id ?? null,
+              contact_id: row.contact_id ?? null,
+              application_id: row.application_id ?? null,
+            }),
+          ]);
+          if (!cancelled) setBankBlocks(bankBlocksFromSettings(country, settings));
+        }
         if (row?.last_sent_revision) {
           const revs = await fetchQuoteRevisions(id);
           const match = revs.find((r) => r.revision === row.last_sent_revision);
@@ -60,7 +76,7 @@ export default function ClientQuoteDetailScreen() {
     if (!quote) return;
     setSharing(true);
     try {
-      await shareClientQuotePdf(quote, snapshot);
+      await shareClientQuotePdf(quote, snapshot, bankBlocks);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not open PDF.');
     } finally {
@@ -123,6 +139,11 @@ export default function ClientQuoteDetailScreen() {
               </View>
             ))}
           </Card>
+
+          <PaymentBankingCard
+            blocks={bankBlocks}
+            paymentReference={quote.quote_number}
+          />
 
           <Pressable
             onPress={() => void onShare()}

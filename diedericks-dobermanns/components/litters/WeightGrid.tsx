@@ -17,16 +17,22 @@ import {
 } from '@/lib/litters/weighingSchedule';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import {
+  localDateIso,
+  weightRoundSummary,
+  weightSaveMessage,
+  type WeightRoundResult,
+} from '@/lib/litters/weightRounds';
 
 interface WeightGridProps {
   puppies: LitterPuppy[];
   weightsByPuppyId: Map<string, PuppyWeightLog[]>;
   whelpDate: string | null;
-  onBatchSave: (
-    entries: { puppyId: string; weightKg: number }[],
-    session: WeighingSession,
-    recordedAt: Date,
-  ) => Promise<void>;
+  onBatchSave: (input: {
+    session: WeighingSession;
+    recordedDate: string;
+    entries: { puppyId: string; name: string; weightKg: number; recordedAt: string }[];
+  }) => Promise<WeightRoundResult>;
 }
 
 function cellKey(puppyId: string, date: string, session: string | null) {
@@ -35,9 +41,11 @@ function cellKey(puppyId: string, date: string, session: string | null) {
 
 export function WeightGrid({ puppies, weightsByPuppyId, whelpDate, onBatchSave }: WeightGridProps) {
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  const today = localDateIso(now);
   const [session, setSession] = useState<WeighingSession>(defaultSession(now));
   const [inputs, setInputs] = useState<Record<string, string>>({});
+  const [enteredAt, setEnteredAt] = useState<Record<string, string>>({});
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   const dates = useMemo(() => {
@@ -55,7 +63,7 @@ export function WeightGrid({ puppies, weightsByPuppyId, whelpDate, onBatchSave }
   }, [weightsByPuppyId]);
 
   async function handleSave() {
-    const entries: { puppyId: string; weightKg: number }[] = [];
+    const entries: { puppyId: string; name: string; weightKg: number; recordedAt: string }[] = [];
     for (const p of puppies) {
       const raw = inputs[p.id];
       if (!raw?.trim()) continue;
@@ -64,7 +72,12 @@ export function WeightGrid({ puppies, weightsByPuppyId, whelpDate, onBatchSave }
         showError('Enter valid weights in grams.');
         return;
       }
-      entries.push({ puppyId: p.id, weightKg: kg });
+      entries.push({
+        puppyId: p.id,
+        name: p.name,
+        weightKg: kg,
+        recordedAt: enteredAt[p.id] ?? new Date().toISOString(),
+      });
     }
     if (!entries.length) {
       showError('Enter at least one weight.');
@@ -72,11 +85,25 @@ export function WeightGrid({ puppies, weightsByPuppyId, whelpDate, onBatchSave }
     }
     setSaving(true);
     try {
-      await onBatchSave(entries, session, now);
-      showSaved();
-      setInputs({});
-    } catch {
-      showError();
+      const result = await onBatchSave({ session, recordedDate: today, entries });
+      const summary = weightRoundSummary(result);
+      const failed = new Map(result.failures.map((failure) => [failure.dogId, failure.reason]));
+      setRowErrors(Object.fromEntries(failed));
+      if (result.failures.length) showError(summary);
+      else showSaved(summary);
+      setInputs((current) => {
+        const next = { ...current };
+        for (const entry of entries) {
+          if (!failed.has(entry.puppyId)) delete next[entry.puppyId];
+        }
+        return next;
+      });
+    } catch (e) {
+      const reason = weightSaveMessage(e);
+      showError(reason);
+      const blown: Record<string, string> = {};
+      for (const entry of entries) blown[entry.puppyId] = reason;
+      setRowErrors(blown);
     } finally {
       setSaving(false);
     }
@@ -124,8 +151,9 @@ export function WeightGrid({ puppies, weightsByPuppyId, whelpDate, onBatchSave }
               </Typography>
               <View className="w-32 flex-row items-center gap-1">
                 <CollarDot colour={p.collar_colour} size={8} />
-                <Typography variant="caption" numberOfLines={1}>
+                <Typography variant="caption" numberOfLines={2}>
                   {p.name}
+                  {rowErrors[p.id] ? `\n${rowErrors[p.id]}` : ''}
                 </Typography>
               </View>
               {dates.map((d) => {
@@ -136,7 +164,18 @@ export function WeightGrid({ puppies, weightsByPuppyId, whelpDate, onBatchSave }
                     <View key={d} className="w-24 px-1">
                       <TextInput
                         value={inputs[p.id] ?? ''}
-                        onChangeText={(v) => setInputs((s) => ({ ...s, [p.id]: v }))}
+                        onChangeText={(v) => {
+                          const value = v.replace(/[^\d]/g, '');
+                          setInputs((s) => ({ ...s, [p.id]: value }));
+                          setEnteredAt((s) => {
+                            if (!value) {
+                              const next = { ...s };
+                              delete next[p.id];
+                              return next;
+                            }
+                            return { ...s, [p.id]: new Date().toISOString() };
+                          });
+                        }}
                         placeholder="g"
                         keyboardType="number-pad"
                         placeholderTextColor="#8C8474"

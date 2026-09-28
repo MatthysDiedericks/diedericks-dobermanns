@@ -9,7 +9,8 @@ export type UserRole =
   | 'trainer'
   | 'management'
   | 'admin'
-  | 'super_admin';
+  | 'super_admin'
+  | 'accountant';
 
 export interface AppUser {
   id: string;
@@ -461,6 +462,7 @@ export interface LitterWithPuppies {
   whelping_notes: string | null;
   description: string | null;
   updated_at: string | null;
+  default_programme_tier?: string | null;
   mother: { id: string; name: string } | null;
   father: { id: string; name: string } | null;
   puppies: Dog[];
@@ -890,16 +892,20 @@ export interface Testimonial {
 
 export type GalleryCategory =
   | 'puppies'
+  | 'elite_pups'
+  | 'protection_dogs'
   | 'training'
   | 'competition'
   | 'family'
-  | 'kennel';
+  | 'kennel'
+  | 'planned_litters'
+  | 'litter_announcements';
 
 export interface GalleryItem {
   id: string;
   title: string | null;
   description: string | null;
-  image_url: string;
+  image_url: string | null;
   video_url: string | null;
   category: GalleryCategory | null;
   discipline?: string | null;
@@ -907,6 +913,7 @@ export interface GalleryItem {
   sort_order: number;
   photo_taken_at?: string | null;
   created_at: string;
+  litter_id?: string | null;
 }
 
 export interface FaqItem {

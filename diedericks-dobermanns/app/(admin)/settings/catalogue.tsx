@@ -11,7 +11,7 @@ export default function CatalogueSettingsScreen() {
 
   return (
     <ScreenContainer>
-      <PageHeader eyebrow="Admin" title="Quote catalogue" />
+      <PageHeader eyebrow="Admin" title="Services & fees" />
       <View className="gap-4 px-6 pb-10">
         <CatalogueManager initialItemId={initialItemId} />
       </View>

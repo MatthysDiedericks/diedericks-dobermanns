@@ -16,14 +16,6 @@ export type DeliveryDecision =
   | 'to_be_confirmed'
   | 'not_applicable';
 
-export type StockStatus = 'in_stock' | 'made_to_order' | 'sold_out';
-
-export const STOCK_STATUSES: { value: StockStatus; label: string }[] = [
-  { value: 'in_stock', label: 'In stock' },
-  { value: 'made_to_order', label: 'Made to order' },
-  { value: 'sold_out', label: 'Sold out' },
-];
-
 export type EquipmentTypeRow = {
   key: string;
   label: string;
@@ -45,8 +37,6 @@ export type CatalogueItem = {
   image_path: string | null;
   short_description: string | null;
   is_client_visible: boolean;
-  stock_status: StockStatus;
-  equipment_type: string | null;
 };
 
 export type LastChargeRow = {

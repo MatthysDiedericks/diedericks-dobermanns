@@ -12,9 +12,10 @@ interface Props {
   entries: WaitingListEntry[];
   onSelect: (entry: WaitingListEntry) => void;
   onLongPress?: (entry: WaitingListEntry) => void;
+  onLinkPuppy?: (entry: WaitingListEntry) => void;
 }
 
-export function PipelineBoard({ entries, onSelect, onLongPress }: Props) {
+export function PipelineBoard({ entries, onSelect, onLongPress, onLinkPuppy }: Props) {
   const grouped: Record<string, WaitingListEntry[]> = {};
   for (const stage of KANBAN_STAGES) grouped[stage] = [];
   for (const entry of entries) {
@@ -41,6 +42,7 @@ export function PipelineBoard({ entries, onSelect, onLongPress }: Props) {
                 siblingCount={siblingTotal(entry, entries)}
                 onPress={() => onSelect(entry)}
                 onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
+                onLinkPuppy={onLinkPuppy ? () => onLinkPuppy(entry) : undefined}
               />
             )}
           />

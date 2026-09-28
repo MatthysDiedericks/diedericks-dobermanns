@@ -16,8 +16,14 @@ import {
   newbornPuppyInsert,
   shouldWriteBirthWeight,
 } from '@/lib/litters/newbornPuppy';
-import { type CollarColourId } from '@/lib/litters/collarColours';
+import { collarLabel, type CollarColourId } from '@/lib/litters/collarColours';
 import { PUPPY_OUTCOMES, type PuppyOutcome } from '@/lib/litters/outcomes';
+import {
+  formatPuppySaved,
+  intakeIsComplete,
+  validatePuppyIntake,
+  type IntakeErrors,
+} from '@/lib/litters/puppyIntake';
 import { requireSupabase } from '@/lib/supabase';
 import { showError, showSaved } from '@/lib/dogDetail/feedback';
 
@@ -31,11 +37,15 @@ export default function RegisterPupsScreen() {
   const [sex, setSex] = useState<'male' | 'female'>('male');
   const [colour, setColour] = useState<DogColourCode>('black_tan');
   const [collar, setCollar] = useState<CollarColourId | null>(null);
+  const [tail, setTail] = useState<'docked' | 'natural' | null>(null);
   const [birthGrams, setBirthGrams] = useState('');
   const [outcome, setOutcome] = useState<PuppyOutcome>('live');
   const [outcomeDate, setOutcomeDate] = useState('');
   const [outcomeNote, setOutcomeNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<IntakeErrors>({});
+  const [allowDuplicate, setAllowDuplicate] = useState(false);
+  const [savedLine, setSavedLine] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState({ male: 0, female: 0 });
 
   const letter = litter?.litter_letter ?? 'X';
@@ -46,12 +56,19 @@ export default function RegisterPupsScreen() {
   const duplicateCollar = collar != null && usedCollars.includes(collar);
 
   async function savePup(andNext: boolean) {
-    if (!litter || duplicateCollar) return;
+    if (!litter) return;
     const grams = parseInt(birthGrams, 10);
-    if (!Number.isFinite(grams) || grams <= 0) {
-      showError('Enter birth weight in grams.');
-      return;
-    }
+    const intakeErrors = validatePuppyIntake({
+      sex,
+      collarColour: collar,
+      tailType: tail,
+      birthWeightGrams: Number.isFinite(grams) ? grams : null,
+      birthTime: timeBorn,
+      usedCollars,
+      allowDuplicateCollar: allowDuplicate,
+    });
+    setFieldErrors(intakeErrors);
+    if (!intakeIsComplete(intakeErrors) || !tail) return;
     setSaving(true);
     try {
       const client = requireSupabase();
@@ -63,6 +80,8 @@ export default function RegisterPupsScreen() {
           newbornPuppyInsert({
             name,
             sex,
+            tail_type: tail,
+            programme_tier: litter.default_programme_tier ?? null,
             colour,
             collar_colour: collar,
             birth_order: pupIndex,
@@ -95,11 +114,22 @@ export default function RegisterPupsScreen() {
         setPupIndex((i) => i + 1);
         setBirthGrams('');
         setCollar(null);
+        setTail(null);
         setOutcome('live');
         setOutcomeDate('');
         setOutcomeNote('');
+        setAllowDuplicate(false);
+        setFieldErrors({});
+        const line = formatPuppySaved({
+          order: pupIndex,
+          collarLabel: collarLabel(collar),
+          sex,
+          grams,
+          time: timeBorn,
+        });
+        setSavedLine(line);
         await refresh();
-        showSaved('Saved ✓');
+        showSaved(line);
       } else {
         const maleCount = (litter.male_count ?? 0) + savedCount.male + (sex === 'male' ? 1 : 0);
         const femaleCount = (litter.female_count ?? 0) + savedCount.female + (sex === 'female' ? 1 : 0);
@@ -181,6 +211,37 @@ export default function RegisterPupsScreen() {
           usedColours={usedCollars}
           duplicateWarning={duplicateCollar}
         />
+        {fieldErrors.collar ? (
+          <Typography variant="caption" className="mb-2 text-red-300">{fieldErrors.collar}</Typography>
+        ) : null}
+        <Typography variant="caption" className="mb-2 mt-2 text-subtle">
+          Tail
+        </Typography>
+        <View className="mb-3 flex-row gap-2">
+          {(['docked', 'natural'] as const).map((value) => (
+            <Pressable
+              key={value}
+              onPress={() => setTail(value)}
+              className={`flex-1 rounded-xl border py-3 ${
+                tail === value ? 'border-gold bg-gold/15' : 'border-gold/25'
+              }`}
+            >
+              <Typography variant="caption" className="text-center">
+                {value === 'docked' ? 'Docked' : 'Natural'}
+              </Typography>
+            </Pressable>
+          ))}
+        </View>
+        {fieldErrors.tail ? (
+          <Typography variant="caption" className="mb-2 text-red-300">{fieldErrors.tail}</Typography>
+        ) : null}
+        {duplicateCollar ? (
+          <Pressable onPress={() => setAllowDuplicate((v) => !v)} className="mb-3">
+            <Typography variant="caption" className="text-amber-200">
+              {allowDuplicate ? '✓ ' : ''}Save anyway — two of this collar
+            </Typography>
+          </Pressable>
+        ) : null}
         <Input
           label="Birth weight (g)"
           value={birthGrams}
@@ -190,6 +251,15 @@ export default function RegisterPupsScreen() {
         <Typography variant="caption" className="mb-4 text-subtle">
           = {previewKg} kg
         </Typography>
+        {fieldErrors.weight ? (
+          <Typography variant="caption" className="mb-2 text-red-300">{fieldErrors.weight}</Typography>
+        ) : null}
+        {fieldErrors.time ? (
+          <Typography variant="caption" className="mb-2 text-red-300">{fieldErrors.time}</Typography>
+        ) : null}
+        {savedLine ? (
+          <Typography variant="caption" className="mb-3 text-emerald-300">{savedLine}</Typography>
+        ) : null}
         <Typography variant="caption" className="mb-2 text-subtle">
           Outcome
         </Typography>
