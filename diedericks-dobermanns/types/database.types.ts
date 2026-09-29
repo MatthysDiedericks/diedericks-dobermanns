@@ -4349,16 +4349,22 @@ export type Database = {
           notes: string | null
           payment_date: string
           payment_method: string | null
+          banked_on: string | null
+          banked_reference: string | null
+          payment_account_id: string | null
           proof_document_id: string | null
           recorded_by: string | null
           reference: string | null
         }
         Insert: {
           amount: number
+          banked_on?: string | null
+          banked_reference?: string | null
           created_at?: string
           id?: string
           invoice_id: string
           notes?: string | null
+          payment_account_id?: string | null
           payment_date?: string
           payment_method?: string | null
           proof_document_id?: string | null
@@ -4367,10 +4373,13 @@ export type Database = {
         }
         Update: {
           amount?: number
+          banked_on?: string | null
+          banked_reference?: string | null
           created_at?: string
           id?: string
           invoice_id?: string
           notes?: string | null
+          payment_account_id?: string | null
           payment_date?: string
           payment_method?: string | null
           proof_document_id?: string | null
@@ -8144,6 +8153,8 @@ export type Database = {
           enquirer_phone: string | null
           follow_up_date: string | null
           hold_reason: string | null
+          hold_set_at: string | null
+          hold_set_by: string | null
           hold_until: string | null
           id: string
           internal_flags: string[] | null
@@ -8196,6 +8207,8 @@ export type Database = {
           enquirer_phone?: string | null
           follow_up_date?: string | null
           hold_reason?: string | null
+          hold_set_at?: string | null
+          hold_set_by?: string | null
           hold_until?: string | null
           id?: string
           internal_flags?: string[] | null
@@ -8248,6 +8261,8 @@ export type Database = {
           enquirer_phone?: string | null
           follow_up_date?: string | null
           hold_reason?: string | null
+          hold_set_at?: string | null
+          hold_set_by?: string | null
           hold_until?: string | null
           id?: string
           internal_flags?: string[] | null

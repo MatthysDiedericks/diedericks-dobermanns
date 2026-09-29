@@ -13,9 +13,10 @@ import { Input } from "@/components/ui/Input";
 import { ScreenContainer } from "@/components/ui/ScreenContainer";
 import { Typography } from "@/components/ui/Typography";
 import { Colors } from "@/constants/colors";
-import { updateWaitlistEntry, addDogToApplication, useSubmitting } from "@/hooks/useMutations";
+import { updateWaitlistEntry, addDogToApplication, clearWaitlistHold, setWaitlistHold, useSubmitting } from "@/hooks/useMutations";
 import { useWaitlistEntry } from "@/hooks/useWaitingList";
 import { WAITLIST_HISTORY_SELECT, WAITLIST_SELECT } from "@/lib/waitlist/queries";
+import { WaitlistHoldNote } from "@/components/waitlist/WaitlistHoldNote";
 import { stageLabel } from "@/lib/waitlist/constants";
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from "@/lib/waitlist/helpers";
 import { dogOfNLabel, outstandingSiblingCount } from "@/lib/waitlist/siblings";
@@ -40,6 +41,8 @@ export default function WaitlistEntryDetailScreen() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
+  const [holdReason, setHoldReason] = useState("");
+  const [holdUntil, setHoldUntil] = useState("");
   const [history, setHistory] = useState<WaitingListHistoryRow[]>([]);
   const [inviteState, setInviteState] = useState<InviteStateRow | null>(null);
   const [siblings, setSiblings] = useState<WaitingListEntry[]>([]);
@@ -48,6 +51,8 @@ export default function WaitlistEntryDetailScreen() {
     if (entry) {
       setAdminNotes(entry.admin_notes ?? "");
       setFollowUp(entry.follow_up_date ?? "");
+      setHoldReason(entry.hold_reason ?? "");
+      setHoldUntil(entry.hold_until?.slice(0, 10) ?? "");
     }
   }, [entry]);
 
@@ -202,6 +207,57 @@ export default function WaitlistEntryDetailScreen() {
         {tab === "overview" ? (
           <View className="gap-4">
             <PipelineBreadcrumb currentStage={effectiveStage(entry)} reachedAt={reachedAt} />
+            <Card className="p-4">
+              <Typography variant="label" className="text-amber-200">Hold</Typography>
+              <Typography variant="caption" className="mb-2 text-silver">
+                Keeps this place in the queue. Does not change the stage or the deposit.
+              </Typography>
+              <WaitlistHoldNote holdUntil={entry.hold_until} holdReason={entry.hold_reason} />
+              <Input
+                label="Reason"
+                value={holdReason}
+                onChangeText={setHoldReason}
+                multiline
+              />
+              <Input
+                label="Hold until (YYYY-MM-DD)"
+                value={holdUntil}
+                onChangeText={setHoldUntil}
+                autoCapitalize="none"
+              />
+              <View className="flex-row gap-2">
+                <Button
+                  label="Save hold"
+                  size="sm"
+                  loading={submitting}
+                  onPress={() => {
+                    void run(async () => {
+                      const res = await setWaitlistHold(entry.id, holdUntil, holdReason);
+                      if (res.error) Alert.alert("Could not save the hold", res.error);
+                      else refresh();
+                      return res;
+                    });
+                  }}
+                />
+                <Button
+                  label="Clear hold"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => {
+                    void run(async () => {
+                      const res = await clearWaitlistHold(entry.id);
+                      if (res.error) Alert.alert("Could not clear the hold", res.error);
+                      else {
+                        setHoldReason("");
+                        setHoldUntil("");
+                        refresh();
+                      }
+                      return res;
+                    });
+                  }}
+                />
+              </View>
+            </Card>
             <Card className="p-4">
               <Typography variant="label" className="text-gold">Payment</Typography>
               <Typography variant="body">{entry.payment_status.replace(/_/g, " ")}</Typography>

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +22,8 @@ import {
   undoAllocation,
   type WorkingAllocation,
 } from '@/lib/waitlist/litterAllocation';
+import { WaitlistHoldNote } from '@/components/waitlist/WaitlistHoldNote';
+import { holdOverridePrompt, queuePositionInStage, queuePositionLabel } from '@/lib/waitlist/hold';
 import { entryDisplayName } from '@/lib/waitlist/helpers';
 import {
   explainEmptyBuyersForDog,
@@ -233,9 +235,13 @@ export default function LitterAllocateScreen() {
           <Card key={candidate.entry.id} className="mb-3 p-4">
             <Typography variant="subtitle">{entryDisplayName(candidate.entry)}</Typography>
             <Typography variant="caption" className="text-silver">
-              {candidate.daysWaiting} days · score {candidate.score}
+              {candidate.daysWaiting} days · {queuePositionLabel(queuePositionInStage(candidate.entry, entries))} · score {candidate.score}
               {candidate.perfectFit ? ' · perfect fit' : ''}
             </Typography>
+            <WaitlistHoldNote
+              holdUntil={candidate.entry.hold_until}
+              holdReason={candidate.entry.hold_reason}
+            />
             <Typography variant="caption">{preferenceChipLabel(candidate.entry)}</Typography>
             {candidate.criteria.map((criterion) => (
               <Typography
@@ -262,13 +268,24 @@ export default function LitterAllocateScreen() {
               className="mt-3"
               onPress={() => {
                 if (!selected) return;
-                const result = assignBuyer(allocations, selected.id, candidate.entry.id);
-                if (result.error) {
-                  showError(result.error);
+                const place = () => {
+                  const result = assignBuyer(allocations, selected.id, candidate.entry.id);
+                  if (result.error) {
+                    showError(result.error);
+                    return;
+                  }
+                  setAllocations(result.allocations);
+                  setNotice('Placed on the board. Not saved yet.');
+                };
+                const prompt = holdOverridePrompt(candidate.entry);
+                if (!prompt) {
+                  place();
                   return;
                 }
-                setAllocations(result.allocations);
-                setNotice('Placed on the board. Not saved yet.');
+                Alert.alert('This buyer is on hold', prompt, [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Allocate anyway', onPress: place },
+                ]);
               }}
             />
           </Card>

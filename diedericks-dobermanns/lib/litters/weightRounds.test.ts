@@ -1,12 +1,55 @@
 import assert from "node:assert/strict";
 
 import {
+  BIRTH_ROUND_KEY,
+  roundKey,
+  roundLabel,
   saveWeightRound,
   weightLogInsert,
   weightRoundSummary,
   type WeightInsert,
   type WeightLogWriter,
 } from "./weightRounds";
+
+/**
+ * The Odessa litter, 29 Sep 2026. Yesterday's round was typed up at 07:51 and
+ * today's at 07:52, so recorded_at said "29 Sep" for both and the grid showed
+ * two columns labelled 29 Sept — one of which was actually the 28th.
+ */
+function columnsAreDaysNotTypingTimes() {
+  const yesterdayTypedToday = {
+    recorded_date: "2026-09-28",
+    recorded_at: "2026-09-29T07:51:21.152Z",
+    session: "AM",
+  };
+  const today = {
+    recorded_date: "2026-09-29",
+    recorded_at: "2026-09-29T07:52:26.117Z",
+    session: "AM",
+  };
+  assert.equal(roundKey(yesterdayTypedToday), "2026-09-28#AM");
+  assert.equal(roundKey(today), "2026-09-29#AM");
+  assert.notEqual(roundKey(yesterdayTypedToday), roundKey(today));
+  assert.equal(roundLabel(roundKey(yesterdayTypedToday)), "28 Sep AM");
+  assert.equal(roundLabel(roundKey(today)), "29 Sep AM");
+
+  // Six puppies typed over a minute boundary are ONE round, not two columns.
+  const perPuppy = [
+    "2026-09-29T07:51:58.000Z",
+    "2026-09-29T07:52:03.000Z",
+    "2026-09-29T07:52:11.000Z",
+  ].map((at) => roundKey({ recorded_date: "2026-09-28", recorded_at: at, session: "PM" }));
+  assert.equal(new Set(perPuppy).size, 1, "one round must be one column");
+
+  assert.equal(roundLabel(BIRTH_ROUND_KEY), "Birth");
+  assert.equal(
+    roundLabel(roundKey({ recorded_date: "2026-09-28", recorded_at: null, session: "daily" })),
+    "28 Sep",
+    "a daily round shows the day with no time",
+  );
+
+  console.log("columns: keyed on the day weighed, not the minute typed");
+}
 
 /** Run: npx tsx src/lib/litters/weightRounds.test.ts */
 
@@ -108,6 +151,8 @@ async function main() {
   assert.equal(partial.failures.find((f) => f.name === "K3")?.reason, "duplicate entry for PM on 28 Sep");
 
   console.log("weight round: 6 saved, re-weigh updated, partial failure named");
+
+  columnsAreDaysNotTypingTimes();
 }
 
 main().catch((error) => {

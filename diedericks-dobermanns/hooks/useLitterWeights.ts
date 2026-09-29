@@ -156,7 +156,12 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
       const client = requireSupabase();
       const result = await saveWeightRound(
         {
+          // AM and PM are slots: re-weighing one corrects it. A 'daily' row on an
+          // interval schedule is a moment in time, and there are many a day — so
+          // there is no prior row to find, and upserting on (dog, date, session)
+          // would silently overwrite the reading taken an hour ago.
           findExisting: async (dogId, recordedDate, session) => {
+            if (session !== 'AM' && session !== 'PM') return null;
             const { data, error: readError } = await client
               .from('weight_logs')
               .select('weight_kg')
@@ -168,8 +173,9 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
             return data ? { weight_kg: Number(data.weight_kg) } : null;
           },
           upsert: async (row) => {
+            const slotted = row.session === 'AM' || row.session === 'PM';
             const { error: writeError } = await client.from('weight_logs').upsert(row, {
-              onConflict: 'dog_id,recorded_date,session',
+              onConflict: slotted ? 'dog_id,recorded_date,session' : 'dog_id,recorded_at',
             });
             return {
               error: writeError

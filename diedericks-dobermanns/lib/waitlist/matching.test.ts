@@ -97,6 +97,21 @@ function main() {
   });
   assert.equal(rankDogsForBuyer(elite, [intended]).length, 1);
 
+  const held = buyer({
+    id: 'held',
+    pipeline_stage: 'deposit_paid',
+    queue_anchor_at: '2026-01-01T00:00:00.000Z',
+    hold_until: '2026-12-29',
+    hold_reason: 'Asked to take a puppy at a later stage.',
+  });
+  const open = buyer({
+    id: 'open',
+    pipeline_stage: 'deposit_paid',
+    queue_anchor_at: '2026-06-01T00:00:00.000Z',
+  });
+  const holdOrder = rankBuyersForDog([held, open], dog({ id: 'p', name: 'P', tail_type: 'docked' }));
+  assert.deepEqual(holdOrder.map((row) => row.entry.id), ['open', 'held']);
+
   assert.equal(isMatchableDogStatus('available'), true);
   assert.equal(isMatchableDogStatus('puppy'), false);
   assert.doesNotMatch(isMatchableDogStatus.toString(), /puppy/);

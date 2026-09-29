@@ -1,4 +1,5 @@
 import { colourLabel } from '@/lib/colours/dogColours';
+import { holdRanksAfterPeer } from '@/lib/waitlist/hold';
 import { CATEGORY_LABELS } from '@/lib/waitlist/helpers';
 import { daysWaiting } from '@/lib/waitlist/constants';
 import type { WaitingListEntry } from '@/types/app.types';
@@ -253,6 +254,8 @@ export function rankBuyersForDog(
   return eligible
     .map((e) => scoreMatch(e, dog, waitMap.get(e.id) ?? 0))
     .sort((a, b) => {
+      const held = holdRanksAfterPeer(a.entry, b.entry);
+      if (held !== 0) return held;
       if (a.perfectFit !== b.perfectFit) return a.perfectFit ? -1 : 1;
       const pa = PRIORITY_RANK[a.entry.priority ?? 'normal'] ?? 1;
       const pb = PRIORITY_RANK[b.entry.priority ?? 'normal'] ?? 1;

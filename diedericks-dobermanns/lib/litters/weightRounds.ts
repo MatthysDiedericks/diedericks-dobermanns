@@ -12,14 +12,21 @@ export type WeighingSchedule =
   | 'every_2h'
   | 'every_4h'
   | 'every_6h'
+  | 'every_12h'
   | 'daily';
 
+/**
+ * every_12h is twice daily on the clock. am_pm is also twice daily, but it is
+ * whenever the morning and evening rounds happen to be done — the two are not
+ * the same thing, and a fading puppy is watched on the clock.
+ */
 export const WEIGHING_SCHEDULES: { id: WeighingSchedule; label: string; hours: number | null }[] = [
   { id: 'am_pm', label: 'AM / PM', hours: null },
   { id: 'every_1h', label: 'Every hour', hours: 1 },
   { id: 'every_2h', label: 'Every 2 hours', hours: 2 },
   { id: 'every_4h', label: 'Every 4 hours', hours: 4 },
   { id: 'every_6h', label: 'Every 6 hours', hours: 6 },
+  { id: 'every_12h', label: 'Every 12 hours', hours: 12 },
   { id: 'daily', label: 'Daily', hours: 24 },
 ];
 
@@ -407,21 +414,49 @@ export async function saveWeightRound(
   };
 }
 
+/** The synthetic first column: birth weight, which is not a weight_logs row. */
+export const BIRTH_ROUND_KEY = '0000-00-00#birth';
+
+/**
+ * A column is a *round*, and a round is a day plus a slot — never a timestamp.
+ *
+ * recorded_at is when the number was typed. recorded_date is the day the puppy
+ * was actually weighed, and those are different whenever a round is written up
+ * later: on 29 Sep 2026 the Odessa litter's 28 Sep round was entered at 07:51
+ * and the 29 Sep round at 07:52, so keying on the timestamp put both under
+ * "29 Sept" and split each round across as many columns as there were minutes
+ * of typing. The day the puppy stood on the scale is the identity of the round.
+ *
+ * AM and PM are slots of their own. Interval schedules record session 'daily'
+ * many times a day, so there the hour is the slot — that is the only case where
+ * a clock time belongs in a column at all.
+ */
 export function roundKey(log: {
   recorded_at?: string | null;
   recorded_date: string;
   session?: string | null;
 }): string {
-  if (log.recorded_at) return log.recorded_at.slice(0, 16);
-  return `${log.recorded_date}:${log.session ?? 'daily'}`;
-}
-
-export function roundLabel(key: string): string {
-  if (key.includes('T')) {
-    const d = new Date(key.length === 16 ? `${key}:00` : key);
-    if (!Number.isNaN(d.getTime())) {
-      return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${formatClock(d)}`;
+  const day = log.recorded_date.slice(0, 10);
+  const session = log.session ?? 'daily';
+  if (session === 'AM' || session === 'PM') return `${day}#${session}`;
+  if (log.recorded_at) {
+    const at = new Date(log.recorded_at);
+    if (!Number.isNaN(at.getTime())) {
+      return `${day}#${String(at.getHours()).padStart(2, '0')}h`;
     }
   }
-  return key;
+  return `${day}#daily`;
+}
+
+/** "28 Sep", "28 Sep AM", "28 Sep 14:00" — the day first, always. */
+export function roundLabel(key: string): string {
+  if (key === BIRTH_ROUND_KEY) return 'Birth';
+  const [day, slot] = key.split('#');
+  if (!day || !slot) return key;
+  const date = formatWeighDate(day);
+  if (slot === 'AM' || slot === 'PM') return `${date} ${slot}`;
+  if (slot === 'daily') return date;
+  const hour = /^(\d{2})h$/.exec(slot);
+  if (hour) return `${date} ${hour[1]}:00`;
+  return date;
 }

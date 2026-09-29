@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { isFollowUpOverdue, stageLabel } from '@/lib/waitlist/constants';
+import { WaitlistHoldNote } from '@/components/waitlist/WaitlistHoldNote';
+import { queuePositionInStage, queuePositionLabel } from '@/lib/waitlist/hold';
 import { entryDisplayName, entryEmail, entryPhone, effectiveStage } from '@/lib/waitlist/helpers';
 import { dogOfNLabel, siblingTotal } from '@/lib/waitlist/siblings';
 import { reorderWaitlistPosition } from '@/lib/waitlist/mutations';
@@ -77,6 +79,14 @@ export function WaitlistTable({ entries, onSelect, onMoveStage, onLinkPuppy, onR
                     {entryDisplayName(entry)}
                   </Typography>
                 </Pressable>
+                <Typography variant="caption" className="text-silver">
+                  {queuePositionLabel(
+                    typeof entry.position === 'number' && entry.position > 0
+                      ? entry.position
+                      : queuePositionInStage(entry, entries),
+                  )}
+                </Typography>
+                <WaitlistHoldNote holdUntil={entry.hold_until} holdReason={entry.hold_reason} />
                 {dogOfNLabel(entry.request_index, siblingTotal(entry, entries)) ? (
                   <Typography variant="caption" className="text-gold">
                     {dogOfNLabel(entry.request_index, siblingTotal(entry, entries))}

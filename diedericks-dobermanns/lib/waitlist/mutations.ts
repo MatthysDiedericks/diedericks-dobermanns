@@ -3,6 +3,7 @@ import { getCachedUser } from '@/lib/auth/getCachedUser';
 import { supabase } from '@/lib/supabase';
 import { applicationCommercialTierKey } from '@/lib/applications/tierVocab';
 import { categoryFromDogInterest } from '@/lib/waitlist/helpers';
+import { buildWaitlistHoldWrite, clearedWaitlistHold } from '@/lib/waitlist/hold';
 import { advanceWaitlistStage } from '@/lib/waitlist/stageAdvance';
 import type { Application, WaitingListEntry } from '@/types/app.types';
 import type { TablesInsert, TablesUpdate } from '@/types/database.types';
@@ -214,6 +215,34 @@ export async function updateWaitlistEntry(
   }
 
   return { error: null };
+}
+
+/** Sets a waiting-list hold. Does not change pipeline_stage or payment_status. */
+export async function setWaitlistHold(
+  id: string,
+  holdUntil: string,
+  reason: string,
+): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const user = await getCachedUser();
+  if (!user?.id) return { error: 'Sign in again before setting a hold.' };
+  const written = buildWaitlistHoldWrite({ reason, holdUntil, actorId: user.id });
+  if ('error' in written) return { error: written.error };
+  const { error } = await supabase
+    .from('waiting_list')
+    .update(written.patch as TablesUpdate<'waiting_list'>)
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+/** Clears the hold note, date, and who set it, together. */
+export async function clearWaitlistHold(id: string): Promise<MutationResult> {
+  if (!supabase) return simulate();
+  const { error } = await supabase
+    .from('waiting_list')
+    .update(clearedWaitlistHold() as TablesUpdate<'waiting_list'>)
+    .eq('id', id);
+  return { error: error?.message ?? null };
 }
 
 export async function moveWaitlistStage(

@@ -6,6 +6,7 @@ import { Typography } from '@/components/ui/Typography';
 import type { LitterPuppy, PuppyWeightLog } from '@/hooks/useLitterWeights';
 import { CollarDot, collarLabel } from '@/lib/litters/collarColours';
 import {
+  BIRTH_ROUND_KEY,
   belowBirthWeightAfter48h,
   hasNotGained,
   roundKey,
@@ -29,8 +30,11 @@ export function LitterRoundsGrid({
   const rounds = useMemo(() => {
     const keys = new Set<string>();
     weightsByPuppyId.forEach((logs) => logs.forEach((log) => keys.add(roundKey(log))));
-    return [...keys].sort();
-  }, [weightsByPuppyId]);
+    const anyBirth = puppies.some(
+      (p) => p.birth_weight_grams != null && p.birth_weight_grams > 0,
+    );
+    return [...(anyBirth ? [BIRTH_ROUND_KEY] : []), ...[...keys].sort()];
+  }, [weightsByPuppyId, puppies]);
 
   if (!puppies.length || !rounds.length) return null;
 
@@ -80,6 +84,20 @@ export function LitterRoundsGrid({
                   </Typography>
                 </Pressable>
                 {rounds.map((key) => {
+                  if (key === BIRTH_ROUND_KEY) {
+                    const grams = pup.birth_weight_grams;
+                    const written = grams != null && grams > 0;
+                    return (
+                      <View
+                        key={key}
+                        className="mx-0.5 h-8 w-16 items-center justify-center rounded border-r border-gold/30 bg-gold/10"
+                      >
+                        <Typography variant="caption" className="text-gold">
+                          {written ? `${grams}` : '—'}
+                        </Typography>
+                      </View>
+                    );
+                  }
                   const log = byRound.get(key);
                   return (
                     <View

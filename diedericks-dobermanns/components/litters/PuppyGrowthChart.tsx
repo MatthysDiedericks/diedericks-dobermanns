@@ -12,6 +12,11 @@ import type { LitterPuppy, PuppyWeightLog } from '@/hooks/useLitterWeights';
 import { collarHex } from '@/lib/litters/collarColours';
 import type { BenchmarkPoint } from '@/lib/litters/growthBenchmark';
 import { formatWeightGrams, getAgeDays } from '@/lib/litters/weighingSchedule';
+import {
+  formatWeighDate,
+  readingsChronological,
+  type WeightReading,
+} from '@/lib/litters/weightRounds';
 
 const CHART_HEIGHT = 300;
 const PADDING = { top: 20, right: 12, bottom: 44, left: 40 };
@@ -24,63 +29,85 @@ interface PuppyGrowthChartProps {
   benchmarkCurve?: BenchmarkPoint[];
 }
 
-function shortDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  } catch {
-    return iso;
-  }
+function readingMs(log: { recorded_at?: string | null; recorded_date: string }): number {
+  const raw = log.recorded_at ?? `${log.recorded_date}T12:00:00`;
+  const t = new Date(raw).getTime();
+  return Number.isNaN(t) ? 0 : t;
 }
 
 export function PuppyGrowthChart({
   puppies,
   weightsByPuppyId,
-  uniqueDates,
   whelpDate,
   benchmarkCurve,
 }: PuppyGrowthChartProps) {
   const [isolatedId, setIsolatedId] = useState<string | null>(null);
-  const hasAny = puppies.some((p) => (weightsByPuppyId.get(p.id)?.length ?? 0) > 0);
   const width = 340;
   const innerW = width - PADDING.left - PADDING.right;
   const innerH = CHART_HEIGHT - PADDING.top - PADDING.bottom;
 
-  const { minG, maxG, day14X } = useMemo(() => {
-    let min = Infinity;
-    let max = -Infinity;
-    weightsByPuppyId.forEach((logs) =>
-      logs.forEach((l) => {
-        const g = l.weight_kg * 1000;
-        min = Math.min(min, g);
-        max = Math.max(max, g);
-      }),
-    );
-    if (!Number.isFinite(min)) {
-      min = 0;
-      max = 1000;
-    }
-    let d14x: number | null = null;
-    if (whelpDate && uniqueDates.length > 1) {
-      const idx = uniqueDates.findIndex((d) => getAgeDays(whelpDate, new Date(d)) >= 14);
-      if (idx >= 0) d14x = PADDING.left + (idx / (uniqueDates.length - 1)) * innerW;
-    }
-    return { minG: min, maxG: max, day14X: d14x };
-  }, [weightsByPuppyId, uniqueDates, whelpDate, innerW]);
+  const series = useMemo(
+    () =>
+      puppies
+        .map((p) => {
+          const logs = readingsChronological(weightsByPuppyId.get(p.id) ?? []);
+          const birth: WeightReading[] =
+            whelpDate && p.birth_weight_grams != null && p.birth_weight_grams > 0
+              ? [
+                  {
+                    weight_kg: p.birth_weight_grams / 1000,
+                    recorded_date: whelpDate.slice(0, 10),
+                    recorded_at: `${whelpDate.slice(0, 10)}T${(p.birth_time ?? '00:00').slice(0, 5)}:00`,
+                  },
+                ]
+              : [];
+          return { puppy: p, logs: readingsChronological([...birth, ...logs]) };
+        })
+        .filter((s) => s.logs.length > 0),
+    [puppies, weightsByPuppyId, whelpDate],
+  );
 
-  if (!hasAny) return <EmptyTabState message="No weights recorded yet." />;
+  const { minG, maxG, minT, maxT, dayTicks } = useMemo(() => {
+    const times = series.flatMap((s) => s.logs.map((l) => readingMs(l)));
+    const grams = series.flatMap((s) => s.logs.map((l) => Number(l.weight_kg) * 1000));
+    const min = grams.length ? Math.min(...grams) : 0;
+    const max = grams.length ? Math.max(...grams) : 1000;
+    const t0 = times.length ? Math.min(...times) : 0;
+    const t1 = times.length ? Math.max(...times) : 1;
+    const ticks = [
+      ...new Set(series.flatMap((s) => s.logs.map((l) => l.recorded_date.slice(0, 10)))),
+    ]
+      .sort()
+      .map((day) => ({ day, t: new Date(`${day}T12:00:00`).getTime() }))
+      .filter(({ t }) => t >= t0 && t <= t1);
+    return { minG: min, maxG: max, minT: t0, maxT: t1, dayTicks: ticks };
+  }, [series]);
+
+  if (series.length === 0) return <EmptyTabState message="No weights recorded yet." />;
 
   const range = maxG - minG || 100;
   const pad = range * 0.1;
-  const xForDate = (date: string) => {
-    const idx = uniqueDates.indexOf(date);
-    if (uniqueDates.length <= 1) return PADDING.left + innerW / 2;
-    return PADDING.left + (idx / (uniqueDates.length - 1)) * innerW;
-  };
+  const spanT = maxT - minT || 1;
+  const xForTime = (t: number) => PADDING.left + ((t - minT) / spanT) * innerW;
   const yForGrams = (g: number) =>
     PADDING.top + innerH - ((g - minG + pad) / (range + pad * 2)) * innerH;
+  const day14X = (() => {
+    if (!whelpDate) return null;
+    const born = new Date(`${whelpDate.slice(0, 10)}T12:00:00`);
+    const at = new Date(born);
+    at.setDate(at.getDate() + 14);
+    const t = at.getTime();
+    if (t < minT || t > maxT) return null;
+    return xForTime(t);
+  })();
   const ageDaysToX = whelpDate
     ? buildAgeDaysToX(
-        uniqueDates.map((d) => ({ ageDays: getAgeDays(whelpDate, new Date(d)), x: xForDate(d) })),
+        series.flatMap((s) =>
+          s.logs.map((l) => ({
+            ageDays: getAgeDays(whelpDate, new Date(l.recorded_date.slice(0, 10))),
+            x: xForTime(readingMs(l)),
+          })),
+        ),
       )
     : () => null;
   const hasBenchmark = !!benchmarkCurve && benchmarkCurve.length > 0;
@@ -140,47 +167,56 @@ export function PuppyGrowthChart({
             </SvgText>
           </>
         ) : null}
-        {uniqueDates.map((d, i) =>
-          i % Math.max(1, Math.floor(uniqueDates.length / 5)) === 0 ? (
-            <Fragment key={d}>
+        <SvgText x={4} y={yForGrams(maxG) + 3} fill="rgba(255,255,255,0.55)" fontSize={9}>
+          {Math.round(maxG)} g
+        </SvgText>
+        <SvgText x={4} y={yForGrams(minG) + 3} fill="rgba(255,255,255,0.55)" fontSize={9}>
+          {Math.round(minG)} g
+        </SvgText>
+        {dayTicks.map(({ day, t }, i) =>
+          i % Math.max(1, Math.floor(dayTicks.length / 5)) === 0 ? (
+            <Fragment key={day}>
+              <Line
+                x1={xForTime(t)}
+                y1={PADDING.top}
+                x2={xForTime(t)}
+                y2={PADDING.top + innerH}
+                stroke="rgba(196,163,90,0.12)"
+                strokeWidth={1}
+              />
               <SvgText
-                x={xForDate(d)}
+                x={xForTime(t)}
                 y={CHART_HEIGHT - 22}
                 fill="#8C8474"
                 fontSize={8}
                 textAnchor="middle"
               >
-                {shortDate(d)}
+                {formatWeighDate(day)}
               </SvgText>
               {whelpDate ? (
                 <SvgText
-                  x={xForDate(d)}
+                  x={xForTime(t)}
                   y={CHART_HEIGHT - 8}
                   fill="#6b7280"
                   fontSize={7}
                   textAnchor="middle"
                 >
-                  {getAgeDays(whelpDate, new Date(d))}d
+                  {getAgeDays(whelpDate, new Date(day))}d
                 </SvgText>
               ) : null}
             </Fragment>
           ) : null,
         )}
-        {puppies.map((p) => {
-          const logs = weightsByPuppyId.get(p.id) ?? [];
+        {series.map(({ puppy: p, logs }) => {
           if (logs.length === 0) return null;
           const faded = isolatedId && isolatedId !== p.id;
           const color = collarHex(p.collar_colour);
           const opacity = faded ? 0.2 : 1;
-          const points = [...logs]
-            .sort((a, b) =>
-              (a.recorded_at ?? a.recorded_date).localeCompare(b.recorded_at ?? b.recorded_date),
-            )
-            .map((l) => ({
-              x: xForDate(l.recorded_date),
-              y: yForGrams(l.weight_kg * 1000),
-              grams: l.weight_kg * 1000,
-            }));
+          const points = logs.map((l) => ({
+            x: xForTime(readingMs(l)),
+            y: yForGrams(Number(l.weight_kg) * 1000),
+            grams: Number(l.weight_kg) * 1000,
+          }));
           return (
             <Fragment key={p.id}>
               {points.slice(0, -1).map((pt, i) => {
@@ -225,8 +261,7 @@ export function PuppyGrowthChart({
             </Typography>
           </View>
         ) : null}
-        {puppies.map((p) => {
-          const logs = weightsByPuppyId.get(p.id) ?? [];
+        {series.map(({ puppy: p, logs }) => {
           if (logs.length === 0) return null;
           const active = isolatedId === p.id;
           return (

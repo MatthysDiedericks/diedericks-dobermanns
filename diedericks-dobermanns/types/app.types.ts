@@ -692,6 +692,9 @@ export interface WaitingListEntry {
   internal_flags: string[];
   do_not_sell_reason: string | null;
   hold_reason?: string | null;
+  hold_until?: string | null;
+  hold_set_by?: string | null;
+  hold_set_at?: string | null;
   position: number | null;
   request_index?: number | null;
   sibling_group_id?: string | null;

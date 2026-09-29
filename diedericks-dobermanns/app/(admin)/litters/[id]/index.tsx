@@ -135,6 +135,7 @@ export default function LitterDetailScreen() {
       raw === 'every_2h' ||
       raw === 'every_4h' ||
       raw === 'every_6h' ||
+      raw === 'every_12h' ||
       raw === 'daily'
     ) {
       setSchedule(raw);

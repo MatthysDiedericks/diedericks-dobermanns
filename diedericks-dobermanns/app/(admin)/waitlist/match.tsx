@@ -11,6 +11,8 @@ import { assignWaitlistMatch, useSubmitting } from '@/hooks/useMutations';
 import { allocateDogToClient } from '@/lib/dogs/allocation';
 import { closeEntryPlacement } from '@/lib/waitlist/closePlacement';
 import { colourLabel } from '@/lib/colours/dogColours';
+import { WaitlistHoldNote } from '@/components/waitlist/WaitlistHoldNote';
+import { holdOverridePrompt, queuePositionInStage, queuePositionLabel } from '@/lib/waitlist/hold';
 import { entryDisplayName, entryPhone } from '@/lib/waitlist/helpers';
 import { dogOfNLabel, outstandingSiblingCount } from '@/lib/waitlist/siblings';
 import { explainEmptyBuyersForDog, explainEmptyDogsForBuyer, tierGapSummary } from '@/lib/waitlist/matching';
@@ -46,9 +48,10 @@ export default function WaitlistMatchScreen() {
           );
         }).length)
       : null;
+    const holdLine = buyer ? holdOverridePrompt(buyer) : null;
     Alert.alert(
-      'Confirm allocation',
-      `${dogName} → ${name}${line ? ` (${line})` : ''}. This fills this request line only${
+      holdLine ? 'This buyer is on hold' : 'Confirm allocation',
+      `${holdLine ? `${holdLine}\n\n` : ''}${dogName} → ${name}${line ? ` (${line})` : ''}. This fills this request line only${
         outstanding ? ` — ${outstanding} other dog(s) still outstanding` : ''
       }. This waiting-list line is closed once the puppy is allocated.`,
       [
@@ -191,8 +194,10 @@ export default function WaitlistMatchScreen() {
                     variant="caption"
                     className={days >= 180 ? 'text-danger' : days >= 90 ? 'text-warning' : 'text-silver'}
                   >
-                    {days} days waiting{perfectFit ? ' · Perfect fit' : ''}
+                    {days} days waiting · {queuePositionLabel(queuePositionInStage(entry, matchable))}
+                    {perfectFit ? ' · Perfect fit' : ''}
                   </Typography>
+                  <WaitlistHoldNote holdUntil={entry.hold_until} holdReason={entry.hold_reason} />
                   <MatchScoreBar score={score} />
                   {criteria.map((c) => (
                     <Typography

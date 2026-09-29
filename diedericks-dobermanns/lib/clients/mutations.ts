@@ -13,6 +13,7 @@ import { simulate, type MutationResult, type SaveResult } from '@/lib/shared/mut
 export {
   addDogToApplication,
   assignWaitlistMatch,
+  clearWaitlistHold,
   createWaitlistEntry,
   createWaitlistFromApplication,
   createWaitlistType,
@@ -21,6 +22,7 @@ export {
   markWaitlistContacted,
   moveWaitlistStage,
   reorderWaitlistPosition,
+  setWaitlistHold,
   updateWaitlistEntry,
 } from '@/lib/waitlist/mutations';
 
