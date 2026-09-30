@@ -1,127 +1,104 @@
-import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
-import { LitterExpensesSection } from '@/components/litters/LitterExpensesSection';
-import { formatZar, useLitterFinancials } from '@/hooks/useLitterFinancials';
+import { formatMoneyFigure, type LitterSummary, type MoneyFigure } from '@/lib/finance/dogProfitability';
+import { formatAmount, formatDate } from '@/lib/finance/formatters';
+import { loadLitterFinancials, type LitterFinancials } from '@/lib/finance/loadLitterReport';
+import { requireSupabase } from '@/lib/supabase';
 
-export function TransactionList({
-  transactions,
-  onDelete,
-}: {
-  transactions: ReturnType<typeof useLitterFinancials>['transactions'];
-  onDelete: (id: string) => void;
-}) {
-  if (!transactions.length) return null;
+function figureText(figure: MoneyFigure): string {
+  return formatMoneyFigure(figure, formatAmount);
+}
+
+function Stat({ label, value, emphasize = false }: { label: string; value: string; emphasize?: boolean }) {
   return (
-    <View className="mb-6">
-      <Typography variant="label" className="mb-2 text-gold">
-        TRANSACTIONS
+    <Card className="mb-2">
+      <Typography variant="caption" className="text-muted">
+        {label}
       </Typography>
-      {transactions.map((tx) => (
-        <View
-          key={tx.id}
-          className={`mb-2 rounded-xl border p-3 ${tx.transaction_type === 'income' ? 'border-success/40' : 'border-danger/40'}`}
-        >
-          <View className="flex-row justify-between">
-            <Typography variant="subtitle">{tx.category ?? tx.transaction_type}</Typography>
-            <Typography variant="body">{formatZar(tx.total_cents)}</Typography>
-          </View>
-          <Typography variant="caption" className="text-subtle">
-            {tx.transaction_date}
-          </Typography>
-          <Button label="Delete" size="sm" variant="ghost" onPress={() => onDelete(tx.id)} />
-        </View>
-      ))}
-    </View>
+      <Typography variant="label" className={emphasize ? 'mt-1 text-amber-300' : 'mt-1'}>
+        {value}
+      </Typography>
+    </Card>
   );
 }
 
-export function TransactionForm({ litterId }: { litterId: string }) {
-  const { saveTransaction } = useLitterFinancials(litterId);
-  const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  async function handleSave() {
-    const cents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
-    if (!Number.isFinite(cents) || cents <= 0) {
-      Alert.alert('Enter a valid amount');
-      return;
-    }
-    setSaving(true);
-    try {
-      await saveTransaction({
-        litter_id: litterId,
-        transaction_date: new Date().toISOString().slice(0, 10),
-        transaction_type: type,
-        category: category || null,
-        currency: 'ZAR',
-        amounts_tax_mode: 'exclusive',
-        invoice_number: null,
-        notes: null,
-        attachment_path: null,
-        subtotal_cents: cents,
-        tax_cents: 0,
-        total_cents: cents,
-        items: [{ description: description || category || 'Line item', amount_cents: cents, tax_cents: 0 }],
-      });
-      setAmount('');
-      setDescription('');
-    } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Could not save');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <View>
-      <Typography variant="label" className="mb-2 text-gold">
-        ADD TRANSACTION
-      </Typography>
-      <View className="mb-3 flex-row gap-2">
-        <Button
-          label="Expense"
-          size="sm"
-          variant={type === 'expense' ? 'solid' : 'outline'}
-          onPress={() => setType('expense')}
-        />
-        <Button
-          label="Income"
-          size="sm"
-          variant={type === 'income' ? 'solid' : 'outline'}
-          onPress={() => setType('income')}
-        />
-      </View>
-      <Input label="Category" value={category} onChangeText={setCategory} />
-      <Input label="Description" value={description} onChangeText={setDescription} />
-      <Input label="Amount (ZAR)" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
-      <Button label="Save Transaction" onPress={() => void handleSave()} loading={saving} fullWidth />
-    </View>
-  );
-}
-
+/**
+ * Litter money from expense_allocations and invoices on the puppies.
+ * litter_transactions is unused and is not queried.
+ */
 export function LitterFinancialsTab({
   litterId,
-  litterName,
 }: {
   litterId: string;
-  litterName: string;
+  litterName?: string;
 }) {
-  const { transactions, deleteTransaction } = useLitterFinancials(litterId);
+  const [data, setData] = useState<LitterFinancials | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadLitterFinancials(requireSupabase(), litterId)
+      .then((next) => {
+        if (!cancelled) setData(next);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load financials.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [litterId]);
+
+  if (error) {
+    return (
+      <Typography variant="caption" className="text-danger">
+        {error}
+      </Typography>
+    );
+  }
+  if (!data) {
+    return <Typography variant="caption">Loading financials…</Typography>;
+  }
+  const summary: LitterSummary = data.summary;
   return (
-    <View className="pb-8">
-      <LitterExpensesSection litterId={litterId} litterName={litterName} />
-      <TransactionList
-        transactions={transactions}
-        onDelete={(id) => void deleteTransaction(id)}
+    <View>
+      <Typography variant="caption" className="mb-3 text-gold">
+        {summary.coverage}
+      </Typography>
+      <Stat label="Invoiced" value={figureText(summary.invoiced)} />
+      <Stat label="Received" value={figureText(summary.received)} />
+      <Stat
+        label="Outstanding"
+        value={figureText(summary.outstanding)}
+        emphasize={summary.outstanding.kind === 'amount' && Math.abs(summary.outstanding.amount) > 0.009}
       />
-      <TransactionForm litterId={litterId} />
+      <Stat label="Cost" value={formatAmount(summary.cost)} />
+      <Stat label="Net (on money received)" value={figureText(summary.net)} />
+      <Typography variant="label" className="mb-2 mt-2">
+        Allocations · {data.allocations.length}
+      </Typography>
+      {data.allocations.length === 0 ? (
+        <Typography variant="caption" className="text-muted">
+          No costs allocated to this litter yet.
+        </Typography>
+      ) : (
+        data.allocations.map((row) => (
+          <Card key={row.id} className="mb-2">
+            <View className="flex-row items-start justify-between gap-3">
+              <View className="flex-1">
+                <Typography variant="body">{row.description}</Typography>
+                <Typography variant="caption" className="text-muted">
+                  {formatDate(row.date)}
+                </Typography>
+              </View>
+              <Typography variant="label">{formatAmount(row.amount)}</Typography>
+            </View>
+          </Card>
+        ))
+      )}
     </View>
   );
 }

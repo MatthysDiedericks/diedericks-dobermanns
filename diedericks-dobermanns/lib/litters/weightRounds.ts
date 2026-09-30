@@ -329,13 +329,29 @@ export function weightRoundSummary(result: WeightRoundResult): string {
   return lines.join('\n');
 }
 
+/**
+ * Find-then-write, deliberately not an upsert.
+ *
+ * The AM/PM uniqueness index is PARTIAL (`where session in ('AM','PM')`), so that
+ * interval schedules can record many readings a day. Postgres will not use a
+ * partial index for `ON CONFLICT (dog_id, recorded_date, session)` unless the
+ * statement repeats the index predicate, and supabase-js has no way to express
+ * that — the upsert failed outright with "no unique or exclusion constraint
+ * matching the ON CONFLICT specification", which is why saving an AM/PM round
+ * stopped working. Reading the row first and then updating it by id needs no
+ * conflict target at all, and works for both kinds of schedule.
+ */
 export type WeightLogWriter = {
   findExisting(
     dogId: string,
     recordedDate: string,
     session: WeighingSessionLabel,
-  ): Promise<{ weight_kg: number } | null>;
-  upsert(row: WeightInsert): Promise<{ error: { message?: string; code?: string } | null }>;
+  ): Promise<{ id: string; weight_kg: number } | null>;
+  update(
+    id: string,
+    row: WeightInsert,
+  ): Promise<{ error: { message?: string; code?: string } | null }>;
+  insert(row: WeightInsert): Promise<{ error: { message?: string; code?: string } | null }>;
 };
 
 /**
@@ -366,11 +382,12 @@ export async function saveWeightRound(
       continue;
     }
     try {
-      const existing = await writer.findExisting(
-        entry.dogId,
-        input.recordedDate,
-        input.session,
-      );
+      // Only AM and PM are slots that get corrected in place. An interval
+      // reading is a moment of its own and is always a new row.
+      const slotted = input.session === 'AM' || input.session === 'PM';
+      const existing = slotted
+        ? await writer.findExisting(entry.dogId, input.recordedDate, input.session)
+        : null;
       const row = weightLogInsert({
         dogId: entry.dogId,
         weightKg: entry.weightKg,
@@ -378,7 +395,9 @@ export async function saveWeightRound(
         recordedDate: input.recordedDate,
         session: input.session,
       });
-      const { error } = await writer.upsert(row);
+      const { error } = existing
+        ? await writer.update(existing.id, row)
+        : await writer.insert(row);
       if (error) {
         failures.push({
           dogId: entry.dogId,
@@ -431,6 +450,17 @@ export const BIRTH_ROUND_KEY = '0000-00-00#birth';
  * many times a day, so there the hour is the slot — that is the only case where
  * a clock time belongs in a column at all.
  */
+/**
+ * The key carries minutes-from-midnight so columns sort chronologically.
+ *
+ * Sorting the label alone sorted it as text, and in ASCII a digit comes before
+ * a letter: an 18:00 interval reading ("18h") landed before the morning round
+ * ("AM"), which put the evening weight to the left of the morning one. AM reads
+ * as 08:00 and PM as 18:00 because that is when the rounds are done and it is
+ * what `weighingDue` already assumes.
+ */
+const SLOT_MINUTES: Record<string, number> = { AM: 8 * 60, PM: 18 * 60, daily: 12 * 60 };
+
 export function roundKey(log: {
   recorded_at?: string | null;
   recorded_date: string;
@@ -438,20 +468,22 @@ export function roundKey(log: {
 }): string {
   const day = log.recorded_date.slice(0, 10);
   const session = log.session ?? 'daily';
-  if (session === 'AM' || session === 'PM') return `${day}#${session}`;
+  const at = (min: number, slot: string) => `${day}#${String(min).padStart(4, '0')}#${slot}`;
+  if (session === 'AM' || session === 'PM') return at(SLOT_MINUTES[session], session);
   if (log.recorded_at) {
-    const at = new Date(log.recorded_at);
-    if (!Number.isNaN(at.getTime())) {
-      return `${day}#${String(at.getHours()).padStart(2, '0')}h`;
+    const when = new Date(log.recorded_at);
+    if (!Number.isNaN(when.getTime())) {
+      const hour = when.getHours();
+      return at(hour * 60 + when.getMinutes(), `${String(hour).padStart(2, '0')}h`);
     }
   }
-  return `${day}#daily`;
+  return at(SLOT_MINUTES.daily, 'daily');
 }
 
 /** "28 Sep", "28 Sep AM", "28 Sep 14:00" — the day first, always. */
 export function roundLabel(key: string): string {
   if (key === BIRTH_ROUND_KEY) return 'Birth';
-  const [day, slot] = key.split('#');
+  const [day, , slot] = key.split('#');
   if (!day || !slot) return key;
   const date = formatWeighDate(day);
   if (slot === 'AM' || slot === 'PM') return `${date} ${slot}`;

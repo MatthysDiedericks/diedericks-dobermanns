@@ -10,6 +10,7 @@ import {
   allocatePuppyToLitterQuote,
   type LitterQuoteHolder,
 } from '@/lib/finance/litterQuoteHolders';
+import { isAllocatablePuppy, puppyChoiceLabel } from '@/lib/waitlist/allocationDecision';
 
 function preferenceBits(h: LitterQuoteHolder): string {
   const bits = [h.dogInterest, h.preferredSex, h.preferredColour, h.tailPreference]
@@ -24,12 +25,21 @@ export function LitterQuoteHolders({
   onAllocated,
 }: {
   holders: LitterQuoteHolder[];
-  puppies: { id: string; name: string; status: string | null; collar_colour?: string | null }[];
+  puppies: {
+    id: string;
+    name: string;
+    status: string | null;
+    sex?: string | null;
+    colour?: string | null;
+    collar_colour?: string | null;
+    outcome?: string | null;
+    deceased_at?: string | null;
+  }[];
   onAllocated?: () => void;
 }) {
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const available = puppies.filter((p) => p.status === 'available');
+  const available = puppies.filter((p) => p.status === 'available' && isAllocatablePuppy(p));
 
   if (!holders.length) return null;
 
@@ -62,8 +72,7 @@ export function LitterQuoteHolders({
                   }`}
                 >
                   <Typography variant="caption" className={active ? 'text-gold' : 'text-ink'}>
-                    {p.name}
-                    {p.collar_colour ? ` (${p.collar_colour})` : ''}
+                    {puppyChoiceLabel(p)}
                   </Typography>
                 </Pressable>
               );

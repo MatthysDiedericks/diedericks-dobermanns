@@ -29,6 +29,7 @@ export async function recordWaitlistDeposit(
   amount: number,
   method?: string | null,
   reference?: string | null,
+  paymentAccountId?: string | null,
 ): Promise<{ error: string | null; invoiceId?: string }> {
   const today = todayISO();
   const label = matchLabel(entry);
@@ -46,7 +47,9 @@ export async function recordWaitlistDeposit(
       notes: `Deposit for waiting list entry (${label})`,
       items: [{ description: `Deposit — ${label}`, item_type: 'deposit', quantity: 1, unit_price: round2(amount) }],
     });
-    await recordInvoicePayment(invoiceId, round2(amount), today, method ?? undefined, reference ?? undefined);
+    await recordInvoicePayment(invoiceId, round2(amount), today, method ?? undefined, reference ?? undefined, {
+      paymentAccountId,
+    });
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Could not record deposit' };
   }

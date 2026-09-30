@@ -160,23 +160,40 @@ export function useLitterWeights(litterId: string, whelpDate?: string | null) {
           // interval schedule is a moment in time, and there are many a day — so
           // there is no prior row to find, and upserting on (dog, date, session)
           // would silently overwrite the reading taken an hour ago.
-          findExisting: async (dogId, recordedDate, session) => {
+          findExisting: async (
+            dogId,
+            recordedDate,
+            session,
+          ): Promise<{ id: string; weight_kg: number } | null> => {
             if (session !== 'AM' && session !== 'PM') return null;
             const { data, error: readError } = await client
               .from('weight_logs')
-              .select('weight_kg')
+              .select('id, weight_kg')
               .eq('dog_id', dogId)
               .eq('recorded_date', recordedDate)
               .eq('session', session)
               .maybeSingle();
             if (readError) throw new Error(readError.message);
-            return data ? { weight_kg: Number(data.weight_kg) } : null;
+            // The app client types every table row as `any`, and that select
+            // result is inferred without `id`. Name it so the writer can update
+            // the AM/PM row by primary key.
+            const found = data as { id?: unknown; weight_kg?: unknown } | null;
+            if (!found || typeof found.id !== 'string') return null;
+            return { id: found.id, weight_kg: Number(found.weight_kg) };
           },
-          upsert: async (row) => {
-            const slotted = row.session === 'AM' || row.session === 'PM';
-            const { error: writeError } = await client.from('weight_logs').upsert(row, {
-              onConflict: slotted ? 'dog_id,recorded_date,session' : 'dog_id,recorded_at',
-            });
+          update: async (id, row) => {
+            const { error: writeError } = await client
+              .from('weight_logs')
+              .update({ weight_kg: row.weight_kg, recorded_at: row.recorded_at })
+              .eq('id', id);
+            return {
+              error: writeError
+                ? { message: writeError.message, code: writeError.code }
+                : null,
+            };
+          },
+          insert: async (row) => {
+            const { error: writeError } = await client.from('weight_logs').insert(row);
             return {
               error: writeError
                 ? { message: writeError.message, code: writeError.code }

@@ -1,7 +1,7 @@
 /**
  * Audit the four cost classes against stored allocations.
  *
- * Total expenses = company + dog + litter + shared.
+ * Total expenses = company + dog + litter + shared + selected.
  * Company lines have no animal split — that is correct.
  * Every other line must have allocations that sum to the line, to the cent.
  * Allocations to dogs that had already left must read zero.
@@ -154,7 +154,8 @@ export function reconcileExpenseAllocations(input: {
     toCents(byKind.company) +
       toCents(byKind.dog) +
       toCents(byKind.litter) +
-      toCents(byKind.shared),
+      toCents(byKind.shared) +
+      toCents(byKind.selected),
   );
   const headerTotal =
     input.headerTotal == null ? null : fromCents(toCents(input.headerTotal));

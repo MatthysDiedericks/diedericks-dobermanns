@@ -36,6 +36,7 @@ export interface WaitlistUpdate {
   preferred_colour?: string | null;
   ear_preference?: string | null;
   tail_preference?: string | null;
+  registration_type?: string | null;
   budget_range?: string | null;
   preferred_timeline?: string | null;
   registration_preference?: string | null;

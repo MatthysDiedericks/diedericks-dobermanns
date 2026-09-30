@@ -14,11 +14,12 @@ import {
   type AllocationReconciliation,
 } from '@/lib/finance/reconcileAllocations';
 
-const ROWS: { key: 'company' | 'dog' | 'litter' | 'shared'; label: string }[] = [
+const ROWS: { key: 'company' | 'dog' | 'litter' | 'shared' | 'selected'; label: string }[] = [
   { key: 'company', label: 'Company' },
   { key: 'dog', label: 'Dog' },
   { key: 'litter', label: 'Litter' },
   { key: 'shared', label: 'Shared' },
+  { key: 'selected', label: 'Selected dogs' },
 ];
 
 export function ExpenseAllocationReconciliation({
@@ -39,7 +40,7 @@ export function ExpenseAllocationReconciliation({
         Expense reconciliation
       </Typography>
       <Typography variant="caption" className="mb-3">
-        Total expenses = company + dog + litter + shared.
+        Total expenses = company + dog + litter + shared + selected dogs.
       </Typography>
       {ROWS.map((row) => (
         <View key={row.key} className="mb-1 flex-row justify-between">
@@ -48,7 +49,7 @@ export function ExpenseAllocationReconciliation({
         </View>
       ))}
       <View className="mt-2 flex-row justify-between border-t border-gold/20 pt-2">
-        <Typography variant="label">Four kinds</Typography>
+        <Typography variant="label">All kinds</Typography>
         <Typography variant="label">{formatAmount(report.total)}</Typography>
       </View>
       {report.headerTotal != null ? (

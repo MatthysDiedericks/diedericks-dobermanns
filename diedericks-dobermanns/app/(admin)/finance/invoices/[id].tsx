@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { InvoiceLinkSection } from '@/components/finance/InvoiceLinkSection';
 import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { RecurringInvoiceSourceLine } from '@/components/finance/RecurringInvoiceSourceLine';
 import { PaymentBankingCard } from '@/components/finance/PaymentBankingCard';
@@ -166,6 +167,14 @@ export default function FinanceInvoiceDetailScreen() {
           <Typography variant="label" className="mt-6 mb-1">Bill to</Typography>
           <Typography variant="subtitle">{invoice.clientName}</Typography>
           <Typography variant="caption">{invoice.clientEmail}</Typography>
+          <InvoiceLinkSection
+            invoiceId={invoice.id}
+            dogId={invoice.dog_id}
+            dogName={invoice.dogName ?? null}
+            contactId={invoice.contact_id ?? null}
+            invoiceName={invoice.historical_client_name || invoice.clientName}
+            onChanged={() => void refresh()}
+          />
 
           <View className="mt-6 border-t border-gold/20 pt-4">
             {invoice.items.map((item) => (

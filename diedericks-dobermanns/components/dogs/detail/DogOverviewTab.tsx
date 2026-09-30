@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { DetailRow } from '@/components/dogs/detail/DetailRow';
+import { DogSaleInvoices } from '@/components/dogs/detail/DogSaleInvoices';
 import { DogMeasurementsPanel } from '@/components/dogs/detail/DogMeasurementsPanel';
 import { DogHealthWeightSection } from '@/components/dogs/detail/DogHealthWeightSection';
 import { HeatStatusCard } from '@/components/dogs/detail/HeatStatusCard';
@@ -309,6 +310,7 @@ export function DogOverviewTab({
         <DogMeasurementsPanel dog={dog} canEdit={canEdit} onSaved={onRefresh} />
       ) : null}
 
+      {canEdit ? <DogSaleInvoices dogId={dog.id} /> : null}
       {canEdit ? (
         <View nativeID="ownership-card">
           <DogOwnerSection dog={dog} contact={dog.owner_contact} onUpdated={onRefresh} />

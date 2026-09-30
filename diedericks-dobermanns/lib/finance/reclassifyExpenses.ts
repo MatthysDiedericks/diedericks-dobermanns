@@ -22,6 +22,9 @@ export function reclassifyPayload(input: {
   if (input.allocationType === 'company') {
     return { allocation_type: 'company', dog_id: null, litter_id: null };
   }
+  if (input.allocationType === 'selected') {
+    return { allocation_type: 'selected', dog_id: null, litter_id: null };
+  }
   return { allocation_type: 'shared', dog_id: null, litter_id: null };
 }
 
@@ -35,6 +38,9 @@ export function reclassifyError(input: {
   if (input.allocationType === 'dog' && !input.dogId) return 'Pick the dog these costs belong to.';
   if (input.allocationType === 'litter' && !input.litterId) {
     return 'Pick the litter these costs belong to.';
+  }
+  if (input.allocationType === 'selected') {
+    return 'Pick the dogs on the expense itself. A bulk reclassify cannot choose the set.';
   }
   return null;
 }

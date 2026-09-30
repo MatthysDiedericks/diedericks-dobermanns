@@ -1,12 +1,12 @@
 /** Four cost classes. `company` never touches an animal. `shared` is split at capture. */
 
-export const ALLOCATION_TYPES = ["company", "shared", "dog", "litter"] as const;
+export const ALLOCATION_TYPES = ["company", "shared", "dog", "litter", "selected"] as const;
 export type AllocationType = (typeof ALLOCATION_TYPES)[number];
 
 export function normalizeAllocationType(
   value: string | null | undefined,
 ): AllocationType {
-  if (value === "dog" || value === "litter" || value === "company") return value;
+  if (value === "dog" || value === "litter" || value === "company" || value === "selected") return value;
   return "shared";
 }
 
@@ -15,6 +15,7 @@ export function allocationTypeLabel(value: string | null | undefined): string {
   if (t === "dog") return "Direct to a dog";
   if (t === "litter") return "Direct to a litter";
   if (t === "company") return "Company overhead";
+  if (t === "selected") return "Selected dogs";
   return "Shared kennel overhead";
 }
 

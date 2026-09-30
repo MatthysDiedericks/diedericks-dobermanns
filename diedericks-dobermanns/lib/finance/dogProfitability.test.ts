@@ -88,7 +88,9 @@ function main() {
   assert.equal("total" in unlinked, false);
   const labels = profitColumnLabels(unlinked);
   assert.deepEqual(labels.direct, ["Bought for", "Sold for", "Costs allocated to this dog"]);
-  assert.ok(labels.attributed.includes("Income from those puppies"));
+  assert.ok(labels.attributed.includes("Invoiced"));
+  assert.ok(labels.attributed.includes("Received"));
+  assert.ok(labels.attributed.includes("Outstanding"));
   assert.ok(!labels.direct.includes("Profit"));
   assert.ok(!labels.attributed.includes("Profit"));
   assert.notEqual(
@@ -121,7 +123,11 @@ function main() {
     "Income from 3 of 9 puppies sold — 6 not yet linked",
   );
   assert.equal(linked.coverage, "Income from 3 of 9 puppies sold — 6 not yet linked");
-  assert.equal(linked.attributed?.netLabel, "Net of linked income");
+  assert.equal(linked.attributed?.netLabel, "Net of linked income (on money received)");
+  if (linked.attributed?.received.kind === "amount") {
+    assert.equal(linked.attributed.received.amount, 6000);
+  }
+  assert.equal(linked.attributed?.net.kind, "amount");
   assert.equal(linked.litterBreakdown[0]?.linkedSales, 3);
   assert.equal(linked.litterBreakdown[0]?.sold, 9);
 
@@ -270,6 +276,51 @@ function main() {
     "Income linked to 1 of 1 litter — not split across 2 puppies sold",
   );
   assert.equal("profit" in litterOnly, false);
+
+  const deposit = buildDogProfitability(
+    base({
+      puppies: [puppy("bruce")],
+      invoices: [
+        {
+          id: "1087",
+          dogId: "bruce",
+          issueDate: "2026-06-09",
+          total: 55000,
+          paid: 10000,
+          buyer: "Gerhard Nagel",
+          status: "partially_paid",
+          number: "1087",
+          historicalIncomeId: null,
+        },
+      ],
+      allocations: [
+        {
+          id: "food",
+          dogId: null,
+          litterId: "litter-1",
+          amount: 1830.4,
+          kind: "litter",
+          date: "2026-06-01",
+          description: "Food",
+          basisNote: null,
+          supplier: null,
+        },
+      ],
+    }),
+  );
+  assert.equal(deposit.attributed?.invoiced.kind, "amount");
+  assert.equal(deposit.attributed?.received.kind, "amount");
+  if (deposit.attributed?.invoiced.kind === "amount" && deposit.attributed.received.kind === "amount") {
+    assert.equal(deposit.attributed.invoiced.amount, 55000);
+    assert.equal(deposit.attributed.received.amount, 10000);
+  }
+  if (deposit.attributed?.outstanding.kind === "amount") {
+    assert.equal(deposit.attributed.outstanding.amount, 45000);
+  }
+  if (deposit.attributed?.net.kind === "amount") {
+    assert.equal(deposit.attributed.net.amount, 8169.6);
+  }
+  assert.equal(deposit.litterBreakdown[0]?.net.kind, "amount");
 
   const litterLinkedInvoice = summarizeIncomeLinks({
     invoices: [

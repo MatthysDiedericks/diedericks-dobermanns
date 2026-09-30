@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { CardListSkeleton } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
+import { pettyCashAccount, type PaymentAccountOption } from '@/lib/finance/cashReceipts';
 import { formatAmount } from '@/lib/finance/formatters';
 import {
   fetchPendingPaymentProofs,
@@ -24,6 +25,8 @@ export default function PaymentProofsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<PaymentAccountOption[]>([]);
+  const [accountId, setAccountId] = useState('');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -63,6 +66,21 @@ export default function PaymentProofsScreen() {
 
   useEffect(() => {
     void refresh();
+    const supabase = requireSupabase();
+    void supabase
+      .from('payment_accounts')
+      .select('id, name, account_type')
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => {
+        setAccounts(
+          (data ?? []).map((row) => ({
+            id: row.id,
+            name: row.name,
+            accountType: row.account_type,
+          })),
+        );
+      });
   }, [refresh]);
 
   const verify = async (row: ProofRow) => {
@@ -83,6 +101,7 @@ export default function PaymentProofsScreen() {
         amount: n,
         paymentDate: new Date().toISOString().slice(0, 10),
         method: 'eft',
+        paymentAccountId: accountId || null,
       });
       setOpenId(null);
       await refresh();
@@ -133,6 +152,28 @@ export default function PaymentProofsScreen() {
                   keyboardType="decimal-pad"
                   className="mt-1 rounded-sm border border-gold/30 px-3 py-2 text-text"
                 />
+                <Typography variant="caption" className="mt-2">
+                  Account that received it
+                </Typography>
+                <View className="mt-1 flex-row flex-wrap gap-2">
+                  {accounts.map((account) => (
+                    <Pressable
+                      key={account.id}
+                      onPress={() => {
+                        setAccountId(account.id);
+                        if (account.accountType === 'cash') {
+                          const petty = pettyCashAccount(accounts);
+                          if (petty) setAccountId(petty.id);
+                        }
+                      }}
+                      className={`rounded-full border px-3 py-1 ${
+                        accountId === account.id ? 'border-gold bg-gold/20' : 'border-gold/30'
+                      }`}
+                    >
+                      <Typography variant="caption">{account.name}</Typography>
+                    </Pressable>
+                  ))}
+                </View>
                 <Pressable
                   disabled={busyId === row.id}
                   onPress={() => void verify(row)}

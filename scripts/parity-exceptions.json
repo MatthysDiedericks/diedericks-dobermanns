@@ -24,6 +24,7 @@
     "portal/training-updates/:dogId": "portal/training/:id",
     "portal/application-status": "portal/application",
     "portal/vaccination-records": "portal/vaccinations",
+    "admin/applications/change-tier": "admin/applications/:id/change-tier",
 
     "admin/dogs/:id/edit": "admin/dogs/:id",
     "admin/dogs/:id/pedigree": "admin/dogs/:id",
@@ -64,7 +65,8 @@
     "admin/training/guides/:id": "Existing guide editor. Same long-form decision as the guides list.",
     "admin/issues": "Internal fault log. Read at a desk when something has gone wrong, not from a pocket.",
     "admin/issues/:id": "Fault detail. Same desk-only decision as the issues list.",
-    "site/shop": "app shop pending CURSOR_PROMPT_EQUIPMENT_SHOP_IN_APP",
+    "admin/contacts/new": "The app adds a contact from a sheet on the contacts list. The website gave that same form its own page. A sheet is not a missing screen.",
+    "admin/finance/statements": "Desktop bookkeeping. A phone is the wrong place to reconcile a bank statement.",
     "admin/equipment": "app shop pending CURSOR_PROMPT_EQUIPMENT_SHOP_IN_APP",
     "admin/equipment/:id": "app shop pending CURSOR_PROMPT_EQUIPMENT_SHOP_IN_APP"
   },
@@ -80,6 +82,9 @@
     "portal/training/request": "Shape difference, not a gap. The website already takes training requests on portal/training; the app split that job onto its own screen.",
     "admin/settings/social": "A handful of links set once. The website keeps the same fields on general Settings.",
     "portal/groups": "The website already surfaces group membership on the portal dashboard. A second screen is the phone's way of showing the same row.",
-    "portal/litters/:id/waitlist": "The website already shows waitlist position on the litter page. The app gave that a dedicated screen because a phone has no room beside the litter."
+    "portal/litters/:id/waitlist": "The website already shows waitlist position on the litter page. The app gave that a dedicated screen because a phone has no room beside the litter.",
+    "admin/settings/alerts": "Shape difference, not a gap. The app gave alert lead times a dedicated screen; the website keeps the same fields on general Settings, under On-screen alerts.",
+    "admin/settings/allocation": "Shape difference, not a gap. The app gave dog-day weights a dedicated screen; the website keeps the same three numbers on general Settings.",
+    "site/shop": "The app has a public shop. The website sells the same kit at /equipment, and this check does not treat those two URLs as one screen. Whether they are the same shop is Matt's decision — recorded here so the gap stays a decision, not a silent ignore."
   }
 }

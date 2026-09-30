@@ -70,7 +70,8 @@ export function RecordPaymentEntry({
             invoiceNumber={invoice.invoiceNumber}
             outstanding={invoice.outstanding}
             quoteId={invoice.quoteId}
-            onSaved={() => {
+            onSaved={(message) => {
+              Alert.alert('Payment recorded', message);
               setOpen(false);
               onSaved?.();
             }}

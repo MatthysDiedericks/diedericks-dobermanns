@@ -35,6 +35,12 @@ import { useLitterDetail } from '@/hooks/useDogs';
 import { useGrowthBenchmark } from '@/hooks/useGrowthBenchmark';
 import { supabase } from '@/lib/supabase';
 import { buildForwardStagePatch } from '@/lib/waitlist/pipeline';
+import {
+  allocationBlockReason,
+  appendAdminNote,
+  recordedSexOverrideNote,
+  sexesConflict,
+} from '@/lib/waitlist/allocationDecision';
 import { useAuthStore } from '@/stores/authStore';
 import {
   WEIGHING_SCHEDULES,
@@ -100,6 +106,7 @@ export default function LitterDetailScreen() {
   const profileId = useAuthStore((s) => s.profile?.id ?? null);
   const [schedule, setSchedule] = useState<WeighingSchedule>('am_pm');
   const [queueRows, setQueueRows] = useState<AppLitterQueueRow[]>([]);
+  const [demandEntries, setDemandEntries] = useState<{ preferred_sex: string | null; preferred_category: string | null; preferred_colour: string | null }[]>([]);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [queueTick, setQueueTick] = useState(0);
   const weightsLead = weightsLeadTheLitter(litter?.actual_date);
@@ -147,7 +154,7 @@ export default function LitterDetailScreen() {
     void supabase
       .from('waiting_list')
       .select(
-        'id, enquirer_name, pipeline_stage, payment_status, preferred_sex, preferred_colour, ear_preference, tail_preference, assigned_dog_id, assigned_litter_id, queue_anchor_at, date_added, client:users!waiting_list_client_id_fkey(full_name)',
+        'id, enquirer_name, pipeline_stage, payment_status, status, preferred_category, preferred_sex, preferred_colour, ear_preference, tail_preference, registration_type, preference_notes, admin_notes, hold_reason, hold_until, assigned_dog_id, assigned_litter_id, queue_anchor_at, date_added, client:users!waiting_list_client_id_fkey(full_name)',
       )
       .or(`assigned_litter_id.eq.${litterId},assigned_litter_id.is.null`)
       .then(({ data, error: qErr }) => {
@@ -158,7 +165,9 @@ export default function LitterDetailScreen() {
         }
         setQueueError(null);
         setQueueRows(
-          (data ?? []).map((row) => {
+          (data ?? [])
+            .filter((row) => row.status !== 'removed')
+            .map((row) => {
             const client = row.client as { full_name?: string | null } | { full_name?: string | null }[] | null;
             const fullName = Array.isArray(client) ? client[0]?.full_name : client?.full_name;
             return {
@@ -168,8 +177,14 @@ export default function LitterDetailScreen() {
               payment_status: row.payment_status,
               preferred_sex: row.preferred_sex,
               preferred_colour: row.preferred_colour,
+              preferred_category: row.preferred_category,
               ear_preference: row.ear_preference,
               tail_preference: row.tail_preference,
+              registration_type: row.registration_type,
+              preference_notes: row.preference_notes,
+              admin_notes: row.admin_notes,
+              hold_reason: row.hold_reason,
+              hold_until: row.hold_until,
               assigned_dog_id: row.assigned_dog_id,
               assigned_litter_id: row.assigned_litter_id,
               queue_anchor_at: row.queue_anchor_at,
@@ -177,6 +192,13 @@ export default function LitterDetailScreen() {
             };
           }),
         );
+      });
+    void supabase
+      .from('waiting_list')
+      .select('preferred_sex, preferred_category, preferred_colour')
+      .eq('status', 'active')
+      .then(({ data }) => {
+        setDemandEntries(data ?? []);
       });
   }, [litterId, queueTick]);
 
@@ -319,18 +341,56 @@ export default function LitterDetailScreen() {
         <LitterQueuePanels
           allocated={queueRows.filter((row) => row.assigned_litter_id === litterId)}
           general={queueRows.filter((row) => !row.assigned_litter_id)}
-          puppies={puppies.map((p) => ({ id: p.id, name: p.name }))}
+          puppies={puppies.map((p) => ({
+            id: p.id,
+            name: p.name,
+            sex: p.sex,
+            colour: p.colour,
+            collar_colour: p.collar_colour,
+            status: p.status,
+            outcome: p.outcome,
+            deceased_at: p.deceased_at,
+            programme_tier: p.programme_tier,
+            litter_default_programme_tier: p.programme_tier
+              ? null
+              : (detail as { default_programme_tier?: string | null }).default_programme_tier ?? null,
+            tail_type: (p as { tail_type?: string | null }).tail_type ?? null,
+          }))}
           now={new Date()}
-          onAllocate={async (waitlistId, dogId) => {
+          demandEntries={demandEntries}
+          onChanged={() => setQueueTick((n) => n + 1)}
+          onAllocate={async (waitlistId, dogId, sexOverride) => {
             if (!supabase) return 'Not signed in.';
             const entry = queueRows.find((row) => row.id === waitlistId);
+            const puppy = puppies.find((p) => p.id === dogId);
+            if (!puppy) return 'Puppy not found.';
+            const blocked = allocationBlockReason({
+              puppy,
+              preferredSex: entry?.preferred_sex,
+              sexOverride,
+            });
+            if (blocked) return blocked;
+            const sexNote =
+              sexOverride && sexesConflict(entry?.preferred_sex, puppy.sex)
+                ? appendAdminNote(
+                    entry?.admin_notes,
+                    recordedSexOverrideNote({
+                      puppyName: puppy.name,
+                      puppySex: puppy.sex,
+                      preferredSex: entry?.preferred_sex,
+                      reason: sexOverride,
+                    }),
+                  )
+                : null;
             const forward = buildForwardStagePatch(entry?.pipeline_stage, 'matched', profileId, {
               assigned_dog_id: dogId,
               assigned_litter_id: litterId,
+              ...(sexNote ? { admin_notes: sexNote } : {}),
             });
             const patch = forward ?? {
               assigned_dog_id: dogId,
               assigned_litter_id: litterId,
+              ...(sexNote ? { admin_notes: sexNote } : {}),
             };
             const { error: assignError } = await supabase
               .from('waiting_list')
@@ -349,7 +409,11 @@ export default function LitterDetailScreen() {
                 id: p.id,
                 name: p.name,
                 status: p.status,
+                sex: p.sex,
+                colour: p.colour,
                 collar_colour: (p as { collar_colour?: string | null }).collar_colour ?? null,
+                outcome: p.outcome,
+                deceased_at: p.deceased_at,
               }))}
               onAllocated={() => {
                 void fetchLitterQuoteHolders(litterId).then(setHolders).catch(() => setHolders([]));

@@ -11,11 +11,7 @@ import { Typography } from '@/components/ui/Typography';
 import { seedLitterTodos } from '@/hooks/useLitterTodos';
 import { useLitterDetail } from '@/hooks/useDogs';
 import { DOG_COLOUR_OPTIONS, type DogColourCode } from '@/lib/colours/dogColours';
-import {
-  birthWeightLogInsert,
-  newbornPuppyInsert,
-  shouldWriteBirthWeight,
-} from '@/lib/litters/newbornPuppy';
+import { newbornPuppyInsert } from '@/lib/litters/newbornPuppy';
 import { collarLabel, type CollarColourId } from '@/lib/litters/collarColours';
 import { PUPPY_OUTCOMES, type PuppyOutcome } from '@/lib/litters/outcomes';
 import {
@@ -98,12 +94,9 @@ export default function RegisterPupsScreen() {
         .single();
       if (dogErr) throw new Error(dogErr.message);
 
-      if (shouldWriteBirthWeight(grams)) {
-        const { error: weightErr } = await client
-          .from('weight_logs')
-          .insert(birthWeightLogInsert(dog.id, grams, birthDate));
-        if (weightErr) throw new Error(weightErr.message);
-      }
+      // No birth weight log — it lives on dogs.birth_weight_grams alone. A log
+      // row with session 'AM' on the birth date was claimed by the puppy's own
+      // first morning weigh-in, which overwrote the birth weight.
 
       setSavedCount((c) => ({
         male: c.male + (sex === 'male' ? 1 : 0),

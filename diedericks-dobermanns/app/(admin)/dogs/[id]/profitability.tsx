@@ -8,6 +8,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import {
   buildDogProfitability,
+  expenseShareSentence,
   formatMoneyFigure,
   type ProfitInput,
 } from '@/lib/finance/dogProfitability';
@@ -139,13 +140,21 @@ export default function DogProfitabilityScreen() {
                   {row.born} born · {row.alive} alive · {row.sold} sold · {row.linkedSales} linked
                 </Typography>
                 <Typography variant="caption" className="mt-2">
-                  Income {formatMoneyFigure(row.income, formatAmount)}
+                  Invoiced {formatMoneyFigure(row.invoiced, formatAmount)}
+                </Typography>
+                <Typography variant="caption">
+                  Received {formatMoneyFigure(row.received, formatAmount)}
+                </Typography>
+                <Typography variant="caption">
+                  Outstanding {formatMoneyFigure(row.outstanding, formatAmount)}
                 </Typography>
                 <Typography variant="caption">Direct costs {formatAmount(row.directCosts)}</Typography>
                 <Typography variant="caption">
                   Share of shared costs {formatAmount(row.sharedCosts)}
                 </Typography>
-                <Typography variant="caption">Net {formatMoneyFigure(row.net, formatAmount)}</Typography>
+                <Typography variant="caption">
+                  Net (on money received) {formatMoneyFigure(row.net, formatAmount)}
+                </Typography>
                 <Typography variant="caption">
                   Cost per puppy raised{' '}
                   {row.costPerPuppyRaised == null ? '—' : formatAmount(row.costPerPuppyRaised)}
@@ -163,7 +172,7 @@ export default function DogProfitabilityScreen() {
               model.incomeLines.map((line) => (
                 <View key={`${line.source}-${line.id}`} className="mb-2">
                   <Typography variant="body">
-                    {formatDate(line.date)} · {line.dogName} · {formatAmount(line.amount)}
+                    {formatDate(line.date)} · {line.dogName} · {formatAmount(line.paid)} received
                   </Typography>
                   <Typography variant="caption" className="text-muted">
                     {line.buyer}
@@ -174,17 +183,31 @@ export default function DogProfitabilityScreen() {
             <Typography variant="label" className="mb-2 mt-4">
               Expenses
             </Typography>
-            {model.expenseLines.map((line) => (
+            {model.expenseLines.map((line) => {
+              const share = expenseShareSentence(
+                {
+                  amount: line.amount,
+                  description: line.description,
+                  kind: line.kind,
+                  basis: line.basis,
+                  sourceAmount: line.sourceAmount,
+                },
+                formatAmount,
+              );
+              return (
               <View key={line.id} className="mb-2">
                 <Typography variant="body">
-                  {formatDate(line.date)} · {line.description} · {formatAmount(line.amount)}
+                  {share ?? `${formatDate(line.date)} · ${line.description} · ${formatAmount(line.amount)}`}
                 </Typography>
+                {share ? null : (
                 <Typography variant="caption" className="text-muted">
                   {line.kind}
                   {line.basis ? ` · ${line.basis}` : ''}
                 </Typography>
+                )}
               </View>
-            ))}
+              );
+            })}
           </>
         ) : null}
       </ScrollView>

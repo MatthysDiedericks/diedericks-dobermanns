@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { allocateDogToClient } from '@/lib/dogs/allocation';
+import { isAllocatablePuppy } from '@/lib/waitlist/allocationDecision';
 import { colourLabel } from '@/lib/colours/dogColours';
 import { collarLabel } from '@/lib/litters/collarColours';
 import { supabase } from '@/lib/supabase';
@@ -76,7 +77,9 @@ export default function LitterAllocateScreen() {
         .in('pipeline_stage', [...MATCHABLE_STAGES]),
     ]);
     setTitle(litter?.name ?? litter?.litter_letter ?? 'Litter');
-    const rows: Puppy[] = (dogs ?? []).map((dog) => ({
+    const rows: Puppy[] = (dogs ?? [])
+      .filter((dog) => isAllocatablePuppy(dog))
+      .map((dog) => ({
       id: dog.id,
       name: dog.name,
       sex: dog.sex,

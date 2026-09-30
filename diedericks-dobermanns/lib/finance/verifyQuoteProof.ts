@@ -10,6 +10,7 @@ export async function verifyQuotePaymentProof(input: {
   paymentDate: string;
   method: string;
   reference?: string;
+  paymentAccountId?: string | null;
 }): Promise<{ invoiceId: string; paymentId: string }> {
   const supabase = requireSupabase();
   const { data: quote, error } = await supabase
@@ -35,6 +36,7 @@ export async function verifyQuotePaymentProof(input: {
     paymentDate: input.paymentDate,
     method: input.method,
     reference: input.reference,
+    paymentAccountId: input.paymentAccountId,
   });
   return { invoiceId, paymentId };
 }

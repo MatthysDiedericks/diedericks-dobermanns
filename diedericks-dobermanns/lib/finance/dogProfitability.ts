@@ -47,7 +47,13 @@ export type ProfitInvoice = {
   id: string;
   dogId: string | null;
   issueDate: string | null;
+  /** Invoice total — what was billed. */
   total: number;
+  /**
+   * What has actually been collected. Omit only in fixtures that are fully
+   * collected. Live rows must pass amount_paid, including 0.
+   */
+  paid?: number;
   buyer: string;
   status: string;
   number: string | null;
@@ -61,6 +67,8 @@ export type ProfitHistorical = {
   dogId: string | null;
   date: string | null;
   total: number;
+  /** Collected. Historical rows are already received, so loaders pass the same total. */
+  paid?: number;
   buyer: string;
   description: string | null;
   number: string | null;
@@ -77,6 +85,8 @@ export type ProfitAllocation = {
   description: string;
   basisNote: string | null;
   supplier: string | null;
+  /** The whole expense, when this row is one dog's share of it. */
+  sourceAmount?: number | null;
 };
 
 export type ProfitInput = {
@@ -95,7 +105,10 @@ export type IncomeLine = {
   source: "invoice" | "historical";
   date: string | null;
   buyer: string;
+  /** Invoiced amount. */
   amount: number;
+  /** Collected amount. */
+  paid: number;
   dogId: string;
   dogName: string;
   litterId: string | null;
@@ -110,6 +123,7 @@ export type ExpenseReportLine = {
   amount: number;
   basis: string | null;
   kind: string;
+  sourceAmount?: number | null;
   litterId: string | null;
   litterName: string | null;
   dogId: string | null;
@@ -124,9 +138,14 @@ export type LitterBreakdown = {
   alive: number;
   sold: number;
   linkedSales: number;
+  /** Invoiced. Kept so existing readers still see what was billed. */
   income: MoneyFigure;
+  invoiced: MoneyFigure;
+  received: MoneyFigure;
+  outstanding: MoneyFigure;
   directCosts: number;
   sharedCosts: number;
+  /** Received minus cost. */
   net: MoneyFigure;
   costPerPuppyRaised: number | null;
 };
@@ -135,6 +154,8 @@ export type DogProfitability = {
   direct: {
     bought: MoneyFigure;
     sold: MoneyFigure;
+    soldReceived: MoneyFigure;
+    soldOutstanding: MoneyFigure;
     costs: number;
   };
   attributed: {
@@ -144,10 +165,14 @@ export type DogProfitability = {
     alive: number;
     sold: number;
     retained: number;
+    /** Invoiced. */
     income: MoneyFigure;
+    invoiced: MoneyFigure;
+    received: MoneyFigure;
+    outstanding: MoneyFigure;
     litterCosts: number;
     net: MoneyFigure;
-    netLabel: "Net" | "Net of linked income";
+    netLabel: "Net (on money received)" | "Net of linked income (on money received)";
     coverage: string;
   } | null;
   coverage: string;
@@ -167,6 +192,33 @@ function inYear(date: string | null, year: number | "all"): boolean {
   if (year === "all") return true;
   if (!date) return false;
   return date.slice(0, 4) === String(year);
+}
+
+/**
+ * "R1 400,00 · share of R9 800,00 vet visit, split across 7 dogs"
+ * A bare share looks like the whole bill and gets queried.
+ */
+export function expenseShareSentence(
+  line: {
+    amount: number;
+    description: string;
+    kind: string;
+    basis: string | null;
+    sourceAmount?: number | null;
+  },
+  formatAmount: (amount: number) => string,
+): string | null {
+  if (line.kind !== "selected" || line.sourceAmount == null) return null;
+  return `${formatAmount(line.amount)} · share of ${formatAmount(line.sourceAmount)} ${line.description}, ${shareAcrossPhrase(line.basis)}`;
+}
+
+function shareAcrossPhrase(basis: string | null): string {
+  const equal = basis ? /^Split equally across (\d+) selected dogs$/i.exec(basis) : null;
+  if (equal) return `split across ${equal[1]} dogs`;
+  const uneven = basis ? /^Uneven amounts across (\d+) selected dogs$/i.exec(basis) : null;
+  if (uneven) return `uneven split across ${uneven[1]} dogs`;
+  if (!basis) return "split across selected dogs";
+  return basis.charAt(0).toLowerCase() + basis.slice(1);
 }
 
 export function formatMoneyFigure(figure: MoneyFigure, formatAmount: (amount: number) => string): string {
@@ -213,12 +265,18 @@ function liveInvoices(invoices: ProfitInvoice[]): ProfitInvoice[] {
 
 type RawIncomeLine = Omit<IncomeLine, "dogName" | "litterName">;
 
+/** Fixture rows that omit `paid` are treated as fully collected. Live loaders always pass `paid`. */
+export function collectedAmount(total: number, paid: number | undefined): number {
+  if (paid == null || !Number.isFinite(Number(paid))) return round2(Number(total) || 0);
+  return round2(Number(paid) || 0);
+}
+
 function countedIncome(
   dogIds: Set<string>,
   invoices: ProfitInvoice[],
   historical: ProfitHistorical[],
   year: number | "all",
-): { amount: number; linkedDogIds: Set<string>; lines: RawIncomeLine[] } {
+): { amount: number; received: number; linkedDogIds: Set<string>; lines: RawIncomeLine[] } {
   const live = liveInvoices(invoices).filter(
     (row) => row.dogId && dogIds.has(row.dogId) && inYear(row.issueDate, year),
   );
@@ -236,16 +294,21 @@ function countedIncome(
   );
   const linkedDogIds = new Set<string>();
   let amount = 0;
+  let received = 0;
   const lines: RawIncomeLine[] = [];
   for (const row of live) {
     linkedDogIds.add(row.dogId!);
-    amount += Number(row.total) || 0;
+    const invoiced = round2(Number(row.total) || 0);
+    const paid = collectedAmount(invoiced, row.paid);
+    amount += invoiced;
+    received += paid;
     lines.push({
       id: row.id,
       source: "invoice",
       date: row.issueDate,
       buyer: row.buyer || "—",
-      amount: round2(Number(row.total) || 0),
+      amount: invoiced,
+      paid,
       dogId: row.dogId!,
       litterId: row.litterId ?? null,
       number: row.number,
@@ -253,19 +316,23 @@ function countedIncome(
   }
   for (const row of history) {
     linkedDogIds.add(row.dogId!);
-    amount += Number(row.total) || 0;
+    const invoiced = round2(Number(row.total) || 0);
+    const paid = collectedAmount(invoiced, row.paid);
+    amount += invoiced;
+    received += paid;
     lines.push({
       id: row.id,
       source: "historical",
       date: row.date,
       buyer: row.buyer || "—",
-      amount: round2(Number(row.total) || 0),
+      amount: invoiced,
+      paid,
       dogId: row.dogId!,
       litterId: row.litterId ?? null,
       number: row.number,
     });
   }
-  return { amount: round2(amount), linkedDogIds, lines };
+  return { amount: round2(amount), received: round2(received), linkedDogIds, lines };
 }
 
 /**
@@ -278,7 +345,7 @@ function countedLitterIncome(
   invoices: ProfitInvoice[],
   historical: ProfitHistorical[],
   year: number | "all",
-): { amount: number; litterIds: Set<string>; lines: RawIncomeLine[] } {
+): { amount: number; received: number; litterIds: Set<string>; lines: RawIncomeLine[] } {
   const promoted = new Set(
     liveInvoices(invoices)
       .map((row) => row.historicalIncomeId)
@@ -297,16 +364,21 @@ function countedLitterIncome(
   });
   const hit = new Set<string>();
   let amount = 0;
+  let received = 0;
   const lines: RawIncomeLine[] = [];
   for (const row of live) {
     hit.add(row.litterId!);
-    amount += Number(row.total) || 0;
+    const invoiced = round2(Number(row.total) || 0);
+    const paid = collectedAmount(invoiced, row.paid);
+    amount += invoiced;
+    received += paid;
     lines.push({
       id: row.id,
       source: "invoice",
       date: row.issueDate,
       buyer: row.buyer || "—",
-      amount: round2(Number(row.total) || 0),
+      amount: invoiced,
+      paid,
       dogId: row.dogId ?? "",
       litterId: row.litterId!,
       number: row.number,
@@ -314,19 +386,23 @@ function countedLitterIncome(
   }
   for (const row of history) {
     hit.add(row.litterId!);
-    amount += Number(row.total) || 0;
+    const invoiced = round2(Number(row.total) || 0);
+    const paid = collectedAmount(invoiced, row.paid);
+    amount += invoiced;
+    received += paid;
     lines.push({
       id: row.id,
       source: "historical",
       date: row.date,
       buyer: row.buyer || "—",
-      amount: round2(Number(row.total) || 0),
+      amount: invoiced,
+      paid,
       dogId: row.dogId ?? "",
       litterId: row.litterId!,
       number: row.number,
     });
   }
-  return { amount: round2(amount), litterIds: hit, lines };
+  return { amount: round2(amount), received: round2(received), litterIds: hit, lines };
 }
 
 /** All-time link, ignoring the year filter, so a quiet year is not "missing". */
@@ -357,6 +433,42 @@ function incomeFigure(
 function netFigure(income: MoneyFigure, costs: number): MoneyFigure {
   if (income.kind !== "amount") return income.kind === "not_linked" ? { kind: "not_linked" } : { kind: "not_applicable" };
   return { kind: "amount", amount: round2(income.amount - costs) };
+}
+
+export type LinkedMoney = {
+  invoiced: MoneyFigure;
+  received: MoneyFigure;
+  outstanding: MoneyFigure;
+  /** Received minus costs. Unlinked income stays unlinked, never a profit of −cost. */
+  net: MoneyFigure;
+};
+
+/**
+ * Invoiced, received, and outstanding for one sale group.
+ * Missing income stays missing on all three. Net is on received.
+ */
+export function linkedMoney(input: {
+  sold: number;
+  linkedPuppies: number;
+  litterLinked: boolean;
+  invoiced: number;
+  received: number;
+  costs: number;
+}): LinkedMoney {
+  const gate = incomeFigure(input.sold, input.linkedPuppies, input.litterLinked, input.invoiced);
+  if (gate.kind !== "amount") {
+    const missing = gate.kind === "not_linked" ? { kind: "not_linked" as const } : { kind: "not_applicable" as const };
+    return { invoiced: missing, received: missing, outstanding: missing, net: netFigure(missing, input.costs) };
+  }
+  const invoiced = round2(input.invoiced);
+  const received = round2(input.received);
+  const receivedFigure: MoneyFigure = { kind: "amount", amount: received };
+  return {
+    invoiced: { kind: "amount", amount: invoiced },
+    received: receivedFigure,
+    outstanding: { kind: "amount", amount: round2(invoiced - received) },
+    net: netFigure(receivedFigure, input.costs),
+  };
 }
 
 function roleFor(dogId: string, litters: ProfitLitter[], puppies: ProfitPuppy[]): "dam" | "sire" | "both" | null {
@@ -420,11 +532,15 @@ export function buildDogProfitability(
   const directCosts = round2(directAllocations.reduce((sum, row) => sum + (Number(row.amount) || 0), 0));
   const litterCosts = round2(litterAllocations.reduce((sum, row) => sum + (Number(row.amount) || 0), 0));
 
-  const soldFigure: MoneyFigure = ownLinked
-    ? { kind: "amount", amount: ownIncome.amount }
-    : input.dog.status === "sold"
-      ? { kind: "not_linked" }
-      : { kind: "not_applicable" };
+  const soldMoney = linkedMoney({
+    sold: input.dog.status === "sold" ? 1 : 0,
+    linkedPuppies: ownLinked ? 1 : 0,
+    litterLinked: false,
+    invoiced: ownIncome.amount,
+    received: ownIncome.received,
+    costs: 0,
+  });
+  const soldFigure = soldMoney.invoiced;
 
   const names = new Map<string, string>([[dogId, input.dog.name]]);
   for (const puppy of puppies) names.set(puppy.id, puppy.name);
@@ -457,6 +573,7 @@ export function buildDogProfitability(
       amount: round2(Number(row.amount) || 0),
       basis: row.basisNote,
       kind: row.kind,
+      sourceAmount: row.sourceAmount ?? null,
       litterId: null,
       litterName: null,
       dogId: row.dogId,
@@ -469,6 +586,7 @@ export function buildDogProfitability(
       amount: round2(Number(row.amount) || 0),
       basis: row.basisNote,
       kind: row.kind,
+      sourceAmount: row.sourceAmount ?? null,
       litterId: row.litterId,
       litterName: litterName(row.litterId),
       dogId: row.dogId,
@@ -512,9 +630,10 @@ export function buildDogProfitability(
     const money = countedIncome(ids, input.invoices, input.historical, filter.year);
     const litterMoney =
       key === "none"
-        ? { amount: 0, litterIds: new Set<string>() }
+        ? { amount: 0, received: 0, litterIds: new Set<string>() }
         : countedLitterIncome(new Set([key]), ids, input.invoices, input.historical, filter.year);
-    const rowAmount = round2(money.amount + litterMoney.amount);
+    const rowInvoiced = round2(money.amount + litterMoney.amount);
+    const rowReceived = round2(money.received + litterMoney.received);
     const allocs = litter
       ? litterAllocations.filter((row) => row.litterId === litter.id)
       : [];
@@ -525,7 +644,15 @@ export function buildDogProfitability(
       allocs.filter((row) => row.kind === "shared").reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
     );
     const alive = pups.filter(isAlive).length;
-    const income = incomeFigure(sold.length, linked, litterMoney.litterIds.size > 0, rowAmount);
+    const moneyRow = linkedMoney({
+      sold: sold.length,
+      linkedPuppies: linked,
+      litterLinked: litterMoney.litterIds.size > 0,
+      invoiced: rowInvoiced,
+      received: rowReceived,
+      costs: round2(directCost + sharedCost),
+    });
+    const income = moneyRow.invoiced;
     const dam = litter?.motherId === dogId || pups.some((puppy) => puppy.motherId === dogId);
     const sire = litter?.fatherId === dogId || pups.some((puppy) => puppy.fatherId === dogId);
     const rowRole: LitterBreakdown["role"] = dam && sire ? "both" : sire && !dam ? "sire" : "dam";
@@ -538,20 +665,25 @@ export function buildDogProfitability(
       sold: sold.length,
       linkedSales: linked,
       income,
+      invoiced: moneyRow.invoiced,
+      received: moneyRow.received,
+      outstanding: moneyRow.outstanding,
       directCosts: directCost,
       sharedCosts: sharedCost,
-      net: netFigure(income, round2(directCost + sharedCost)),
+      net: moneyRow.net,
       costPerPuppyRaised: alive > 0 ? round2((directCost + sharedCost) / alive) : null,
     });
   }
   litterBreakdown.sort((a, b) => a.label.localeCompare(b.label));
 
-  const attributedIncome = incomeFigure(
-    soldPuppies.length,
-    linkedPuppyIds.size,
-    litterOnly.litterIds.size > 0,
-    round2(progenyIncome.amount + litterOnly.amount),
-  );
+  const attributedMoney = linkedMoney({
+    sold: soldPuppies.length,
+    linkedPuppies: linkedPuppyIds.size,
+    litterLinked: litterOnly.litterIds.size > 0,
+    invoiced: round2(progenyIncome.amount + litterOnly.amount),
+    received: round2(progenyIncome.received + litterOnly.received),
+    costs: litterCosts,
+  });
 
   return {
     direct: {
@@ -560,6 +692,8 @@ export function buildDogProfitability(
           ? { kind: "not_recorded" }
           : { kind: "amount", amount: round2(input.purchaseAmount) },
       sold: soldFigure,
+      soldReceived: soldMoney.received,
+      soldOutstanding: soldMoney.outstanding,
       costs: directCosts,
     },
     attributed:
@@ -572,10 +706,16 @@ export function buildDogProfitability(
             alive: scopePuppies.filter(isAlive).length,
             sold: soldPuppies.length,
             retained: scopePuppies.filter((puppy) => RETAINED.has(puppy.status)).length,
-            income: attributedIncome,
+            income: attributedMoney.invoiced,
+            invoiced: attributedMoney.invoiced,
+            received: attributedMoney.received,
+            outstanding: attributedMoney.outstanding,
             litterCosts,
-            net: netFigure(attributedIncome, litterCosts),
-            netLabel: soldPuppies.length > linkedPuppyIds.size ? "Net of linked income" : "Net",
+            net: attributedMoney.net,
+            netLabel:
+              soldPuppies.length > linkedPuppyIds.size
+                ? "Net of linked income (on money received)"
+                : "Net (on money received)",
             coverage,
           },
     coverage,
@@ -583,6 +723,87 @@ export function buildDogProfitability(
     incomeLines,
     expenseLines,
   };
+}
+
+export type LitterSummary = {
+  born: number;
+  alive: number;
+  sold: number;
+  linkedSales: number;
+  coverage: string;
+  invoiced: MoneyFigure;
+  received: MoneyFigure;
+  outstanding: MoneyFigure;
+  cost: number;
+  net: MoneyFigure;
+  netPerPuppy: MoneyFigure;
+};
+
+/** One litter, using the same link and received-net rules as the dog panel. */
+export function summarizeLitter(input: {
+  litterId: string;
+  puppies: ProfitPuppy[];
+  invoices: ProfitInvoice[];
+  historical: ProfitHistorical[];
+  allocations: ProfitAllocation[];
+}): LitterSummary {
+  const pups = input.puppies.filter((puppy) => puppy.litterId === input.litterId);
+  const ids = new Set(pups.map((puppy) => puppy.id));
+  const sold = pups.filter((puppy) => puppy.status === "sold");
+  const linked = sold.filter((puppy) => dogIsLinked(puppy.id, input.invoices, input.historical)).length;
+  const money = countedIncome(ids, input.invoices, input.historical, "all");
+  const litterMoney = countedLitterIncome(
+    new Set([input.litterId]),
+    ids,
+    input.invoices,
+    input.historical,
+    "all",
+  );
+  const allocs = input.allocations.filter((row) => row.litterId === input.litterId);
+  const cost = round2(allocs.reduce((sum, row) => sum + (Number(row.amount) || 0), 0));
+  const figures = linkedMoney({
+    sold: sold.length,
+    linkedPuppies: linked,
+    litterLinked: litterMoney.litterIds.size > 0,
+    invoiced: round2(money.amount + litterMoney.amount),
+    received: round2(money.received + litterMoney.received),
+    costs: cost,
+  });
+  const alive = pups.filter(isAlive).length;
+  const netPerPuppy: MoneyFigure =
+    figures.net.kind !== "amount"
+      ? figures.net
+      : pups.length > 0
+        ? { kind: "amount", amount: round2(figures.net.amount / pups.length) }
+        : { kind: "not_applicable" };
+  return {
+    born: pups.length,
+    alive,
+    sold: sold.length,
+    linkedSales: linked,
+    coverage: litterCoveragePhrase(linked, sold.length),
+    invoiced: figures.invoiced,
+    received: figures.received,
+    outstanding: figures.outstanding,
+    cost,
+    net: figures.net,
+    netPerPuppy,
+  };
+}
+
+/** Coverage that sits next to the figure, not in a footnote. */
+export function litterCoveragePhrase(linked: number, sold: number): string {
+  if (sold <= 0) return "No puppies sold";
+  const noun = sold === 1 ? "puppy" : "puppies";
+  return `Income linked for ${linked} of ${sold} sold ${noun}`;
+}
+
+export function dogHasLinkedIncome(
+  dogId: string,
+  invoices: ProfitInvoice[],
+  historical: ProfitHistorical[],
+): boolean {
+  return dogIsLinked(dogId, invoices, historical);
 }
 
 /** Column labels the screen is allowed to show. There is no combined profit row. */
@@ -596,7 +817,9 @@ export function profitColumnLabels(model: DogProfitability): { direct: string[];
           "Alive",
           "Sold",
           "Retained",
-          "Income from those puppies",
+          "Invoiced",
+          "Received",
+          "Outstanding",
           "Costs allocated to those litters",
           model.attributed.netLabel,
         ]

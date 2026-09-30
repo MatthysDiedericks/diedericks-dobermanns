@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -12,6 +12,7 @@ import { InvoiceStatusBadge } from '@/components/finance/InvoiceStatusBadge';
 import { ExpenseAllocationBreakdown } from '@/components/finance/ExpenseAllocationBreakdown';
 import { ExpenseAllocationReconciliation } from '@/components/finance/ExpenseAllocationReconciliation';
 import { FinanceActionChips } from '@/components/finance/FinanceActionChips';
+import { ReceiptSplitPanel } from '@/components/finance/ReceiptSplitPanel';
 import { FinanceDashboardFabs } from '@/components/finance/FinanceDashboardFabs';
 import { FinanceKpiCard } from '@/components/finance/FinanceKpiCard';
 import { FinancePeriodChips } from '@/components/finance/FinancePeriodChips';
@@ -45,6 +46,14 @@ export default function FinanceDashboardScreen() {
   );
   const [monthIdx, setMonthIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [lensIncome, setLensIncome] = useState<number[] | null>(null);
+  const onIncomeLens = useCallback((income: number[] | null) => {
+    setLensIncome((current) => {
+      if (current == null && income == null) return current;
+      if (current && income && current.join(',') === income.join(',')) return current;
+      return income;
+    });
+  }, []);
   const years = useFinanceYears();
   const budgetYear = selectedYear === 'all' ? new Date().getFullYear() : selectedYear;
 
@@ -130,7 +139,11 @@ export default function FinanceDashboardScreen() {
 
       <FinanceActionChips
         exporting={exporting}
+        onLitters={() => router.push('/(admin)/finance/litters' as never)}
+        onAssignAccounts={() => router.push('/(admin)/finance/assign-accounts' as never)}
         onLinkSales={() => router.push('/(admin)/finance/link-sales' as never)}
+        onConfirmBuyers={() => router.push('/(admin)/finance/confirm-buyers' as never)}
+        onUnrecordedPayments={() => router.push('/(admin)/finance/unrecorded-payments' as never)}
         onSalesInvoices={() => router.push('/(admin)/finance/invoices' as never)}
         onPurchaseInvoices={() => router.push('/(admin)/finance/purchases' as never)}
         onCashflow={() => router.push('/(admin)/finance/cashflow' as never)}
@@ -140,6 +153,9 @@ export default function FinanceDashboardScreen() {
         onRecurring={() => router.push('/(admin)/finance/expenses/recurring' as never)}
         onRecurringInvoices={() => router.push('/(admin)/finance/invoices/recurring' as never)}
         onEmployees={() => router.push('/(admin)/finance/employees' as never)}
+        onCash={() => router.push('/(admin)/finance/cash' as never)}
+        onReceipts={() => router.push('/(admin)/finance/payments' as never)}
+        onReconciliation={() => router.push('/(admin)/finance/reconciliation' as never)}
         onImport={() => router.push('/(admin)/finance/import' as never)}
         onExportExcel={() => void runExport('excel')}
         onExportPdf={() => void runExport('pdf')}
@@ -189,6 +205,13 @@ export default function FinanceDashboardScreen() {
         />
       </ScrollView>
 
+      <ReceiptSplitPanel
+        chartYear={budgetYear}
+        onIncomeLens={onIncomeLens}
+        onOpenAssign={() => router.push('/(admin)/finance/assign-accounts' as never)}
+        onOpenCash={() => router.push('/(admin)/finance/cash' as never)}
+      />
+
       {!isLoading && allocationBreakdown.total > 0 ? (
         <View className="mb-6 px-6">
           <ExpenseAllocationBreakdown breakdown={allocationBreakdown} />
@@ -208,7 +231,10 @@ export default function FinanceDashboardScreen() {
             data={{
               labels: monthlySummary.map((m) => m.month.slice(0, 3)),
               datasets: [
-                { data: monthlySummary.map((m) => m.income || 0), color: () => Colors.gold },
+                {
+                  data: (lensIncome ?? monthlySummary.map((m) => m.income)).map((value) => value || 0),
+                  color: () => Colors.gold,
+                },
                 { data: monthlySummary.map((m) => m.expenses || 0), color: () => Colors.danger },
               ],
             }}
@@ -222,7 +248,9 @@ export default function FinanceDashboardScreen() {
             showValuesOnTopOfBars={false}
           />
           <Typography variant="caption" className="mt-2 text-subtle">
-            Gold = income · Red = expenses
+            {lensIncome
+              ? 'Gold income follows Bank, Cash, or Unassigned. The total income card above stays on every receipt.'
+              : 'Gold = income · Red = expenses. Income is every receipt.'}
           </Typography>
         </View>
       ) : null}

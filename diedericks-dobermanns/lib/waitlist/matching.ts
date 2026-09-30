@@ -19,7 +19,7 @@ export type MatchableDog = {
 };
 
 export type MatchCriterion = {
-  key: 'sex' | 'colour' | 'tail' | 'waiting';
+  key: 'sex' | 'colour' | 'tail' | 'tier' | 'waiting';
   label: string;
   matched: boolean;
   /** Recorded on the buyer, not on the dog. Scored 0. Not a mismatch. */
@@ -64,19 +64,33 @@ function tierToPreferredCategory(tier: string | null | undefined): string {
   return 'any';
 }
 
-function dogProgrammeCategory(dog: MatchableDog): string {
-  const fromTier = tierToPreferredCategory(dog.programme_tier || dog.litter_default_programme_tier);
+/**
+ * Null when this puppy has no tier of its own and the litter has not set one.
+ * A missing tier is unknown. It is not Standard, and it is not a failed match.
+ */
+function dogProgrammeCategory(dog: MatchableDog): string | null {
+  const tier = dog.programme_tier || dog.litter_default_programme_tier;
+  if (!tier) return null;
+  const fromTier = tierToPreferredCategory(tier);
   if (fromTier !== 'any') return fromTier;
-  const cat = dog.category ?? 'standard';
+  if (tier === 'standard' || tier === 'elite' || tier === 'protection') {
+    return tier === 'elite' ? 'elite_developed' : tier;
+  }
+  const cat = dog.category;
+  if (!cat) return null;
   if (cat === 'puppy') return 'standard';
-  if (cat === 'elite' || cat === 'protection' || cat === 'standard') return cat;
-  return 'any';
+  if (cat === 'elite' || cat === 'elite_developed') return 'elite_developed';
+  if (cat === 'protection' || cat === 'protection_dog') return 'protection_dog';
+  if (cat === 'standard') return 'standard';
+  return null;
 }
 
 function categoryMatches(entry: WaitingListEntry, dog: MatchableDog): boolean {
   const pref = entry.preferred_category ?? 'any';
   if (!pref || pref === 'any') return true;
-  return pref === dogProgrammeCategory(dog);
+  const dogCat = dogProgrammeCategory(dog);
+  if (!dogCat) return true;
+  return pref === dogCat;
 }
 
 type Scored = {
@@ -138,7 +152,10 @@ function scoreTail(entry: WaitingListEntry, dog: MatchableDog): Scored {
   if (!pref || pref === 'no_preference' || pref === 'any') {
     return { matched: true, points: 25, detail: 'No tail preference' };
   }
-  if (!dog.tail_type) return unknownField('Tail');
+  if (!dog.tail_type) {
+    const detail = `Wants ${pref === 'docked' ? 'docked' : pref === 'natural' ? 'natural' : pref} — not yet decided on this puppy`;
+    return { matched: false, unknown: true, points: 0, detail, warning: detail };
+  }
   if (pref === dog.tail_type) {
     return { matched: true, points: 25, detail: `Tail: ${pref}` };
   }
@@ -150,11 +167,33 @@ function scoreTail(entry: WaitingListEntry, dog: MatchableDog): Scored {
   };
 }
 
+function scoreTier(entry: WaitingListEntry, dog: MatchableDog): Scored {
+  const pref = entry.preferred_category;
+  if (!pref || pref === 'any') {
+    return { matched: true, points: 0, detail: 'No tier preference' };
+  }
+  const dogCat = dogProgrammeCategory(dog);
+  const want = categoryLabel(pref);
+  if (!dogCat) {
+    const detail = `Wants ${want} — puppy not yet tiered`;
+    return { matched: false, unknown: true, points: 0, detail, warning: detail };
+  }
+  if (pref === dogCat) return { matched: true, points: 0, detail: `Tier: ${want}` };
+  const got = categoryLabel(dogCat);
+  return {
+    matched: false,
+    points: 0,
+    detail: `Wants ${want}, puppy is ${got}`,
+    mismatch: `Wants ${want}, this puppy is ${got}`,
+  };
+}
+
 function statedPreferencesMet(entry: WaitingListEntry, dog: MatchableDog): boolean {
   return (
     preferenceMet(scoreSex(entry, dog)) &&
     preferenceMet(scoreColour(entry, dog)) &&
-    preferenceMet(scoreTail(entry, dog))
+    preferenceMet(scoreTail(entry, dog)) &&
+    preferenceMet(scoreTier(entry, dog))
   );
 }
 
@@ -179,6 +218,7 @@ export function scoreMatch(
   const sex = scoreSex(entry, dog);
   const colour = scoreColour(entry, dog);
   const tail = scoreTail(entry, dog);
+  const tier = scoreTier(entry, dog);
   const waitDays = daysWaiting(entry.queue_anchor_at ?? entry.date_added ?? entry.created_at);
   const criteria: MatchCriterion[] = [
     {
@@ -206,6 +246,14 @@ export function scoreMatch(
       detail: tail.detail,
     },
     {
+      key: 'tier',
+      label: 'Tier',
+      matched: tier.matched,
+      unknown: tier.unknown,
+      points: tier.points,
+      detail: tier.detail,
+    },
+    {
       key: 'waiting',
       label: 'Waiting time',
       matched: true,
@@ -213,10 +261,10 @@ export function scoreMatch(
       detail: `${waitDays} days waiting`,
     },
   ];
-  const mismatches = [sex.mismatch, colour.mismatch, tail.mismatch].filter(
+  const mismatches = [sex.mismatch, colour.mismatch, tail.mismatch, tier.mismatch].filter(
     (m): m is string => Boolean(m),
   );
-  const warnings = [sex.warning, colour.warning, tail.warning].filter(
+  const warnings = [sex.warning, colour.warning, tail.warning, tier.warning].filter(
     (w): w is string => Boolean(w),
   );
   const score = sex.points + colour.points + tail.points + waitPoints;
@@ -333,10 +381,13 @@ export function tierGapSummary(entries: WaitingListEntry[], dogs: MatchableDog[]
   for (const category of categories) {
     const wanting = buyers.filter((e) => e.preferred_category === category).length;
     const carrying = inventory.filter((d) => dogProgrammeCategory(d) === category).length;
+    const known = inventory.filter((d) => dogProgrammeCategory(d) != null).length;
     if (wanting > 0 && carrying === 0) {
       const noun = wanting === 1 ? 'buyer wants' : 'buyers want';
       lines.push(
-        `${wanting} ${noun} ${categoryLabel(category)}; no available dog carries that tier`,
+        known === 0
+          ? `${wanting} ${noun} ${categoryLabel(category)}; no puppy has a tier set yet`
+          : `${wanting} ${noun} ${categoryLabel(category)}; no available dog carries that tier`,
       );
     }
   }

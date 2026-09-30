@@ -9,6 +9,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
 import { formatKennelDate } from '@/lib/kennel/formatters';
+import { RecordPaymentEntry } from '@/components/finance/RecordPaymentEntry';
 import { updateDogHandover } from '@/lib/fulfilment/updateHandover';
 import { realDogName } from '@/lib/dogs/placeholderName';
 import { supabase } from '@/lib/supabase';
@@ -33,6 +34,7 @@ type AllocatedRow = {
   handoverStatus: string | null;
   overdue: boolean;
   clientConfirmed: boolean;
+  invoiceId: string | null;
 };
 
 /**
@@ -93,7 +95,7 @@ export default function FulfilmentScreen() {
     const { data: alloc, error: aErr } = await supabase
       .from('waiting_list')
       .select(
-        `id, enquirer_name, client:users!waiting_list_client_id_fkey(full_name),
+        `id, enquirer_name, balance_invoice_id, deposit_invoice_id, client:users!waiting_list_client_id_fkey(full_name),
          dog:dogs!waiting_list_assigned_dog_id_fkey(id, name, call_name, handover_status, handover_date, delivered_at),
          litter:litters!waiting_list_assigned_litter_id_fkey(go_home_date)`,
       )
@@ -131,6 +133,11 @@ export default function FulfilmentScreen() {
         handoverStatus: dog.handover_status,
         overdue,
         clientConfirmed: false,
+        invoiceId:
+          (r as { balance_invoice_id?: string | null; deposit_invoice_id?: string | null })
+            .balance_invoice_id ??
+          (r as { deposit_invoice_id?: string | null }).deposit_invoice_id ??
+          null,
       });
     }
     const dogIds = rows.map((row) => row.dogId);
@@ -309,6 +316,11 @@ export default function FulfilmentScreen() {
                         })
                       }
                     />
+                    {r.invoiceId ? (
+                      <View className="min-w-[160px] flex-1">
+                        <RecordPaymentEntry invoiceId={r.invoiceId} onSaved={() => void load()} />
+                      </View>
+                    ) : null}
                     <Button
                       label="Mark delivered"
                       disabled={busyId === r.dogId}

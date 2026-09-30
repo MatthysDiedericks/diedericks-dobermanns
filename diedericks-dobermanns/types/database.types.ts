@@ -4340,6 +4340,45 @@ export type Database = {
           },
         ]
       }
+      invoice_payment_gap_reviews: {
+        Row: {
+          invoice_id: string
+          note: string
+          resolution: string
+          reviewed_at: string
+          reviewed_by: string | null
+        }
+        Insert: {
+          invoice_id: string
+          note: string
+          resolution: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+        }
+        Update: {
+          invoice_id?: string
+          note?: string
+          resolution?: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payment_gap_reviews_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_payment_gap_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_payments: {
         Row: {
           amount: number
@@ -4422,6 +4461,7 @@ export type Database = {
           amount_outstanding: number | null
           amount_paid: number
           client_id: string | null
+          contact_id: string | null
           created_at: string
           created_by: string | null
           currency: string
@@ -4458,6 +4498,7 @@ export type Database = {
           amount_outstanding?: number | null
           amount_paid?: number
           client_id?: string | null
+          contact_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -4494,6 +4535,7 @@ export type Database = {
           amount_outstanding?: number | null
           amount_paid?: number
           client_id?: string | null
+          contact_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -4532,6 +4574,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
@@ -9446,6 +9495,19 @@ export type Database = {
           dog_name: string
         }[]
       }
+      release_selected_expense_allocations: {
+        Args: { p_expense_id: string; p_kind: string; p_line_amount: number }
+        Returns: undefined
+      }
+      replace_selected_expense_allocations: {
+        Args: {
+          p_description: string
+          p_expense_id: string
+          p_line_amount: number
+          p_rows: Json
+        }
+        Returns: undefined
+      }
       resolve_confirmed_user_id: { Args: { p_email: string }; Returns: string }
       resolve_error_events: {
         Args: { p_ids: number[]; p_note?: string }
@@ -9497,6 +9559,10 @@ export type Database = {
         Returns: string
       }
       sweep_error_consistency: { Args: never; Returns: number }
+      sync_waitlist_deposit_from_invoice: {
+        Args: { p_invoice_id: string }
+        Returns: undefined
+      }
       training_owner_client_count: { Args: never; Returns: number }
       training_storage_object_path: { Args: { raw: string }; Returns: string }
       training_video_has_file: { Args: { p_url: string }; Returns: boolean }

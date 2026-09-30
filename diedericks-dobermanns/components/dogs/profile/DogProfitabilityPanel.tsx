@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { Typography } from '@/components/ui/Typography';
 import {
+  expenseShareSentence,
   formatMoneyFigure,
   type DogProfitability,
 } from '@/lib/finance/dogProfitability';
@@ -66,7 +67,10 @@ export function DogProfitabilityPanel({
     );
   }
   if (!model) return null;
-  if (!isBreedingDog({ status, hasProducedLitter: model.attributed != null })) return null;
+  const shares = model.expenseLines.filter((line) => line.kind === 'selected' && line.column === 'direct');
+  if (!isBreedingDog({ status, hasProducedLitter: model.attributed != null }) && shares.length === 0) {
+    return null;
+  }
 
   const attributed = model.attributed;
   return (
@@ -76,8 +80,27 @@ export function DogProfitabilityPanel({
           Direct — this dog
         </Typography>
         <Row label="Bought for" value={formatMoneyFigure(model.direct.bought, formatAmount)} />
-        <Row label="Sold for" value={formatMoneyFigure(model.direct.sold, formatAmount)} />
+        <Row label="Sold for · invoiced" value={formatMoneyFigure(model.direct.sold, formatAmount)} />
+        <Row label="Sold for · received" value={formatMoneyFigure(model.direct.soldReceived, formatAmount)} />
+        <Row label="Sold for · outstanding" value={formatMoneyFigure(model.direct.soldOutstanding, formatAmount)} />
         <Row label="Costs allocated to this dog" value={formatAmount(model.direct.costs)} />
+        {shares.map((line) => {
+          const sentence = expenseShareSentence(
+            {
+              amount: line.amount,
+              description: line.description,
+              kind: line.kind,
+              basis: line.basis,
+              sourceAmount: line.sourceAmount,
+            },
+            formatAmount,
+          );
+          return sentence ? (
+            <Typography key={line.id} variant="caption" className="mt-1 text-muted">
+              {sentence}
+            </Typography>
+          ) : null;
+        })}
       </Card>
       <Card>
         <Typography variant="label" className="mb-2">
@@ -92,10 +115,9 @@ export function DogProfitabilityPanel({
             <Row label="Alive" value={String(attributed.alive)} />
             <Row label="Sold" value={String(attributed.sold)} />
             <Row label="Retained" value={String(attributed.retained)} />
-            <Row
-              label="Income from those puppies"
-              value={formatMoneyFigure(attributed.income, formatAmount)}
-            />
+            <Row label="Invoiced" value={formatMoneyFigure(attributed.invoiced, formatAmount)} />
+            <Row label="Received" value={formatMoneyFigure(attributed.received, formatAmount)} />
+            <Row label="Outstanding" value={formatMoneyFigure(attributed.outstanding, formatAmount)} />
             <Row label="Costs allocated to those litters" value={formatAmount(attributed.litterCosts)} />
             <Row label={attributed.netLabel} value={formatMoneyFigure(attributed.net, formatAmount)} />
             <Pressable onPress={() => router.push('/(admin)/finance/link-sales' as never)} className="mt-2">

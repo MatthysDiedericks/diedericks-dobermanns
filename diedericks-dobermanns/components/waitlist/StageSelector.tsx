@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
@@ -13,6 +13,8 @@ import { createHandoverBalanceInvoice, recordWaitlistDeposit } from '@/lib/waitl
 import { PIPELINE_STAGES, stageLabel, TERMINAL_STAGES } from '@/lib/waitlist/constants';
 import { useSubmitting } from '@/hooks/useMutations';
 import type { WaitingListEntry } from '@/types/app.types';
+import { pettyCashAccount, type PaymentAccountOption } from '@/lib/finance/cashReceipts';
+import { requireSupabase } from '@/lib/supabase';
 import { entryDisplayName } from '@/lib/waitlist/helpers';
 
 interface Props {
@@ -30,6 +32,8 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositMethod, setDepositMethod] = useState('');
+  const [depositAccountId, setDepositAccountId] = useState('');
+  const [accounts, setAccounts] = useState<PaymentAccountOption[]>([]);
   const [depositRef, setDepositRef] = useState('');
   const [handoverOpen, setHandoverOpen] = useState(false);
   const [buyerCallName, setBuyerCallName] = useState('');
@@ -41,6 +45,7 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
     setDepositOpen(false);
     setDepositAmount('');
     setDepositMethod('');
+    setDepositAccountId('');
     setDepositRef('');
     setHandoverOpen(false);
     setBuyerCallName('');
@@ -89,12 +94,47 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
     router.push({ pathname: '/(admin)/quotes/new', params });
   }
 
+  useEffect(() => {
+    if (!depositOpen) return;
+    const supabase = requireSupabase();
+    void supabase
+      .from('payment_accounts')
+      .select('id, name, account_type')
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => {
+        const next = (data ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          accountType: row.account_type,
+        }));
+        setAccounts(next);
+        if (depositMethod.trim().toLowerCase() === 'cash') {
+          const petty = pettyCashAccount(next);
+          if (petty) setDepositAccountId(petty.id);
+        }
+      });
+  }, [depositOpen, depositMethod]);
+
   async function confirmDeposit() {
     if (!entry) return;
     const amount = Number(depositAmount);
     if (!amount || amount <= 0) return;
+    const method = depositMethod.trim().toLowerCase();
+    const accountId =
+      depositAccountId || (method === 'cash' ? pettyCashAccount(accounts)?.id : '') || '';
+    if (!accountId) {
+      showError('Choose the account that received this payment.');
+      return;
+    }
     const { error } = await run(() =>
-      recordWaitlistDeposit(entry, amount, depositMethod.trim() || null, depositRef.trim() || null),
+      recordWaitlistDeposit(
+        entry,
+        amount,
+        depositMethod.trim() || null,
+        depositRef.trim() || null,
+        accountId,
+      ),
     );
     if (!error) {
       reset();
@@ -174,6 +214,22 @@ export function StageSelector({ visible, entry, onClose, onSaved }: Props) {
                 onChangeText={setDepositMethod}
                 className="mt-3"
               />
+              <Typography variant="caption" className="mb-2 mt-3 text-silver">
+                Account that received it
+              </Typography>
+              <View className="flex-row flex-wrap gap-2">
+                {accounts.map((account) => (
+                  <Pressable
+                    key={account.id}
+                    onPress={() => setDepositAccountId(account.id)}
+                    className={`rounded-lg border px-3 py-2 ${
+                      depositAccountId === account.id ? 'border-gold bg-gold/20' : 'border-gold/20'
+                    }`}
+                  >
+                    <Typography variant="caption">{account.name}</Typography>
+                  </Pressable>
+                ))}
+              </View>
               <Input
                 label="Reference (optional)"
                 value={depositRef}

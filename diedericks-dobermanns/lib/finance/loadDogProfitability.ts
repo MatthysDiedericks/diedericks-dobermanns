@@ -130,7 +130,7 @@ export async function loadProfitInput(supabase: any, dogId: string): Promise<Pro
   const litterIds = litters.map((litter) => litter.id);
 
   const invoiceSelect =
-    "id, dog_id, litter_id, issue_date, total_amount, status, invoice_number, historical_client_name, client_id, historical_income_id";
+    "id, dog_id, litter_id, issue_date, total_amount, amount_paid, status, invoice_number, historical_client_name, client_id, historical_income_id";
   const dogInvoiceRows = (await byIds(dogIds, async (chunk) =>
     supabase.from("invoices").select(invoiceSelect).in("dog_id", chunk),
   )) as any[];
@@ -156,6 +156,7 @@ export async function loadProfitInput(supabase: any, dogId: string): Promise<Pro
     dogId: row.dog_id ?? null,
     issueDate: row.issue_date ?? null,
     total: amount(row.total_amount),
+    paid: amount(row.amount_paid),
     buyer: row.historical_client_name?.trim() || userName.get(row.client_id)?.trim() || "—",
     status: row.status ?? "",
     number: row.invoice_number ?? null,
@@ -169,6 +170,7 @@ export async function loadProfitInput(supabase: any, dogId: string): Promise<Pro
     dogId: row.dog_id ?? null,
     date: row.income_date ?? null,
     total: amount(row.total_amount),
+    paid: amount(row.total_amount),
     buyer: row.contact_name?.trim() || "—",
     description: row.description ?? null,
     number: row.invoice_number ?? null,
@@ -179,7 +181,7 @@ export async function loadProfitInput(supabase: any, dogId: string): Promise<Pro
     let query = supabase
       .from("expense_allocations")
       .select(
-        "id, amount, basis_note, dog_id, litter_id, expense_lines(description, allocation_kind, expenses(expense_date, description, supplier_name))",
+        "id, amount, basis_note, dog_id, litter_id, expense_lines(description, allocation_kind, line_amount, expenses(expense_date, description, supplier_name))",
       );
     if (litterIds.length === 0) query = query.eq("dog_id", dogId);
     else query = query.or(`dog_id.eq.${dogId},litter_id.in.(${litterIds.join(",")})`);
@@ -199,6 +201,7 @@ export async function loadProfitInput(supabase: any, dogId: string): Promise<Pro
       description: line?.description?.trim() || expense?.description?.trim() || "Expense",
       basisNote: row.basis_note ?? null,
       supplier: expense?.supplier_name ?? null,
+      sourceAmount: line?.line_amount == null ? null : amount(line.line_amount),
     };
   });
 

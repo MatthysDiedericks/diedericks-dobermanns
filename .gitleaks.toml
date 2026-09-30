@@ -3,10 +3,13 @@ title = "Gitleaks"
 [extend]
 useDefault = true
 
-# The published anon JWT is designed to ship in the client. It is not a secret.
-# A service-role JWT would not match this allowlist and must still fail the build.
+# The anon key is public by design. It ships in every client bundle.
+# Row Level Security is what protects the data.
+# Paths only — not a JWT pattern. A service_role key looks almost the same
+# and must still fail the scan in every other file.
 [allowlist]
-description = "Public Supabase anon JWT for this project"
-regexes = [
-  '''eyJ[A-Za-z0-9_-]+\.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbXd4b2R2cXV3YmppbmhoYm1yIiwicm9sZSI6ImFub24i''',
+description = "Public Supabase anon key committed in the example env and the website prompt. RLS protects the data."
+paths = [
+  '''(^|[\\/])\.env\.example$''',
+  '''(^|[\\/])CURSOR_PROMPT_WEBSITE\.md$''',
 ]

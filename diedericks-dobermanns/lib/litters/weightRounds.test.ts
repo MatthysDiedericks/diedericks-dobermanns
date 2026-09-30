@@ -27,9 +27,23 @@ function columnsAreDaysNotTypingTimes() {
     recorded_at: "2026-09-29T07:52:26.117Z",
     session: "AM",
   };
-  assert.equal(roundKey(yesterdayTypedToday), "2026-09-28#AM");
-  assert.equal(roundKey(today), "2026-09-29#AM");
   assert.notEqual(roundKey(yesterdayTypedToday), roundKey(today));
+  assert.ok(roundKey(yesterdayTypedToday).startsWith("2026-09-28#"));
+  assert.ok(roundKey(today).startsWith("2026-09-29#"));
+
+  // Columns must run in clock order. Sorting the label as text put an 18:00
+  // interval reading ("18h") before the morning round ("AM"), because a digit
+  // sorts before a letter.
+  const day = "2026-09-28";
+  const evening = roundKey({ recorded_date: day, recorded_at: `${day}T18:00:00`, session: "daily" });
+  const morningRound = roundKey({ recorded_date: day, recorded_at: null, session: "AM" });
+  const eveningRound = roundKey({ recorded_date: day, recorded_at: null, session: "PM" });
+  const dawn = roundKey({ recorded_date: day, recorded_at: `${day}T05:00:00`, session: "daily" });
+  assert.deepEqual(
+    [evening, morningRound, eveningRound, dawn].sort(),
+    [dawn, morningRound, evening, eveningRound],
+    "columns must sort by time of day, not alphabetically",
+  );
   assert.equal(roundLabel(roundKey(yesterdayTypedToday)), "28 Sep AM");
   assert.equal(roundLabel(roundKey(today)), "29 Sep AM");
 
@@ -53,8 +67,11 @@ function columnsAreDaysNotTypingTimes() {
 
 /** Run: npx tsx src/lib/litters/weightRounds.test.ts */
 
-function memoryWriter(seed: WeightInsert[] = []): WeightLogWriter & { rows: WeightInsert[] } {
-  const rows = seed.map((row) => ({ ...row }));
+type Stored = WeightInsert & { id: string };
+
+function memoryWriter(seed: WeightInsert[] = []): WeightLogWriter & { rows: Stored[] } {
+  const rows: Stored[] = seed.map((row, i) => ({ ...row, id: `seed-${i}` }));
+  let next = 0;
   return {
     rows,
     async findExisting(dogId, recordedDate, session) {
@@ -64,17 +81,17 @@ function memoryWriter(seed: WeightInsert[] = []): WeightLogWriter & { rows: Weig
           row.recorded_date === recordedDate &&
           row.session === session,
       );
-      return found ? { weight_kg: found.weight_kg } : null;
+      return found ? { id: found.id, weight_kg: found.weight_kg } : null;
     },
-    async upsert(row) {
-      const index = rows.findIndex(
-        (existing) =>
-          existing.dog_id === row.dog_id &&
-          existing.recorded_date === row.recorded_date &&
-          existing.session === row.session,
-      );
-      if (index >= 0) rows[index] = row;
-      else rows.push(row);
+    async update(id, row) {
+      const index = rows.findIndex((existing) => existing.id === id);
+      if (index < 0) return { error: { message: "row not found", code: "PGRST116" } };
+      rows[index] = { ...row, id };
+      return { error: null };
+    },
+    async insert(row) {
+      next += 1;
+      rows.push({ ...row, id: `new-${next}` });
       return { error: null };
     },
   };
@@ -132,8 +149,8 @@ async function main() {
   assert.equal(writer.rows.filter((row) => row.session === "PM").length, 6);
 
   const failing = memoryWriter();
-  const original = failing.upsert.bind(failing);
-  failing.upsert = async (row) => {
+  const original = failing.insert.bind(failing);
+  failing.insert = async (row) => {
     if (row.dog_id === "dog-3" || row.dog_id === "dog-5") {
       return { error: { code: "23505", message: "duplicate key value violates unique constraint" } };
     }

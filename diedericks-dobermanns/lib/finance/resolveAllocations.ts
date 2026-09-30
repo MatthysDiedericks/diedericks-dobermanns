@@ -19,7 +19,7 @@ import {
   type DogDaysSettings,
 } from "./allocationSettings";
 
-export const ALLOCATION_KINDS = ["company", "dog", "litter", "shared"] as const;
+export const ALLOCATION_KINDS = ["company", "dog", "litter", "shared", "selected"] as const;
 export type AllocationKind = (typeof ALLOCATION_KINDS)[number];
 
 export type WeightingMode = "equal" | "weighted";
@@ -58,7 +58,8 @@ export function isAllocationKind(
     value === "company" ||
     value === "dog" ||
     value === "litter" ||
-    value === "shared"
+    value === "shared" ||
+    value === "selected"
   );
 }
 
@@ -72,6 +73,7 @@ export function mapLegacyAllocationToKind(
   if (allocationType === "dog") return "dog";
   if (allocationType === "litter") return "litter";
   if (allocationType === "company") return "company";
+  if (allocationType === "selected") return "selected";
   return "shared";
 }
 
@@ -241,6 +243,10 @@ export function resolveExpenseLineAllocations(
 
   if (input.kind === "company") return [];
 
+  if (input.kind === "selected") {
+    throw new Error("A selected split is written from the dogs that were picked.");
+  }
+
   if (input.kind === "dog") {
     if (!input.dogId) {
       throw new Error("A dog line needs a dog.");
@@ -297,6 +303,7 @@ export function totalsByKind(
     dog: 0,
     litter: 0,
     shared: 0,
+    selected: 0,
   };
   for (const line of lines) {
     totals[line.kind] = fromCents(

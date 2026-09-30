@@ -1,3 +1,4 @@
+import { resolvePaymentAccount } from '@/lib/finance/cashReceipts';
 import { requireSupabase } from '@/lib/supabase';
 
 export async function verifyPaymentProof(input: {
@@ -7,8 +8,25 @@ export async function verifyPaymentProof(input: {
   paymentDate: string;
   method: string;
   reference?: string | null;
+  paymentAccountId?: string | null;
 }): Promise<string> {
   const supabase = requireSupabase();
+  const { data: accounts, error: accountErr } = await supabase
+    .from('payment_accounts')
+    .select('id, name, account_type')
+    .eq('is_active', true);
+  if (accountErr) throw new Error(accountErr.message);
+  const resolved = resolvePaymentAccount({
+    method: input.method,
+    accountId: input.paymentAccountId,
+    accounts: (accounts ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      accountType: row.account_type,
+    })),
+  });
+  if ('error' in resolved) throw new Error(resolved.error);
+
   const { data, error } = await supabase.rpc('verify_payment_proof' as never, {
     p_document_id: input.documentId,
     p_invoice_id: input.invoiceId,
@@ -16,6 +34,7 @@ export async function verifyPaymentProof(input: {
     p_payment_date: input.paymentDate,
     p_method: input.method,
     p_reference: input.reference ?? null,
+    p_payment_account_id: resolved.accountId,
   } as never);
   if (error) throw new Error(error.message);
   return data as string;

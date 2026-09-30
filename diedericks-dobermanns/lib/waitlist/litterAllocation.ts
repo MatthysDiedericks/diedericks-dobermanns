@@ -1,5 +1,6 @@
 import type { WaitingListEntry } from '@/types/app.types';
 
+import { sexesConflict } from '@/lib/waitlist/allocationDecision';
 import { entryDisplayName } from '@/lib/waitlist/helpers';
 import {
   isMatchableDogStatus,
@@ -19,6 +20,8 @@ export type WorkingAllocation = {
   puppyId: string;
   entryId: string;
   source: 'saved' | 'proposed';
+  /** Recorded only when a sex mismatch was explicitly overridden. */
+  sexOverride?: string;
 };
 
 export function takenEntryIds(
@@ -51,7 +54,7 @@ export function assignBuyer(
   allocations: WorkingAllocation[],
   puppyId: string,
   entryId: string,
-  options?: { override?: boolean },
+  options?: { override?: boolean; sexOverride?: string },
 ): { allocations: WorkingAllocation[]; error?: string } {
   const conflict = allocations.find(
     (a) => a.entryId === entryId && a.puppyId !== puppyId,
@@ -66,7 +69,7 @@ export function assignBuyer(
   if (options?.override) {
     next = next.filter((a) => a.entryId !== entryId);
   }
-  next = [...next, { puppyId, entryId, source: 'proposed' }];
+  next = [...next, { puppyId, entryId, source: 'proposed', sexOverride: options?.sexOverride }];
   return { allocations: next };
 }
 
@@ -105,7 +108,9 @@ export function suggestLitterAllocation(
   for (const puppy of [...puppies].sort(byBirthOrder)) {
     if (!isMatchableDogStatus(puppy.status)) continue;
     if (saved.some((a) => a.puppyId === puppy.id)) continue;
-    const best = rankedBuyersForPuppy(entries, puppy, [...saved, ...proposed])[0];
+    const best = rankedBuyersForPuppy(entries, puppy, [...saved, ...proposed]).find(
+      (candidate) => !sexesConflict(candidate.entry.preferred_sex, puppy.sex),
+    );
     if (!best) continue;
     proposed.push({
       puppyId: puppy.id,

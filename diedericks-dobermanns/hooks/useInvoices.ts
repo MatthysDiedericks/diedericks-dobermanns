@@ -5,6 +5,11 @@ import {
   fetchInvoiceById,
 } from '@/lib/finance/queries';
 import { requireSupabase } from '@/lib/supabase';
+import {
+  invoiceAfterPayment,
+  paymentReceiptMessage,
+  resolvePaymentAccount,
+} from '@/lib/finance/cashReceipts';
 import { closeSettledBalance } from '@/lib/waitlist/closePlacement';
 import { useAuthStore } from '@/stores/authStore';
 import type { DraftLineItem, InvoiceListRow, InvoiceWithDetails } from '@/types/finance';
@@ -136,15 +141,32 @@ export async function recordInvoicePayment(
   paymentDate: string,
   method?: string,
   reference?: string,
-  opts?: { notes?: string | null; proof_document_id?: string | null },
-) {
+  opts?: { notes?: string | null; proof_document_id?: string | null; paymentAccountId?: string | null },
+): Promise<{ message: string; paidInFull: boolean }> {
   if (!paymentDate) throw new Error('Date paid is required.');
   const supabase = requireSupabase();
   const profileId = useAuthStore.getState().profile?.id;
+  const paymentMethod = normalizePaymentMethod(method);
+
+  const { data: accounts, error: accountErr } = await supabase
+    .from('payment_accounts')
+    .select('id, name, account_type')
+    .eq('is_active', true);
+  if (accountErr) throw new Error(accountErr.message);
+  const resolved = resolvePaymentAccount({
+    method: paymentMethod,
+    accountId: opts?.paymentAccountId,
+    accounts: (accounts ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      accountType: row.account_type,
+    })),
+  });
+  if ('error' in resolved) throw new Error(resolved.error);
 
   const { data: inv, error: invErr } = await supabase
     .from('invoices')
-    .select('client_id')
+    .select('client_id, invoice_number, total_amount, amount_paid, historical_client_name')
     .eq('id', invoiceId)
     .single();
   if (invErr) throw new Error(invErr.message);
@@ -153,16 +175,48 @@ export async function recordInvoicePayment(
     invoice_id: invoiceId,
     amount,
     payment_date: paymentDate,
-    payment_method: normalizePaymentMethod(method),
+    payment_method: paymentMethod,
     reference: reference?.trim() || null,
     proof_document_id: opts?.proof_document_id ?? null,
     notes: opts?.notes ?? null,
     recorded_by: profileId ?? null,
+    payment_account_id: resolved.accountId,
   });
 
   if (error) throw new Error(error.message);
+
+  const { data: after, error: afterErr } = await supabase
+    .from('invoices')
+    .select('status, amount_outstanding, invoice_number, total_amount, amount_paid, historical_client_name, client_id')
+    .eq('id', invoiceId)
+    .single();
+  if (afterErr) throw new Error(afterErr.message);
+
+  let clientName = after.historical_client_name?.trim() || inv.historical_client_name?.trim() || '';
+  const clientId = after.client_id ?? inv.client_id;
+  if (clientId) {
+    const { data: client } = await supabase.from('users').select('full_name').eq('id', clientId).maybeSingle();
+    if (client?.full_name?.trim()) clientName = client.full_name.trim();
+  }
+  const position = invoiceAfterPayment({
+    total: Number(after.total_amount ?? inv.total_amount ?? 0),
+    paidSoFar: Number(after.amount_paid ?? 0) - amount,
+    amount,
+  });
+  const paidInFull = after.status === 'paid' || position.paidInFull;
+  const message = paymentReceiptMessage({
+    amount,
+    method: paymentMethod,
+    clientName,
+    paidOn: paymentDate,
+    invoiceNumber: after.invoice_number ?? inv.invoice_number,
+    paidInFull,
+    outstanding: Number(after.amount_outstanding ?? position.outstanding),
+  });
+
   const settled = await closeSettledBalance(invoiceId);
   if (settled.error) throw new Error(settled.error);
+  return { message, paidInFull };
 }
 
 export async function deleteInvoicePayment(

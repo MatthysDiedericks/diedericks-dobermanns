@@ -75,17 +75,25 @@ function main() {
   const ranked = rankBuyersForDog([buyer({ id: 'docked-male', enquirer_name: 'Alex' })], k4);
   assert.equal(ranked.length, 1);
   assert.equal(ranked[0].perfectFit, true);
-  assert.ok(ranked[0].warnings.includes('Tail not recorded'));
+  assert.ok(ranked[0].warnings.some((w) => w.includes('not yet decided')));
+  assert.ok(ranked[0].warnings.some((w) => w.includes('not yet tiered')));
   assert.equal(ranked[0].mismatches.length, 0);
   assert.equal(ranked[0].criteria.find((c) => c.key === 'tail')?.points, 0);
+  assert.equal(ranked[0].criteria.find((c) => c.key === 'tier')?.unknown, true);
 
   const elite = buyer({
     id: 'elite',
     preferred_category: 'elite_developed',
     enquirer_name: 'Elite buyer',
   });
-  assert.equal(rankDogsForBuyer(elite, [k4]).length, 0);
-  const reason = explainEmptyDogsForBuyer(elite, [k4]);
+  const untiered = rankDogsForBuyer(elite, [k4]);
+  assert.equal(untiered.length, 1);
+  assert.equal(untiered[0].candidate.perfectFit, true);
+  assert.ok(untiered[0].candidate.warnings.some((w) => w.includes('not yet tiered')));
+
+  const standardOnly = [dog({ id: 'std', name: 'Std', programme_tier: 'puppy' })];
+  assert.equal(rankDogsForBuyer(elite, standardOnly).length, 0);
+  const reason = explainEmptyDogsForBuyer(elite, standardOnly);
   assert.ok(reason);
   assert.match(reason, /Elite developed/);
   assert.match(reason, /no available dog carries that tier/);

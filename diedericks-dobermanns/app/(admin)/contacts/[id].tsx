@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { ActivityIndicator, Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { AddContactSheet, type AddContactSheetHandle } from '@/components/contacts/AddContactSheet';
+import { ClientRecordSection } from '@/components/contacts/ClientRecordSection';
 import { ContactLinkedSection } from '@/components/contacts/ContactLinkedSection';
 import { CreateSaleButton } from '@/components/contracts/CreateSaleButton';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -12,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Typography } from '@/components/ui/Typography';
 import { Colors } from '@/constants/colors';
+import { useClientRecord } from '@/hooks/useClientRecord';
 import { useContact } from '@/hooks/useContacts';
 import { useContactLinks } from '@/hooks/useContactLinks';
 import { openWhatsApp } from '@/lib/social';
@@ -38,10 +40,16 @@ export default function AdminContactDetailScreen() {
       email: contact?.email ?? null,
       userId: contact?.user_id ?? null,
     });
+  const clientRecord = useClientRecord({
+    id: contactId,
+    email: contact?.email ?? null,
+    userId: contact?.user_id ?? null,
+  });
 
   const onRefresh = () => {
     void refresh();
     void refreshLinks();
+    void clientRecord.refresh();
   };
 
   if (loading && !contact) {
@@ -83,7 +91,7 @@ export default function AdminContactDetailScreen() {
         className="px-6 pb-12"
         refreshControl={
           <RefreshControl
-            refreshing={loading || linksLoading}
+            refreshing={loading || linksLoading || clientRecord.loading}
             onRefresh={onRefresh}
             tintColor={Colors.gold}
           />
@@ -165,21 +173,19 @@ export default function AdminContactDetailScreen() {
             {linksError}
           </Typography>
         ) : null}
+        {clientRecord.error ? (
+          <Typography variant="body" className="mt-4 text-danger">
+            {clientRecord.error}
+          </Typography>
+        ) : null}
+        {clientRecord.record ? <ClientRecordSection record={clientRecord.record} /> : null}
 
-        <ContactLinkedSection title="Quotes" rows={links.quotes} empty="No quotes linked." />
-        <ContactLinkedSection title="Invoices" rows={links.invoices} empty="No invoices linked." />
         <ContactLinkedSection title="Contracts" rows={links.contracts} empty="No contracts linked." />
-        <ContactLinkedSection title="Dogs" rows={links.dogs} empty="No dogs linked yet." />
         {links.dogs.map((d) => (
           <View key={`sale-${d.id}`} className="mt-2">
             <CreateSaleButton dogId={d.id} contactId={contactId} label={`Agreement for ${d.label}`} />
           </View>
         ))}
-        <ContactLinkedSection
-          title="Applications"
-          rows={links.applications}
-          empty="No applications linked."
-        />
       </ScrollView>
       <AddContactSheet ref={editRef} onSaved={() => void refresh()} />
     </ScreenContainer>

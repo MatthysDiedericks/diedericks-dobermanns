@@ -28,6 +28,7 @@ export interface Invoice {
   id: string;
   invoice_number: string;
   client_id: string | null;
+  contact_id?: string | null;
   reservation_id: string | null;
   dog_id: string | null;
   litter_id: string | null;
@@ -107,7 +108,7 @@ export interface Expense {
   vat_amount: number | null;
   payment_account_id: string | null;
   payment_account_name: string | null;
-  allocation_type: 'company' | 'shared' | 'dog' | 'litter';
+  allocation_type: 'company' | 'shared' | 'dog' | 'litter' | 'selected';
   is_payable: boolean;
   payable_due_date: string | null;
   payable_paid_date: string | null;
@@ -120,7 +121,7 @@ export interface Expense {
 }
 
 /** One line on a supplier invoice. Header is `Expense`. */
-export type AllocationKind = 'company' | 'dog' | 'litter' | 'shared';
+export type AllocationKind = 'company' | 'dog' | 'litter' | 'shared' | 'selected';
 
 export interface ExpenseLine {
   id: string;

@@ -92,6 +92,9 @@ export default function AdminLayout() {
           }}
         />
         <Tabs.Screen name="finance/cashflow" options={{ href: null }} />
+        <Tabs.Screen name="finance/cash" options={{ href: null }} />
+        <Tabs.Screen name="finance/payments" options={{ href: null }} />
+        <Tabs.Screen name="finance/reconciliation" options={{ href: null }} />
         <Tabs.Screen name="finance/proofs" options={{ href: null }} />
         <Tabs.Screen name="finance/purchases" options={{ href: null }} />
 

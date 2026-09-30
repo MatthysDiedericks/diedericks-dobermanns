@@ -13,10 +13,8 @@ import {
   type LitterDeleteImpact,
 } from '@/lib/litters/deleteImpact';
 import {
-  birthWeightLogInsert,
   isTailType,
   newbornPuppyInsert,
-  shouldWriteBirthWeight,
 } from '@/lib/litters/newbornPuppy';
 import { puppyDidNotSurvive, type PuppyOutcome } from '@/lib/litters/outcomes';
 import { intakeIsComplete, validatePuppyIntake } from '@/lib/litters/puppyIntake';
@@ -528,12 +526,12 @@ export async function addPuppyToLitter(input: {
     .single();
   if (error) return { error: error.message, id: null };
 
-  if (shouldWriteBirthWeight(input.birth_weight_grams)) {
-    const { error: weightError } = await supabase
-      .from('weight_logs')
-      .insert(birthWeightLogInsert(data.id, input.birth_weight_grams, birthDate));
-    if (weightError) return { error: weightError.message, id: data.id };
-  }
+  // Birth weight is NOT written as a weight log. It used to be, with session
+  // 'AM' on the birth date — the same slot the first morning weigh-in claims,
+  // so the first weighing overwrote the birth weight and it was lost. Only 9
+  // birth logs in the whole database survived that collision.
+  // dogs.birth_weight_grams is the single home for it, and the charts read it
+  // from there.
 
   const live = (input.outcome ?? 'live') === 'live';
   if (live) {
